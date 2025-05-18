@@ -1,0 +1,79 @@
+services:
+  kafka:
+    image: wurstmeister/kafka:latest
+    container_name: kafka
+    environment:
+      KAFKA_BROKER_ID: 1
+      KAFKA_ZOOKEEPER_CONNECT: zookeeper:2181 
+      KAFKA_LISTENERS: PLAINTEXT://0.0.0.0:9092
+      KAFKA_ADVERTISED_LISTENERS: PLAINTEXT://kafka:9092
+      KAFKA_LISTENER_SECURITY_PROTOCOL_MAP: PLAINTEXT:PLAINTEXT
+      KAFKA_AUTO_CREATE_TOPICS_ENABLE: "true"  # ✅ 자동 토픽 생성 허용
+      KAFKA_OFFSETS_TOPIC_REPLICATION_FACTOR: 1
+    ports:
+      - "9093:9093"
+    networks:
+      - stock-network
+    depends_on:
+      - zookeeper
+
+  zookeeper:
+    image: wurstmeister/zookeeper:latest
+    container_name: zookeeper
+    environment:
+      - ZOOKEEPER_CLIENT_PORT=2181
+    ports:
+      - "2181:2181"
+    networks:
+      - stock-network
+
+
+  producer:
+    build:
+       context: ./producer
+    container_name: producer
+    depends_on:
+      - kafka
+      - zookeeper
+    environment:
+      KAFKA_BROKER: kafka:9092
+    restart: on-failure
+    networks:
+      - stock-network
+  postgres:
+    image: postgres:15
+    environment:
+      POSTGRES_USER: user
+      POSTGRES_PASSWORD: password
+      POSTGRES_DB: stockdb
+    volumes:
+      - ./postgres/init.sql:/docker-entrypoint-initdb.d/init.sql
+    ports:
+      - "5432:5432"
+    networks:
+      - stock-network
+
+  spark:
+    build:
+      context: .
+      dockerfile: spark/Dockerfile
+    container_name: spark
+    restart: on-failure
+    depends_on:
+      - kafka
+      - zookeeper
+      - producer
+      - postgres
+    environment:
+      PYTHONPATH: /opt/spark-app
+    command: >
+      /opt/bitnami/spark/bin/spark-submit --packages org.apache.spark:spark-sql-kafka-0-10_2.12:3.5.1,org.postgresql:postgresql:42.7.3 /opt/spark-app/streaming_consumer.py
+    #volumes:
+    #  - ./spark:/opt/spark-app
+    #  - ./shared:/opt/spark-app/shared
+    networks:
+      - stock-network
+
+networks:
+  stock-network:
+    driver: bridge

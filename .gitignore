@@ -1,0 +1,26 @@
+# Python
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+.env
+
+# Jupyter
+.ipynb_checkpoints
+
+# VSCode
+.vscode/
+
+# Docker
+*.log
+*.pid
+*.sock
+*.db
+.env
+docker-compose.override.yml
+
+# OS
+.DS_Store
+
+# Optional: your data dirs
+/data/
