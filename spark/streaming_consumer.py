@@ -28,9 +28,18 @@ df = spark.readStream \
     .load()
 
 # Kafka 메시지를 JSON으로 파싱
+#df_parsed = df.selectExpr("CAST(value AS STRING) as json_str") \
+#    .select(from_json(col("json_str"), schema).alias("data")) \
+#    .select("data.*")
+
+from pyspark.sql.functions import from_utc_timestamp
+
 df_parsed = df.selectExpr("CAST(value AS STRING) as json_str") \
     .select(from_json(col("json_str"), schema).alias("data")) \
-    .select("data.*")
+    .select("data.*") \
+    .withColumn("timestamp_kst", from_utc_timestamp("timestamp", "Asia/Seoul")) \
+    .withColumn("timestamp_ny", from_utc_timestamp("timestamp", "America/New_York"))
+
 
 # 각 마이크로배치마다 DB 저장 함수 호출
 def save_to_db(batch_df, batch_id):

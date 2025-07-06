@@ -1,12 +1,12 @@
 # shared/db_handler.py 예시
 from .db.session import SessionLocal
-from .db.models import StockPrice
+from .db.models import StockPrice1m
 
 def save_stock_prices(data_list: list[dict]):
     session = SessionLocal()
     try:
         for data in data_list:
-            record = StockPrice(**data)
+            record = StockPrice1m(**data)
             session.add(record)
         session.commit()
     except Exception as e:
