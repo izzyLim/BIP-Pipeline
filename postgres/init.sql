@@ -18,16 +18,33 @@ VALUES
     ('GOOGL', 'Alphabet Inc.', 'NASDAQ')
 ON CONFLICT (ticker) DO NOTHING;
 
--- 공통 테이블 구조 함수화해서 생성: 1d, 1wk, 1mo
+-- 공통 테이블 구조 함수화해서 생성: 1m, 1d, 1wk, 1mo
 DO $$ 
 BEGIN
+    IF NOT EXISTS (SELECT FROM pg_tables WHERE schemaname = 'public' AND tablename = 'stock_price_1m') THEN
+    CREATE TABLE stock_price_1m (
+        id SERIAL PRIMARY KEY,
+        ticker VARCHAR(10),
+        timestamp TIMESTAMP,
+        timestamp_ny TIMESTAMP,
+        timestamp_kst TIMESTAMP,
+        open NUMERIC,
+        high NUMERIC,
+        low NUMERIC,
+        close NUMERIC,
+        volume BIGINT,
+        created_at TIMESTAMPTZ DEFAULT NOW(),
+        UNIQUE (ticker, timestamp)
+    );
+    END IF;
+
     IF NOT EXISTS (SELECT FROM pg_tables WHERE schemaname = 'public' AND tablename = 'stock_price_1d') THEN
         CREATE TABLE stock_price_1d (
             id SERIAL PRIMARY KEY,
             ticker VARCHAR(10),
-            timestamp TIMESTAMPTZ,
-            timestamp_ny TIMESTAMPTZ,
-            timestamp_kst TIMESTAMPTZ,
+            timestamp TIMESTAMP,
+            timestamp_ny TIMESTAMP,
+            timestamp_kst TIMESTAMP,
             open NUMERIC,
             high NUMERIC,
             low NUMERIC,
@@ -42,9 +59,9 @@ BEGIN
         CREATE TABLE stock_price_1wk (
             id SERIAL PRIMARY KEY,
             ticker VARCHAR(10),
-            timestamp TIMESTAMPTZ,
-            timestamp_ny TIMESTAMPTZ,
-            timestamp_kst TIMESTAMPTZ,
+            timestamp TIMESTAMP,
+            timestamp_ny TIMESTAMP,
+            timestamp_kst TIMESTAMP,
             open NUMERIC,
             high NUMERIC,
             low NUMERIC,
@@ -59,9 +76,9 @@ BEGIN
         CREATE TABLE stock_price_1mo (
             id SERIAL PRIMARY KEY,
             ticker VARCHAR(10),
-            timestamp TIMESTAMPTZ,
-            timestamp_ny TIMESTAMPTZ,
-            timestamp_kst TIMESTAMPTZ,
+            timestamp TIMESTAMP,
+            timestamp_ny TIMESTAMP,
+            timestamp_kst TIMESTAMP,
             open NUMERIC,
             high NUMERIC,
             low NUMERIC,

@@ -30,7 +30,7 @@ def insert_to_postgres(df: pd.DataFrame, table_name: str, conn_info: dict):
             with conn.cursor() as cur:
                 execute_values(cur, insert_query, values)
             conn.commit()
-        print(f"[INFO] Inserted {len(values)} rows into {table_name}")
+        print(f"[INFO] Inserted {len(values)} rows into {table_name} (duplicates ignored)")
     except Exception as e:
         print(f"[ERROR] Failed to insert into {table_name}: {e}")
 
