@@ -59,7 +59,7 @@ services:
       context: .
       dockerfile: spark/Dockerfile
     container_name: spark
-    restart: on-failuredock
+    restart: on-failure
     depends_on:
       - kafka
       - zookeeper
@@ -77,4 +77,5 @@ services:
 
 networks:
   stock-network:
+    name: stock-network  # 고정 이름 지정
     driver: bridge
