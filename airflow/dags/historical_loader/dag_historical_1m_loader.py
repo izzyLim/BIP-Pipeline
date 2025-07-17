@@ -8,40 +8,44 @@ from utils.db import insert_to_postgres, get_active_tickers
 from utils.config import PG_CONN_INFO
 
 
-
-
 from datetime import datetime, timedelta
+from time import sleep
 from utils.fetch import fetch_price_data
-from utils.db import insert_to_postgres, get_active_tickers
+from utils.db import insert_to_postgres, get_new_active_tickers, get_pg_conn
 from utils.config import PG_CONN_INFO
 
 
 def load_1m():
-    tickers = get_active_tickers(PG_CONN_INFO)
-    today = datetime.utcnow().date()
-    start_date = today - timedelta(days=30)
+    with get_pg_conn(PG_CONN_INFO) as conn:
+        ticker_df = get_new_active_tickers(conn, table_name="stock_price_1m")
+        #tickers = get_active_tickers(PG_CONN_INFO)
+        ticker_list = ticker_df["ticker"].tolist()
 
-    for ticker in tickers:
-        for i in range(30):
-            day = start_date + timedelta(days=i)
-            start_str = day.strftime("%Y-%m-%d")
-            end_str = (day + timedelta(days=1)).strftime("%Y-%m-%d")
+        today = datetime.utcnow().date()
+        start_date = today - timedelta(days=30)
 
-            try:
-                df = fetch_price_data(
-                    ticker=ticker,
-                    interval='1m',
-                    start=start_str,
-                    end=end_str
-                )
-                if df.empty:
-                    print(f"[INFO] {ticker} {start_str}: 데이터 없음 (시장 휴장일 등)")
-                    continue
+        for ticker in ticker_list:
+            for i in range(30):
+                day = start_date + timedelta(days=i)
+                start_str = day.strftime("%Y-%m-%d")
+                end_str = (day + timedelta(days=1)).strftime("%Y-%m-%d")
 
-                insert_to_postgres(df, 'stock_price_1m', PG_CONN_INFO)
+                try:
+                    df = fetch_price_data(
+                        ticker=ticker,
+                        interval='1m',
+                        start=start_str,
+                        end=end_str
+                    )
+                    if df.empty:
+                        print(f"[INFO] {ticker} {start_str}: 데이터 없음 (시장 휴장일 등)")
+                        continue
+                    
+                    insert_to_postgres(df, 'stock_price_1m', PG_CONN_INFO)
+                    sleep(1)
 
-            except Exception as e:
-                print(f"[WARN] {ticker} {start_str} 처리 중 오류 발생: {e}")
+                except Exception as e:
+                    print(f"[WARN] {ticker} {start_str} 처리 중 오류 발생: {e}")
 
 
 with DAG(

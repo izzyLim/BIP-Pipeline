@@ -82,7 +82,7 @@ def insert_to_postgres(df: pd.DataFrame, table_name: str, conn_info: dict):
 
 
 def get_active_tickers(conn_info: dict):
-    query = "SELECT ticker FROM stock_metadata WHERE is_active = TRUE;"
+    query = "SELECT ticker FROM stock_info WHERE is_active = TRUE;"
     try:
         with psycopg2.connect(**conn_info) as conn:
             with conn.cursor() as cur:
@@ -92,3 +92,24 @@ def get_active_tickers(conn_info: dict):
     except Exception as e:
         print(f"[ERROR] Failed to fetch tickers: {e}")
         return []
+    
+
+def get_new_active_tickers(conn, table_name: str ) -> pd.DataFrame:
+    assert table_name in {"stock_price_1m", "stock_price_1d", "stock_price_1wk", "stock_price_1mo"}
+    
+    query = f"""
+        SELECT DISTINCT p.ticker
+        FROM  stock_info p
+        LEFT JOIN {table_name} s ON p.ticker = s.ticker
+        WHERE s.ticker IS NULL
+    """
+    return pd.read_sql(query, conn)
+
+def get_pg_conn(info: dict):
+    return psycopg2.connect(
+        host=info["host"],
+        port=info["port"],
+        user=info["user"],
+        password=info["password"],
+        dbname=info["database"]
+    )
