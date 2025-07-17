@@ -1,6 +1,13 @@
 from pytrends.request import TrendReq
 import pandas as pd
 
+import requests
+import pandas as pd
+import json
+from datetime import datetime
+
+API_TOKEN = "b759b2a274bf415eb1cb25"
+
 def fetch_and_save_trends(
     keyword: str,
     timeframe: str = "today 3-m",
