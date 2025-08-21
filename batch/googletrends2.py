@@ -46,7 +46,7 @@ def fetch_multiline(data_widgets, keywords, hl):
     req_enc = urllib.parse.quote(req_str, safe="")
 
     url = (
-        f"https://trends.google.com/trends/api/widgetdata/multiline"
+        f"https://trends.google.com/trends/explore"
         f"?hl={hl}&tz=0"
         f"&req={req_enc}"
         f"&token={urllib.parse.quote(token, safe='')}"

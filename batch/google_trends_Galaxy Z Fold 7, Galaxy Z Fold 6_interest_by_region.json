@@ -1,0 +1,720 @@
+{
+  "default": {
+    "geoMapData": [
+      {
+        "geoCode": "US-WV",
+        "geoName": "West Virginia",
+        "value": [
+          100
+        ],
+        "formattedValue": [
+          "100"
+        ],
+        "maxValueIndex": 0,
+        "hasData": [
+          true
+        ]
+      },
+      {
+        "geoCode": "US-HI",
+        "geoName": "Hawaii",
+        "value": [
+          77
+        ],
+        "formattedValue": [
+          "77"
+        ],
+        "maxValueIndex": 0,
+        "hasData": [
+          true
+        ]
+      },
+      {
+        "geoCode": "US-NV",
+        "geoName": "Nevada",
+        "value": [
+          54
+        ],
+        "formattedValue": [
+          "54"
+        ],
+        "maxValueIndex": 0,
+        "hasData": [
+          true
+        ]
+      },
+      {
+        "geoCode": "US-LA",
+        "geoName": "Louisiana",
+        "value": [
+          45
+        ],
+        "formattedValue": [
+          "45"
+        ],
+        "maxValueIndex": 0,
+        "hasData": [
+          true
+        ]
+      },
+      {
+        "geoCode": "US-CA",
+        "geoName": "California",
+        "value": [
+          45
+        ],
+        "formattedValue": [
+          "45"
+        ],
+        "maxValueIndex": 0,
+        "hasData": [
+          true
+        ]
+      },
+      {
+        "geoCode": "US-WA",
+        "geoName": "Washington",
+        "value": [
+          45
+        ],
+        "formattedValue": [
+          "45"
+        ],
+        "maxValueIndex": 0,
+        "hasData": [
+          true
+        ]
+      },
+      {
+        "geoCode": "US-NJ",
+        "geoName": "New Jersey",
+        "value": [
+          45
+        ],
+        "formattedValue": [
+          "45"
+        ],
+        "maxValueIndex": 0,
+        "hasData": [
+          true
+        ]
+      },
+      {
+        "geoCode": "US-TX",
+        "geoName": "Texas",
+        "value": [
+          45
+        ],
+        "formattedValue": [
+          "45"
+        ],
+        "maxValueIndex": 0,
+        "hasData": [
+          true
+        ]
+      },
+      {
+        "geoCode": "US-MD",
+        "geoName": "Maryland",
+        "value": [
+          45
+        ],
+        "formattedValue": [
+          "45"
+        ],
+        "maxValueIndex": 0,
+        "hasData": [
+          true
+        ]
+      },
+      {
+        "geoCode": "US-ID",
+        "geoName": "Idaho",
+        "value": [
+          40
+        ],
+        "formattedValue": [
+          "40"
+        ],
+        "maxValueIndex": 0,
+        "hasData": [
+          true
+        ]
+      },
+      {
+        "geoCode": "US-GA",
+        "geoName": "Georgia",
+        "value": [
+          40
+        ],
+        "formattedValue": [
+          "40"
+        ],
+        "maxValueIndex": 0,
+        "hasData": [
+          true
+        ]
+      },
+      {
+        "geoCode": "US-CT",
+        "geoName": "Connecticut",
+        "value": [
+          40
+        ],
+        "formattedValue": [
+          "40"
+        ],
+        "maxValueIndex": 0,
+        "hasData": [
+          true
+        ]
+      },
+      {
+        "geoCode": "US-NY",
+        "geoName": "New York",
+        "value": [
+          40
+        ],
+        "formattedValue": [
+          "40"
+        ],
+        "maxValueIndex": 0,
+        "hasData": [
+          true
+        ]
+      },
+      {
+        "geoCode": "US-FL",
+        "geoName": "Florida",
+        "value": [
+          40
+        ],
+        "formattedValue": [
+          "40"
+        ],
+        "maxValueIndex": 0,
+        "hasData": [
+          true
+        ]
+      },
+      {
+        "geoCode": "US-MA",
+        "geoName": "Massachusetts",
+        "value": [
+          40
+        ],
+        "formattedValue": [
+          "40"
+        ],
+        "maxValueIndex": 0,
+        "hasData": [
+          true
+        ]
+      },
+      {
+        "geoCode": "US-MI",
+        "geoName": "Michigan",
+        "value": [
+          36
+        ],
+        "formattedValue": [
+          "36"
+        ],
+        "maxValueIndex": 0,
+        "hasData": [
+          true
+        ]
+      },
+      {
+        "geoCode": "US-IL",
+        "geoName": "Illinois",
+        "value": [
+          36
+        ],
+        "formattedValue": [
+          "36"
+        ],
+        "maxValueIndex": 0,
+        "hasData": [
+          true
+        ]
+      },
+      {
+        "geoCode": "US-MO",
+        "geoName": "Missouri",
+        "value": [
+          36
+        ],
+        "formattedValue": [
+          "36"
+        ],
+        "maxValueIndex": 0,
+        "hasData": [
+          true
+        ]
+      },
+      {
+        "geoCode": "US-VA",
+        "geoName": "Virginia",
+        "value": [
+          36
+        ],
+        "formattedValue": [
+          "36"
+        ],
+        "maxValueIndex": 0,
+        "hasData": [
+          true
+        ]
+      },
+      {
+        "geoCode": "US-AZ",
+        "geoName": "Arizona",
+        "value": [
+          36
+        ],
+        "formattedValue": [
+          "36"
+        ],
+        "maxValueIndex": 0,
+        "hasData": [
+          true
+        ]
+      },
+      {
+        "geoCode": "US-UT",
+        "geoName": "Utah",
+        "value": [
+          36
+        ],
+        "formattedValue": [
+          "36"
+        ],
+        "maxValueIndex": 0,
+        "hasData": [
+          true
+        ]
+      },
+      {
+        "geoCode": "US-TN",
+        "geoName": "Tennessee",
+        "value": [
+          36
+        ],
+        "formattedValue": [
+          "36"
+        ],
+        "maxValueIndex": 0,
+        "hasData": [
+          true
+        ]
+      },
+      {
+        "geoCode": "US-OH",
+        "geoName": "Ohio",
+        "value": [
+          36
+        ],
+        "formattedValue": [
+          "36"
+        ],
+        "maxValueIndex": 0,
+        "hasData": [
+          true
+        ]
+      },
+      {
+        "geoCode": "US-NC",
+        "geoName": "North Carolina",
+        "value": [
+          36
+        ],
+        "formattedValue": [
+          "36"
+        ],
+        "maxValueIndex": 0,
+        "hasData": [
+          true
+        ]
+      },
+      {
+        "geoCode": "US-CO",
+        "geoName": "Colorado",
+        "value": [
+          36
+        ],
+        "formattedValue": [
+          "36"
+        ],
+        "maxValueIndex": 0,
+        "hasData": [
+          true
+        ]
+      },
+      {
+        "geoCode": "US-KS",
+        "geoName": "Kansas",
+        "value": [
+          36
+        ],
+        "formattedValue": [
+          "36"
+        ],
+        "maxValueIndex": 0,
+        "hasData": [
+          true
+        ]
+      },
+      {
+        "geoCode": "US-IN",
+        "geoName": "Indiana",
+        "value": [
+          36
+        ],
+        "formattedValue": [
+          "36"
+        ],
+        "maxValueIndex": 0,
+        "hasData": [
+          true
+        ]
+      },
+      {
+        "geoCode": "US-AR",
+        "geoName": "Arkansas",
+        "value": [
+          31
+        ],
+        "formattedValue": [
+          "31"
+        ],
+        "maxValueIndex": 0,
+        "hasData": [
+          true
+        ]
+      },
+      {
+        "geoCode": "US-AL",
+        "geoName": "Alabama",
+        "value": [
+          31
+        ],
+        "formattedValue": [
+          "31"
+        ],
+        "maxValueIndex": 0,
+        "hasData": [
+          true
+        ]
+      },
+      {
+        "geoCode": "US-PA",
+        "geoName": "Pennsylvania",
+        "value": [
+          31
+        ],
+        "formattedValue": [
+          "31"
+        ],
+        "maxValueIndex": 0,
+        "hasData": [
+          true
+        ]
+      },
+      {
+        "geoCode": "US-KY",
+        "geoName": "Kentucky",
+        "value": [
+          31
+        ],
+        "formattedValue": [
+          "31"
+        ],
+        "maxValueIndex": 0,
+        "hasData": [
+          true
+        ]
+      },
+      {
+        "geoCode": "US-MN",
+        "geoName": "Minnesota",
+        "value": [
+          31
+        ],
+        "formattedValue": [
+          "31"
+        ],
+        "maxValueIndex": 0,
+        "hasData": [
+          true
+        ]
+      },
+      {
+        "geoCode": "US-IA",
+        "geoName": "Iowa",
+        "value": [
+          31
+        ],
+        "formattedValue": [
+          "31"
+        ],
+        "maxValueIndex": 0,
+        "hasData": [
+          true
+        ]
+      },
+      {
+        "geoCode": "US-SC",
+        "geoName": "South Carolina",
+        "value": [
+          31
+        ],
+        "formattedValue": [
+          "31"
+        ],
+        "maxValueIndex": 0,
+        "hasData": [
+          true
+        ]
+      },
+      {
+        "geoCode": "US-WI",
+        "geoName": "Wisconsin",
+        "value": [
+          31
+        ],
+        "formattedValue": [
+          "31"
+        ],
+        "maxValueIndex": 0,
+        "hasData": [
+          true
+        ]
+      },
+      {
+        "geoCode": "US-OR",
+        "geoName": "Oregon",
+        "value": [
+          27
+        ],
+        "formattedValue": [
+          "27"
+        ],
+        "maxValueIndex": 0,
+        "hasData": [
+          true
+        ]
+      },
+      {
+        "geoCode": "US-AK",
+        "geoName": "Alaska",
+        "value": [
+          27
+        ],
+        "formattedValue": [
+          "27"
+        ],
+        "maxValueIndex": 0,
+        "hasData": [
+          true
+        ]
+      },
+      {
+        "geoCode": "US-RI",
+        "geoName": "Rhode Island",
+        "value": [
+          18
+        ],
+        "formattedValue": [
+          "18"
+        ],
+        "maxValueIndex": 0,
+        "hasData": [
+          true
+        ]
+      },
+      {
+        "geoCode": "US-DE",
+        "geoName": "Delaware",
+        "value": [
+          18
+        ],
+        "formattedValue": [
+          "18"
+        ],
+        "maxValueIndex": 0,
+        "hasData": [
+          true
+        ]
+      },
+      {
+        "geoCode": "US-NH",
+        "geoName": "New Hampshire",
+        "value": [
+          18
+        ],
+        "formattedValue": [
+          "18"
+        ],
+        "maxValueIndex": 0,
+        "hasData": [
+          true
+        ]
+      },
+      {
+        "geoCode": "US-NM",
+        "geoName": "New Mexico",
+        "value": [
+          18
+        ],
+        "formattedValue": [
+          "18"
+        ],
+        "maxValueIndex": 0,
+        "hasData": [
+          true
+        ]
+      },
+      {
+        "geoCode": "US-MS",
+        "geoName": "Mississippi",
+        "value": [
+          18
+        ],
+        "formattedValue": [
+          "18"
+        ],
+        "maxValueIndex": 0,
+        "hasData": [
+          true
+        ]
+      },
+      {
+        "geoCode": "US-ND",
+        "geoName": "North Dakota",
+        "value": [
+          18
+        ],
+        "formattedValue": [
+          "18"
+        ],
+        "maxValueIndex": 0,
+        "hasData": [
+          true
+        ]
+      },
+      {
+        "geoCode": "US-DC",
+        "geoName": "District of Columbia",
+        "value": [
+          18
+        ],
+        "formattedValue": [
+          "18"
+        ],
+        "maxValueIndex": 0,
+        "hasData": [
+          true
+        ]
+      },
+      {
+        "geoCode": "US-OK",
+        "geoName": "Oklahoma",
+        "value": [
+          13
+        ],
+        "formattedValue": [
+          "13"
+        ],
+        "maxValueIndex": 0,
+        "hasData": [
+          true
+        ]
+      },
+      {
+        "geoCode": "US-SD",
+        "geoName": "South Dakota",
+        "value": [
+          13
+        ],
+        "formattedValue": [
+          "13"
+        ],
+        "maxValueIndex": 0,
+        "hasData": [
+          true
+        ]
+      },
+      {
+        "geoCode": "US-NE",
+        "geoName": "Nebraska",
+        "value": [
+          13
+        ],
+        "formattedValue": [
+          "13"
+        ],
+        "maxValueIndex": 0,
+        "hasData": [
+          true
+        ]
+      },
+      {
+        "geoCode": "US-WY",
+        "geoName": "Wyoming",
+        "value": [
+          13
+        ],
+        "formattedValue": [
+          "13"
+        ],
+        "maxValueIndex": 0,
+        "hasData": [
+          true
+        ]
+      },
+      {
+        "geoCode": "US-MT",
+        "geoName": "Montana",
+        "value": [
+          13
+        ],
+        "formattedValue": [
+          "13"
+        ],
+        "maxValueIndex": 0,
+        "hasData": [
+          true
+        ]
+      },
+      {
+        "geoCode": "US-VT",
+        "geoName": "Vermont",
+        "value": [
+          9
+        ],
+        "formattedValue": [
+          "9"
+        ],
+        "maxValueIndex": 0,
+        "hasData": [
+          true
+        ]
+      },
+      {
+        "geoCode": "US-ME",
+        "geoName": "Maine",
+        "value": [
+          9
+        ],
+        "formattedValue": [
+          "9"
+        ],
+        "maxValueIndex": 0,
+        "hasData": [
+          true
+        ]
+      }
+    ]
+  }
+}

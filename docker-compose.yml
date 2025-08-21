@@ -79,3 +79,4 @@ networks:
   stock-network:
     name: stock-network  # 고정 이름 지정
     driver: bridge
+    external: true

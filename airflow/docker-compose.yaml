@@ -101,7 +101,9 @@ services:
       start_period: 5s
     restart: always
     networks:
-      - stock-network
+      stock-network:
+        aliases:
+          - bip-postgres
 
   redis:
     # Redis is limited to 7.2-bookworm due to licencing change
@@ -308,3 +310,4 @@ volumes:
 networks:
   stock-network:
     external: true
+    name: stock-network

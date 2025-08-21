@@ -3,7 +3,7 @@ import json
 import time
 
 
-def capture_google_trends_data(query, geo, hl="en-US"):
+def capture_google_trends_data(query, geo, hl, date):
     """
     Capture Google Trends data for a given query and geographic location.
 
@@ -74,7 +74,7 @@ def capture_google_trends_data(query, geo, hl="en-US"):
 
         # Construct the Google Trends URL
         trends_url = (
-            f"https://trends.google.com/trends/explore?geo={geo}&q={query}&hl={hl}"
+            f"https://trends.google.com/trends/explore?date={date}&geo={geo}&q={query}&hl={hl}"
         )
         print(f"Opening Google Trends for '{query}' in {geo}...")
         print(f"▶ Opening: {trends_url}")
@@ -109,9 +109,9 @@ def capture_google_trends_data(query, geo, hl="en-US"):
 
 if __name__ == "__main__":
     # Example usage
-    query = "Galaxy Z Fold 7"
-    geo = "US"
-    hl="en-US"
+    query = "Galaxy Z Fold 7, Galaxy Z Fold 6, Galaxy Z Fold 5, Galaxy Z Fold 4, Galaxy Z Fold 3"
+    geo = ""
+    hl="KR"
+    date="2020-01-01 2025-07-18"
 
-    data = capture_google_trends_data(query, geo, hl)
-    print(data)
+    data = capture_google_trends_data(query, geo, hl, date)
