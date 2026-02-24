@@ -150,16 +150,168 @@
 | CALA | 카리브해 & 라틴아메리카 |
 | Asia Pacific Others | 호주, 뉴질랜드, 대만, 홍콩 등 |
 
-### 3.3 데이터 현황 (2026-02-24 기준)
+### 3.3 제품 출시 데이터 (Product Release)
 
-| 테이블 | 레코드 수 | 기간 |
-|--------|----------|------|
-| news_article | 1,443,084 | 2020-01 ~ 2026-02 |
-| ├─ smartphone | 20,183 | |
-| └─ external | 1,422,901 | |
-| product_release | 208 | 2020 ~ 2025 |
-| product_price | 22,085 | 2020 ~ 2025 |
-| macro_indicators | 26,738 | 2020 ~ 2025 |
+#### 데이터 소스
+- **출처**: 공식 보도자료, Wikipedia, GSMArena
+- **수집 방식**: 수동 큐레이션 (주요 브랜드 flagship/mid-range 제품)
+- **기간**: 2020-01 ~ 2024-12
+
+#### 포함 브랜드
+| 브랜드 | 제품 라인 | 세그먼트 |
+|--------|----------|----------|
+| Samsung | Galaxy S, Note, Z Fold/Flip, A 시리즈 | flagship, mid-range |
+| Apple | iPhone Pro/Plus/기본, SE | flagship, mid-range |
+| Xiaomi | Mi, Redmi, POCO | flagship, mid-range, entry |
+| OPPO | Find X, Reno | flagship, mid-range |
+| vivo | X, V 시리즈 | flagship, mid-range |
+| OnePlus | 숫자 시리즈, Nord | flagship, mid-range |
+| Google | Pixel | flagship, mid-range |
+| Huawei | Mate, P 시리즈 | flagship |
+| Realme | GT, Number 시리즈 | mid-range |
+
+#### 데이터 필드
+```python
+{
+    "brand": "Samsung",
+    "product_name": "Galaxy S24 Ultra",
+    "segment": "flagship",           # entry | mid-range | flagship
+    "announce_date": "2024-01-17",
+    "release_date": "2024-01-31",
+    "regions": ["North America", "Western Europe", "South Korea"]
+}
+```
+
+#### 수집 스크립트
+| 스크립트 | 용도 |
+|---------|------|
+| `scraper/product_data.py` | 제품 출시 데이터 로드 |
+| `scraper/gsmarena_scraper.py` | GSMArena 스펙 스크래핑 (참고용) |
+
+### 3.4 제품 가격 데이터 (Product Price)
+
+#### 데이터 소스
+- **MSRP (출시가)**: 공식 발표가, Wikipedia, GSMArena
+- **감가상각률**: SellCell, BankMyCell 리서치 보고서 (2021-2026)
+
+#### 감가상각 모델
+```
+월별 가격 = MSRP × (1 - 월별감가율)^경과월수
+```
+
+| 세그먼트 | 연간 감가율 | 월별 감가율 | 비고 |
+|----------|------------|------------|------|
+| flagship | 35-45% | ~3.5% | 1년차 급락, 이후 완만 |
+| mid-range | 30-40% | ~3.0% | |
+| entry | 25-35% | ~2.5% | 상대적으로 안정 |
+
+#### 브랜드별 감가 특성
+| 브랜드 | 감가율 | 특성 |
+|--------|--------|------|
+| Apple | 낮음 (25-35%) | 리셀 가치 높음 |
+| Samsung | 중간 (35-45%) | 신모델 출시 시 급락 |
+| Xiaomi | 높음 (40-50%) | 가격 경쟁력 중심 |
+| OnePlus | 중간 (35-40%) | |
+| Google | 높음 (40-50%) | Pixel 특성 |
+
+#### 데이터 필드
+```python
+{
+    "product_id": 1,
+    "brand": "Apple",
+    "product_name": "iPhone 15 Pro",
+    "price_date": "2024-06-01",
+    "region": "North America",
+    "price_usd": 899.00,
+    "price_type": "market"           # msrp | market | resale
+}
+```
+
+#### 수집 스크립트
+| 스크립트 | 용도 |
+|---------|------|
+| `scraper/product_price_data.py` | MSRP 데이터 |
+| `scraper/product_price_real.py` | 감가상각 기반 가격 생성 |
+
+### 3.5 거시경제 지표 (Macro Indicators)
+
+#### 데이터 소스
+| 지표 | 소스 | API/라이브러리 |
+|------|------|---------------|
+| 환율 (Exchange Rate) | Yahoo Finance | `yfinance` |
+| 금리 (Interest Rate) | Yahoo Finance, FRED | `yfinance`, `fredapi` |
+| PMI | Trading Economics | 수동 수집 |
+| CPI | World Bank, FRED | `fredapi` |
+| GDP 성장률 | World Bank, IMF | 수동 수집 |
+
+#### 권역별 지표 매핑
+| 권역 | 환율 심볼 | 금리 심볼 |
+|------|----------|----------|
+| North America | DX-Y.NYB (USD Index) | ^TNX (10Y Treasury) |
+| Western Europe | EURUSD=X | - |
+| China | USDCNY=X | - |
+| Japan | USDJPY=X | - |
+| South Korea | USDKRW=X | - |
+| India | USDINR=X | - |
+| Southeast Asia | USDTHB=X (태국 바트 대표) | - |
+| MEA | USDZAR=X (남아공 랜드 대표) | - |
+| CALA | USDBRL=X (브라질 헤알 대표) | - |
+
+#### 데이터 필드
+```python
+{
+    "region": "North America",
+    "indicator_type": "interest_rate",  # exchange_rate | interest_rate | pmi | cpi | gdp_growth
+    "indicator_date": "2024-01-15",
+    "value": 4.25,
+    "change_pct": 0.05
+}
+```
+
+#### 수집 스크립트
+| 스크립트 | 용도 |
+|---------|------|
+| `collect_macro.py` | 거시경제 지표 수집 (yfinance 기반) |
+
+### 3.6 데이터 현황 (2026-02-24 기준)
+
+| 테이블 | 레코드 수 | 기간 | 데이터 소스 |
+|--------|----------|------|------------|
+| news_article | 1,443,084 | 2020-01 ~ 2026-02 | GDELT GKG |
+| ├─ smartphone | 20,183 | | |
+| └─ external | 1,422,901 | | |
+| product_release | 208 | 2020 ~ 2024 | 공식 보도자료, Wikipedia |
+| product_price | 22,085 | 2020 ~ 2025 | MSRP + 감가상각 모델 |
+| macro_indicators | 26,738 | 2020 ~ 2025 | Yahoo Finance, FRED |
+
+### 3.7 데이터 수집 아키텍처 요약
+
+```
+┌─────────────────────────────────────────────────────────────────────────────┐
+│                           데이터 수집 파이프라인                              │
+├─────────────────────────────────────────────────────────────────────────────┤
+│                                                                             │
+│  ┌─────────────┐    ┌─────────────┐    ┌─────────────┐    ┌─────────────┐  │
+│  │   GDELT     │    │   Yahoo     │    │  공식 발표  │    │  리서치     │  │
+│  │   GKG API   │    │   Finance   │    │  보도자료   │    │  보고서     │  │
+│  └──────┬──────┘    └──────┬──────┘    └──────┬──────┘    └──────┬──────┘  │
+│         │                  │                  │                  │         │
+│         ▼                  ▼                  ▼                  ▼         │
+│  ┌─────────────┐    ┌─────────────┐    ┌─────────────┐    ┌─────────────┐  │
+│  │ 뉴스 파싱   │    │ 지표 수집   │    │ 제품 출시   │    │ 가격 모델   │  │
+│  │ & 분류      │    │ (yfinance)  │    │ 큐레이션    │    │ (감가상각)  │  │
+│  └──────┬──────┘    └──────┬──────┘    └──────┬──────┘    └──────┬──────┘  │
+│         │                  │                  │                  │         │
+│         └──────────────────┼──────────────────┼──────────────────┘         │
+│                            ▼                  ▼                            │
+│                    ┌─────────────────────────────────┐                     │
+│                    │         PostgreSQL              │                     │
+│                    │  news_article | macro_indicators│                     │
+│                    │  product_release | product_price│                     │
+│                    └─────────────────────────────────┘                     │
+│                                                                             │
+└─────────────────────────────────────────────────────────────────────────────┘
+```
 
 ---
 
