@@ -1,5 +1,7 @@
 import json
 import time
+import logging
+import sys
 import requests
 import pandas as pd
 from kafka import KafkaProducer
@@ -8,11 +10,19 @@ from kafka.errors import TopicAlreadyExistsError
 from datetime import datetime
 import pytz
 
-from utils import get_market_status  # 유틸에서 불러옴
+from utils import get_market_status, is_nyse_holiday, get_nyse_holidays
 
+# 로깅 설정
+logging.basicConfig(
+    level=logging.INFO,
+    format="%(asctime)s | %(levelname)-8s | %(name)s | %(message)s",
+    datefmt="%Y-%m-%d %H:%M:%S",
+    stream=sys.stdout
+)
+logger = logging.getLogger("producer")
 
 TOPIC = "stock_prices"
-KAFKA_BROKER = "kafka:9092"  # Kafka 컨테이너 이름 기준
+KAFKA_BROKER = "kafka:9092"
 
 
 
@@ -22,9 +32,9 @@ def ensure_topic_exists(topic_name):
 
     try:
         admin_client.create_topics([topic])
-        print(f"[INFO] Kafka topic '{topic_name}' created.")
+        logger.info(f"Kafka topic '{topic_name}' created")
     except TopicAlreadyExistsError:
-        print(f"[INFO] Kafka topic '{topic_name}' already exists.")
+        logger.info(f"Kafka topic '{topic_name}' already exists")
     finally:
         admin_client.close()
 
@@ -40,7 +50,7 @@ def fetch_latest_price(ticker: str) -> pd.DataFrame:
 
     response = requests.get(url, params=params, headers=headers)
     if response.status_code != 200:
-        print(f"[ERROR] API 요청 실패: {response.status_code}")
+        logger.error(f"API 요청 실패: {response.status_code}")
         return None
 
     try:
@@ -57,7 +67,7 @@ def fetch_latest_price(ticker: str) -> pd.DataFrame:
         return df
 
     except Exception as e:
-        print(f"[ERROR] 데이터 파싱 실패: {e}")
+        logger.error(f"데이터 파싱 실패: {e}")
         return None
 
 def run_producer():
@@ -69,10 +79,20 @@ def run_producer():
 
     while True:
         status = get_market_status()
-        print(f"[INFO] 현재 시장 상태: {status}")
+
+        # 공휴일인 경우 어떤 공휴일인지 표시
+        if is_nyse_holiday():
+            from datetime import datetime
+            import pytz
+            ny_tz = pytz.timezone("America/New_York")
+            today = datetime.now(ny_tz).date()
+            holiday_name = get_nyse_holidays().get(today, "공휴일")
+            logger.info(f"현재 시장 상태: {status} (오늘은 {holiday_name})")
+        else:
+            logger.info(f"현재 시장 상태: {status}")
 
         if status == "장중":
-            print("[INFO] 장중이므로 데이터 전송 중...", flush=True)
+            logger.info("장중이므로 데이터 전송 중...")
             df = fetch_latest_price(ticker)
             if df is not None and not df.empty:
                 for _, row in df.iterrows():
@@ -90,11 +110,11 @@ def run_producer():
                     }
 
                     producer.send(TOPIC, value=record)
-                    print("[PRODUCER] Sent:", record)
+                    logger.debug(f"Sent: {record}")
             else:
-                print("[PRODUCER] 데이터 없음")
+                logger.warning("데이터 없음")
         else:
-            print(f"[PRODUCER] 현재 시장 상태: {status} → 데이터 전송 생략", flush=True)
+            logger.info(f"현재 시장 상태: {status} → 데이터 전송 생략")
 
         time.sleep(10)
 

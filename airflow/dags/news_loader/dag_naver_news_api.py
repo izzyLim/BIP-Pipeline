@@ -14,7 +14,7 @@ from utils.news import fetch_and_upsert_naver_api
 
 DEFAULT_HEADERS = {
     "X-Naver-Client-Id": "IRFLpQeBP9e6JsjwaKCH",
-    "X-Naver-Client-Secret": "IRFLpQeBP9e6JsjwaKCH",
+    "X-Naver-Client-Secret": "mcfyo70efz",
     "User-Agent": "Mozilla/5.0"
 }
 SEARCH_URL = "https://openapi.naver.com/v1/search/news.json"

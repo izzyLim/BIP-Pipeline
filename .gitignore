@@ -29,3 +29,9 @@ docker-compose.override.yml
 batch/google-ads.yaml
 
 bip-venv/
+# GDELT data files
+gdelt_test/historical/*.csv
+gdelt_test/output/*.csv
+gdelt_test/*.csv
+gdelt_test/*.zip
+

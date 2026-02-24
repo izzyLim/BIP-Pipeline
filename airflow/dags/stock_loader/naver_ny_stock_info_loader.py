@@ -10,8 +10,8 @@ import pandas as pd
 
 logger = logging.getLogger(__name__)
 
-def get_naver_nasdaq_stocks(page=1, pageSize=100):
-    url = "https://api.stock.naver.com/stock/exchange/NASDAQ/marketValue"
+def get_naver_nyse_stocks(page=1, pageSize=100):
+    url = "https://api.stock.naver.com/stock/exchange/NYSE/marketValue"
     params = {
         "page": page,
         "pageSize": pageSize
@@ -24,19 +24,19 @@ def get_naver_nasdaq_stocks(page=1, pageSize=100):
     res = requests.get(url, headers=headers, params=params)
     return res.json()
 
-def get_all_nasdaq_stocks():
+def get_all_nyse_stocks():
     all_items = []
     page = 1
     while True:
-        data = get_naver_nasdaq_stocks(page)
+        data = get_naver_nyse_stocks(page)
         items = data.get("stocks", [])
         if not items:
             break
         all_items.extend(items)
-        logger.info(f"NASDAQ page {page} processed ({len(items)} items)")
+        logger.info(f"NYSE page {page} processed ({len(items)} items)")
         page += 1
 
-    logger.info(f"Total NASDAQ stocks fetched: {len(all_items)}")
+    logger.info(f"Total NYSE stocks fetched: {len(all_items)}")
     return pd.DataFrame(all_items)
 
 def parse_numeric(value):
@@ -47,11 +47,11 @@ def parse_numeric(value):
     except ValueError:
         return None
 
-def fetch_and_upsert_naver_nasdaq_stocks(**context):
-    df = get_all_nasdaq_stocks()
+def fetch_and_upsert_naver_nyse_stocks(**context):
+    df = get_all_nyse_stocks()
 
     if df.empty:
-        logger.info("No NASDAQ stock data found.")
+        logger.info("No NYSE stock data found.")
         return
 
     # 데이터 파싱 및 정리
@@ -81,18 +81,18 @@ default_args = {
 }
 
 with DAG(
-    dag_id="load_naver_nasdaq_stock_info",
+    dag_id="load_naver_nyse_stock_info",
     default_args=default_args,
     start_date=datetime(2024, 1, 1),
     schedule_interval="0 8 * * *",  # 매일 오전 8시
     catchup=False,
-    tags=["NAVER", "NASDAQ", "stock_info"],
+    tags=["NAVER", "NYSE", "stock_info"],
     dagrun_timeout=timedelta(minutes=30),
 ) as dag:
 
     fetch_and_store = PythonOperator(
-        task_id="fetch_naver_nasdaq_stocks",
-        python_callable=fetch_and_upsert_naver_nasdaq_stocks,
+        task_id="fetch_naver_nyse_stocks",
+        python_callable=fetch_and_upsert_naver_nyse_stocks,
         provide_context=True,
         execution_timeout=timedelta(minutes=20),
     ) 

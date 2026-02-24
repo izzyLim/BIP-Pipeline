@@ -1,3 +1,4 @@
+import logging
 import requests
 import html
 from email.utils import parsedate_to_datetime
@@ -6,6 +7,8 @@ from typing import List, Dict, Optional
 
 from utils.db import get_pg_conn, upsert_news
 from utils.config import PG_CONN_INFO
+
+logger = logging.getLogger(__name__)
 
 SEARCH_URL = "https://openapi.naver.com/v1/search/news.json"
 
@@ -30,7 +33,7 @@ def fetch_and_upsert_naver_api(conn_info: dict, headers: Dict[str, str], tickers
         try:
             results = fetch_naver_news_for(q, session.headers, display=batch_per_ticker)
         except Exception as e:
-            print(f"[WARN] API fetch failed for {q}: {e}")
+            logger.warning(f"API fetch failed for {q}: {e}")
             sleep(sleep_sec)
             continue
 
@@ -56,10 +59,10 @@ def fetch_and_upsert_naver_api(conn_info: dict, headers: Dict[str, str], tickers
         sleep(sleep_sec)
 
     if not all_items:
-        print("[INFO] No news items returned from API.")
+        logger.info("No news items returned from API")
         return 0
 
     with get_pg_conn(conn_info) as conn:
         processed = upsert_news(conn, all_items)
-        print(f"[INFO] upsert_news processed {processed} items")
+        logger.info(f"upsert_news processed {processed} items")
         return processed

@@ -1,16 +1,7 @@
 from sqlalchemy import create_engine
 from sqlalchemy.orm import sessionmaker
 
-import os
-import socket
+from shared.config import config
 
-hostname = socket.gethostname()
-if "macbook" in hostname.lower() or os.getenv("ENV") == "local":
-    DATABASE_URL = "postgresql://user:pw1234@localhost:5432/stockdb"
-else:
-    DATABASE_URL = "postgresql://user:pw1234@bip-postgres:5432/stockdb"
-
-#DATABASE_URL = "postgresql://user:password@postgres:5432/stockdb"
-
-engine = create_engine(DATABASE_URL)
+engine = create_engine(config.DATABASE_URL)
 SessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=engine)

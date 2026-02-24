@@ -40,19 +40,19 @@ services:
     restart: on-failure
     networks:
       - stock-network
-  bip-postgres:
-    image: postgres:15
-    container_name: bip-postgres
-    environment:
-      POSTGRES_USER: user
-      POSTGRES_PASSWORD: password
-      POSTGRES_DB: stockdb
-    volumes:
-      - ./postgres/init.sql:/docker-entrypoint-initdb.d/init.sql
-    ports:
-      - "5432:5432"
-    networks:
-      - stock-network
+  #bip-postgres:
+  #  image: postgres:15
+  #  container_name: bip-postgres
+  #  environment:
+  #    POSTGRES_USER: userß
+  #    POSTGRES_PASSWORD: pw1234
+  #    POSTGRES_DB: stockdb
+  #  volumes:
+  #    - ./postgres/init.sql:/docker-entrypoint-initdb.d/init.sql
+  #  ports:
+  #    - "5432:5432"
+  #  networks:
+  #    - stock-network
 
   spark:
     build:
@@ -64,11 +64,15 @@ services:
       - kafka
       - zookeeper
       - producer
-      - bip-postgres
+      #- bip-postgres
     environment:
       PYTHONPATH: /opt/spark-app
     command: >
-      /opt/bitnami/spark/bin/spark-submit --packages org.apache.spark:spark-sql-kafka-0-10_2.12:3.5.1,org.postgresql:postgresql:42.7.3 /opt/spark-app/streaming_consumer.py
+      /opt/spark/bin/spark-submit
+      --packages org.apache.spark:spark-sql-kafka-0-10_2.12:3.5.1,org.postgresql:postgresql:42.7.3
+      /opt/spark-app/streaming_consumer.py
+    #command: >
+    #  /opt/bitnami/spark/bin/spark-submit --packages org.apache.spark:spark-sql-kafka-0-10_2.12:3.5.1,org.postgresql:postgresql:42.7.3 /opt/spark-app/streaming_consumer.py
     #volumes:
     #  - ./spark:/opt/spark-app
     #  - ./shared:/opt/spark-app/shared

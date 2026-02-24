@@ -1,7 +1,10 @@
+import logging
 import requests
 import pandas as pd
 from datetime import datetime, timezone
 import pytz
+
+logger = logging.getLogger(__name__)
 
 
 def fetch_price_data(ticker: str, interval: str, start: str, end: str) -> pd.DataFrame:
@@ -31,7 +34,7 @@ def fetch_price_data(ticker: str, interval: str, start: str, end: str) -> pd.Dat
 
     response = requests.get(url, params=params, headers=headers)
     if response.status_code != 200:
-        print(f"[ERROR] {ticker} 요청 실패: {response.status_code}")
+        logger.error(f"{ticker} 요청 실패: {response.status_code}")
         return pd.DataFrame()
 
     try:
@@ -50,7 +53,7 @@ def fetch_price_data(ticker: str, interval: str, start: str, end: str) -> pd.Dat
         df["timestamp_kst"] = df["timestamp_kst"].dt.tz_localize(None)
         df["ticker"] = ticker
 
-        print(df[["timestamp", "timestamp_ny", "timestamp_kst"]].head(3))
+        logger.debug(f"{ticker} 데이터 샘플:\n{df[['timestamp', 'timestamp_ny', 'timestamp_kst']].head(3)}")
 
         df = df[[
             "ticker", "timestamp", "timestamp_ny", "timestamp_kst",
@@ -60,5 +63,5 @@ def fetch_price_data(ticker: str, interval: str, start: str, end: str) -> pd.Dat
         return df
 
     except Exception as e:
-        print(f"[ERROR] {ticker} 파싱 실패: {e}")
+        logger.error(f"{ticker} 파싱 실패: {e}")
         return pd.DataFrame()

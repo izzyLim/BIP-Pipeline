@@ -1,4 +1,4 @@
-FROM bitnami/spark:latest
+FROM apache/spark:3.5.7
 
 # 필요 시 pip와 기본 툴 설치
 USER root

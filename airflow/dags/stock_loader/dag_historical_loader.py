@@ -4,14 +4,18 @@ from datetime import datetime, timedelta
 from time import sleep
 from utils.fetch import fetch_price_data
 from utils.db import (
-    get_new_active_tickers,   # dict 기반 기존
+    get_new_active_tickers,
     get_pg_conn,
-    insert_to_postgres,  # 새로 추가한다고 가정 (conn 재사용)
+    insert_to_postgres,
 )
 from utils.config import PG_CONN_INFO
+import logging
+
+logger = logging.getLogger(__name__)
 
 LOOKBACK_YEARS = 5
-SLEEP_SEC = 0.5  # 조금 줄여도 무난하면 조정
+SLEEP_SEC = 0.3
+BATCH_SIZE = 100  # 히스토리컬은 데이터량이 많으므로 더 작은 배치
 
 
 def _load_interval(interval: str, table_name: str):
@@ -25,15 +29,25 @@ def _load_interval(interval: str, table_name: str):
     end_date = today.strftime("%Y-%m-%d")
 
     with get_pg_conn(PG_CONN_INFO) as conn:
-        # 변경: ticker 조회도 conn 사용
         ticker_df = get_new_active_tickers(conn, table_name=table_name)
         tickers = ticker_df["ticker"].tolist() if not ticker_df.empty else []
         if not tickers:
-            print(f"[INFO] No new tickers for {table_name}")
+            logger.info(f"No new tickers for {table_name}")
             return
 
-        for ticker in tickers:
+        total_tickers = len(tickers)
+        logger.info(f"Processing {total_tickers} new tickers for {table_name}")
+
+        success_count = 0
+        skip_count = 0
+        error_count = 0
+
+        for idx, ticker in enumerate(tickers, 1):
             try:
+                # 진행상황 로깅 (매 50개마다)
+                if idx % 50 == 0 or idx == 1:
+                    logger.info(f"{table_name}: Processing {idx}/{total_tickers} ({ticker})")
+
                 df = fetch_price_data(
                     ticker=ticker,
                     interval=interval,
@@ -41,12 +55,17 @@ def _load_interval(interval: str, table_name: str):
                     end=end_date
                 )
                 if df.empty:
-                    print(f"[INFO] {ticker} {interval}: no data")
+                    skip_count += 1
                 else:
-                    insert_to_postgres(df, table_name, conn)
+                    insert_to_postgres(df, table_name, conn, batch_size=300, max_retries=5)
+                    success_count += 1
                 sleep(SLEEP_SEC)
             except Exception as e:
-                print(f"[WARN] {ticker} {interval} load error: {e}")
+                logger.warning(f"{ticker} {interval} load error: {e}")
+                error_count += 1
+                continue
+
+        logger.info(f"{table_name} completed: {success_count} success, {skip_count} skipped, {error_count} errors")
 
 
 def load_1d():
@@ -61,24 +80,42 @@ def load_1mo():
     _load_interval("1mo", "stock_price_1mo")
 
 
+default_args = {
+    "owner": "airflow",
+    "retries": 1,
+    "retry_delay": timedelta(minutes=5),
+}
+
 with DAG(
     dag_id="load_historical_stock_data",
+    default_args=default_args,
     start_date=datetime(2024, 1, 1),
     schedule_interval="@daily",
     catchup=False,
-    tags=["stock", "historical"]
+    tags=["stock", "historical"],
+    max_active_runs=1,
+    dagrun_timeout=timedelta(hours=6),  # 병렬 실행이므로 가장 긴 태스크 기준
+    concurrency=3,  # DAG 내 동시 실행 태스크 수
 ) as dag:
     task_1d = PythonOperator(
         task_id="load_1d_data",
-        python_callable=load_1d
+        python_callable=load_1d,
+        execution_timeout=timedelta(hours=5),
+        pool="default_pool",
     )
     task_1wk = PythonOperator(
         task_id="load_1wk_data",
-        python_callable=load_1wk
+        python_callable=load_1wk,
+        execution_timeout=timedelta(hours=2),
+        pool="default_pool",
     )
     task_1mo = PythonOperator(
         task_id="load_1mo_data",
-        python_callable=load_1mo
+        python_callable=load_1mo,
+        execution_timeout=timedelta(hours=1),
+        pool="default_pool",
     )
 
-    task_1d, task_1wk, task_1mo
+    # 병렬 실행: 각 테이블은 독립적이므로 동시에 처리 가능
+    # 의존성 없음 = 자동으로 병렬 실행
+    [task_1d, task_1wk, task_1mo]
