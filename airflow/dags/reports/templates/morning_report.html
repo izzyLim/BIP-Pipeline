@@ -1,0 +1,342 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>BIP 모닝 브리핑</title>
+    <style>
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Pretendard', 'Segoe UI', Roboto, sans-serif;
+            background-color: #f5f5f5;
+            margin: 0;
+            padding: 0;
+            line-height: 1.5;
+        }
+        .container {
+            max-width: 680px;
+            margin: 0 auto;
+            background-color: #ffffff;
+        }
+        .header {
+            background: linear-gradient(135deg, #1e3a5f 0%, #2563eb 100%);
+            color: white;
+            padding: 28px 24px;
+            text-align: center;
+        }
+        .header h1 {
+            margin: 0;
+            font-size: 22px;
+            font-weight: 700;
+            letter-spacing: -0.5px;
+        }
+        .header .date {
+            margin-top: 6px;
+            font-size: 14px;
+            opacity: 0.9;
+        }
+        .section {
+            padding: 24px;
+            border-bottom: 1px solid #e5e7eb;
+        }
+        .section:last-child {
+            border-bottom: none;
+        }
+        .section-title {
+            font-size: 18px;
+            font-weight: 800;
+            color: #1e40af;
+            margin-bottom: 16px;
+        }
+        .ai-analysis {
+            background-color: #f8fafc;
+            border-left: 4px solid #2563eb;
+            padding: 16px 20px;
+            border-radius: 0 8px 8px 0;
+            font-size: 14px;
+            line-height: 1.8;
+            color: #334155;
+        }
+        .ai-analysis strong {
+            color: #1e40af;
+            font-weight: 600;
+        }
+        .heatmap-container {
+            text-align: center;
+            margin: 8px 0;
+        }
+        .heatmap-container img {
+            max-width: 100%;
+            height: auto;
+            border-radius: 8px;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.08);
+        }
+        /* 가로 테이블 스타일 */
+        .horizontal-table {
+            width: 100%;
+            border-collapse: collapse;
+            font-size: 13px;
+            background-color: #f8fafc;
+            border-radius: 8px;
+            overflow: hidden;
+        }
+        .horizontal-table th {
+            padding: 10px 8px;
+            text-align: center;
+            font-weight: 600;
+            color: #1e40af;
+            font-size: 12px;
+            border-bottom: 2px solid #dbeafe;
+            background-color: #eff6ff;
+        }
+        .horizontal-table td {
+            padding: 12px 8px;
+            text-align: center;
+            border-right: 1px solid #dbeafe;
+        }
+        .horizontal-table td:last-child {
+            border-right: none;
+        }
+        .horizontal-table .value {
+            font-size: 15px;
+            font-weight: 700;
+            color: #1e3a8a;
+            font-family: 'SF Mono', 'Consolas', monospace;
+        }
+        .horizontal-table .change {
+            font-size: 12px;
+            font-weight: 600;
+            margin-top: 4px;
+        }
+        /* 데이터 테이블 */
+        .data-table {
+            width: 100%;
+            border-collapse: collapse;
+            font-size: 13px;
+        }
+        .data-table th {
+            text-align: left;
+            padding: 12px 10px;
+            background-color: #eff6ff;
+            color: #1e40af;
+            font-weight: 600;
+            font-size: 12px;
+            border-bottom: 2px solid #dbeafe;
+        }
+        .data-table td {
+            padding: 12px 10px;
+            border-bottom: 1px solid #f3f4f6;
+        }
+        .data-table .num {
+            font-family: 'SF Mono', 'Consolas', monospace;
+            text-align: right;
+        }
+        .positive { color: #059669; }
+        .negative { color: #dc2626; }
+        .footer {
+            background-color: #f9fafb;
+            padding: 24px;
+            text-align: center;
+            font-size: 12px;
+            color: #9ca3af;
+        }
+        .footer a {
+            color: #2563eb;
+            text-decoration: none;
+        }
+        .no-data {
+            color: #9ca3af;
+            text-align: center;
+            padding: 20px;
+            font-size: 13px;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <!-- 헤더 -->
+        <div class="header">
+            <h1>BIP 모닝 브리핑</h1>
+            <div class="date">{{ date }}</div>
+        </div>
+
+        <!-- AI 분석 요약 -->
+        <div class="section">
+            <div class="section-title">💡 AI 분석 요약</div>
+            <div class="ai-analysis">
+                {{ ai_analysis | safe }}
+            </div>
+        </div>
+
+        <!-- 주요 지수 (가로 테이블) -->
+        <div class="section">
+            <div class="section-title">📈 주요 지수</div>
+            <table class="horizontal-table" cellpadding="0" cellspacing="0">
+                <thead>
+                    <tr>
+                        {% for idx in indices %}
+                        <th>{{ idx.name }}</th>
+                        {% endfor %}
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr>
+                        {% for idx in indices %}
+                        <td>
+                            <div class="value">{{ idx.value }}</div>
+                            <div class="change {{ 'positive' if idx.change >= 0 else 'negative' }}">
+                                {{ '+' if idx.change >= 0 else '' }}{{ idx.change }}%
+                            </div>
+                        </td>
+                        {% endfor %}
+                    </tr>
+                </tbody>
+            </table>
+        </div>
+
+        <!-- 매크로 지표 (가로 테이블) -->
+        {% if macro_indicators %}
+        <div class="section">
+            <div class="section-title">🌍 매크로 지표</div>
+            <table class="horizontal-table" cellpadding="0" cellspacing="0">
+                <thead>
+                    <tr>
+                        {% for item in macro_indicators %}
+                        <th>{{ item.name }}</th>
+                        {% endfor %}
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr>
+                        {% for item in macro_indicators %}
+                        <td>
+                            <div class="value">{{ item.value }}</div>
+                            {% if item.change is defined and item.change is not none %}
+                            <div class="change {{ 'positive' if item.change >= 0 else 'negative' }}">
+                                {{ '+' if item.change >= 0 else '' }}{{ item.change }}%
+                            </div>
+                            {% endif %}
+                        </td>
+                        {% endfor %}
+                    </tr>
+                </tbody>
+            </table>
+        </div>
+        {% endif %}
+
+        <!-- 히트맵 섹션 -->
+        <div class="section">
+            <div class="section-title">🇰🇷 KOSPI</div>
+            {% if korea_heatmap %}
+            <div class="heatmap-container">
+                <img src="cid:korea_heatmap" alt="KOSPI 히트맵">
+            </div>
+            {% else %}
+            <p class="no-data">히트맵 데이터 없음</p>
+            {% endif %}
+        </div>
+
+        <div class="section">
+            <div class="section-title">🇰🇷 KOSDAQ</div>
+            {% if kosdaq_heatmap %}
+            <div class="heatmap-container">
+                <img src="cid:kosdaq_heatmap" alt="KOSDAQ 히트맵">
+            </div>
+            {% else %}
+            <p class="no-data">히트맵 데이터 없음</p>
+            {% endif %}
+        </div>
+
+        <div class="section">
+            <div class="section-title">🇺🇸 S&P 500</div>
+            {% if us_heatmap %}
+            <div class="heatmap-container">
+                <img src="cid:us_heatmap" alt="S&P 500 히트맵">
+            </div>
+            {% else %}
+            <p class="no-data">히트맵 데이터 없음</p>
+            {% endif %}
+        </div>
+
+        <div class="section">
+            <div class="section-title">🇺🇸 NASDAQ</div>
+            {% if nasdaq_heatmap %}
+            <div class="heatmap-container">
+                <img src="cid:nasdaq_heatmap" alt="NASDAQ 히트맵">
+            </div>
+            {% else %}
+            <p class="no-data">히트맵 데이터 없음</p>
+            {% endif %}
+        </div>
+
+        <!-- 투자자 동향 -->
+        {% if investor_flow %}
+        <div class="section">
+            <div class="section-title">💰 투자자 동향 (최근 5일)</div>
+            <table class="data-table">
+                <thead>
+                    <tr>
+                        <th>날짜</th>
+                        <th class="num">외국인</th>
+                        <th class="num">기관</th>
+                        <th class="num">개인</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for day in investor_flow %}
+                    <tr>
+                        <td>{{ day.date }}</td>
+                        <td class="num {{ 'positive' if day.foreign >= 0 else 'negative' }}">
+                            {{ day.foreign }}억
+                        </td>
+                        <td class="num {{ 'positive' if day.institution >= 0 else 'negative' }}">
+                            {{ day.institution }}억
+                        </td>
+                        <td class="num {{ 'positive' if day.individual >= 0 else 'negative' }}">
+                            {{ day.individual }}억
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+        {% endif %}
+
+        <!-- 반도체 가격 -->
+        {% if semiconductor %}
+        <div class="section">
+            <div class="section-title">🔧 반도체 가격</div>
+            <table class="data-table">
+                <thead>
+                    <tr>
+                        <th>제품</th>
+                        <th class="num">가격</th>
+                        <th class="num">변동</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for item in semiconductor %}
+                    <tr>
+                        <td>{{ item.product }}</td>
+                        <td class="num">${{ item.price }}</td>
+                        <td class="num {{ 'positive' if item.change >= 0 else 'negative' }}">
+                            {{ '+' if item.change >= 0 else '' }}{{ item.change }}%
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+        {% endif %}
+
+        <!-- 푸터 -->
+        <div class="footer">
+            <p>본 리포트는 투자 권유가 아닌 정보 제공 목적입니다.</p>
+            <p>
+                <a href="{{ web_url }}">웹에서 보기</a> |
+                <a href="{{ unsubscribe_url }}">수신거부</a>
+            </p>
+            <p style="margin-top: 12px;">© 2026 BIP - Better Investment Platform</p>
+        </div>
+    </div>
+</body>
+</html>
