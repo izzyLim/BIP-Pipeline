@@ -110,7 +110,7 @@
 | `us` | `get_us_market_data()` | `stock_price_1d` + `stock_info` | S&P 500 종목, 등락률, 섹터 집계 |
 | `nasdaq` | `get_nasdaq_market_data()` | `stock_price_1d` + `stock_info` | NASDAQ 시총 상위 200 종목, 등락률, 섹터 집계 |
 | `investor_flow` | `get_investor_flow()` | `stock_price_1d` | 최근 5거래일 외국인·기관·개인 순매수 |
-| `semiconductor` | `get_semiconductor_prices()` | `macro_indicators` | DRAM/NAND 현물가 + **1주/1개월/3개월 추세** |
+| `semiconductor` | `get_semiconductor_prices()` | `macro_indicators` | DRAM/NAND 현물가 9종 + **1주/1개월 추세** |
 | `indices` | `get_index_summary()` | `macro_indicators` | KOSPI, KOSDAQ, S&P 500, NASDAQ + **추세** |
 | `exchange_rates` | `get_exchange_rates()` | `macro_indicators` | USD/KRW + **추세** |
 | `fear_greed` | `get_fear_greed()` | `macro_indicators` | VIX, Fear&Greed, VKOSPI + **추세** |
@@ -160,11 +160,14 @@ Plotly Treemap을 사용하여 4개의 시장 히트맵 생성:
 
 ### 지원 LLM 모델
 
-| 모델 | 환경변수 | 설정값 |
-|------|---------|-------|
-| GPT-5.4 (기본) | `LLM_MODEL` | `gpt-5.4` |
-| Claude Sonnet 4.5 | `LLM_MODEL` | `claude-sonnet` |
-| Claude Haiku 4.5 | `LLM_MODEL` | `claude-haiku` |
+| 모델 | 설정값 | 성능 | 속도 | 비용 |
+|------|-------|------|------|------|
+| **Claude Opus 4.5** | `claude-opus` | ⭐⭐⭐⭐⭐ 최고 | 느림 | $$$$ |
+| Claude Sonnet 4 (기본) | `claude-sonnet` | ⭐⭐⭐⭐ 고품질 | 중간 | $$ |
+| Claude Haiku 4.5 | `claude-haiku` | ⭐⭐⭐ 양호 | 빠름 | $ |
+| GPT-5.4 | `gpt-5.4` | ⭐⭐⭐⭐ 고품질 | 중간 | $$$ |
+
+설정: Airflow Variable `llm_model` 또는 환경변수 `LLM_MODEL`
 
 ### 프롬프트에 주입되는 데이터
 
@@ -196,8 +199,11 @@ Plotly Treemap을 사용하여 4개의 시장 히트맵 생성:
 🌐 매크로 지표
   - 환율, 금리, VIX, Fear&Greed, 비트코인, 금, 유가 (모두 추세 포함)
 
-🔧 반도체 가격
-  - DRAM DDR5/DDR4, NAND TLC/SLC (추세 포함)
+🔧 반도체 가격 (9개 제품)
+  - DRAM: DDR5 16Gb, DDR4 16Gb, DDR4 8Gb, DDR3 4Gb
+  - NAND: TLC 512Gb, TLC 256Gb, TLC 128Gb, MLC 64Gb, MLC 32Gb
+  - 전일/1주/1개월 변동률 포함
+  - NAND 보합 시: 마지막 변동일 표시 (예: "3/17 +3.5%")
 
 📰 실시간 뉴스 (25건)
   - 시장 상황에 맞는 동적 쿼리로 수집
@@ -216,6 +222,80 @@ Plotly Treemap을 사용하여 4개의 시장 히트맵 생성:
 | 💡 투자 아이디어 & 전략 | 기회/리스크 요인, 구체적 종목 언급 |
 | 📅 이번 주 주요 이벤트 | FOMC, 실적 발표, 경제지표 등 |
 | ✅ 오늘의 체크리스트 | 장 시작 전/중 모니터링 항목 |
+
+### 프롬프트 핵심 원칙
+
+```
+## 분석 원칙
+
+1. **실제 데이터 우선**: 뉴스와 데이터가 다를 경우 반드시 실제 데이터 기준으로 분석
+2. **깊이 있는 설명**: "왜 그런지", "어떤 의미인지", "앞으로 어떻게 될 수 있는지" 충분히 설명
+3. **구체적 근거 제시**: 뉴스, 데이터, 과거 사례를 인용하며 분석
+4. **실행 가능한 인사이트**: 구체적인 행동 지침 제공
+5. **균형 잡힌 시각**: 기회와 리스크를 모두 분석
+6. **이벤트 감지 필수**: GTC, FOMC, 지정학적 이슈 등 반드시 심층 분석
+
+## 뉴스 활용 방식
+
+❌ 절대 금지:
+- "뉴스에서 자주 언급된..."
+- "뉴스에 따르면..."
+- 뉴스 헤드라인 그대로 나열
+
+✅ 올바른 방식:
+- 뉴스에서 팩트만 추출 → 데이터와 연결하여 분석
+- 독자적인 해석과 인사이트 제시
+- 예: "SK하이닉스의 HBM3E 양산 확대(뉴스)와 DRAM 현물가 3주 연속 상승(+2.3%, 데이터)을
+     종합하면, 메모리 업황 회복이 가시화되고 있습니다."
+
+## 이상치 우선 분석
+
+시스템이 자동 탐지한 특이점(급등락, 이상 수급 등)을 최우선으로 분석.
+일반적인 시황보다 "평소와 다른 점"에 집중.
+
+## 시간순 분석 (중요!)
+
+1. 🇰🇷 [과거] 어제 한국 시장 마감 - 미국장 언급 금지 (인과관계 역전 방지)
+2. 🇺🇸 [밤사이] 미국 시장 마감 - 한국장 마감 후 움직임
+3. 🔮 [오늘] 한국 시장 전망 - 야간선물, 갭 예측
+```
+
+---
+
+## 용어 설명 자동 추가 (glossary.py)
+
+AI 분석 결과에 어려운 금융 약어/전문용어를 자동으로 설명 추가합니다.
+
+### 예시
+
+| 원문 | 변환 후 |
+|------|---------|
+| VIX가 18.5로 하락 | VIX(공포지수, 높을수록 시장 불안)가 18.5로 하락 |
+| HBM 수요 증가 | HBM(AI용 고성능메모리, 엔비디아 GPU에 탑재) 수요 증가 |
+| FOMC 회의 | FOMC(미국 금리결정회의) 회의 |
+
+### 등록된 용어 카테고리
+
+- **지수/지표**: VIX, VKOSPI, DXY, SOX, PMI, CPI, PPI, PCE
+- **밸류에이션**: PER, PBR, EPS, BPS, ROE, ROA, EV/EBITDA, PSR
+- **반도체**: HBM, HBM3E, DDR5, DDR4, NAND, DRAM, eSSD, CoWoS
+- **중앙은행**: FOMC, Fed, BOJ, ECB, BOK, QT, QE, dovish, hawkish
+- **투자/수급**: Risk-On, Risk-Off, ETF, EWY, TLT, HYG, SPY, QQQ
+- **시장 용어**: 갭상승, 갭하락, 데드캣바운스, 숏커버링, 윈도드레싱
+- **기타**: YoY, QoQ, MoM, WoW, bps, GTC, WWDC, CES
+
+---
+
+## PDF 첨부 (pdf_generator.py)
+
+이메일 본문과 동일한 내용을 PDF로 생성하여 첨부합니다.
+
+### 특징
+
+- 이메일 클라이언트에서 이미지가 차단되어도 PDF로 확인 가능
+- 히트맵 이미지 포함 (CID → Data URI 변환)
+- 파일명: `BIP_모닝브리핑_YYYYMMDD.pdf`
+- weasyprint 라이브러리 사용
 
 ---
 
@@ -279,8 +359,11 @@ airflow/dags/
     ├── macro_collector.py         DB 데이터 수집 (18개 항목)
     ├── heatmap_generator.py       Plotly 트리맵 히트맵 (4개)
     ├── realtime_news.py           네이버 API 실시간 뉴스
-    ├── llm_analyzer_v2.py         멀티 LLM 분석 (GPT/Claude)
-    ├── email_sender.py            SMTP 개별 이메일 발송
+    ├── llm_analyzer_v2.py         멀티 LLM 분석 (Opus/Sonnet/Haiku/GPT)
+    ├── glossary.py                용어 사전 (약어 설명 자동 추가)
+    ├── pdf_generator.py           PDF 생성 (weasyprint)
+    ├── anomaly_detector.py        시장 이상치 자동 탐지
+    ├── email_sender.py            SMTP 개별 이메일 발송 + PDF 첨부
     └── templates/
         └── morning_report.html    Jinja2 이메일 템플릿
 ```
@@ -291,6 +374,12 @@ airflow/dags/
 
 | 날짜 | 변경 내용 |
 |------|----------|
+| 2026-03-24 | **Claude Opus 4.5 지원** 추가 (최고 성능 모델) |
+| 2026-03-24 | **용어 설명 자동 추가** (glossary.py) - VIX, HBM, FOMC 등 70+개 용어 |
+| 2026-03-24 | **PDF 첨부** 기능 추가 (pdf_generator.py) |
+| 2026-03-24 | 반도체 가격표 확장 (4개→9개 제품), 1주/1개월 추세 컬럼 추가 |
+| 2026-03-24 | NAND 보합 처리: 마지막 변동일 표시 (예: "3/17 +3.5%") |
+| 2026-03-24 | 기본 LLM을 GPT-5.4 → Claude Sonnet으로 변경 |
 | 2026-03-18 | 코스닥/나스닥 히트맵 추가 |
 | 2026-03-18 | 추세 데이터 (1주/1개월/3개월) 전 지표에 추가 |
 | 2026-03-18 | 달러인덱스, 반도체 ETF, 글로벌 지수, 섹터 지수 추가 |
