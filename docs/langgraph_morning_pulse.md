@@ -238,37 +238,79 @@ class ReportState(TypedDict):
 
 ---
 
-## 7. Tools 설계
+## 7. Tool 레이어 아키텍처 — MCP 서버 분리
+
+### 설계 원칙
+Tool 구현을 LangGraph 에이전트 코드와 **완전히 분리**한다.
+
+- **MCP 서버** = Tool 관리 레이어 (구현, 배포, 버전 관리)
+- **LangGraph** = 에이전트 오케스트레이션 레이어 (분석 흐름, 모델 선택)
+
+이렇게 분리하면:
+- Tool 추가/수정 시 LangGraph 코드 변경 불필요
+- 모닝 리포트 외 다른 서비스(NL2SQL, 포트폴리오 분석 등)에서 같은 MCP 서버 재사용
+- MCP Inspector로 tool 독립 테스트 가능
+- Node.js(korea-stock-mcp) ↔ Python(LangGraph) 언어 무관 연결
+
+### 전체 레이어 구조
+```
+┌─────────────────────────────────────┐
+│       LangGraph (Python)             │  ← 에이전트 오케스트레이션
+│  supervisor / agents / aggregator   │
+└───────────────┬─────────────────────┘
+                │ langchain-mcp-adapters
+┌───────────────▼─────────────────────┐
+│         MCP 서버 레이어              │  ← Tool 관리
+│  ┌─────────────────────────────┐    │
+│  │  korea-stock-mcp (Node.js)  │    │  DART / KRX
+│  ├─────────────────────────────┤    │
+│  │  news-search-mcp (Python)   │    │  Naver 뉴스 / SerpAPI
+│  └─────────────────────────────┘    │
+└───────────────┬─────────────────────┘
+                │
+┌───────────────▼─────────────────────┐
+│         외부 API / DB                │  ← 데이터 소스
+│  DART API / KRX API / Naver / DB    │
+└─────────────────────────────────────┘
+```
+
+### MCP 서버 구성
+
+| MCP 서버 | 언어 | 제공 Tools | 비고 |
+|---------|------|-----------|------|
+| `korea-stock-mcp` | Node.js | `get_disclosure_list`, `get_disclosure`, `get_financial_statement`, `get_stock_trade_info` | 기존 오픈소스 활용 |
+| `news-search-mcp` | Python | `search_news`, `search_web` | 신규 구현 (Naver API + SerpAPI) |
+
+### LangGraph ↔ MCP 연결 방식
 
 ```python
-# Naver 뉴스 검색
-@tool
-def search_news(query: str) -> str:
-    """Naver 뉴스 API로 최신 국내 뉴스 검색"""
-    ...
+from langchain_mcp_adapters.client import MultiServerMCPClient
+from langgraph.prebuilt import create_react_agent
 
-# 해외 뉴스/이슈 검색
-@tool
-def search_web(query: str) -> str:
-    """SerpAPI로 해외 매크로 이슈 검색"""
-    ...
-
-# MCP — DART 공시
-@tool
-def get_disclosure_list(date: str, corp_name: str = "") -> str:
-    """korea-stock-mcp: 특정일 DART 공시 목록 조회"""
-    ...
-
-@tool
-def get_disclosure(disclosure_id: str, section_id: str = "") -> str:
-    """korea-stock-mcp: 공시 원문 조회 (대용량은 섹션별 요청)"""
-    ...
-
-# MCP — KRX
-@tool
-def get_stock_trade_info(ticker: str, date: str) -> str:
-    """korea-stock-mcp: KRX 종목별 거래 데이터 조회"""
-    ...
+async with MultiServerMCPClient({
+    "korea-stock": {
+        "command": "node",
+        "args": ["./mcp-servers/korea-stock-mcp/index.js"],
+        "env": {
+            "DART_API_KEY": os.getenv("DART_API_KEY"),
+            "KRX_API_KEY": os.getenv("KRX_API_KEY"),
+        }
+    },
+    "news-search": {
+        "command": "python",
+        "args": ["./mcp-servers/news-search-mcp/server.py"],
+        "env": {
+            "NAVER_CLIENT_ID": os.getenv("NAVER_CLIENT_ID"),
+            "NAVER_CLIENT_SECRET": os.getenv("NAVER_CLIENT_SECRET"),
+            "SERP_API_KEY": os.getenv("SERP_API_KEY"),
+        }
+    },
+}) as client:
+    tools = await client.get_tools()
+    # 에이전트별로 필요한 tool만 필터링해서 주입
+    korea_tools = [t for t in tools if t.name in ["get_disclosure_list", "get_disclosure", "search_news"]]
+    semi_tools   = [t for t in tools if t.name in ["get_disclosure_list", "get_disclosure", "search_web", "search_news"]]
+    global_tools = [t for t in tools if t.name in ["search_news", "search_web"]]
 ```
 
 ---
@@ -322,13 +364,13 @@ def get_stock_trade_info(ticker: str, date: str) -> str:
 
 | 단계 | 내용 | 우선순위 |
 |------|------|---------|
-| 1 | LangGraph State/Graph 기본 구조 세팅 | 필수 |
-| 2 | 에이전트별 프롬프트 분리 (기존 프롬프트 분할) | 필수 |
-| 3 | Supervisor → 병렬 에이전트 → Aggregator 연결 | 필수 |
-| 4 | Naver 뉴스 search_news tool 연결 (기존 로직 재활용) | 높음 |
-| 5 | korea-stock-mcp 서버 실행 + LangGraph tool wrapping | 높음 |
-| 6 | Quality Checker + 재분석 루프 | 중간 |
-| 7 | search_web (SerpAPI) tool 연결 | 낮음 |
+| 1 | **korea-stock-mcp 서버 실행 확인** (DART/KRX API 키 발급 포함) | 필수 |
+| 2 | **news-search-mcp 서버 신규 구현** (Naver API + SerpAPI wrapping) | 필수 |
+| 3 | LangGraph State/Graph 기본 구조 세팅 | 필수 |
+| 4 | 에이전트별 프롬프트 분리 (기존 프롬프트 분할) | 필수 |
+| 5 | `langchain-mcp-adapters`로 MCP ↔ LangGraph 연결 | 필수 |
+| 6 | Supervisor → 병렬 에이전트 → Aggregator 연결 | 필수 |
+| 7 | Quality Checker + 재분석 루프 | 중간 |
 | 8 | 비용/토큰 모니터링 | 낮음 |
 
 ---
