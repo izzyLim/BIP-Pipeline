@@ -95,7 +95,7 @@ Layer 3: Gold / Serving     ✅ 구현완료
 Layer 4: Semantic           ← NL2SQL 준비 위해 필요
   비즈니스 용어집 (OM Glossary 77개 등록 완료)
   Join 경로, 단위 정의, 지표 계산식
-  Tags 분류 (raw/derived/gold, 도메인별) ← 예정
+  Tags 분류 (raw/derived/gold, 도메인별) — 33/37 완료, Gold 3개는 OM re-ingestion 후 적용 예정
 ```
 
 ### 전체 테이블 레이어 · 도메인 분류 (34개)
@@ -657,7 +657,7 @@ JOIN stock_indicators ind ON sp.ticker = ind.ticker
 | 2-2 | `gold_macro_daily_snapshot` 뷰 생성 | DB | 🔴 미시작 |
 | 2-3 | 논리적 FK 문서화 및 OM 등록 | 아키텍처 | ✅ 완료 (2026-03-28) |
 | 2-4 | 섹터 데이터 수집 및 stock_info 연결 | DAG | 🔴 미시작 |
-| 2-5 | OM 메타데이터 정비 (테이블/컬럼 설명, 태그, 용어집) | 아키텍처 | 🟡 진행 중 — 설명/Glossary 완료, Tags 미시작 |
+| 2-5 | OM 메타데이터 정비 (테이블/컬럼 설명, 태그, 용어집) | 아키텍처 | 🟡 진행 중 — 설명/Glossary 완료, Tags 33/37 완료 (Gold 3개는 OM re-ingestion 후 적용 예정) |
 
 ### Phase 3: 장기 (NL2SQL 인프라)
 
