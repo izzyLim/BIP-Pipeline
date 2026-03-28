@@ -571,7 +571,7 @@ Step 5. 결과 + 해석 반환
 ✅ OM Glossary 구축 완료 (77개 용어 — om_build_glossary.py)
 ✅ 컬럼-용어 매핑 완료 (om_link_columns.py, om_enrich_metadata.py)
 ✅ 불필요 테이블 정리 — stock_price_1wk/1mo DROP (1d resample 대체)
-🔲 Tags 분류 체계 (raw/derived/gold, domain 분류) ← Gold layer 구현 시 함께 진행
+✅ Tags 분류 체계 (raw/derived/gold, domain 분류) — 37개 테이블 완료 (2026-03-29)
 ```
 
 ### Phase 2: Gold Layer + 시맨틱 레이어 구축
