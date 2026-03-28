@@ -140,7 +140,7 @@ Layer 4: Semantic           ← NL2SQL 준비 위해 필요
 | `cash_transaction` | application | portfolio | 현금 입출금 내역 |
 
 | `analytics_macro_daily` | gold | macro | macro_indicators EAV → pivot (일별 1행, forward-fill) ✅ 구현완료 |
-| `analytics_stock_daily` | gold | market | 시세+지표+컨센서스 와이드 테이블 🔲 구현예정 |
+| `analytics_stock_daily` | gold | market | 시세+지표+컨센서스 와이드 테이블 ✅ 구현완료 |
 | `analytics_valuation` | gold | financial | PER/PBR/ROE pre-computed 밸류에이션 🔲 구현예정 |
 
 ---
