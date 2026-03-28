@@ -279,8 +279,9 @@ Tool 구현을 LangGraph 에이전트 코드와 **완전히 분리**한다.
 
 | MCP 서버 | 언어 | 제공 Tools | 비고 |
 |---------|------|-----------|------|
-| `korea-stock-mcp` | Node.js | `get_disclosure_list`, `get_disclosure`, `get_financial_statement`, `get_stock_trade_info` | 기존 오픈소스 활용 |
-| `news-search-mcp` | Python | `search_news`, `search_web` | 신규 구현 (Naver API + SerpAPI) |
+| `bip-stock-mcp` | Python + FastMCP | DART / KRX / Naver / SerpAPI 전체 | 단일 서버로 통합 구현 |
+
+> Node.js 런타임 의존성 없음. 전체 Python 단일 스택.
 
 ### LangGraph ↔ MCP 연결 방식
 
@@ -356,11 +357,18 @@ async with MultiServerMCPClient({
 ```
 BIP-Agents/                          ← 별도 repo (BIP-Pipeline과 분리)
   ├── mcp-servers/
-  │   ├── korea-stock/               ← git submodule (korea-stock-mcp)
-  │   └── news-search/               ← 신규 구현
+  │   └── bip-stock-mcp/             ← Python FastMCP 통합 서버 (신규 구현)
+  │       ├── dart.py                  DART API (korea-stock-mcp 로직 참고)
+  │       ├── krx.py                   KRX API  (korea-stock-mcp 로직 참고)
+  │       ├── news.py                  Naver / SerpAPI (realtime_news.py 재활용)
+  │       ├── server.py                FastMCP 서버 엔트리포인트
+  │       └── pyproject.toml
   ├── langgraph/                     ← LangGraph 에이전트
   └── .env
 ```
+
+> **참고**: [korea-stock-mcp](https://github.com/jjlabsio/korea-stock-mcp) 는 서브모듈로 사용하지 않고,
+> DART/KRX API 호출 로직 참고용으로만 활용. Node.js 런타임 의존성 제거.
 
 ### 기술 스택
 
@@ -368,8 +376,7 @@ BIP-Agents/                          ← 별도 repo (BIP-Pipeline과 분리)
 |--------|---------|------|---------|
 | **에이전트 오케스트레이션** | LangGraph 에이전트 | Python | [LangGraph](https://github.com/langchain-ai/langgraph) |
 | **MCP ↔ LangGraph 연결** | Tool 어댑터 | Python | [langchain-mcp-adapters](https://github.com/langchain-ai/langchain-mcp-adapters) |
-| **MCP 서버 (한국 주식)** | DART / KRX Tool | Node.js | [korea-stock-mcp](https://github.com/jjlabsio/korea-stock-mcp) |
-| **MCP 서버 (뉴스 검색)** | Naver / SerpAPI Tool | Python | [FastMCP](https://github.com/jlowin/fastmcp) |
+| **MCP 서버** | DART / KRX / 뉴스 Tool 통합 | Python | [FastMCP](https://github.com/jlowin/fastmcp) |
 | **패키지 관리** | 의존성 관리 | Python | [uv](https://github.com/astral-sh/uv) |
 | **LLM** | 에이전트 모델 | - | Claude Sonnet / Haiku |
 
@@ -380,26 +387,59 @@ BIP-Agents/                          ← 별도 repo (BIP-Pipeline과 분리)
 | 호출 방식 | HTTP | MCP 프로토콜 (stdio / SSE) |
 | 사용 이유 | - | LangGraph tool 노출에 최적화, 코드 단순 |
 
-### news-search-mcp 구현 방식
-기존 `BIP-Pipeline/airflow/dags/reports/realtime_news.py` 로직을 FastMCP로 래핑
+### bip-stock-mcp 제공 Tools
 
+| Tool | 출처 참고 | 설명 |
+|------|-----------|------|
+| `get_disclosure_list` | korea-stock-mcp | 특정일 DART 공시 목록 조회 |
+| `get_disclosure` | korea-stock-mcp | 공시 원문 조회 (대용량 섹션별 요청) |
+| `get_financial_statement` | korea-stock-mcp | XBRL 재무제표 조회 |
+| `get_stock_trade_info` | korea-stock-mcp | KRX 종목 거래 데이터 |
+| `search_news` | realtime_news.py | Naver 뉴스 API 검색 |
+| `search_web` | 신규 | SerpAPI 해외 이슈 검색 |
+
+### 구현 예시
 ```python
+# mcp-servers/bip-stock-mcp/server.py
 from fastmcp import FastMCP
+from dart import get_disclosure_list, get_disclosure, get_financial_statement
+from krx import get_stock_trade_info
+from news import search_news, search_web
 
-mcp = FastMCP("news-search")
+mcp = FastMCP("bip-stock")
 
-@mcp.tool()
-def search_news(query: str) -> str:
-    """Naver 뉴스 API로 최신 국내 뉴스 검색"""
-    ...
-
-@mcp.tool()
-def search_web(query: str) -> str:
-    """SerpAPI로 해외 매크로 이슈 검색"""
-    ...
+mcp.tool()(get_disclosure_list)
+mcp.tool()(get_disclosure)
+mcp.tool()(get_financial_statement)
+mcp.tool()(get_stock_trade_info)
+mcp.tool()(search_news)
+mcp.tool()(search_web)
 
 if __name__ == "__main__":
     mcp.run()
+```
+
+### LangGraph ↔ MCP 연결
+```python
+from langchain_mcp_adapters.client import MultiServerMCPClient
+
+async with MultiServerMCPClient({
+    "bip-stock": {
+        "command": "python",
+        "args": ["./mcp-servers/bip-stock-mcp/server.py"],
+        "env": {
+            "DART_API_KEY":         os.getenv("DART_API_KEY"),
+            "KRX_API_KEY":          os.getenv("KRX_API_KEY"),
+            "NAVER_CLIENT_ID":      os.getenv("NAVER_CLIENT_ID"),
+            "NAVER_CLIENT_SECRET":  os.getenv("NAVER_CLIENT_SECRET"),
+            "SERP_API_KEY":         os.getenv("SERP_API_KEY"),
+        }
+    },
+}) as client:
+    tools = await client.get_tools()
+    korea_tools  = [t for t in tools if t.name in ["get_disclosure_list", "get_disclosure", "search_news"]]
+    semi_tools   = [t for t in tools if t.name in ["get_disclosure_list", "get_disclosure", "search_web", "search_news"]]
+    global_tools = [t for t in tools if t.name in ["search_news", "search_web"]]
 ```
 
 ---
@@ -419,14 +459,17 @@ if __name__ == "__main__":
 
 | 단계 | 내용 | 우선순위 |
 |------|------|---------|
-| 1 | **korea-stock-mcp 서버 실행 확인** (DART/KRX API 키 발급 포함) | 필수 |
-| 2 | **news-search-mcp 서버 신규 구현** (Naver API + SerpAPI wrapping) | 필수 |
-| 3 | LangGraph State/Graph 기본 구조 세팅 | 필수 |
-| 4 | 에이전트별 프롬프트 분리 (기존 프롬프트 분할) | 필수 |
-| 5 | `langchain-mcp-adapters`로 MCP ↔ LangGraph 연결 | 필수 |
-| 6 | Supervisor → 병렬 에이전트 → Aggregator 연결 | 필수 |
-| 7 | Quality Checker + 재분석 루프 | 중간 |
-| 8 | 비용/토큰 모니터링 | 낮음 |
+| 1 | BIP-Agents 기본 폴더 구조 생성 + uv 환경 세팅 | 필수 |
+| 2 | `bip-stock-mcp` 구현 — DART / KRX (korea-stock-mcp 참고) | 필수 |
+| 3 | `bip-stock-mcp` 구현 — Naver 뉴스 (realtime_news.py 재활용) | 필수 |
+| 4 | `bip-stock-mcp` 구현 — SerpAPI 해외 검색 | 필수 |
+| 5 | MCP 서버 동작 확인 (FastMCP Inspector) | 필수 |
+| 6 | LangGraph State/Graph 기본 구조 세팅 | 필수 |
+| 7 | 에이전트별 프롬프트 분리 (기존 프롬프트 분할) | 필수 |
+| 8 | `langchain-mcp-adapters`로 MCP ↔ LangGraph 연결 | 필수 |
+| 9 | Supervisor → 병렬 에이전트 → Aggregator 연결 | 필수 |
+| 10 | Quality Checker + 재분석 루프 | 중간 |
+| 11 | 비용/토큰 모니터링 | 낮음 |
 
 ---
 
