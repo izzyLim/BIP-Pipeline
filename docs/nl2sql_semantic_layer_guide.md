@@ -576,9 +576,9 @@ Step 5. 결과 + 해석 반환
 
 ### Phase 2: Gold Layer + 시맨틱 레이어 구축
 ```
-🔲 Gold Layer 테이블 생성 (DAG: 09_analytics_daily)
-     analytics_valuation — PER/PBR/ROE pre-computed (stock_info + financial_statements + consensus)
-     analytics_stock_daily — 시세 + 기술지표 + 컨센서스 와이드 테이블
+✅ analytics_macro_daily — macro_indicators EAV pivot, 437행 적재 완료 (DAG: 09_analytics_macro_daily)
+🔲 analytics_stock_daily — 시세 + 기술지표 + 컨센서스 와이드 테이블 (DAG: 09_analytics_stock_daily)
+🔲 analytics_valuation   — PER/PBR/ROE pre-computed (DAG: 09_analytics_valuation)
 🔲 Tags 분류 체계 등록 (OM — layer: raw/derived/gold, domain: market/financial/macro/...)
 🔲 Wren AI 설치 (Docker Compose)
 🔲 핵심 메트릭 정의 (PER, PBR, ROE, 배당수익률 등 20개)

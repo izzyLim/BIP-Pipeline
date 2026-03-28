@@ -96,6 +96,15 @@ TABLE_TAGS = {
     "holding":                 ["DataLayer.application", "Domain.portfolio"],
     "transaction":             ["DataLayer.application", "Domain.portfolio"],
     "cash_transaction":        ["DataLayer.application", "Domain.portfolio"],
+
+    # ── Gold / Macro ──────────────────────────────────────────────────────────
+    "analytics_macro_daily":   ["DataLayer.gold", "Domain.macro"],
+
+    # ── Gold / Market ─────────────────────────────────────────────────────────
+    "analytics_stock_daily":   ["DataLayer.gold", "Domain.market"],
+
+    # ── Gold / Financial ──────────────────────────────────────────────────────
+    "analytics_valuation":     ["DataLayer.gold", "Domain.financial"],
 }
 
 # ─── Tag Classification 생성 함수 ─────────────────────────────────────────────
