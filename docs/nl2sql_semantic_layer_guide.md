@@ -500,7 +500,7 @@ Glossary Term: "컨센서스 매수"
 │                     Data Layer (PostgreSQL)                      │
 │  Bronze: stock_price_1d/1m, macro_indicators, news, financial_statements  │
 │  Silver: stock_indicators, market_daily_summary, consensus_estimates     │
-│  Gold:   analytics_valuation, analytics_stock_daily (구현 예정)          │
+│  Gold:   analytics_macro_daily, analytics_stock_daily, analytics_valuation │
 └──────────────────────────┬──────────────────────────────────────┘
                            │
 ┌──────────────────────────▼──────────────────────────────────────┐
@@ -551,7 +551,7 @@ Step 5. 결과 + 해석 반환
 | **Glossary (온톨로지 기초)** | OM Glossary | ✅ 완료 — 77개 용어 등록 |
 | **컬럼-용어 매핑** | om_link_columns.py, om_enrich_metadata.py | ✅ 완료 |
 | **Tags 분류 (Layer/Domain)** | OM Tags | 🔲 미시작 — Gold layer 구현 시 진행 예정 |
-| **Gold Layer 테이블** | PostgreSQL + Airflow DAG | 🔲 미시작 — analytics_valuation, analytics_stock_daily |
+| **Gold Layer 테이블** | PostgreSQL + Airflow DAG | ✅ 완료 — analytics_macro_daily, analytics_stock_daily, analytics_valuation |
 | **시맨틱 레이어** | Wren AI | 🔲 미시작 |
 | **NL2SQL** | Wren AI + LLM | 🔲 미시작 |
 | **에이전트 (모닝리포트)** | bip-agents (LangGraph + FastMCP) | 🟡 진행 중 (별도 repo) |
@@ -578,7 +578,7 @@ Step 5. 결과 + 해석 반환
 ```
 ✅ analytics_macro_daily — macro_indicators EAV pivot, 437행 적재 완료 (DAG: 09_analytics_macro_daily)
 ✅ analytics_stock_daily — 시세 + 기술지표 + 컨센서스 와이드 테이블 (DAG: 09_analytics_stock_daily)
-🔲 analytics_valuation   — PER/PBR/ROE pre-computed (DAG: 09_analytics_valuation)
+✅ analytics_valuation   — PER/PBR/ROE pre-computed, 7,609행 적재 완료 (DAG: 09_analytics_valuation)
 🔲 Tags 분류 체계 등록 (OM — layer: raw/derived/gold, domain: market/financial/macro/...)
 🔲 Wren AI 설치 (Docker Compose)
 🔲 핵심 메트릭 정의 (PER, PBR, ROE, 배당수익률 등 20개)

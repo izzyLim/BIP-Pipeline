@@ -73,7 +73,8 @@ Layer 2: Derived / Calculated
   market_daily_summary    — 시장 breadth
   sector_daily_performance — 섹터 수익률
 
-Layer 3: Gold / Serving     ← 구현 예정
+Layer 3: Gold / Serving     ✅ 구현완료
+  analytics_macro_daily   — 거시지표 EAV pivot (일별 1행)
   analytics_valuation     — 종목별 밸류에이션 종합 (pre-joined)
   analytics_stock_daily   — 시세 + 지표 + 컨센서스 와이드 테이블
 
@@ -86,9 +87,10 @@ Layer 4: Reporting (DB 미저장)
 ```
 Layer 1: Raw / Operational  (현재와 동일, 스키마 정리)
 Layer 2: Derived            (현재와 동일)
-Layer 3: Gold / Serving     ← 구현 예정 (DAG: 09_analytics_daily)
-  analytics_valuation       — 밸류에이션 종합 (PER/PBR/ROE 등 pre-computed)
-  analytics_stock_daily     — 시세 + 기술지표 + 컨센서스 와이드 테이블
+Layer 3: Gold / Serving     ✅ 구현완료
+  analytics_macro_daily     — 거시지표 EAV pivot (437행, DAG: 09_analytics_macro_daily)
+  analytics_valuation       — 밸류에이션 종합 PER/PBR/ROE (7,609행, DAG: 09_analytics_valuation)
+  analytics_stock_daily     — 시세 + 기술지표 + 컨센서스 (1,870,328행, DAG: 09_analytics_stock_daily)
 
 Layer 4: Semantic           ← NL2SQL 준비 위해 필요
   비즈니스 용어집 (OM Glossary 77개 등록 완료)
@@ -141,7 +143,7 @@ Layer 4: Semantic           ← NL2SQL 준비 위해 필요
 
 | `analytics_macro_daily` | gold | macro | macro_indicators EAV → pivot (일별 1행, forward-fill) ✅ 구현완료 |
 | `analytics_stock_daily` | gold | market | 시세+지표+컨센서스 와이드 테이블 ✅ 구현완료 |
-| `analytics_valuation` | gold | financial | PER/PBR/ROE pre-computed 밸류에이션 🔲 구현예정 |
+| `analytics_valuation` | gold | financial | PER/PBR/ROE pre-computed 밸류에이션 ✅ 구현완료 (7,609행) |
 
 ---
 
