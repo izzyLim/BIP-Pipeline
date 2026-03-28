@@ -550,7 +550,7 @@ Step 5. 결과 + 해석 반환
 | **FK 관계** | 물리적 FK 12개 + OM 논리적 FK | ✅ 완료 (1wk/1mo 삭제로 14→12개) |
 | **Glossary (온톨로지 기초)** | OM Glossary | ✅ 완료 — 77개 용어 등록 |
 | **컬럼-용어 매핑** | om_link_columns.py, om_enrich_metadata.py | ✅ 완료 |
-| **Tags 분류 (Layer/Domain)** | OM Tags | 🔲 미시작 — Gold layer 구현 시 진행 예정 |
+| **Tags 분류 (Layer/Domain)** | OM Tags | ✅ 완료 — 37개 테이블 DataLayer/Domain 태그 적용 |
 | **Gold Layer 테이블** | PostgreSQL + Airflow DAG | ✅ 완료 — analytics_macro_daily, analytics_stock_daily, analytics_valuation |
 | **시맨틱 레이어** | Wren AI | 🔲 미시작 |
 | **NL2SQL** | Wren AI + LLM | 🔲 미시작 |
@@ -579,7 +579,7 @@ Step 5. 결과 + 해석 반환
 ✅ analytics_macro_daily — macro_indicators EAV pivot, 437행 적재 완료 (DAG: 09_analytics_macro_daily)
 ✅ analytics_stock_daily — 시세 + 기술지표 + 컨센서스 와이드 테이블 (DAG: 09_analytics_stock_daily)
 ✅ analytics_valuation   — PER/PBR/ROE pre-computed, 7,609행 적재 완료 (DAG: 09_analytics_valuation)
-🔲 Tags 분류 체계 등록 (OM — layer: raw/derived/gold, domain: market/financial/macro/...)
+✅ Tags 분류 체계 등록 (OM — 37개 테이블 DataLayer/Domain 태그 완료)
 🔲 Wren AI 설치 (Docker Compose)
 🔲 핵심 메트릭 정의 (PER, PBR, ROE, 배당수익률 등 20개)
 🔲 비즈니스 디멘션 정의 (대형주, 가치주, 성장주, 섹터 분류)

@@ -1,0 +1,57 @@
+# ============================================================
+# BIP-Pipeline PostgreSQL 커넥터 설정
+# ============================================================
+# OpenMetadata가 bip-postgres의 스키마를 자동 스캔하여
+# 테이블/컬럼 메타데이터를 카탈로그에 등록합니다.
+#
+# 실행 방법 (om-ingestion 컨테이너 내부에서):
+#   metadata ingest -c /connectors/bip_postgres.yaml
+#
+# 또는 OpenMetadata UI에서:
+#   Settings > Services > Databases > Add New Service
+# ============================================================
+
+source:
+  type: postgres
+  serviceName: bip-postgres           # OM UI에서 보이는 서비스 이름
+  serviceConnection:
+    config:
+      type: Postgres
+      username: user
+      password: pw1234
+      hostPort: bip-postgres:5432     # docker network 내부 주소
+      database: stockdb
+
+  sourceConfig:
+    config:
+      type: DatabaseMetadata
+
+      # ── 스캔 대상 스키마 ────────────────────────
+      schemaFilterPattern:
+        includes:
+          - public                    # BIP 테이블이 모두 public 스키마에 있음
+
+      # ── 스캔 대상/제외 테이블 ──────────────────
+      tableFilterPattern:
+        # 필요 시 제외할 테이블 지정 (초기엔 전부 스캔)
+        excludes:
+          - stock_metadata            # ISS-001: 구버전 폐기 예정 테이블
+
+      # ── 추가 옵션 ───────────────────────────────
+      includeTables: true
+      includeViews: true
+      markDeletedTables: true         # DB에서 삭제된 테이블을 OM에서도 표시
+      includeTags: true
+
+sink:
+  type: metadata-rest
+  config:
+    api_endpoint: http://openmetadata-server:8585/api   # OM 서버 API 주소
+
+workflowConfig:
+  loggerLevel: INFO
+  openMetadataServerConfig:
+    hostPort: http://openmetadata-server:8585/api
+    authProvider: openmetadata
+    securityConfig:
+      jwtToken: "${OM_BOT_TOKEN}"
