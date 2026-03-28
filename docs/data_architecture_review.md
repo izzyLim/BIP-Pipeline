@@ -96,6 +96,53 @@ Layer 4: Semantic           ← NL2SQL 준비 위해 필요
   Tags 분류 (raw/derived/gold, 도메인별) ← 예정
 ```
 
+### 전체 테이블 레이어 · 도메인 분류 (34개)
+
+> OM Tags 적용 기준표. `scripts/om_tag_tables.py`로 일괄 등록.
+> **Layer 태그:** `DataLayer.raw` / `DataLayer.derived` / `DataLayer.gold` / `DataLayer.application`
+> **Domain 태그:** `Domain.market` / `Domain.financial` / `Domain.macro` / `Domain.news` / `Domain.portfolio` / `Domain.product` / `Domain.user`
+
+| 테이블 | Layer | Domain | 설명 |
+|--------|-------|--------|------|
+| `stock_info` | raw | market | 종목 마스터 (KOSPI/KOSDAQ/US) |
+| `stock_price_1d` | raw | market | 일봉 OHLCV + 투자자 수급 |
+| `stock_price_1m` | raw | market | 1분봉 (watchlist 온디맨드) |
+| `sp500_sectors` | raw | market | S&P500 섹터 분류 |
+| `financial_statements` | raw | financial | DART 재무제표 (정규화 컬럼) |
+| `company_dart_info` | raw | financial | DART 기업코드 매핑 |
+| `company_dividend` | raw | financial | 배당 정보 |
+| `company_employees` | raw | financial | 직원 현황 |
+| `company_executives` | raw | financial | 임원 현황 |
+| `company_audit` | raw | financial | 감사의견 |
+| `company_treasury_stock` | raw | financial | 자기주식 |
+| `company_shareholders` | raw | financial | 최대주주 |
+| `company_exec_compensation` | raw | financial | 임원보수 |
+| `consensus_estimates` | raw | financial | 애널리스트 컨센서스 (최신) |
+| `consensus_history` | raw | financial | 컨센서스 변경 이력 |
+| `us_financial_statements` | raw | financial | 미국 기업 재무제표 |
+| `us_fundamentals` | raw | financial | 미국 기업 투자지표 |
+| `macro_indicators` | raw | macro | 매크로/금리/환율/감성 (EAV) |
+| `risk_headlines` | raw | macro | GDELT 지정학 리스크 헤드라인 |
+| `news` | raw | news | 뉴스 기사 (Naver 수집) |
+| `news_raw` | raw | news | 뉴스 원문 |
+| `news_article` | raw | news | 파싱된 뉴스 기사 |
+| `portfolio_snapshot` | raw | portfolio | KIS API 포트폴리오 일일 스냅샷 |
+| `product_price` | raw | product | 제품 가격 데이터 |
+| `product_release` | raw | product | 제품 출시 이력 |
+| `stock_indicators` | derived | market | 기술적 지표 (pandas-ta, from 1d) |
+| `market_daily_summary` | derived | market | 시장 breadth (ADR, 신고가 등) |
+| `news_daily_summary` | derived | news | 일별 뉴스 요약/감성 집계 |
+| `users` | application | user | 서비스 사용자 |
+| `user_watchlist` | application | user | 사용자 관심 종목 |
+| `portfolio` | application | portfolio | 포트폴리오 계정 |
+| `holding` | application | portfolio | 보유 종목 현황 |
+| `transaction` | application | portfolio | 매매 거래 내역 |
+| `cash_transaction` | application | portfolio | 현금 입출금 내역 |
+
+> **Gold layer (구현 예정):**
+> | `analytics_valuation` | gold | financial | PER/PBR/ROE pre-computed 밸류에이션 |
+> | `analytics_stock_daily` | gold | market | 시세+지표+컨센서스 와이드 테이블 |
+
 ---
 
 ## 3. 테이블 카탈로그
