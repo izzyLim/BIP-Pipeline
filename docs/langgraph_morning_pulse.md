@@ -1,6 +1,7 @@
 # Morning Pulse LangGraph 고도화 설계
 
 > 최종 업데이트: 2026-03-28
+> 관련 repo: [BIP-Agents](https://github.com/izzyLim/BIP-Agents)
 
 ---
 
@@ -349,18 +350,72 @@ async with MultiServerMCPClient({
 
 ---
 
-## 10. 미결 사항
+## 10. 기술 스택 정리
 
-| 항목 | 내용 | 결정 필요 |
-|------|------|-----------|
-| 미국 애프터장 | 실적 발표 등 애프터장 급등락 반영 여부 | 우선 제외, 추후 검토 |
-| MCP 배포 방식 | Docker 컨테이너 vs 독립 프로세스 | 결정 필요 |
-| DART API 키 | korea-stock-mcp용 별도 키 발급 필요 | 확인 필요 |
-| KRX API 키 | korea-stock-mcp용 별도 키 발급 필요 | 확인 필요 |
+### BIP-Agents 프로젝트 구조
+```
+BIP-Agents/                          ← 별도 repo (BIP-Pipeline과 분리)
+  ├── mcp-servers/
+  │   ├── korea-stock/               ← git submodule (korea-stock-mcp)
+  │   └── news-search/               ← 신규 구현
+  ├── langgraph/                     ← LangGraph 에이전트
+  └── .env
+```
+
+### 기술 스택
+
+| 레이어 | 구성요소 | 기술 | 오픈소스 |
+|--------|---------|------|---------|
+| **에이전트 오케스트레이션** | LangGraph 에이전트 | Python | [LangGraph](https://github.com/langchain-ai/langgraph) |
+| **MCP ↔ LangGraph 연결** | Tool 어댑터 | Python | [langchain-mcp-adapters](https://github.com/langchain-ai/langchain-mcp-adapters) |
+| **MCP 서버 (한국 주식)** | DART / KRX Tool | Node.js | [korea-stock-mcp](https://github.com/jjlabsio/korea-stock-mcp) |
+| **MCP 서버 (뉴스 검색)** | Naver / SerpAPI Tool | Python | [FastMCP](https://github.com/jlowin/fastmcp) |
+| **패키지 관리** | 의존성 관리 | Python | [uv](https://github.com/astral-sh/uv) |
+| **LLM** | 에이전트 모델 | - | Claude Sonnet / Haiku |
+
+### FastMCP vs FastAPI
+| | FastAPI | FastMCP |
+|---|---------|---------|
+| 목적 | REST API 서버 (사람/서비스용) | MCP 서버 (LLM 에이전트 전용) |
+| 호출 방식 | HTTP | MCP 프로토콜 (stdio / SSE) |
+| 사용 이유 | - | LangGraph tool 노출에 최적화, 코드 단순 |
+
+### news-search-mcp 구현 방식
+기존 `BIP-Pipeline/airflow/dags/reports/realtime_news.py` 로직을 FastMCP로 래핑
+
+```python
+from fastmcp import FastMCP
+
+mcp = FastMCP("news-search")
+
+@mcp.tool()
+def search_news(query: str) -> str:
+    """Naver 뉴스 API로 최신 국내 뉴스 검색"""
+    ...
+
+@mcp.tool()
+def search_web(query: str) -> str:
+    """SerpAPI로 해외 매크로 이슈 검색"""
+    ...
+
+if __name__ == "__main__":
+    mcp.run()
+```
 
 ---
 
-## 11. 구현 단계
+## 11. 미결 사항
+
+| 항목 | 내용 | 결정 |
+|------|------|------|
+| 미국 애프터장 | 실적 발표 등 애프터장 급등락 반영 여부 | 우선 제외, 추후 검토 |
+| MCP 배포 방식 | Docker 컨테이너 vs 독립 프로세스 | 추후 결정 |
+| DART API 키 | korea-stock-mcp 연결용 | ✅ 보유 중 |
+| KRX API 키 | korea-stock-mcp 연결용 | ✅ 보유 중 |
+
+---
+
+## 12. 구현 단계
 
 | 단계 | 내용 | 우선순위 |
 |------|------|---------|
@@ -375,7 +430,7 @@ async with MultiServerMCPClient({
 
 ---
 
-## 12. 예상 효과
+## 13. 예상 효과
 
 - **분석 깊이**: 섹션별 전담 분석으로 현재 대비 질적 향상
 - **공시 반영**: MCP로 전날 마감 후 주요 공시 즉시 반영 (주단위 → 실시간)
