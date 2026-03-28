@@ -156,10 +156,19 @@ Model Context Protocol — LLM이 외부 도구를 **온디맨드**로 호출하
 ---
 
 ### 5-4. 반도체 에이전트 (semi_agent)
-- **모델**: Claude Haiku
-- **담당**: DRAM/NAND 현물가, 반도체 섹터 분석
+- **모델**: Claude Sonnet / GPT-4o (Haiku → 업그레이드, 외부 맥락 해석 필요)
+- **담당**: DRAM/NAND 현물가, 반도체 수급/공급 맥락, 섹터 분석
 - **DB 데이터**: `macro_indicators` (dram_*, nand_*), 반도체 종목 수급
-- **Tools**: 없음 (DB 데이터로 충분)
+- **Tools**:
+  - `get_disclosure_list(date)`: MCP — 삼성전자·SK하이닉스 전날 공시 (감산/증산, 실적 등)
+  - `get_disclosure(id)`: MCP — 공시 원문 확인
+  - `search_web(query)`: TrendForce·IC Insights 최신 리포트, TSMC 월매출, ASML 수주 동향
+  - `search_news(query)`: 국내 반도체 산업 뉴스
+- **분석 포인트**:
+  - 현물가 변동 원인 (공급 감산? 수요 회복?)
+  - 빅테크 CapEx 동향 → AI 서버 수요 연결
+  - PC/스마트폰 출하량 전망 → 소비자용 DRAM/NAND 수요
+  - 한국 반도체 수출 동향
 - **출력**: 반도체 섹션 분석 텍스트 + 신호등
 
 ---
@@ -271,14 +280,14 @@ def get_stock_trade_info(ticker: str, date: str) -> str:
 | Supervisor | Haiku | ~1K | 라우팅만 |
 | global_agent | Sonnet | ~5K in / ~3K out | 검색 포함 |
 | korea_agent | Sonnet | ~5K in / ~3K out | MCP+검색 포함 |
-| semi_agent | Haiku | ~2K in / ~1K out | DB만 |
+| semi_agent | Sonnet | ~5K in / ~3K out | MCP+검색 포함 (Haiku→업그레이드) |
 | flow_agent | Haiku | ~2K in / ~1K out | DB만 |
 | aggregator | Sonnet | ~8K in / ~4K out | 통합 |
 | quality_checker | Haiku | ~4K in / ~0.5K out | |
 
-**현재 대비 토큰**: 약 2~2.5배 증가
+**현재 대비 토큰**: 약 2.5~3배 증가 (반도체 에이전트 업그레이드로 소폭 증가)
 **MCP 효과**: 필요한 데이터만 온디맨드 조회 → 불필요한 컨텍스트 제거
-**비용 절감 포인트**: 수급/반도체는 Haiku 처리 (전체의 ~40%)
+**비용 절감 포인트**: 수급(flow)은 Haiku 유지, Sonnet은 맥락 해석이 필요한 3개 에이전트 집중
 
 ---
 
