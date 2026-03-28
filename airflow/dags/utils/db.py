@@ -3,6 +3,8 @@ import psycopg2
 from psycopg2.extras import execute_values
 import pandas as pd
 
+from utils.lineage import register_table_lineage_async
+
 logger = logging.getLogger(__name__)
 
 
@@ -30,6 +32,16 @@ def upsert_stock_info(rows, conn_info):
         "data_source"
     ]
 
+    # 동일 ticker 중복 시 ON CONFLICT가 같은 행을 두 번 업데이트해 오류 발생 → ticker 기준 dedup
+    seen = set()
+    deduped = []
+    for row in rows:
+        ticker = row.get("ticker")
+        if ticker not in seen:
+            seen.add(ticker)
+            deduped.append(row)
+    rows = deduped
+
     values = [[row.get(col) for col in columns] for row in rows]
 
     insert_query = f"""
@@ -45,6 +57,7 @@ def upsert_stock_info(rows, conn_info):
             with conn.cursor() as cur:
                 execute_values(cur, insert_query, values)
         logger.info(f"{len(rows)}건 upsert 완료")
+        register_table_lineage_async("stock_info")
     except Exception as e:
         logger.error(f"upsert_stock_info 오류: {e}")
         raise
@@ -134,11 +147,13 @@ def insert_to_postgres(df: pd.DataFrame, table_name: str, conn, batch_size: int 
                 break
 
     logger.info(f"Total inserted {total_inserted} rows into {table_name} (duplicates ignored)")
+    if total_inserted > 0:
+        register_table_lineage_async(table_name)
     return total_inserted
 
 
 def get_active_tickers(conn_info):
-    query = "SELECT ticker FROM stock_info WHERE is_active = TRUE;"
+    query = "SELECT ticker FROM stock_info WHERE active = TRUE;"
     try:
         with psycopg2.connect(**conn_info) as conn:
             with conn.cursor() as cur:
@@ -156,7 +171,7 @@ def get_new_active_tickers(conn, table_name: str) -> pd.DataFrame:
     conn: 열린 psycopg2 connection
     table_name: {"stock_price_1m","stock_price_1d","stock_price_1wk","stock_price_1mo"}
     """
-    allowed = {"stock_price_1m", "stock_price_1d", "stock_price_1wk", "stock_price_1mo"}
+    allowed = {"stock_price_1m", "stock_price_1d"}
     if table_name not in allowed:
         raise ValueError(f"Invalid table_name: {table_name}")
 
@@ -271,6 +286,7 @@ def upsert_news(conn, items: list) -> int:
                     template="(%s, %s, %s, %s, %s, %s, NOW(), NOW())"
                 )
         conn.commit()
+        register_table_lineage_async("news")
         return processed
     except Exception as e:
         conn.rollback()

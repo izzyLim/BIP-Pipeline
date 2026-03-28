@@ -498,9 +498,9 @@ Glossary Term: "컨센서스 매수"
                            │
 ┌──────────────────────────▼──────────────────────────────────────┐
 │                     Data Layer (PostgreSQL)                      │
-│  Bronze: stock_price_1d, macro_indicators, news                  │
-│  Silver: stock_indicators, financial_statements                  │
-│  Gold:   gold_stock_daily (예정)                                 │
+│  Bronze: stock_price_1d/1m, macro_indicators, news, financial_statements  │
+│  Silver: stock_indicators, market_daily_summary, consensus_estimates     │
+│  Gold:   analytics_valuation, analytics_stock_daily (구현 예정)          │
 └──────────────────────────┬──────────────────────────────────────┘
                            │
 ┌──────────────────────────▼──────────────────────────────────────┐
@@ -545,32 +545,41 @@ Step 5. 결과 + 해석 반환
 |--------|------|------|
 | **데이터 파이프라인** | Airflow + PostgreSQL | ✅ 운영 중 |
 | **메타데이터 카탈로그** | OpenMetadata v1.12.3 | ✅ 구축 완료 |
-| **테이블/컬럼 설명** | OM API 일괄 등록 | ✅ 완료 |
-| **Lineage** | utils/lineage.py 자동 등록 | ✅ 완료 |
-| **FK 관계** | 물리적 FK 14개 + OM 논리적 FK | ✅ 완료 |
-| **Glossary (온톨로지 기초)** | OM Glossary | 🔴 미시작 |
-| **시맨틱 레이어** | Wren AI | 🔴 미시작 |
-| **NL2SQL** | Wren AI + LLM | 🔴 미시작 |
-| **에이전트** | Claude API Tool Use | 🔴 미시작 |
-| **Chat UI** | React (기존 BIP-React 확장) | 🔴 미시작 |
+| **테이블/컬럼 설명** | OM API 일괄 등록 | ✅ 완료 (35개 테이블) |
+| **Lineage** | utils/lineage.py 자동 등록 | ✅ 완료 (22개 DAG) |
+| **FK 관계** | 물리적 FK 12개 + OM 논리적 FK | ✅ 완료 (1wk/1mo 삭제로 14→12개) |
+| **Glossary (온톨로지 기초)** | OM Glossary | ✅ 완료 — 77개 용어 등록 |
+| **컬럼-용어 매핑** | om_link_columns.py, om_enrich_metadata.py | ✅ 완료 |
+| **Tags 분류 (Layer/Domain)** | OM Tags | 🔲 미시작 — Gold layer 구현 시 진행 예정 |
+| **Gold Layer 테이블** | PostgreSQL + Airflow DAG | 🔲 미시작 — analytics_valuation, analytics_stock_daily |
+| **시맨틱 레이어** | Wren AI | 🔲 미시작 |
+| **NL2SQL** | Wren AI + LLM | 🔲 미시작 |
+| **에이전트 (모닝리포트)** | bip-agents (LangGraph + FastMCP) | 🟡 진행 중 (별도 repo) |
+| **Chat UI** | React (기존 BIP-React 확장) | 🔲 미시작 |
 
 ---
 
 ## 9. 구현 로드맵
 
-### Phase 1: 메타데이터 완성 (현재 진행 중)
+### Phase 1: 메타데이터 완성 ✅ 완료 (2026-03-28)
 ```
 ✅ OpenMetadata 설치 및 구성
-✅ 35개 테이블 수집
-✅ 테이블/컬럼 설명 등록 (22개)
-✅ Lineage 자동 등록 (22개 DAG)
-✅ 물리적 FK 14개 추가
-🔲 OM Glossary 구축 (비즈니스 용어 50개)
-🔲 Tags 분류 체계 (raw/derived/gold, financial/market/macro)
+✅ 35개 테이블 수집 (ingestion)
+✅ 테이블/컬럼 설명 등록 (35개 테이블, om_enrich_metadata.py)
+✅ Lineage 자동 등록 (22개 DAG 전체 — register_table_lineage_async)
+✅ 물리적 FK 추가 (12개, stock_price_1wk/1mo DROP으로 14→12)
+✅ OM Glossary 구축 완료 (77개 용어 — om_build_glossary.py)
+✅ 컬럼-용어 매핑 완료 (om_link_columns.py, om_enrich_metadata.py)
+✅ 불필요 테이블 정리 — stock_price_1wk/1mo DROP (1d resample 대체)
+🔲 Tags 분류 체계 (raw/derived/gold, domain 분류) ← Gold layer 구현 시 함께 진행
 ```
 
-### Phase 2: 시맨틱 레이어 구축
+### Phase 2: Gold Layer + 시맨틱 레이어 구축
 ```
+🔲 Gold Layer 테이블 생성 (DAG: 09_analytics_daily)
+     analytics_valuation — PER/PBR/ROE pre-computed (stock_info + financial_statements + consensus)
+     analytics_stock_daily — 시세 + 기술지표 + 컨센서스 와이드 테이블
+🔲 Tags 분류 체계 등록 (OM — layer: raw/derived/gold, domain: market/financial/macro/...)
 🔲 Wren AI 설치 (Docker Compose)
 🔲 핵심 메트릭 정의 (PER, PBR, ROE, 배당수익률 등 20개)
 🔲 비즈니스 디멘션 정의 (대형주, 가치주, 성장주, 섹터 분류)
