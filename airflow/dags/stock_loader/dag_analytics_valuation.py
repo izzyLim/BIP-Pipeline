@@ -228,12 +228,12 @@ default_args = {
 with DAG(
     dag_id="09_analytics_valuation",
     default_args=default_args,
-    description="Gold layer: stock_info + financial_statements(annual) + consensus → analytics_valuation",
-    schedule_interval="0 8 * * 0",   # 매주 일요일 08:00 KST (재무제표 주간 수집 완료 후)
+    description="Gold layer: stock_info + financial_statements(annual) + consensus → analytics_valuation (매일 시총 반영)",
+    schedule_interval="0 9 * * 1-5",   # 평일 18:00 KST = UTC 09:00 (한국장 마감 후 시총 반영)
     catchup=False,
     max_active_runs=1,
     dagrun_timeout=timedelta(minutes=30),
-    tags=["gold", "financial", "weekly"],
+    tags=["gold", "financial", "daily"],
 ) as dag:
 
     build_task = PythonOperator(

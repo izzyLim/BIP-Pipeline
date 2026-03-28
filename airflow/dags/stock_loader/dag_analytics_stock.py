@@ -1,11 +1,14 @@
 """
-[09_analytics_stock_daily]
+[09_analytics_stock_daily_kr / 09_analytics_stock_daily_us]
 Gold layer: stock_price_1d + stock_indicators + consensus_estimates + stock_info
 → analytics_stock_daily (ticker, trade_date) 와이드 테이블
 
 - 복잡한 멀티조인 제거 — 단일 테이블로 시세/기술지표/컨센서스 조회 가능
 - 증분 적재: analytics_stock_daily 마지막 날짜 이후 데이터만 처리
 - 초기 적재 시작: stock_indicators 최초 날짜 (2025-06-24)
+- 두 번 실행:
+    * 09_analytics_stock_daily_kr: 한국장 마감 후 17:30 KST (03_indicator_kr_daily 완료 후)
+    * 09_analytics_stock_daily_us: 미국장 마감 후 07:30 KST (03_indicator_us_daily 완료 후)
 """
 
 from airflow import DAG
@@ -231,18 +234,39 @@ default_args = {
     "retry_delay": timedelta(minutes=5),
 }
 
+# ── 한국장 마감 후: 평일 17:30 KST ─────────────────────────────────────────
+# 03_indicator_kr_daily (16:30) 완료 후 당일 한국 주식 반영
 with DAG(
-    dag_id="09_analytics_stock_daily",
+    dag_id="09_analytics_stock_daily_kr",
     default_args=default_args,
-    description="Gold layer: stock_price_1d + indicators + consensus → analytics_stock_daily",
-    schedule_interval="30 20 * * 1-5",   # 평일 20:30 KST (지표 계산 DAG 완료 후)
+    description="Gold layer: analytics_stock_daily — 한국장 마감 후 업데이트 (KR)",
+    schedule_interval="30 8 * * 1-5",    # 평일 17:30 KST = UTC 08:30
     catchup=False,
     max_active_runs=1,
     dagrun_timeout=timedelta(hours=2),
     tags=["gold", "market", "daily"],
-) as dag:
+) as dag_kr:
 
-    build_task = PythonOperator(
+    PythonOperator(
+        task_id="build_analytics_stock",
+        python_callable=build_analytics_stock,
+        execution_timeout=timedelta(hours=1, minutes=30),
+    )
+
+# ── 미국장 마감 후: 화-토 07:30 KST ────────────────────────────────────────
+# 03_indicator_us_daily (07:00) 완료 후 전날 미국 주식 반영
+with DAG(
+    dag_id="09_analytics_stock_daily_us",
+    default_args=default_args,
+    description="Gold layer: analytics_stock_daily — 미국장 마감 후 업데이트 (US)",
+    schedule_interval="30 22 * * 1-5",   # 화-토 07:30 KST = UTC 전날 22:30
+    catchup=False,
+    max_active_runs=1,
+    dagrun_timeout=timedelta(hours=2),
+    tags=["gold", "market", "daily"],
+) as dag_us:
+
+    PythonOperator(
         task_id="build_analytics_stock",
         python_callable=build_analytics_stock,
         execution_timeout=timedelta(hours=1, minutes=30),

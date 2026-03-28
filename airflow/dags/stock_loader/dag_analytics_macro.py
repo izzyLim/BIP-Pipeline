@@ -250,7 +250,7 @@ with DAG(
     dag_id="09_analytics_macro_daily",
     default_args=default_args,
     description="Gold layer: macro_indicators EAV → analytics_macro_daily pivot (일별 1행)",
-    schedule_interval="0 22 * * 1-5",   # 평일 22:00 KST (매크로 데이터 수집 완료 후)
+    schedule_interval="0 * * * *",       # 매시간 정각 (macro_indicators 수집 DAG와 동일 주기)
     catchup=False,
     max_active_runs=1,
     dagrun_timeout=timedelta(minutes=30),
