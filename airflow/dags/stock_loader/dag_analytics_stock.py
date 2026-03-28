@@ -53,30 +53,53 @@ latest_consensus AS (
     FROM consensus_estimates
     ORDER BY ticker, estimate_year DESC, collected_at DESC
 ),
--- 전일 종가: change_pct 계산용 (start_date - 1일부터 조회)
+-- 동일 (ticker, date) 중복 제거: 가장 최신 timestamp 1건만 사용
+deduped AS (
+    SELECT DISTINCT ON (ticker, DATE(timestamp))
+        ticker,
+        DATE(timestamp)         AS trade_date,
+        timestamp,
+        open, high, low, close, volume,
+        after_hours_close,
+        after_hours_change_pct,
+        foreign_buy_volume,
+        institution_buy_volume,
+        individual_buy_volume,
+        foreign_ownership_pct
+    FROM stock_price_1d
+    WHERE DATE(timestamp) >= %(lookback_date)s
+      AND DATE(timestamp) <= %(end_date)s
+    ORDER BY ticker, DATE(timestamp), timestamp DESC
+),
+-- 전일 종가: change_pct 계산용
 price_with_prev AS (
     SELECT
-        sp.ticker,
-        DATE(sp.timestamp)                                                 AS trade_date,
+        d.ticker,
+        d.trade_date,
         si.stock_name,
         si.market_type,
         si.market_value,
-        sp.open, sp.high, sp.low, sp.close, sp.volume,
-        ROUND(
-            ((sp.close - LAG(sp.close) OVER (PARTITION BY sp.ticker ORDER BY sp.timestamp))
-             / NULLIF(LAG(sp.close) OVER (PARTITION BY sp.ticker ORDER BY sp.timestamp), 0) * 100
-            )::numeric, 4
-        )                                                                  AS change_pct,
-        sp.after_hours_close,
-        sp.after_hours_change_pct::numeric,
-        sp.foreign_buy_volume,
-        sp.institution_buy_volume,
-        sp.individual_buy_volume,
-        sp.foreign_ownership_pct
-    FROM stock_price_1d sp
-    JOIN stock_info si ON sp.ticker = si.ticker
-    WHERE DATE(sp.timestamp) >= %(lookback_date)s   -- 전일 데이터 포함
-      AND DATE(sp.timestamp) <= %(end_date)s
+        d.open, d.high, d.low, d.close, d.volume,
+        -- 극단적 등락률(페니스톡 등) NULL 처리
+        CASE
+            WHEN ABS(
+                (d.close - LAG(d.close) OVER (PARTITION BY d.ticker ORDER BY d.trade_date))
+                / NULLIF(LAG(d.close) OVER (PARTITION BY d.ticker ORDER BY d.trade_date), 0) * 100
+            ) > 9999 THEN NULL
+            ELSE ROUND(
+                ((d.close - LAG(d.close) OVER (PARTITION BY d.ticker ORDER BY d.trade_date))
+                 / NULLIF(LAG(d.close) OVER (PARTITION BY d.ticker ORDER BY d.trade_date), 0) * 100
+                )::numeric, 4
+            )
+        END                                                                AS change_pct,
+        d.after_hours_close,
+        d.after_hours_change_pct::numeric,
+        d.foreign_buy_volume,
+        d.institution_buy_volume,
+        d.individual_buy_volume,
+        d.foreign_ownership_pct
+    FROM deduped d
+    JOIN stock_info si ON d.ticker = si.ticker
 )
 SELECT
     p.ticker,

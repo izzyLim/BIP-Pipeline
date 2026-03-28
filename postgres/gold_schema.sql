@@ -124,7 +124,7 @@ CREATE TABLE IF NOT EXISTS analytics_stock_daily (
     low                     NUMERIC,
     close                   NUMERIC,
     volume                  BIGINT,
-    change_pct              NUMERIC(8,4),    -- 전일 대비 등락률 (%)
+    change_pct              NUMERIC(12,4),   -- 전일 대비 등락률 (%)
     after_hours_close       NUMERIC,         -- 시간외 종가
     after_hours_change_pct  NUMERIC(8,4),
     foreign_buy_volume      BIGINT,          -- 외국인 순매수 (주)
