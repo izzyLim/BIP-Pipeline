@@ -647,5 +647,100 @@ Step 5. 결과 + 해석 반환
 
 ---
 
+## 11. Wren AI 도구 조사 결과 (2026-03-29)
+
+> 조사 범위: Wren AI 공식 블로그/문서, GitHub, dev.to 실사용 후기, Medium, Wren AI vs Vanna 비교 분석
+
+### 11-1. 금융/주식 도메인 공개 사례
+
+**결론: 공개된 사례 없음.** Wren AI의 공개 사례는 주로 e-commerce, SaaS 메트릭(MRR/LTV/CAC), 게임 플랫폼 분석에 집중되어 있다. 금융/투자 도메인 특화 구현은 커뮤니티에 공개된 것이 없다.
+
+가장 유사한 사례는 **Uber QueryGPT** (Wren AI가 설계 모범 사례로 반복 인용):
+
+| 항목 | 내용 |
+|------|------|
+| 도메인 | 내부 비즈니스 인텔리전스 |
+| 구조 | Intent Agent → Table Selection Agent → Column Prune Agent → SQL 생성 |
+| 성과 | 월 120만 쿼리, 쿼리 작성 시간 70% 단축, 월 14만 시간 절감 |
+| 핵심 교훈 | **전체 DB를 하나의 컨텍스트로 쓰지 말고, 도메인별 워크스페이스 분리** |
+
+→ 우리 프로젝트에서는 시세/재무/매크로를 분리해 Wren AI에 노출하는 구조가 적합하다.
+
+### 11-2. Wren AI가 시맨틱 레이어에는 맞고 온톨로지에는 맞지 않는 이유
+
+| 개념 | Wren AI 해당 여부 | 실제 담당 도구 |
+|------|-----------------|--------------|
+| **시맨틱 레이어** (테이블 관계, 메트릭 정의, 단위 변환) | ✅ MDL이 정확히 이것 | Wren AI |
+| **온톨로지** (isA, partOf, 개념 계층, RDF/OWL) | ❌ MDL은 온톨로지가 아님 | Neo4j Knowledge Graph |
+
+Wren AI의 MDL(Modeling Definition Language)은 "테이블 모델 + 관계 + 계산 필드"를 정의하는 **시맨틱 레이어**다. 진짜 온톨로지("삼성전자 isA 반도체 기업 partOf 코스피")를 구현하려면 별도로 Knowledge Graph가 필요하다.
+
+### 11-3. Gold Layer + Wren AI 조합이 이상적인 이유
+
+```
+Bronze/Silver  →  Gold layer (analytics_*)    →  Wren AI
+Airflow DAG가       pre-joined wide table          단순 WHERE/집계만 처리
+복잡한 JOIN          (이미 구현 완료)                Window Function 등 복잡한
+사전 처리                                           SQL은 LLM이 틀릴 가능성 높음
+```
+
+Wren AI 공식 권장 패턴과 일치: *"Analytics-friendly view만 노출하고 raw 테이블은 차단하라"*
+
+Gold layer를 이미 구현해둔 것이 Wren AI의 NL2SQL 정확도를 높이는 최적의 전처리다.
+
+### 11-4. MDL로 도메인 지식 고정 — 핵심 활용법
+
+Wren AI의 핵심 가치는 **LLM이 틀리기 쉬운 도메인 지식을 MDL에 박아두는 것**이다.
+
+우리 프로젝트의 대표적인 적용 예:
+
+```yaml
+# 단위 혼동 원천 차단: market_value는 억원 단위
+- name: per_actual
+  is_calculated: true
+  expression: "(market_value * 100000000) / net_income"
+  description: "PER = 시총(억원→원 변환) / 순이익. NULL이면 순손실"
+
+# 티커 형식 명시
+- name: ticker
+  description: "종목코드. 예: 005930.KS(삼성전자), 000660.KS(SK하이닉스), AAPL(애플)"
+
+# 투자의견 스케일 명시
+- name: analyst_rating
+  description: "투자의견 점수. 5=Strong Buy, 4=Buy, 3=Hold, 2=Underperform, 1=Sell"
+```
+
+### 11-5. 실제 한계 (로컬 실사용 후기 기반)
+
+| 한계 | 내용 | BIP 프로젝트 영향 |
+|------|------|-----------------|
+| Window Function 취약 | OVER/PARTITION BY 포함 쿼리에서 오류 빈번 | "경쟁사 대비 PER" 비교 분석 → Question-SQL Pairs 사전 정의 필요 |
+| LLM 의존성 | OpenAI GPT-4o 미만에서 hallucination 심각 | 로컬 LLM(8B) 실용성 낮음. GPT-4o 또는 Claude Sonnet 이상 권장 |
+| 한국어 미검증 | 공식 지원 미명시 | `005930.KS`, `삼성전자` 같은 한국 도메인 별도 테스트 필요 |
+| MDL 유지보수 | 스키마 변경 시 MDL도 재배포 필요 | Gold layer 컬럼 추가/변경 시 MDL 동기화 필요 |
+
+### 11-6. 도구 선택 기준 — 목적에 따른 비교
+
+| 목적 | 적합한 도구 |
+|------|------------|
+| 비개발자가 웹 UI에서 자연어로 데이터 조회 | Wren AI |
+| FastAPI/에이전트에 NL2SQL 직접 임베드 | **Vanna AI** (경량 Python 라이브러리) |
+| 완전한 제어 + 커스텀 워크플로우 | LangGraph 직접 구현 |
+| 진짜 온톨로지 / 개념 관계 그래프 | Neo4j Knowledge Graph |
+| dbt 기반 파이프라인 | dbt Semantic Layer (MetricFlow) |
+
+**현재 BIP 프로젝트 권장 방향:**
+Wren AI를 완전 대체재로 쓰지 말고, 시맨틱 레이어 엔진으로만 활용하고 오케스트레이션은 LangGraph로 유지하는 하이브리드:
+
+```
+Wren Engine   (시맨틱 SQL 재작성 + MDL + 도메인 지식 고정)
+    +
+LangGraph     (워크플로우 오케스트레이션 + 에이전트)
+    +
+OpenMetadata  (메타데이터 컨텍스트 + Glossary)
+```
+
+---
+
 *이 문서는 BIP-Pipeline 프로젝트의 실제 구현 경험을 바탕으로 작성되었습니다.*
 *NL2SQL·시맨틱 레이어·온톨로지는 독립적인 개념이지만, 실용적인 시스템에서는 함께 설계해야 최대 효과를 냅니다.*
