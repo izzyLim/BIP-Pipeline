@@ -46,6 +46,14 @@ def send_morning_report(**context):
         if llm_model:
             os.environ["LLM_MODEL"] = llm_model
 
+        # 텔레그램 봇
+        telegram_token = Variable.get("TELEGRAM_BOT_TOKEN", default_var="")
+        telegram_chat_id = Variable.get("TELEGRAM_CHAT_ID", default_var="")
+        if telegram_token:
+            os.environ["TELEGRAM_BOT_TOKEN"] = telegram_token
+        if telegram_chat_id:
+            os.environ["TELEGRAM_CHAT_ID"] = telegram_chat_id
+
         # 네이버 API (실시간 뉴스용)
         naver_id = Variable.get("naver_client_id", default_var="")
         naver_secret = Variable.get("naver_client_secret", default_var="")
@@ -92,6 +100,23 @@ def send_morning_report(**context):
     if result.get("html"):
         save_report_to_file(result["html"])
 
+    # OM Lineage 등록 (읽기 전용 — 출력 테이블 없음)
+    try:
+        from utils.lineage import register_table_lineage_async
+        register_table_lineage_async(
+            target_table=None,
+            source_tables=[
+                "stock_info",
+                "stock_price_1d",
+                "macro_indicators",
+                "news",
+                "analytics_macro_daily",
+                "analytics_stock_daily",
+            ]
+        )
+    except Exception:
+        pass  # lineage 실패가 리포트 발송에 영향 주지 않음
+
     return "리포트 발송 완료"
 
 
@@ -123,6 +148,8 @@ def test_report_with_send(**context):
         llm_model = Variable.get("llm_model", default_var="gpt-5.4")
         naver_id = Variable.get("naver_client_id", default_var="")
         naver_secret = Variable.get("naver_client_secret", default_var="")
+        telegram_token = Variable.get("TELEGRAM_BOT_TOKEN", default_var="")
+        telegram_chat_id = Variable.get("TELEGRAM_CHAT_ID", default_var="")
 
         if smtp_user:
             os.environ["SMTP_USER"] = smtp_user
@@ -139,6 +166,10 @@ def test_report_with_send(**context):
             os.environ["NAVER_CLIENT_ID"] = naver_id
         if naver_secret:
             os.environ["NAVER_CLIENT_SECRET"] = naver_secret
+        if telegram_token:
+            os.environ["TELEGRAM_BOT_TOKEN"] = telegram_token
+        if telegram_chat_id:
+            os.environ["TELEGRAM_CHAT_ID"] = telegram_chat_id
     except Exception as e:
         print(f"⚠️ Variable 로드 실패: {e}")
 
@@ -166,7 +197,7 @@ with DAG(
     dag_id="morning_report",
     default_args=default_args,
     description="BIP 모닝 브리핑 - 매일 오전 7시 발송",
-    schedule_interval="0 8 * * 1-5",  # 평일 08:00 KST → 월-금 아침 발송
+    schedule_interval="10 8 * * 1-5",  # 평일 08:10 KST → 월-금 아침 발송
     start_date=datetime(2026, 3, 1),
     catchup=False,
     tags=["report", "email", "morning"],
