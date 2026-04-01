@@ -22,6 +22,7 @@
 11. [운영 이슈 및 해결](#11-운영-이슈-및-해결)
 12. [대안 솔루션 비교](#12-대안-솔루션-비교)
 13. [향후 발전 방향](#13-향후-발전-방향)
+14. [엔터프라이즈 솔루션 비교 — Palantir Foundry & Databricks](#14-엔터프라이즈-솔루션-비교--palantir-foundry--databricks)
 
 ---
 
@@ -994,5 +995,460 @@ flowchart TB
 
 ---
 
+## 14. 엔터프라이즈 솔루션 비교 — Palantir Foundry & Databricks
+
+BIP-Pipeline이 지향하는 아키텍처(데이터 수집 → 분석 레이어 → 시맨틱 레이어 → NL2SQL → 에이전트)는
+Palantir Foundry와 Databricks Lakehouse가 엔터프라이즈 규모로 구현한 것과 개념적으로 동일합니다.
+
+### 14-1. 전체 비교 개요
+
+```mermaid
+graph TB
+    subgraph BIP["BIP-Pipeline (오픈소스 DIY)"]
+        B1[Airflow<br/>오케스트레이션]
+        B2[PostgreSQL<br/>저장소]
+        B3[OpenMetadata<br/>카탈로그 + Lineage]
+        B4[Wren AI<br/>NL2SQL]
+        B5[LangGraph<br/>에이전트]
+    end
+
+    subgraph PAL["Palantir Foundry"]
+        P1[Pipeline Builder<br/>오케스트레이션]
+        P2[Foundry Storage<br/>저장소]
+        P3[Ontology<br/>시맨틱 레이어 + 거버넌스]
+        P4[AIP<br/>LLM + NL2SQL]
+        P5[AIP Agent Studio<br/>에이전트]
+    end
+
+    subgraph DBR["Databricks Lakehouse"]
+        D1[Workflows<br/>오케스트레이션]
+        D2[Delta Lake<br/>저장소]
+        D3[Unity Catalog<br/>카탈로그 + Lineage]
+        D4[Genie<br/>NL2SQL]
+        D5[Mosaic AI<br/>에이전트]
+    end
+
+    style BIP fill:#e8f5e9
+    style PAL fill:#e3f2fd
+    style DBR fill:#fff3e0
+```
+
+| 기능 영역 | BIP-Pipeline | Palantir Foundry | Databricks Lakehouse |
+|----------|-------------|-----------------|---------------------|
+| **오케스트레이션** | Airflow | Pipeline Builder + Transforms | Databricks Workflows |
+| **저장소** | PostgreSQL | Foundry Storage (Parquet) | Delta Lake (Parquet + ACID) |
+| **메타데이터 카탈로그** | OpenMetadata | Ontology | Unity Catalog |
+| **Lineage** | OM Lineage (API → DAG → Table) | Ontology 자동 추적 | Unity Catalog 자동 추적 |
+| **시맨틱 레이어** | Wren AI MDL | Ontology (Object Types) | Metric Views |
+| **NL2SQL** | Wren AI + SQL Pairs | AIP (LLM + Ontology) | Genie (LLM + Unity Catalog) |
+| **에이전트** | LangGraph (예정) | AIP Agent Studio | Mosaic AI Agent Framework |
+| **용어집** | OM Glossary (77개) | Ontology Properties | Unity Catalog Tags |
+| **거버넌스/태그** | OM Tags (DataLayer, Domain, SourceType) | Ontology + Dynamic Security | Unity Catalog + ABAC |
+| **비용** | 무료 (오픈소스) | 수억원/년 (엔터프라이즈) | DBU 종량제 ($500~$5,000+/월) |
+
+---
+
+### 14-2. Palantir Foundry 상세
+
+#### 개요
+
+Palantir Foundry는 **엔터프라이즈 데이터 통합 + 의사결정 플랫폼**입니다.
+핵심은 **Ontology(온톨로지)**로, 데이터를 테이블이 아닌 **비즈니스 객체(Object)**로 모델링합니다.
+
+#### 전체 아키텍처
+
+```mermaid
+graph TB
+    subgraph Integration["데이터 통합"]
+        CONN[200+ 커넥터<br/>DB, S3, SAP, IoT]
+        PB[Pipeline Builder<br/>노코드 파이프라인]
+        CR[Code Repositories<br/>Python/SQL 변환]
+    end
+
+    subgraph Core["Foundry Core"]
+        STORE[Storage Layer<br/>Parquet + 메타데이터]
+        ONT[Ontology<br/>Object Types + Links + Actions]
+        SEC[Dynamic Security<br/>Row/Object 레벨 접근 제어]
+    end
+
+    subgraph AI["AIP (AI Platform)"]
+        LOGIC[AIP Logic<br/>노코드 LLM 함수]
+        AGENT[Agent Studio<br/>프로덕션 에이전트]
+        EVAL[AIP Evals<br/>모델 평가]
+    end
+
+    subgraph Apps["애플리케이션"]
+        CONT[Contour<br/>분석 대시보드]
+        WORK[Workshop<br/>노코드 앱 빌더]
+        QUIV[Quiver<br/>데이터 탐색]
+    end
+
+    CONN --> PB & CR --> STORE
+    STORE --> ONT --> SEC
+    ONT --> LOGIC & AGENT
+    ONT --> CONT & WORK & QUIV
+
+    style Integration fill:#e3f2fd
+    style Core fill:#e8eaf6
+    style AI fill:#fce4ec
+    style Apps fill:#e8f5e9
+```
+
+#### Ontology (온톨로지) — Foundry의 핵심
+
+Palantir의 Ontology는 **전통적인 데이터 카탈로그(OpenMetadata)를 넘어서는 개념**입니다.
+데이터를 "테이블의 행"이 아닌 **현실 세계 객체**로 표현합니다.
+
+| 구성 요소 | 역할 | BIP 대응 |
+|----------|------|---------|
+| **Object Types** | 현실 세계 엔티티 정의 (종목, 거래, 투자자) | `stock_info` 테이블 ≈ "종목" Object Type |
+| **Properties** | 객체의 속성 (종목코드, 시총, PER) | 컬럼 + OM 설명 |
+| **Link Types** | 객체 간 관계 (종목 → 재무제표) | FK + Wren AI Relationship |
+| **Action Types** | 객체 변경 행위 (매수, 포트폴리오 리밸런싱) | 없음 (Foundry 고유 기능) |
+| **Functions** | 비즈니스 로직 (PER 계산, 밸류에이션 스코어) | Wren AI Calculated Fields |
+
+**Ontology가 BIP의 OM + Wren AI + LangGraph를 합친 것과 같은 이유:**
+
+```mermaid
+graph LR
+    subgraph BIP["BIP-Pipeline"]
+        OM_BIP[OpenMetadata<br/>카탈로그 + 용어집]
+        WR_BIP[Wren AI<br/>시맨틱 모델]
+        LG_BIP[LangGraph<br/>에이전트]
+    end
+
+    subgraph Palantir["Palantir"]
+        ONT_P[Ontology<br/>= OM + Wren AI + LangGraph<br/>하나로 통합]
+    end
+
+    OM_BIP -.->|메타데이터/용어| ONT_P
+    WR_BIP -.->|시맨틱 모델| ONT_P
+    LG_BIP -.->|워크플로우/Actions| ONT_P
+
+    style BIP fill:#e8f5e9
+    style Palantir fill:#e3f2fd
+```
+
+#### AIP (Artificial Intelligence Platform)
+
+AIP는 LLM을 Ontology에 연결하여 **hallucination을 줄이는 구조**:
+
+```
+일반 LLM: "삼성전자 PER 알려줘" → LLM이 기억에서 추측 → 틀릴 수 있음
+AIP:      "삼성전자 PER 알려줘" → Ontology에서 삼성전자 Object 조회 → 정확한 데이터 반환
+```
+
+| AIP 구성 요소 | 역할 | BIP 대응 |
+|-------------|------|---------|
+| **AIP Logic** | 노코드 LLM 함수 빌더 | Wren AI Instructions |
+| **Agent Studio** | 프로덕션 에이전트 빌더 | LangGraph + Tools |
+| **AIP Evals** | 모델 성능 평가 | 없음 (향후 필요) |
+
+#### Foundry 가격 및 고객
+
+| 항목 | 내용 |
+|------|------|
+| **가격** | 컴퓨트(초당) + 스토리지(GB/월) + Ontology(GB/월) — 일반적으로 수억원/년 |
+| **고객** | 미국 국방부, CIA, NHS, Airbus, BP, 모건스탠리 |
+| **시장 점유율** | 1.51% (엔터프라이즈 시장) |
+| **Gotham** | 국방/정보기관 특화 버전 (지리공간 + 네트워크 분석) |
+
+---
+
+### 14-3. Databricks Lakehouse 상세
+
+#### 개요
+
+Databricks는 **레이크하우스 아키텍처** 기반 통합 데이터 + AI 플랫폼입니다.
+데이터 웨어하우스의 거버넌스 + 데이터 레이크의 유연성을 결합합니다.
+
+#### 전체 아키텍처
+
+```mermaid
+graph TB
+    subgraph Control["Control Plane (Databricks 관리)"]
+        UI_D[Workspace UI]
+        JOB[Job Scheduler]
+        UC[Unity Catalog<br/>거버넌스 + Lineage]
+    end
+
+    subgraph Data["Data Plane (고객 클라우드)"]
+        DL[Delta Lake<br/>ACID + Time Travel]
+        PHO[Photon Engine<br/>C++ 쿼리 엔진]
+        SPK[Apache Spark<br/>분산 처리]
+    end
+
+    subgraph AI_ML["AI/ML"]
+        GEN[Genie<br/>NL2SQL]
+        MOS[Mosaic AI<br/>에이전트 + RAG]
+        MLF[MLflow<br/>ML 라이프사이클]
+        VS[Vector Search<br/>임베딩 인덱스]
+    end
+
+    subgraph Analytics["분석"]
+        SQL_D[Databricks SQL<br/>서버리스 SQL]
+        DASH[AI/BI Dashboards<br/>자연어 대시보드]
+        NB[Notebooks<br/>Python/SQL/R/Scala]
+    end
+
+    UI_D --> JOB
+    JOB --> SPK & PHO
+    SPK & PHO --> DL
+    UC --> DL & GEN & MOS
+    DL --> SQL_D --> DASH
+    DL --> GEN
+    DL --> MOS & MLF
+
+    style Control fill:#fff3e0
+    style Data fill:#e8f5e9
+    style AI_ML fill:#e3f2fd
+    style Analytics fill:#fce4ec
+```
+
+#### Delta Lake — 저장소 핵심
+
+Delta Lake은 Parquet 파일 위에 **ACID 트랜잭션**을 제공하는 오픈소스 스토리지 레이어:
+
+| 기능 | 설명 | BIP 대응 |
+|------|------|---------|
+| **ACID 트랜잭션** | 원자성·일관성·격리·지속성 보장 | PostgreSQL ACID (기본 지원) |
+| **Schema Enforcement** | 호환 안 되는 스키마 쓰기 거부 | 없음 (수동 검증) |
+| **Schema Evolution** | 컬럼 추가/타입 변경 유연 | ALTER TABLE 수동 |
+| **Time Travel** | 과거 버전 쿼리 (버전 번호/타임스탬프) | 없음 |
+| **Delta Sharing** | 외부와 안전한 데이터 공유 | 없음 |
+
+#### Unity Catalog — 거버넌스 & Lineage
+
+```mermaid
+graph TB
+    UC[Unity Catalog]
+
+    subgraph Namespace["3-Level Namespace"]
+        CAT[Catalog<br/>stockdb]
+        SCH[Schema<br/>public]
+        OBJ[Objects<br/>tables, views, models, functions]
+    end
+
+    subgraph Features["핵심 기능"]
+        LIN[자동 Lineage<br/>테이블 + 컬럼 레벨]
+        ACC[접근 제어<br/>ANSI SQL GRANT/REVOKE]
+        TAG[메타데이터 태깅<br/>분류 + 검색]
+        AUD[감사 로그<br/>누가 언제 무엇을]
+    end
+
+    UC --> CAT --> SCH --> OBJ
+    UC --> LIN & ACC & TAG & AUD
+
+    style UC fill:#fff3e0,stroke:#e65100
+    style Namespace fill:#e8f5e9
+    style Features fill:#e3f2fd
+```
+
+| Unity Catalog 기능 | BIP 대응 |
+|-------------------|---------|
+| 3-Level Namespace | PostgreSQL: stockdb.public.table |
+| 자동 Lineage | OM Lineage (수동 등록 + register_table_lineage) |
+| 접근 제어 (GRANT/REVOKE) | PostgreSQL ROLE (미설정) |
+| 메타데이터 태깅 | OM Tags (DataLayer, Domain, SourceType) |
+| 감사 로그 | 없음 |
+
+#### Genie — NL2SQL
+
+Databricks의 NL2SQL 솔루션. Wren AI와 직접 비교:
+
+| 항목 | Databricks Genie | Wren AI |
+|------|-----------------|---------|
+| **아키텍처** | Compound AI (멀티 LLM 조합) | 단일 LLM + RAG |
+| **메타데이터 활용** | Unity Catalog 자동 연동 | MDL 수동 정의 + OM 동기화 |
+| **Thinking Steps** | 해석 과정 투명하게 표시 | 없음 |
+| **컬럼 샘플값** | 자동으로 샘플 데이터 참조 | 없음 |
+| **Metric Views** | 시맨틱 메트릭 정의 지원 | MDL Calculated Fields |
+| **비용** | DBU 종량제 (고가) | 무료 (OSS) + LLM API 비용 |
+| **데이터 소스** | Databricks 전용 | 12+ DB 지원 |
+| **멀티 쿼리** | ❌ 1개 | ❌ 1개 |
+
+#### Mosaic AI — 에이전트 프레임워크
+
+| 기능 | 설명 | BIP 대응 |
+|------|------|---------|
+| **Agent Framework** | 프로덕션 에이전트 빌드 | LangGraph |
+| **RAG** | 문서 + 테이블 기반 검색 증강 | Qdrant (Wren AI) |
+| **Vector Search** | 네이티브 임베딩 인덱스 | Qdrant |
+| **Model Serving** | REST API 모델 배포 | 없음 (LLM API 직접 호출) |
+| **Guardrails** | AI 출력 안전 장치 | 없음 |
+| **MLflow 통합** | 실험 추적 + 모델 레지스트리 | 없음 |
+
+#### Medallion Architecture
+
+Databricks가 공식 권장하는 데이터 레이어 구조 — BIP-Pipeline이 이미 동일 패턴 적용:
+
+```mermaid
+graph LR
+    subgraph Bronze["Bronze (Raw)"]
+        B1[stock_price_1d]
+        B2[financial_statements]
+        B3[macro_indicators]
+        B4[news]
+    end
+
+    subgraph Silver["Silver (Derived)"]
+        S1[stock_indicators]
+        S2[market_daily_summary]
+    end
+
+    subgraph Gold["Gold (Serving)"]
+        G1[analytics_stock_daily]
+        G2[analytics_macro_daily]
+        G3[analytics_valuation]
+    end
+
+    Bronze --> Silver --> Gold
+
+    style Bronze fill:#cd7f32,color:white
+    style Silver fill:#c0c0c0
+    style Gold fill:#ffd700
+```
+
+| Medallion 레이어 | Databricks | BIP-Pipeline |
+|-----------------|-----------|-------------|
+| **Bronze** | Raw 수집 (Delta Lake) | Raw 테이블 (stock_info, stock_price_1d, ...) |
+| **Silver** | 정제/정규화 | Derived 테이블 (stock_indicators, market_daily_summary) |
+| **Gold** | 비즈니스 집계 | analytics_* 테이블 (pre-joined 와이드) |
+
+#### Databricks 가격
+
+| 워크로드 | DBU 단가 (Premium) | 월 예상 비용 |
+|---------|-------------------|-----------|
+| All-Purpose | $0.55/DBU-hr | $500~$2,000 |
+| Jobs | $0.30/DBU-hr | $300~$1,000 |
+| Serverless SQL | $0.70/DBU-hr | $500~$3,000 |
+| **총 예상** | | **$500~$5,000+/월** |
+
+---
+
+### 14-4. BIP-Pipeline과의 대응 관계 상세
+
+#### 기능별 매핑
+
+```mermaid
+graph TB
+    subgraph BIP["BIP-Pipeline 구성 요소"]
+        direction TB
+        AF[Airflow<br/>DAG 오케스트레이션]
+        PG[PostgreSQL<br/>데이터 저장]
+        OM[OpenMetadata<br/>카탈로그 + Lineage + 용어집]
+        WR[Wren AI<br/>MDL + NL2SQL]
+        LG[LangGraph<br/>에이전트 오케스트레이션]
+        KA[Kafka/Spark<br/>스트리밍 (미사용)]
+    end
+
+    subgraph PAL["Palantir 대응"]
+        direction TB
+        P_PB[Pipeline Builder<br/>+ Code Repos]
+        P_ST[Foundry Storage]
+        P_ON[Ontology<br/>(카탈로그+시맨틱+액션 통합)]
+        P_AI[AIP<br/>(LLM+NL2SQL+에이전트 통합)]
+        P_AG[Agent Studio]
+        P_MC[Machinery<br/>프로세스 마이닝]
+    end
+
+    subgraph DBR["Databricks 대응"]
+        direction TB
+        D_WF[Workflows]
+        D_DL[Delta Lake]
+        D_UC[Unity Catalog<br/>+ Metric Views]
+        D_GE[Genie<br/>NL2SQL]
+        D_MA[Mosaic AI<br/>Agent Framework]
+        D_SS[Structured Streaming]
+    end
+
+    AF -.-> P_PB -.-> D_WF
+    PG -.-> P_ST -.-> D_DL
+    OM -.-> P_ON -.-> D_UC
+    WR -.-> P_AI -.-> D_GE
+    LG -.-> P_AG -.-> D_MA
+    KA -.-> P_MC -.-> D_SS
+
+    style BIP fill:#e8f5e9
+    style PAL fill:#e3f2fd
+    style DBR fill:#fff3e0
+```
+
+#### 핵심 차이점
+
+| 관점 | BIP-Pipeline | Palantir | Databricks |
+|------|-------------|---------|-----------|
+| **비용** | 무료 (서버 비용만) | 수억원/년 | $6,000~$60,000/년 |
+| **설치/운영** | 직접 설치/관리 | 완전 관리형 | 관리형 (클라우드) |
+| **유연성** | 완전 커스텀 가능 | 제한적 커스텀 | 중간 |
+| **스케일** | 단일 서버 | 엔터프라이즈 (수천 사용자) | 엔터프라이즈 |
+| **NL2SQL 접근** | Wren AI (시맨틱) + LangGraph (에이전트) 분리 | AIP (통합) | Genie (통합) |
+| **온톨로지** | OM Glossary + Tags (제한적) | Ontology (완전한 비즈니스 모델) | Unity Catalog (카탈로그 수준) |
+| **에이전트** | LangGraph (직접 구현) | Agent Studio (노코드) | Mosaic AI (SDK) |
+
+#### BIP가 이미 구현한 것 vs 엔터프라이즈 솔루션 대비 미구현
+
+```
+✅ BIP 구현 완료 (엔터프라이즈와 동등)
+   - Medallion Architecture (Bronze/Silver/Gold)
+   - 메타데이터 카탈로그 (OM = Unity Catalog 수준)
+   - 데이터 Lineage (API → DAG → Table → Consumer)
+   - 시맨틱 레이어 (Wren AI MDL)
+   - NL2SQL 기본 (Wren AI + SQL Pairs)
+   - 용어집/태그 거버넌스
+   - 파이프라인 오케스트레이션 (Airflow)
+
+⚠️ 부분 구현 (기능은 있으나 엔터프라이즈 대비 제한적)
+   - Lineage: 수동 등록 (Databricks는 자동)
+   - 메타데이터 동기화: DAG로 배치 (Palantir는 실시간)
+   - NL2SQL: 1질문=1SQL (Genie/AIP도 동일한 한계)
+
+🔲 미구현 (향후 과제)
+   - LLM 에이전트 통합 (LangGraph + Wren AI API)
+   - 비즈니스 객체 모델 (Palantir Ontology 수준)
+   - Action Types (데이터 변경 워크플로우)
+   - ML 모델 라이프사이클 (MLflow)
+   - 접근 제어 / 감사 로그
+   - 실시간 스트리밍 처리
+```
+
+---
+
+### 14-5. 아키텍처 선택 가이드
+
+| 상황 | 추천 |
+|------|------|
+| **개인/소규모 팀, 비용 최소화** | BIP-Pipeline 방식 (오픈소스 조합) |
+| **빠른 PoC, 클라우드 네이티브** | Databricks (종량제, 빠른 설정) |
+| **대규모 조직, 운영 의사결정 통합** | Palantir Foundry (온톨로지 + 워크플로우) |
+| **데이터 엔지니어링 + ML 중심** | Databricks (Spark + MLflow + Delta Lake) |
+| **국방/정부/규제 산업** | Palantir (보안 인증, Gotham) |
+
+### 14-6. BIP-Pipeline 발전 로드맵 — 엔터프라이즈 기능 점진적 도입
+
+```mermaid
+timeline
+    title BIP-Pipeline 발전 로드맵
+    section 현재 (완료)
+        Medallion Architecture : Gold Layer 3개 테이블
+        메타데이터 카탈로그 : OpenMetadata + 용어집 + Tags
+        Lineage : API → DAG → Table → Consumer
+        NL2SQL : Wren AI + SQL Pairs 29개
+    section 단기
+        LangGraph 에이전트 : Wren AI API + OM API 통합
+        Calculated Fields : MDL 비즈니스 지표 20개
+        SQL Pairs 확대 : 100개 패턴
+    section 중기
+        FastAPI NL2SQL : Vanna AI 또는 Wren AI API 임베드
+        Knowledge Graph : Neo4j 투자 도메인 온톨로지
+        ML Pipeline : MLflow 실험 추적
+    section 장기
+        실시간 분석 : Kafka/Flink 활용
+        Action Types : 자동 리밸런싱 워크플로우
+        엔터프라이즈 거버넌스 : RBAC + 감사 로그
+```
+
+---
+
 *이 문서는 BIP-Pipeline 프로젝트의 Wren AI 설치/운영 경험을 바탕으로 작성되었습니다.*
-*Wren AI OSS v0.29.1 기준이며, 버전 업데이트에 따라 내용이 변경될 수 있습니다.*
+*Wren AI OSS v0.29.1, Palantir Foundry (2025), Databricks Lakehouse (2025) 기준이며, 버전 업데이트에 따라 내용이 변경될 수 있습니다.*
