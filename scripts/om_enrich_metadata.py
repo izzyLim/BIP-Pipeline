@@ -742,20 +742,6 @@ TABLE_METADATA = {
         },
     },
 
-    "sp500_sectors": {
-        "description": (
-            "S&P500 구성 종목의 GICS 섹터·산업 분류 테이블. "
-            "S&P500 공식 구성 종목(약 503개)의 글로벌산업분류기준(GICS) 섹터와 세부 산업을 저장합니다. "
-            "미국 주식 섹터 분석 및 분류 기준으로 활용."
-        ),
-        "columns": {
-            "symbol":           "티커 심볼. 예: AAPL, NVDA, MSFT",
-            "security":         "기업명. 예: Apple Inc., NVIDIA Corporation",
-            "gics_sector":      "GICS 섹터(11개). 예: Information Technology, Health Care, Financials",
-            "gics_sub_industry": "GICS 세부 산업. 예: Semiconductors, Application Software",
-        },
-    },
-
     # ──────────────────────────────────────────────────────────
     # 사용자 / 포트폴리오 거래
     # ──────────────────────────────────────────────────────────
@@ -1075,9 +1061,6 @@ COLUMN_TERM_MAP = {
     "market_daily_summary.pct_above_ma200":     ["investment-terms.market.pct-above-ma"],
     "market_daily_summary.avg_volume_ratio":    ["investment-terms.technical.volume-ratio"],
     "market_daily_summary.total_volume":        ["investment-terms.price.trading-volume"],
-    # sp500_sectors
-    "sp500_sectors.gics_sector":         ["investment-terms.stock-classification.gics"],
-    "sp500_sectors.gics_sub_industry":   ["investment-terms.stock-classification.gics"],
     # stock_info 추가
     "stock_info.par_value":              ["investment-terms.price.par-value"],
     "stock_info.total_shares":           ["investment-terms.financial.shares-outstanding"],

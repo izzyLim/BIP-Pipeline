@@ -47,7 +47,6 @@ TABLE_TAGS = {
     "stock_info":              ["DataLayer.raw", "Domain.market"],
     "stock_price_1d":          ["DataLayer.raw", "Domain.market"],
     "stock_price_1m":          ["DataLayer.raw", "Domain.market"],
-    "sp500_sectors":           ["DataLayer.raw", "Domain.market"],
 
     # ── Raw / Financial ───────────────────────────────────────────────────────
     "financial_statements":    ["DataLayer.raw", "Domain.financial"],

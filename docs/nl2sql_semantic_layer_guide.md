@@ -1,6 +1,7 @@
 # NL2SQL · 시맨틱 레이어 · 온톨로지: 개념과 구현 가이드
 
 > **작성일:** 2026-03-28
+> **최근 업데이트:** 2026-04-02 (Wren AI 실제 구현 결과, 메타데이터 동기화, SQL Pairs, 운영 이슈 추가)
 > **목적:** NL2SQL 시스템 설계 학습 자료 — 단순 Text-to-SQL부터 온톨로지 기반 시맨틱 레이어까지
 > **기반 프로젝트:** BIP-Pipeline (주식 투자 데이터 파이프라인)
 
@@ -18,6 +19,8 @@
 8. [목표 아키텍처 — 전체 그림](#8-목표-아키텍처)
 9. [구현 로드맵](#9-구현-로드맵)
 10. [핵심 개념 정리](#10-핵심-개념-정리)
+11. [Wren AI 도구 조사 결과](#11-wren-ai-도구-조사-결과-2026-03-29)
+12. [Wren AI 실제 구현 결과](#12-wren-ai-실제-구현-결과-2026-04-02)
 
 ---
 
@@ -574,36 +577,39 @@ Step 5. 결과 + 해석 반환
 ✅ Tags 분류 체계 (raw/derived/gold, domain 분류) — 37개 테이블 완료 (2026-03-29)
 ```
 
-### Phase 2: Gold Layer + 시맨틱 레이어 구축
+### Phase 2: Gold Layer + 시맨틱 레이어 구축 ✅ 완료 (2026-04-02)
 ```
-✅ analytics_macro_daily — macro_indicators EAV pivot, 437행 적재 완료 (DAG: 09_analytics_macro_daily)
-✅ analytics_stock_daily — 시세 + 기술지표 + 컨센서스 와이드 테이블 (DAG: 09_analytics_stock_daily)
-✅ analytics_valuation   — PER/PBR/ROE pre-computed, 7,609행 적재 완료 (DAG: 09_analytics_valuation)
+✅ analytics_macro_daily — macro_indicators EAV pivot, 437행 (DAG: 09_analytics_macro_daily)
+✅ analytics_stock_daily — 시세+지표+컨센서스 와이드 (DAG: 09_analytics_stock_daily_kr/us)
+✅ analytics_valuation   — PER/PBR/ROE pre-computed, 7,609행 (DAG: 09_analytics_valuation)
 ✅ Tags 분류 체계 등록 (OM — 37개 테이블 DataLayer/Domain 태그 완료)
-🔲 Wren AI 설치 (Docker Compose)
-🔲 핵심 메트릭 정의 (PER, PBR, ROE, 배당수익률 등 20개)
-🔲 비즈니스 디멘션 정의 (대형주, 가치주, 성장주, 섹터 분류)
-🔲 테이블 관계 정의 (JOIN 경로 시맨틱 모델로 전환)
-🔲 NL2SQL 테스트 쿼리 30개 작성 및 정확도 검증
+✅ Wren AI 설치 (Docker Compose — 5개 서비스, gpt-4o-mini)
+✅ 5개 모델 등록 (Gold 3 + Raw 2) + 테이블 관계 정의
+✅ OM → DB COMMENT 동기화 (35 tables, 453 columns)
+✅ OM → Wren AI 메타데이터 동기화 + 자동화 DAG (10_sync_metadata_daily)
+✅ SQL Pairs 29개 등록 (자주 묻는 패턴 — RAG 검색 활용)
+✅ 외부 API 소스 OM lineage 완성 (9 services, 14 endpoints, 31 edges)
+✅ SourceType 태그 (rest-api/scraping/library) 14 apiEndpoints
 ```
 
-### Phase 3: 온톨로지 고도화
+### Phase 3: NL2SQL 고도화 + 에이전트 통합
+```
+🔲 LangGraph 에이전트 + Wren AI API 통합
+   - 엔티티 해석 (종목명 → ticker DB 조회)
+   - 의도 분류 (주가? 재무? 매크로?)
+   - 멀티 쿼리 오케스트레이션 (Wren AI API 호출)
+   - OM API로 용어집/메타데이터 컨텍스트 주입
+   - 결과 종합 + 자연어 응답 생성
+🔲 Wren AI Calculated Fields (MDL 비즈니스 지표 20개)
+🔲 Wren AI API를 FastAPI에 연동
+🔲 Chat UI 구현 (기존 BIP-React 확장)
+```
+
+### Phase 4: 온톨로지 고도화 (장기)
 ```
 🔲 투자 도메인 개념 체계 설계 (주식 분류 트리)
-🔲 OM Glossary와 Wren AI 시맨틱 모델 연동
-🔲 개념 간 관계 정의 (isA, partOf, calculatedFrom 등)
 🔲 Knowledge Graph 구축 (선택적: Neo4j)
-```
-
-### Phase 4: NL2SQL + 에이전트 통합
-```
-🔲 Wren AI API를 FastAPI에 연동
-🔲 Claude API Tool Use로 에이전트 구현
-    - DB 조회 tool
-    - Airflow DAG 트리거 tool
-    - 이메일/알림 발송 tool
-🔲 Chat UI 구현 (기존 BIP-React 확장)
-🔲 모닝 브리핑 에이전트 고도화
+🔲 개념 간 관계 정의 (isA, partOf, calculatedFrom 등)
 ```
 
 ---
@@ -739,6 +745,171 @@ LangGraph     (워크플로우 오케스트레이션 + 에이전트)
     +
 OpenMetadata  (메타데이터 컨텍스트 + Glossary)
 ```
+
+---
+
+## 12. Wren AI 실제 구현 결과 (2026-04-02)
+
+### 12-1. 설치 및 구성
+
+**Docker Compose 배포** (`docker-compose.wrenai.yml`):
+
+| 서비스 | 이미지 버전 | 역할 |
+|--------|-----------|------|
+| wren-bootstrap | 0.1.5 | 초기화 (config.properties, MDL 디렉토리) |
+| wren-engine | 0.22.0 | SQL 실행 엔진 (MDL 기반, Java) |
+| wren-ai-service | 0.29.0 | NL2SQL 엔진 (LiteLLM + RAG, Python) |
+| wren-ui | 0.32.2 | 웹 인터페이스 (Next.js, :3000) |
+| qdrant | v1.11.0 | 벡터 DB (임베딩 저장) |
+| ibis-server | 0.22.0 | 데이터 소스 커넥터 |
+
+**설치 시 주의사항:**
+- `stock-network` (기존 Docker bridge)에 연결하여 `bip-postgres`에 직접 접근
+- Bootstrap이 `config.properties`를 volume에 생성해야 Engine이 시작됨
+- AI Service의 `QDRANT_HOST` 환경변수 필수 (entrypoint.sh에서 nc로 체크)
+- Apple Silicon(arm64)은 `platform: linux/arm64` 명시 필요
+
+**LLM 설정:**
+- 모델: `gpt-4o-mini` (config.yaml에서 변경)
+- gpt-4o는 무료 티어에서 TPM rate limit (30,000) 걸림 → mini 권장
+- Anthropic Claude도 LiteLLM 통해 사용 가능
+
+### 12-2. 등록된 모델 및 관계
+
+**5개 모델:**
+- `public_stock_info` — 종목 마스터 (23 columns)
+- `public_stock_price_1d` — 일봉 시세 (19 columns)
+- `public_analytics_stock_daily` — Gold: 시세+지표+컨센서스 (46 columns)
+- `public_analytics_macro_daily` — Gold: 매크로 피벗 (49 columns)
+- `public_analytics_valuation` — Gold: 밸류에이션 (32 columns)
+
+**주의:** Wren AI 내부 reference name은 `public_` (언더스코어) 형식.
+`public.analytics_stock_daily`가 아닌 `public_analytics_stock_daily`로 SQL 작성 필요.
+
+**관계 (4개):**
+
+```
+analytics_stock_daily.ticker → stock_info.ticker (Many-to-One)
+analytics_valuation.ticker   → stock_info.ticker (Many-to-One)
+analytics_valuation.ticker   → stock_price_1d.ticker (Many-to-One)
+stock_price_1d.ticker        → stock_info.ticker (One-to-Many, 자동생성)
+```
+
+### 12-3. 메타데이터 동기화 구조
+
+OM을 메타데이터 원천으로, DB와 Wren AI에 자동 동기화:
+
+```mermaid
+flowchart LR
+    OM["OpenMetadata<br/>(원천 — UI/API 편집)"]
+
+    subgraph Sync["10_sync_metadata_daily DAG"]
+        T1["sync_om_to_db<br/>OM API → COMMENT ON"]
+        T2["sync_om_to_wrenai<br/>OM API → GraphQL → Deploy"]
+    end
+
+    DB["PostgreSQL<br/>COMMENT"]
+    WR["Wren AI<br/>Model Description"]
+    QD["Qdrant<br/>Re-indexing"]
+
+    OM --> T1 --> DB
+    T1 --> T2 --> WR --> QD
+
+    style OM fill:#ffe0b2,stroke:#e65100
+    style DB fill:#c8e6c9
+    style WR fill:#bbdefb
+    style QD fill:#e1bee7
+```
+
+**Wren AI GraphQL API 활용:**
+- `updateModelMetadata(where: {id}, data: {description, columns: [{id, description}]})` — 모델/컬럼 설명 주입
+- `mutation { deploy { status } }` — MDL 재생성 + Qdrant 임베딩 재인덱싱
+
+### 12-4. SQL Pairs (29개)
+
+질문-SQL 쌍을 사전 등록하여 RAG 기반 유사 패턴 검색으로 정확도 향상:
+
+| 카테고리 | 수량 | 대표 질문 |
+|---------|------|---------|
+| 종목 검색/주가 | 7 | "하이닉스 주가", "삼성전자 최근 한달 주가" |
+| 기술지표 | 3 | "RSI 과매도 종목", "골든크로스 발생 종목" |
+| 밸류에이션 | 5 | "PER 낮은 종목", "ROE 20% 이상", "삼성전자 재무" |
+| 매크로 | 5 | "오늘 환율", "VIX 추이", "기준금리" |
+| 수급 | 2 | "외국인 순매수", "기관 순매수" |
+| 복합/비교 | 7 | "저PER 고ROE", "거래량 급증", "삼성 vs 하이닉스" |
+
+**등록 방법:**
+```graphql
+mutation CreateSqlPair($data: CreateSqlPairInput!) {
+  createSqlPair(data: $data) { id question }
+}
+# variables: {"data": {"question": "...", "sql": "..."}}
+```
+
+### 12-5. 실제 운영에서 발견된 문제와 해결
+
+| 문제 | 원인 | 해결 |
+|------|------|------|
+| LLM이 ticker를 추측 (035720.KQ) | 종목코드를 기억에서 꺼내 hallucination | Instructions: "ticker 하드코딩 금지, stock_name ILIKE 사용" |
+| ETF/보통주 구분 안 됨 | "하이닉스" → SK하이닉스 + RISE하이닉스ETF 등 | Instructions: "여러 매칭 시 모두 표시 + stock_name 포함" |
+| GROUP BY 에러 | Wren Engine SQL 검증이 엄격 | Instructions: "주가 흐름은 GROUP BY 없이 일별 데이터 반환" |
+| 1질문 = 1SQL만 생성 | Wren AI 구조적 한계 | 향후 LangGraph 에이전트에서 멀티 쿼리 오케스트레이션 |
+| 답변 품질 (데이터만 반환) | Wren AI는 SQL 변환기, 분석 도구 아님 | 향후 LangGraph에서 LLM 종합 분석 + 자연어 응답 |
+
+### 12-6. NL2SQL 정확도 핵심 요인 (실측 기반)
+
+실제 운영 경험에서 확인된 정확도 기여 순위:
+
+```
+1위: 스키마 설계 (Gold layer pre-join) ──── 가장 큰 기여
+     → 복잡한 JOIN/단위변환 제거로 LLM 실수 원천 차단
+
+2위: 메타데이터 (컬럼 설명) ──────────── OM → Wren AI 동기화
+     → market_value 단위(억원), 값 범위 등 LLM에 힌트 제공
+
+3위: SQL Pairs (RAG 패턴) ───────────── 29개 등록
+     → 유사 질문 시 검증된 SQL 패턴 재활용
+
+4위: LLM 모델 ──────────────────────── gpt-4o-mini
+     → 단순 조회는 mini도 충분, 복잡한 분석은 큰 모델 유리
+
+5위: Instructions ─────────────────── 도메인 규칙
+     → ILIKE 사용, ticker 추측 금지 등 에지케이스 처리
+```
+
+### 12-7. 향후 아키텍처 — LangGraph + Wren AI 통합
+
+Wren AI의 한계(단일 쿼리, 데이터만 반환)를 LangGraph 에이전트로 보완:
+
+```mermaid
+flowchart TB
+    U[사용자 질문]
+
+    subgraph Agent["LangGraph 에이전트 (두뇌)"]
+        A1[엔티티 해석<br/>DB ILIKE 조회]
+        A2[의도 분류<br/>주가? 재무? 비교?]
+        A3[쿼리 계획<br/>필요한 SQL 수 결정]
+        A4[SQL 생성/실행<br/>Wren AI API × N회]
+        A5[결과 종합<br/>LLM 분석 + 요약]
+    end
+
+    subgraph Tools["도구"]
+        W[Wren AI API<br/>POST /v1/asks]
+        O[OM API<br/>용어집/메타데이터]
+        D[PostgreSQL<br/>직접 조회]
+    end
+
+    U --> A1 --> A2 --> A3 --> A4 --> A5 --> U
+    A1 -.-> D
+    A2 -.-> O
+    A4 -.-> W
+
+    style Agent fill:#e8eaf6
+    style Tools fill:#e0f2f1
+```
+
+**Wren AI의 역할:** SQL 생성 엔진 (도구)
+**LangGraph의 역할:** 오케스트레이션 + 멀티 쿼리 + 자연어 응답
 
 ---
 

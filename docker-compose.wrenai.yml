@@ -1,0 +1,136 @@
+# Wren AI — NL2SQL 시맨틱 레이어
+# 사용법: docker compose -f docker-compose.wrenai.yml up -d
+#
+# 전제조건:
+#   1. stock-network 생성: docker network create stock-network
+#   2. .env 파일에 OPENAI_API_KEY 설정
+#   3. wrenai/config.yaml 파일 존재 (LLM 설정)
+#
+# UI 접속: http://localhost:3000
+# 초기 설정에서 PostgreSQL 연결:
+#   Host: bip-postgres | Port: 5432 | DB: stockdb | User: user | PW: pw1234
+
+services:
+  # ── Bootstrap (초기화 후 종료) ──────────────────────────────
+  wren-bootstrap:
+    image: ghcr.io/canner/wren-bootstrap:0.1.5
+    container_name: wren-bootstrap
+    platform: linux/arm64
+    environment:
+      DATA_PATH: /app/data
+    volumes:
+      - wren-data:/app/data
+    networks:
+      - stock-network
+    restart: on-failure
+
+  # ── Wren Engine (SQL 실행 엔진) ────────────────────────────
+  wren-engine:
+    image: ghcr.io/canner/wren-engine:0.22.0
+    container_name: wren-engine
+    platform: linux/arm64
+    restart: on-failure
+    expose:
+      - "8080"
+      - "7432"
+    volumes:
+      - wren-data:/usr/src/app/etc
+      - ./wrenai/data:/usr/src/app/data
+    networks:
+      - stock-network
+    depends_on:
+      - wren-bootstrap
+
+  # ── Ibis Server (데이터 소스 커넥터) ───────────────────────
+  ibis-server:
+    image: ghcr.io/canner/wren-engine-ibis:0.22.0
+    container_name: wren-ibis
+    platform: linux/arm64
+    restart: on-failure
+    expose:
+      - "8000"
+    environment:
+      WREN_ENGINE_ENDPOINT: http://wren-engine:8080
+    networks:
+      - stock-network
+
+  # ── Qdrant (벡터 DB — 임베딩 저장) ────────────────────────
+  qdrant:
+    image: qdrant/qdrant:v1.11.0
+    container_name: wren-qdrant
+    restart: on-failure
+    expose:
+      - "6333"
+      - "6334"
+    volumes:
+      - qdrant-data:/qdrant/storage
+    networks:
+      - stock-network
+
+  # ── Wren AI Service (NL2SQL 엔진) ──────────────────────────
+  wren-ai-service:
+    image: ghcr.io/canner/wren-ai-service:0.29.0
+    container_name: wren-ai-service
+    platform: linux/arm64
+    restart: on-failure
+    expose:
+      - "5555"
+    ports:
+      - "5555:5555"
+    environment:
+      PYTHONUNBUFFERED: 1
+      CONFIG_PATH: /app/config.yaml
+      QDRANT_HOST: wren-qdrant
+      SHOULD_FORCE_DEPLOY: 1
+      WREN_AI_SERVICE_PORT: 5555
+      WREN_UI_PORT: 3000
+    env_file:
+      - .env
+    volumes:
+      - ./wrenai/config.yaml:/app/config.yaml:ro
+      - ./wrenai/data:/app/data:ro
+    networks:
+      - stock-network
+    depends_on:
+      - qdrant
+
+  # ── Wren UI (웹 인터페이스) ────────────────────────────────
+  wren-ui:
+    image: ghcr.io/canner/wren-ui:0.32.2
+    container_name: wren-ui
+    platform: linux/arm64
+    restart: on-failure
+    environment:
+      DB_TYPE: sqlite
+      SQLITE_FILE: /app/data/db.sqlite3
+      WREN_ENGINE_ENDPOINT: http://wren-engine:8080
+      WREN_AI_ENDPOINT: http://wren-ai-service:5555
+      IBIS_SERVER_ENDPOINT: http://ibis-server:8000
+      GENERATION_MODEL: ${WREN_LLM_MODEL:-gpt-4o}
+      WREN_ENGINE_PORT: 8080
+      WREN_AI_SERVICE_VERSION: 0.29.0
+      WREN_UI_VERSION: 0.32.2
+      WREN_ENGINE_VERSION: 0.22.0
+      TELEMETRY_ENABLED: "false"
+      NEXT_PUBLIC_TELEMETRY_ENABLED: "false"
+      WREN_PRODUCT_VERSION: 0.29.1
+    ports:
+      - "${WREN_UI_PORT:-3000}:3000"
+    volumes:
+      - wren-data:/app/data
+    networks:
+      - stock-network
+    depends_on:
+      - wren-ai-service
+      - wren-engine
+
+networks:
+  stock-network:
+    external: true
+    name: stock-network
+
+volumes:
+  wren-data:
+    name: wren-data
+  qdrant-data:
+    name: qdrant-data

@@ -740,7 +740,6 @@ GLOSSARY_TERMS = [
         "displayName": "GICS (글로벌산업분류기준)",
         "description": (
             "Global Industry Classification Standard. S&P와 MSCI가 공동 개발한 표준 산업 분류 체계.\n"
-            "- DB: sp500_sectors.gics_sector (섹터, 11개), sp500_sectors.gics_sub_industry (세부 업종)\n"
             "- 11개 섹터: Energy, Materials, Industrials, Consumer Discretionary, Consumer Staples,\n"
             "  Health Care, Financials, Information Technology, Communication Services, Utilities, Real Estate\n"
             "- ⚠️ 한국주식은 GICS 대신 KRX 업종 분류 사용 (stock_info.sector, industry_name)"

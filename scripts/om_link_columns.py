@@ -150,9 +150,6 @@ COLUMN_TERM_MAP = {
     "market_daily_summary.rsi_oversold":        ["investment-terms.technical.rsi"],
     "market_daily_summary.rsi_overbought":      ["investment-terms.technical.rsi"],
 
-    # ── sp500_sectors ────────────────────────────────────────────────────────
-    "sp500_sectors.gics_sector":         ["investment-terms.stock-classification.gics"],
-    "sp500_sectors.gics_sub_industry":   ["investment-terms.stock-classification.gics"],
 }
 
 
