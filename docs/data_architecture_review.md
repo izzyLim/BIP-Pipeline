@@ -1,7 +1,7 @@
 # BIP-Pipeline: 데이터 아키텍처 리뷰 & NL2SQL 준비도
 
 > **최초 작성:** 2026-03-21
-> **최근 업데이트:** 2026-03-28 (stock_price_1wk/1mo DROP, OM 메타데이터 정비 완료, Glossary 77개 등록)
+> **최근 업데이트:** 2026-04-01 (End-to-End 데이터 플로우 및 OM Lineage 적용 범위 추가)
 > **작성자:** Claude Code (Data Architect 역할)
 > **목적:** 아키텍처 이슈 추적, 개선 결정 기록, NL2SQL 준비도 관리
 
@@ -13,6 +13,8 @@
 2. [데이터 레이어 구조](#2-데이터-레이어-구조)
 3. [테이블 카탈로그](#3-테이블-카탈로그)
 4. [데이터 소스 & DAG 맵](#4-데이터-소스--dag-맵)
+   - [4-2. End-to-End 데이터 플로우](#4-2-end-to-end-데이터-플로우-소스--테이블--활용처)
+   - [4-3. OpenMetadata Lineage 적용 범위](#4-3-openmetadata-lineage-적용-범위-및-한계)
 5. [아키텍처 이슈 트래커](#5-아키텍처-이슈-트래커)
 6. [NL2SQL 위험 레지스트리](#6-nl2sql-위험-레지스트리)
 7. [비즈니스 용어집](#7-비즈니스-용어집)
@@ -363,6 +365,118 @@ UNIQUE: `(indicator_date, region, indicator_type)`
 | 보고 | `morning_report` | DB + OpenAI/Anthropic | 이메일 발송 (비저장) | 평일 07:30 |
 
 > 모든 DAG는 완료 시 `utils/lineage.py`의 `register_table_lineage_async()`를 통해 OpenMetadata에 lineage를 자동 등록함.
+
+---
+
+## 4-2. End-to-End 데이터 플로우 (소스 → 테이블 → 활용처)
+
+> 수집/적재(upstream)뿐 아니라 테이블이 **어디서 읽히는지(downstream)**까지 포함한 전체 플로우.
+
+### 전체 흐름도
+
+```
+[외부 소스]          [수집 DAG]         [Raw/Derived 테이블]    [Gold 테이블]        [활용처 (Consumers)]
+────────────────────────────────────────────────────────────────────────────────────────────────────────
+Naver/Yahoo         01~02 DAG    →    stock_info              ─┐
+                                      stock_price_1d           │
+                                                               ├──→ analytics_stock_daily ──→ 모닝 브리핑
+pandas-ta           03 DAG       →    stock_indicators         │                            FastAPI (BIP-React)
+                                      market_daily_summary   ──┘                            NL2SQL (예정)
+
+yfinance/GDELT      04~06 DAG    →    macro_indicators       ──→ analytics_macro_daily  ──→ 모닝 브리핑
+ECOS/KRX/News                         risk_headlines                                        NL2SQL (예정)
+
+DART API            05 DAG       →    financial_statements   ─┐
+                                      company_dart_info       │
+                                      company_*              ─┴──→ analytics_valuation  ──→ FastAPI (BIP-React)
+Naver WiseReport    06 DAG       →    consensus_estimates                                   NL2SQL (예정)
+
+Naver News API      06 DAG       →    news                   ──────────────────────────→ 모닝 브리핑
+                                      news_article                                          (LLM RAG 컨텍스트)
+
+KIS API (한투)       07 DAG       →    portfolio_snapshot     ──────────────────────────→ FastAPI (BIP-React)
+                                      portfolio / holding                                   bip-agents
+                                      transaction
+
+DART 사업보고서       08 DAG       →    company_dividend       ──────────────────────────→ FastAPI (BIP-React)
+                                      company_employees
+                                      company_executives
+```
+
+### 테이블별 활용처 매핑
+
+| 테이블 | Layer | 주요 Consumer | 비고 |
+|--------|-------|--------------|------|
+| `stock_info` | raw | 모닝 브리핑, FastAPI, analytics_* Gold | 종목 메타(이름/섹터) 모든 곳에서 JOIN |
+| `stock_price_1d` | raw | analytics_stock_daily, 모닝 브리핑, FastAPI | Gold 적재 후에는 Gold 우선 사용 예정 |
+| `stock_indicators` | derived | analytics_stock_daily | Gold 적재 후 직접 조회 대신 Gold 사용 |
+| `macro_indicators` | raw | analytics_macro_daily, 모닝 브리핑 | EAV → Gold pivot으로 조회 단순화 |
+| `financial_statements` | raw | analytics_valuation, FastAPI | DART 연간 재무 데이터 |
+| `consensus_estimates` | raw | analytics_stock_daily, analytics_valuation, FastAPI | 애널리스트 추정치 |
+| `news` / `news_article` | raw | 모닝 브리핑 (LLM RAG) | 뉴스 감성 분석 컨텍스트 |
+| `portfolio_snapshot` | raw | FastAPI, bip-agents | 실시간 포트폴리오 현황 |
+| `analytics_stock_daily` | **gold** | 모닝 브리핑, FastAPI, NL2SQL (예정) | 시세+지표+컨센서스 pre-joined |
+| `analytics_macro_daily` | **gold** | 모닝 브리핑, NL2SQL (예정) | 거시지표 pivot, 조회 단순화 |
+| `analytics_valuation` | **gold** | FastAPI, NL2SQL (예정) | PER/PBR/ROE pre-computed |
+
+### Consumer별 주요 읽기 테이블
+
+| Consumer | 주요 읽기 테이블 |
+|----------|----------------|
+| **모닝 브리핑 DAG** | `stock_price_1d`, `stock_info`, `macro_indicators`, `news`, `analytics_macro_daily` |
+| **FastAPI (BIP-React)** | `stock_info`, `stock_price_1d`, `financial_statements`, `consensus_estimates`, `analytics_valuation`, `portfolio_snapshot`, `company_*` |
+| **bip-agents (LangGraph)** | `portfolio_snapshot`, `holding`, `analytics_stock_daily`, `analytics_macro_daily` |
+| **NL2SQL / Wren AI (예정)** | `analytics_stock_daily`, `analytics_valuation`, `analytics_macro_daily`, `stock_info` |
+
+---
+
+## 4-3. OpenMetadata Lineage 적용 범위 및 한계
+
+### 현재 커버 범위 (✅)
+
+`utils/lineage.py`의 `register_table_lineage_async()`로 22개 DAG 전체에 등록:
+
+```
+source_table → pipeline(DAG) → target_table
+```
+
+예: `stock_price_1d` → `03_indicator_kr_daily` → `stock_indicators`
+
+### OM Lineage로 Consumer 추적 — 가능 여부
+
+| Consumer 유형 | OM 지원 여부 | 구현 방법 |
+|--------------|-------------|---------|
+| **Airflow DAG (읽기 전용)** | ✅ 가능 | `register_table_lineage_async(target=None, source_tables=[...])` — pipeline을 종착점으로 등록 |
+| **FastAPI (REST API)** | ⚠️ 제한적 | OM에 Dashboard Service로 등록하거나, 별도 커스텀 lineage API 활용 |
+| **bip-agents (LangGraph)** | ⚠️ 제한적 | 별도 repo라 자동 추적 어려움. 수동 등록 가능 |
+| **Wren AI (NL2SQL)** | ⚠️ 제한적 | Wren Engine이 OM과 직접 통합 없음. 메타데이터 공유 수준 |
+
+### 실용적 개선 방향
+
+**단기 (Airflow DAG consumer 등록):**
+모닝 브리핑 DAG처럼 테이블을 읽기만 하는 DAG도 lineage 등록 가능:
+
+```python
+# 모닝 브리핑 DAG에 추가
+register_table_lineage_async(
+    target_table=None,   # 출력 테이블 없음 (이메일 발송)
+    source_tables=[
+        "analytics_macro_daily", "analytics_stock_daily",
+        "stock_price_1d", "news"
+    ]
+)
+```
+
+> 현재 `register_table_lineage()` 함수가 `target_table` 필수 파라미터라 수정 필요.
+
+**중기 (FastAPI lineage):**
+OM에 `bip-react-api` Dashboard Service를 생성하고,
+FastAPI 시작 시 `table → dashboard` lineage를 한 번 등록하는 스크립트 추가.
+
+**현실적 결론:**
+OM lineage는 **파이프라인(DAG) 간 데이터 흐름 추적**에는 매우 효과적이나,
+**애플리케이션 레벨 consumer**(API, 에이전트) 추적은 수동 등록이 필요하고 유지보수 부담이 있다.
+우선순위는 DAG consumer lineage 보완 → FastAPI lineage 등록 순으로 진행하는 것을 권장.
 
 ---
 
