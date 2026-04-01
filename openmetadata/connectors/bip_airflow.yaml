@@ -1,0 +1,45 @@
+# ============================================================
+# BIP-Pipeline Airflow 커넥터 설정
+# ============================================================
+# Airflow DAG 정보를 OpenMetadata에 수집하여
+# 데이터 파이프라인 lineage를 자동으로 추적합니다.
+#
+# 효과:
+#   - DAG 목록 및 실행 이력이 OM에 등록됨
+#   - stock_price_1d ← 02_price_kr_ohlcv_daily (lineage)
+#   - stock_indicators ← dag_kr_daily_indicators (lineage)
+# ============================================================
+
+source:
+  type: airflow
+  serviceName: bip-airflow
+  serviceConnection:
+    config:
+      type: Airflow
+      hostPort: http://airflow-airflow-webserver-1:8080
+      numberOfStatus: 10
+      # v1.12.3: BasicAuth 제거됨 — Airflow 메타데이터 DB(Postgres)에 직접 연결
+      connection:
+        type: Postgres
+        username: airflow
+        authType:
+          password: airflow
+        hostPort: airflow-postgres-1:5432
+        database: airflow
+
+  sourceConfig:
+    config:
+      type: PipelineMetadata
+      includeLineage: true
+
+sink:
+  type: metadata-rest
+  config: {}
+
+workflowConfig:
+  loggerLevel: INFO
+  openMetadataServerConfig:
+    hostPort: http://openmetadata-server:8585/api
+    authProvider: openmetadata
+    securityConfig:
+      jwtToken: "${OM_BOT_TOKEN}"
