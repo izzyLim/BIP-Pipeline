@@ -28,6 +28,7 @@ def load_env_vars():
     var_map = {
         "TELEGRAM_BOT_TOKEN": "TELEGRAM_BOT_TOKEN",
         "TELEGRAM_CHAT_ID": "TELEGRAM_CHAT_ID",
+        "TELEGRAM_CHANNEL_ID": "TELEGRAM_CHANNEL_ID",
         "anthropic_api_key": "ANTHROPIC_API_KEY",
     }
     for var_key, env_key in var_map.items():

@@ -49,10 +49,13 @@ def send_morning_report(**context):
         # 텔레그램 봇
         telegram_token = Variable.get("TELEGRAM_BOT_TOKEN", default_var="")
         telegram_chat_id = Variable.get("TELEGRAM_CHAT_ID", default_var="")
+        telegram_channel_id = Variable.get("TELEGRAM_CHANNEL_ID", default_var="")
         if telegram_token:
             os.environ["TELEGRAM_BOT_TOKEN"] = telegram_token
         if telegram_chat_id:
             os.environ["TELEGRAM_CHAT_ID"] = telegram_chat_id
+        if telegram_channel_id:
+            os.environ["TELEGRAM_CHANNEL_ID"] = telegram_channel_id
 
         # 네이버 API (실시간 뉴스용)
         naver_id = Variable.get("naver_client_id", default_var="")

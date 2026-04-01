@@ -1,84 +1,28 @@
 """
 텔레그램 발송 유틸리티 (Market Pulse Bot)
+- 채널: 운영용 (구독자 대상)
+- 개인 DM: 테스트/디버깅용
 """
 import os
 import re
 import httpx
 
 BOT_TOKEN = os.getenv("TELEGRAM_BOT_TOKEN", "")
-CHAT_ID = os.getenv("TELEGRAM_CHAT_ID", "")
+CHANNEL_ID = os.getenv("TELEGRAM_CHANNEL_ID", "")  # 채널 (운영)
+DM_CHAT_ID = os.getenv("TELEGRAM_CHAT_ID", "")     # 개인 DM (테스트)
 
 TELEGRAM_API = f"https://api.telegram.org/bot{BOT_TOKEN}"
 
 
-def _clean_markdown(text: str) -> str:
-    """LLM 마크다운을 텔레그램 MarkdownV2에서 안전한 형태로 변환"""
-    # 텔레그램에서 이스케이프 필요한 특수문자
-    escape_chars = r'_[]()~`>#+=|{}.!'
-    for ch in escape_chars:
-        text = text.replace(ch, f'\\{ch}')
-    # ** bold ** → *bold*
-    text = re.sub(r'\\\*\\\*(.*?)\\\*\\\*', r'*\1*', text)
-    return text
-
-
-def _ai_to_telegram(ai_analysis: str, today_str: str) -> str:
-    """AI 분석 텍스트를 텔레그램 메시지 형식으로 변환 (4096자 제한)"""
-    lines = ai_analysis.split('\n')
-    result = []
-    char_count = 0
-    limit = 3800  # 여유있게 설정
-
-    header = f"📊 *Morning Pulse — {today_str}*\n\n"
-    result.append(header)
-    char_count += len(header)
-
-    for line in lines:
-        stripped = line.strip()
-        if not stripped:
-            result.append('\n')
-            char_count += 1
-            continue
-
-        # 마크다운 헤딩 → 텔레그램 볼드
-        if stripped.startswith('### ') or stripped.startswith('## '):
-            text = re.sub(r'^#+\s*', '', stripped)
-            formatted = f"\n*{text}*\n"
-        elif stripped.startswith('□'):
-            formatted = f"  {stripped}\n"
-        elif stripped.startswith('- ') or stripped.startswith('• '):
-            formatted = f"  {stripped}\n"
-        elif stripped == '---':
-            formatted = '\n'
-        else:
-            formatted = f"{stripped}\n"
-
-        if char_count + len(formatted) > limit:
-            result.append('\n_\\.\\.\\. 전체 내용은 이메일을 확인하세요_ 📧')
-            break
-
-        result.append(formatted)
-        char_count += len(formatted)
-
-    return ''.join(result)
-
-
-def send_telegram_message(text: str, chat_id: str = None) -> bool:
-    """텔레그램 메시지 발송"""
-    if not BOT_TOKEN:
-        print("⚠️ TELEGRAM_BOT_TOKEN 미설정 — 텔레그램 발송 건너뜀")
+def _send(text: str, chat_id: str) -> bool:
+    """단일 대상 발송"""
+    if not BOT_TOKEN or not chat_id:
         return False
-
-    target_chat = chat_id or CHAT_ID
-    if not target_chat:
-        print("⚠️ TELEGRAM_CHAT_ID 미설정 — 텔레그램 발송 건너뜀")
-        return False
-
     try:
         resp = httpx.post(
             f"{TELEGRAM_API}/sendMessage",
             json={
-                "chat_id": target_chat,
+                "chat_id": chat_id,
                 "text": text,
                 "parse_mode": "Markdown",
             },
@@ -88,17 +32,50 @@ def send_telegram_message(text: str, chat_id: str = None) -> bool:
         if data.get("ok"):
             return True
         else:
-            print(f"⚠️ 텔레그램 발송 실패: {data.get('description')}")
+            print(f"⚠️ 텔레그램 발송 실패 [{chat_id}]: {data.get('description')}")
             return False
     except Exception as e:
-        print(f"⚠️ 텔레그램 발송 오류: {e}")
+        print(f"⚠️ 텔레그램 발송 오류 [{chat_id}]: {e}")
         return False
 
 
-def send_morning_report_telegram(ai_analysis: str, today_str: str, chat_id: str = None) -> bool:
-    """모닝 리포트 텔레그램 발송"""
-    text = _ai_to_telegram(ai_analysis, today_str)
-    success = send_telegram_message(text, chat_id=chat_id)
-    if success:
-        print(f"✅ 텔레그램 발송 완료")
-    return success
+def send_telegram_message(text: str, test: bool = False) -> bool:
+    """
+    텔레그램 메시지 발송
+
+    test=False (기본): 채널 + 개인 DM 둘 다 발송
+    test=True: 개인 DM에만 발송 (테스트 표시 포함)
+    """
+    if not BOT_TOKEN:
+        print("⚠️ TELEGRAM_BOT_TOKEN 미설정 — 텔레그램 발송 건너뜀")
+        return False
+
+    if test:
+        # 테스트: 개인 DM에만, [TEST] 표시
+        if not DM_CHAT_ID:
+            print("⚠️ TELEGRAM_CHAT_ID 미설정 — 테스트 발송 건너뜀")
+            return False
+        test_text = f"🧪 *[TEST]* {text}"
+        success = _send(test_text, DM_CHAT_ID)
+        if success:
+            print("✅ 텔레그램 테스트 발송 완료 (DM)")
+        return success
+    else:
+        # 운영: 채널 + 개인 DM
+        results = []
+        if CHANNEL_ID:
+            results.append(_send(text, CHANNEL_ID))
+        if DM_CHAT_ID:
+            results.append(_send(text, DM_CHAT_ID))
+        if not results:
+            print("⚠️ 발송 대상 없음 — CHANNEL_ID, CHAT_ID 모두 미설정")
+            return False
+        success = any(results)
+        if success:
+            targets = []
+            if CHANNEL_ID:
+                targets.append("채널")
+            if DM_CHAT_ID:
+                targets.append("DM")
+            print(f"✅ 텔레그램 발송 완료 ({', '.join(targets)})")
+        return success
