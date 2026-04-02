@@ -768,7 +768,9 @@ def build_morning_report(
 def save_report_to_file(html: str, filename: Optional[str] = None) -> str:
     """리포트를 파일로 저장 (디버깅/미리보기용)"""
     if filename is None:
-        filename = f"report_{datetime.now().strftime('%Y%m%d_%H%M%S')}.html"
+        from zoneinfo import ZoneInfo
+        kst_now = datetime.now(ZoneInfo("Asia/Seoul"))
+        filename = f"report_{kst_now.strftime('%Y%m%d_%H%M%S')}.html"
 
     filepath = Path("/tmp") / filename
     filepath.write_text(html, encoding="utf-8")

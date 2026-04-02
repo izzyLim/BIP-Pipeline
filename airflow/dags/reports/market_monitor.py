@@ -412,13 +412,51 @@ def check_layer1_rules(snapshot: Dict) -> List[Alert]:
 
 
 # ──────────────────────────────────────────────
-# 3. Layer 2: 체크리스트 파싱 및 모니터링
+# 3. Layer 2: 체크리스트 저장 및 에이전트 분석
 # ──────────────────────────────────────────────
 
-# 체크리스트 룰 유형:
-# index_level, stock_change, fx_level, event, general
+def save_checklist(checklist_text: str, target_date: str = None):
+    """체크리스트 원문 통째로 DB에 저장"""
+    if not target_date:
+        from zoneinfo import ZoneInfo
+        target_date = datetime.now(ZoneInfo("Asia/Seoul")).strftime("%Y-%m-%d")
+
+    engine = _get_engine()
+    with engine.begin() as conn:
+        conn.execute(text(
+            "DELETE FROM monitor_checklist WHERE checklist_date = :d"
+        ), {"d": target_date})
+        conn.execute(text("""
+            INSERT INTO monitor_checklist (checklist_date, checklist_text)
+            VALUES (:d, :t)
+        """), {"d": target_date, "t": checklist_text})
+
+    logger.info(f"체크리스트 저장: {target_date} ({len(checklist_text)}자)")
+
+    try:
+        from utils.lineage import register_table_lineage_async
+        register_table_lineage_async("monitor_checklist", source_tables=[])
+    except Exception:
+        pass
 
 
+def load_checklist(target_date: str = None) -> str:
+    """오늘의 체크리스트 원문 DB에서 로드"""
+    if not target_date:
+        from zoneinfo import ZoneInfo
+        target_date = datetime.now(ZoneInfo("Asia/Seoul")).strftime("%Y-%m-%d")
+
+    engine = _get_engine()
+    with engine.connect() as conn:
+        row = conn.execute(text("""
+            SELECT checklist_text FROM monitor_checklist
+            WHERE checklist_date = :d
+        """), {"d": target_date}).fetchone()
+
+    return row[0] if row else ""
+
+
+# ── 하위 호환용 (DAG에서 호출하는 함수명 유지) ──
 def parse_checklist_with_llm(checklist_text: str) -> List[Dict]:
     """
     모닝리포트 체크리스트를 Haiku로 구조화 파싱
@@ -758,117 +796,121 @@ def _format_market_snapshot(snapshot: Dict) -> List[str]:
         lines.append(f"*BTC* {btc['value_krw']:,.0f}원 ({btc.get('change_pct', 0):+.1f}%)")
     if eth.get("value_krw"):
         lines.append(f"*ETH* {eth['value_krw']:,.0f}원 ({eth.get('change_pct', 0):+.1f}%)")
-    if flow:
-        lines.append(
-            f"*수급* 외국인 {flow.get('foreign', 0):+,}억 | "
-            f"기관 {flow.get('institution', 0):+,}억 | "
-            f"개인 {flow.get('individual', 0):+,}억"
-        )
+    # 수급은 에이전트가 한투 API 실시간으로 가져오므로 상단에서 제외
     return lines
 
 
 def send_checklist_status(override_hour: int = None) -> Dict:
     """
     체크리스트 현황 정기 리포트 (텔레그램 발송)
-    - 시간대별 해당 체크리스트 원문 + 모니터링 결과
+    - 체크리스트 원문 + 에이전트 분석 결과
     - override_hour: 테스트용 시간 오버라이드
     """
     from reports.telegram_sender import send_telegram_message
 
     snapshot = fetch_market_snapshot()
-    rules = load_checklist_rules()
-    indices = snapshot.get("indices", {})
-    fx = indices.get("usd_krw", {})
+    checklist_text = load_checklist()
 
     now = datetime.now()
     hour = override_hour if override_hour is not None else now.hour
 
-    # 시간대별 표시할 phase 결정
     if hour < 9:
-        title = "장 시작 전"
-        show_phases = ["pre_market"]
+        title, phase = "장 시작 전", "pre_market"
     elif hour < 10:
-        title = "장 초반"
-        show_phases = ["intraday"]
+        title, phase = "장 초반", "intraday"
     elif hour < 12:
-        title = "오전장"
-        show_phases = ["intraday", "price_level"]
+        title, phase = "오전장", "intraday"
     elif hour < 15:
         title = "장 중반" if hour < 14 else "마감 임박"
-        show_phases = ["price_level"]
+        phase = "intraday"
     else:
-        title = "장 마감"
-        show_phases = ["pre_market", "intraday", "price_level"]
+        title, phase = "장 마감", "close"
 
     lines = [f"📋 *{title} — {now.strftime('%H:%M')}*\n"]
 
-    # 시장 현황 (알림과 동일 포맷)
+    # 시장 현황
     lines.extend(_format_market_snapshot(snapshot))
     lines.append("")
 
-    # 해당 시간대 체크리스트
-    if rules:
-        filtered = [r for r in rules if r.get("phase", "") in show_phases]
-        if not filtered:
-            filtered = [r for r in rules if r.get("type") not in ("event", "general")]
+    # 시간대별 체크리스트 필터링
+    phase_headers = {
+        "pre_market": ["장 시작 전"],
+        "intraday": ["장 중", "장중", "모니터링"],
+        "close": [],  # 전체
+    }
+    if phase == "close" and checklist_text:
+        # 장 마감: 체크리스트 원문 대신 요약 요청
+        checklist_for_agent = (
+            "오늘 체크리스트 항목:\n" + checklist_text + "\n\n"
+            "위 체크리스트의 최종 결과를 확인하고, "
+            "오늘 시장 전체 요약을 작성해주세요. 체크리스트 원문은 반복하지 마세요."
+        )
+    elif phase != "close" and checklist_text:
+        filtered_lines = []
+        current_section_match = False
+        for line in checklist_text.split("\n"):
+            stripped = line.strip()
+            # 섹션 헤더 감지
+            if stripped and not stripped.startswith("□"):
+                keywords = phase_headers.get(phase, [])
+                current_section_match = any(k in stripped for k in keywords)
+                # 가격 레벨은 장중에도 포함
+                if phase == "intraday" and any(k in stripped for k in ["가격", "레벨", "주의"]):
+                    current_section_match = True
+            if current_section_match and stripped:
+                filtered_lines.append(stripped)
+        checklist_for_agent = "\n".join(filtered_lines) if filtered_lines else checklist_text
+    else:
+        checklist_for_agent = checklist_text
 
-        for r in filtered:
-            original = r.get("original", "")
-            rtype = r.get("type", "general")
-
-            # 원문 먼저 표시
-            lines.append(f"□ {original}")
-
-            # 아래에 확인 결과 (자동)
-            if r.get("triggered"):
-                lines.append(f"  → ✅ 달성")
-            elif rtype == "index_level":
-                idx = indices.get(r.get("index", "").lower(), {})
-                if idx.get("value"):
-                    level = r.get("level", 0)
-                    diff = idx['value'] - level
-                    lines.append(f"  → 현재 {idx['value']:,.0f} (목표 {level:,.0f}, {diff:+,.0f})")
-            elif rtype == "fx_level" and fx.get("value"):
-                level = r.get("level", 0)
-                diff = fx['value'] - level
-                lines.append(f"  → 현재 {fx['value']:,.0f}원 (기준 {level:,.0f}, {diff:+,.0f})")
-            elif rtype == "stock_change":
-                code = r.get("code", "")
-                stock = snapshot.get("stocks", {}).get(code, {})
-                if stock.get("price"):
-                    lines.append(f"  → 현재 {stock['price']:,}원 ({stock.get('change_pct', 0):+.1f}%)")
+    # 체크리스트 + 에이전트 분석 (BIP-Agents API 호출)
+    if checklist_for_agent:
+        try:
+            agent_url = os.getenv("BIP_AGENTS_API_URL", "http://bip-agents-api:8100")
+            resp = requests.post(
+                f"{agent_url}/api/checklist/analyze",
+                json={
+                    "checklist_text": checklist_for_agent,
+                    "time_phase": phase,
+                },
+                timeout=60,
+            )
+            if resp.status_code == 200:
+                analysis = resp.json().get("analysis_result", "")
+                if analysis:
+                    # 에이전트 마크다운 → 텔레그램 Markdown 변환
+                    analysis = re.sub(r'\*\*(.+?)\*\*', r'*\1*', analysis)  # **bold** → *bold*
+                    analysis = re.sub(r'^#{1,3}\s+', '', analysis, flags=re.MULTILINE)  # ## 헤딩 제거
+                    analysis = re.sub(r'-{3,}', '———————————————', analysis)  # --- → 구분선
+                    analysis = re.sub(r'[━─]{3,}', '———————————————', analysis)  # ━━━ → 구분선
+                    # 연속 구분선 제거
+                    analysis = re.sub(r'(———————————————\n?){2,}', '———————————————\n', analysis)
+                    for line in analysis.split("\n"):
+                        stripped = line.strip()
+                        if stripped:
+                            lines.append(stripped)
                 else:
-                    lines.append(f"  → 장중 확인 필요")
-            elif rtype == "general":
-                # general이어도 키워드로 관련 데이터 매칭
-                orig_lower = original.lower()
-                flow = snapshot.get("investor_flow", {})
-                if any(k in original for k in ["외국인", "수급", "선물"]) and flow:
-                    lines.append(
-                        f"  → 외국인 {flow.get('foreign', 0):+,}억 | "
-                        f"기관 {flow.get('institution', 0):+,}억"
-                    )
-                elif any(k in original for k in ["야간선물", "CME", "갭"]):
-                    kospi = indices.get("kospi", {})
-                    if kospi.get("change_pct"):
-                        lines.append(f"  → KOSPI {kospi.get('change_pct', 0):+.1f}% 출발")
-                    else:
-                        lines.append(f"  → 장 시작 전 확인")
-                elif any(k in original for k in ["섹터", "업종"]):
-                    lines.append(f"  → 장중 섹터 동향 확인")
-                else:
-                    lines.append(f"  → 수동 확인")
+                    lines.append("에이전트 분석 결과 없음")
+            else:
+                logger.warning(f"에이전트 API 오류: {resp.status_code}")
+                # fallback: 원문만 표시
+                for line in checklist_text.split("\n"):
+                    stripped = line.strip()
+                    if stripped:
+                        lines.append(stripped)
+        except Exception as e:
+            logger.warning(f"에이전트 API 호출 실패: {e}")
+            for line in checklist_text.split("\n"):
+                stripped = line.strip()
+                if stripped:
+                    lines.append(stripped)
     else:
         lines.append("체크리스트 없음")
 
     msg = "\n".join(lines)
     success = send_telegram_message(msg)
 
-    return {
-        "sent": success,
-        "rules_total": len(rules),
-        "rules_triggered": sum(1 for r in rules if r.get("triggered")),
-    }
+    return {"sent": success, "has_checklist": bool(checklist_text)}
 
 
 def run_monitor_cycle() -> Dict:
@@ -887,13 +929,10 @@ def run_monitor_cycle() -> Dict:
     layer1_alerts = check_layer1_rules(snapshot)
     all_alerts.extend(layer1_alerts)
 
-    # 3. Layer 2: 체크리스트 룰 체크
-    rules = load_checklist_rules()
-    if rules:
-        layer2_alerts = check_layer2_rules(snapshot, rules)
-        all_alerts.extend(layer2_alerts)
+    # Layer 2는 에이전트 기반으로 전환 → 정기 현황에서 처리
+    # run_monitor_cycle에서는 Layer 1 이상치만 알림
 
-    # 4. 알림 발송
+    # 3. 알림 발송
     sent_count = 0
     if all_alerts:
         sent_count = send_alerts(all_alerts, snapshot=snapshot)
@@ -903,5 +942,4 @@ def run_monitor_cycle() -> Dict:
         "alerts_sent": sent_count,
         "total_alerts": len(all_alerts),
         "layer1": len(layer1_alerts),
-        "layer2": len([a for a in all_alerts if a.category == "checklist"]),
     }

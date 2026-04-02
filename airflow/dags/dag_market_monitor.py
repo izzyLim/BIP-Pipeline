@@ -42,27 +42,24 @@ def load_env_vars():
 
 def parse_morning_checklist(**context):
     """
-    모닝리포트 체크리스트 파싱 → 오늘의 모니터링 룰 저장
-    - 모닝리포트 DAG 완료 후 실행
-    - 저장된 리포트에서 체크리스트 섹션 추출 → Haiku 파싱
+    모닝리포트에서 체크리스트 추출 → DB에 원문 저장
     """
     load_env_vars()
 
-    from reports.market_monitor import parse_checklist_with_llm, save_checklist_rules
+    from reports.market_monitor import save_checklist
     from pathlib import Path
     import re
 
-    # 가장 최근 저장된 리포트에서 체크리스트 추출
-    report_dir = Path("/opt/airflow/dags/reports/output")
-    today_str = datetime.now().strftime("%Y%m%d")
+    report_dir = Path("/tmp")
+    from zoneinfo import ZoneInfo
+    today_str = datetime.now(ZoneInfo("Asia/Seoul")).strftime("%Y%m%d")
 
     checklist_text = ""
 
-    # 저장된 HTML 리포트에서 체크리스트 섹션 추출
-    for f in sorted(report_dir.glob(f"morning_report_{today_str}*.html"), reverse=True):
+    # HTML 리포트에서 체크리스트 섹션 추출
+    for f in sorted(report_dir.glob(f"report_{today_str}*.html"), reverse=True):
         try:
             content = f.read_text(encoding="utf-8")
-            # 체크리스트 섹션 추출 (□ 기호가 있는 영역)
             lines = []
             in_checklist = False
             for line in content.split("\n"):
@@ -70,56 +67,40 @@ def parse_morning_checklist(**context):
                     in_checklist = True
                     continue
                 if in_checklist and ("□" in line or "☐" in line):
-                    clean = re.sub(r'<[^>]+>', '', line).strip()
-                    clean = clean.replace("☐", "□")
-                    if clean:
-                        lines.append(clean)
+                    # <br> → 줄바꿈 변환 후 HTML 태그 제거
+                    chunk = line.replace("<br>", "\n").replace("<br/>", "\n")
+                    chunk = re.sub(r'<[^>]+>', '', chunk)
+                    chunk = chunk.replace("☐", "□")
+                    for sub in chunk.split("\n"):
+                        sub = sub.strip()
+                        if sub:
+                            lines.append(sub)
                 elif in_checklist and lines and ("---" in line or "</div>" in line):
                     break
-            checklist_text = "\n".join(lines)
-            break
+            if lines:
+                checklist_text = "\n".join(lines)
+                print(f"📋 리포트에서 체크리스트 추출: {f.name} ({len(lines)}줄)")
+                break
         except Exception as e:
             print(f"리포트 파싱 실패: {e}")
 
     if not checklist_text:
-        print("⚠️ 체크리스트 텍스트를 찾지 못했습니다")
-        return {"rules": 0}
+        print("⚠️ 체크리스트 추출 실패")
+        return {"saved": False}
 
-    print(f"📋 체크리스트 추출: {checklist_text[:200]}")
+    # DB에 원문 저장
+    save_checklist(checklist_text)
+    print(f"✅ 체크리스트 DB 저장 완료 ({len(checklist_text)}자)")
 
-    # Haiku로 구조화 파싱
-    rules = parse_checklist_with_llm(checklist_text)
-    if rules:
-        save_checklist_rules(rules)
-        print(f"✅ 모니터링 룰 {len(rules)}건 저장")
+    # 장전 체크리스트 에이전트 분석 + 텔레그램 발송
+    try:
+        from reports.market_monitor import send_checklist_status
+        result = send_checklist_status(override_hour=8)  # pre_market
+        print(f"📢 장전 체크리스트 분석 발송: {result}")
+    except Exception as e:
+        print(f"⚠️ 장전 분석 발송 실패: {e}")
 
-        # 장전 항목 즉시 체크 (event, general 등 시간 기반 항목)
-        from reports.market_monitor import (
-            fetch_market_snapshot, check_layer2_rules, send_alerts, format_alert_message
-        )
-        from reports.telegram_sender import send_telegram_message
-
-        snapshot = fetch_market_snapshot()
-        pre_market_alerts = check_layer2_rules(snapshot, rules)
-        if pre_market_alerts:
-            send_alerts(pre_market_alerts)
-            print(f"📢 장전 체크리스트 알림 {len(pre_market_alerts)}건 발송")
-
-        # 오늘의 체크리스트 요약 텔레그램 발송
-        rule_summary = "\n".join(
-            f"  {'✅' if r.get('triggered') else '□'} {r.get('original', '')}"
-            for r in rules
-        )
-        msg = (
-            f"📋 *오늘의 체크리스트 — {datetime.now().strftime('%m/%d')}*\n\n"
-            f"{rule_summary}\n\n"
-            f"09:00부터 장중 모니터링을 시작합니다."
-        )
-        send_telegram_message(msg)
-    else:
-        print("⚠️ 파싱된 룰 없음")
-
-    return {"rules": len(rules)}
+    return {"saved": True, "length": len(checklist_text)}
 
 
 def run_market_monitor(**context):
@@ -190,37 +171,13 @@ def send_checklist_status_report(**context):
 
 
 def send_market_close_summary(**context):
-    """장 마감 요약 (체크리스트 최종 결과 포함)"""
+    """장 마감 요약 — 에이전트가 체크리스트 전체 결과 정리"""
     load_env_vars()
 
-    from reports.market_monitor import fetch_market_indices, load_checklist_rules
-    from reports.telegram_sender import send_telegram_message
+    from reports.market_monitor import send_checklist_status
 
-    indices = fetch_market_indices()
-    kospi = indices.get("kospi", {})
-    kosdaq = indices.get("kosdaq", {})
-
-    # 체크리스트 최종 결과
-    rules = load_checklist_rules()
-    triggered = sum(1 for r in rules if r.get("triggered"))
-
-    checklist_lines = []
-    for r in rules:
-        status = "✅" if r.get("triggered") else "❌"
-        checklist_lines.append(f"  {status} {r.get('original', '')}")
-    checklist_text = "\n".join(checklist_lines) if checklist_lines else "체크리스트 없음"
-
-    msg = (
-        "🔔 *장 마감 — Market Pulse*\n\n"
-        f"KOSPI: {kospi.get('value', 0):,.2f} ({kospi.get('change_pct', 0):+.1f}%)\n"
-        f"KOSDAQ: {kosdaq.get('value', 0):,.2f} ({kosdaq.get('change_pct', 0):+.1f}%)\n\n"
-        f"*체크리스트 결과: {triggered}/{len(rules)}*\n"
-        f"{checklist_text}\n\n"
-        "📋 오늘 모니터링 종료. 수고하셨습니다."
-    )
-
-    send_telegram_message(msg)
-    print("✅ 장 마감 알림 발송")
+    result = send_checklist_status(override_hour=16)  # close phase
+    print(f"✅ 장 마감 요약 발송: {result}")
 
 
 # ──────────────────────────────────
