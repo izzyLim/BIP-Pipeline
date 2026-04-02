@@ -587,9 +587,13 @@ Step 5. 결과 + 해석 반환
 ✅ 5개 모델 등록 (Gold 3 + Raw 2) + 테이블 관계 정의
 ✅ OM → DB COMMENT 동기화 (35 tables, 453 columns)
 ✅ OM → Wren AI 메타데이터 동기화 + 자동화 DAG (10_sync_metadata_daily)
-✅ SQL Pairs 29개 등록 (자주 묻는 패턴 — RAG 검색 활용)
+✅ SQL Pairs 41개 등록 (테스트-개선 사이클 2회, 29→34→41)
 ✅ 외부 API 소스 OM lineage 완성 (9 services, 14 endpoints, 31 edges)
 ✅ SourceType 태그 (rest-api/scraping/library) 14 apiEndpoints
+✅ Gold 컬럼 설명 115개 추가 (커버리지 31%→99%) + 계산 힌트 27개
+✅ NL2SQL 품질 테스트 2회 수행 (5차원 평가, A등급 58%→77%)
+✅ 계산 폴백 Instruction (컬럼 없으면 계산식 유도)
+✅ 테스트→SQL Pair 개선 사이클 검증 완료
 ```
 
 ### Phase 3: NL2SQL 고도화 + 에이전트 통합

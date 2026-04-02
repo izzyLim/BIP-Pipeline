@@ -728,28 +728,48 @@ erDiagram
     }
 ```
 
-### 9-3. SQL Pairs (29개)
+### 9-3. SQL Pairs (41개, 2026-04-03 기준)
 
-7개 카테고리:
+9개 카테고리:
 
-| 카테고리 | 예시 질문 | SQL 패턴 핵심 |
-|---------|---------|-------------|
-| **종목 검색** | "하이닉스 주가" | `stock_name ILIKE '%하이닉스%'` |
-| **기간별 조회** | "삼성전자 최근 한달 주가" | `trade_date >= CURRENT_DATE - INTERVAL '1 month'` |
-| **기술지표** | "RSI 과매도 종목" | `rsi14 < 30 AND rsi14 IS NOT NULL` |
-| **밸류에이션** | "PER 낮은 종목 10개" | `per_actual > 0 ORDER BY per_actual LIMIT 10` |
-| **매크로** | "오늘 환율" | `ORDER BY indicator_date DESC LIMIT 1` |
-| **수급** | "외국인 순매수 상위" | `foreign_buy_volume > 0 ORDER BY ... DESC` |
-| **복합** | "저PER 고ROE" | `per_actual < 10 AND roe_actual > 15` |
+| 카테고리 | 수량 | 대표 패턴 |
+|---------|------|---------|
+| **종목 검색/주가** | 7 | `stock_name ILIKE '%하이닉스%'` + `ORDER DESC LIMIT 1` |
+| **기간별 조회** | 3 | `trade_date >= CURRENT_DATE - INTERVAL '1 month'` |
+| **기술지표** | 3 | `rsi14 < 30`, 골든크로스, 볼린저밴드 |
+| **밸류에이션** | 5 | PER/ROE/부채비율/매출성장/PSR |
+| **매크로** | 9 | 환율, 금리, VIX, 실질금리, 신용스프레드 |
+| **수급** | 2 | 외국인/기관 순매수 금액 |
+| **복합/비교** | 7 | 저PER고ROE, 거래대금, 52주신저가, 종목비교 |
+| **시장 요약** | 3 | 시장현황, 시총상위, 업종별PER |
+| **기간 비교** | 2 | 전월대비 변동률 |
 
-### 9-4. Instructions
+### 9-4. Instructions (3개)
 
 ```
-- 종목 검색 시 ticker 하드코딩 금지. stock_name ILIKE '%검색어%' 사용
-- 결과에 반드시 stock_name 포함
-- "현재 주가" = ORDER BY trade_date DESC LIMIT 1
-- 주가 흐름 질문 시 GROUP BY 없이 일별 데이터 반환
+1. 종목 검색 시 ticker 하드코딩 금지. stock_name ILIKE '%검색어%' 사용.
+   결과에 반드시 stock_name 포함. 여러 매칭 시 모두 표시.
+
+2. 요청한 지표가 컬럼에 없으면 계산식으로 SQL 생성:
+   - 거래대금 = close * volume
+   - 이격도 = (close - ma20) / ma20 * 100
+   - 목표가 괴리율 = (target_price - close) / close * 100
+   - 실질금리 = kr_base_rate - kr_cpi_yoy
+   - 신용스프레드 = kr_corp_3y - kr_govt_3y
+   등
+
+3. "현재 주가" = ORDER BY trade_date DESC LIMIT 1
 ```
+
+### 9-5. 품질 테스트 결과 요약
+
+2회 테스트 (1차 12개 + 2차 13개) 수행. 상세: `docs/wrenai_test_report.md`
+
+| 등급 | 1차 | 2차 | 변화 |
+|------|-----|-----|------|
+| A (Pass) | 58% | **77%** | +19%p |
+| B (Partial) | 25% | 8% | -17%p |
+| F (Fail) | 17% | 15% | 구조적 한계만 잔존 |
 
 ---
 
@@ -1433,7 +1453,7 @@ timeline
         Medallion Architecture : Gold Layer 3개 테이블
         메타데이터 카탈로그 : OpenMetadata + 용어집 + Tags
         Lineage : API → DAG → Table → Consumer
-        NL2SQL : Wren AI + SQL Pairs 29개
+        NL2SQL : Wren AI + SQL Pairs 41개 + 품질테스트 A등급 77%
     section 단기
         LangGraph 에이전트 : Wren AI API + OM API 통합
         Calculated Fields : MDL 비즈니스 지표 20개

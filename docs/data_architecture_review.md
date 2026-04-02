@@ -1198,8 +1198,10 @@ JOIN stock_indicators ind ON sp.ticker = ind.ticker
 | 3-1 | OpenMetadata 카탈로그 도입 | 인프라 | ✅ 완료 (2026-03-28) |
 | 3-2 | Wren AI 설치 (Docker, 5개 서비스) | 인프라 | ✅ 완료 (2026-04-02) |
 | 3-3 | OM → Wren AI 메타데이터 동기화 + DAG 자동화 | 인프라 | ✅ 완료 (2026-04-02) |
-| 3-4 | SQL Pairs 29개 등록 (자주 묻는 패턴) | AI | ✅ 완료 (2026-04-02) |
+| 3-4 | SQL Pairs 41개 등록 (테스트-개선 사이클) | AI | ✅ 완료 (2026-04-03) |
 | 3-5 | SourceType 태그 적용 (rest-api/scraping/library) | 아키텍처 | ✅ 완료 (2026-04-02) |
+| 3-6 | Gold 컬럼 설명 100% + 계산 힌트 보강 | AI | ✅ 완료 (2026-04-03) |
+| 3-7 | NL2SQL 품질 테스트 2회 수행 (A등급 58%→77%) | QA | ✅ 완료 (2026-04-03) |
 
 ### Phase 4: NL2SQL 고도화 (향후)
 
@@ -1242,6 +1244,10 @@ JOIN stock_indicators ind ON sp.ticker = ind.ticker
 | 2026-04-02 | Wren AI 설치 (Docker, gpt-4o-mini) | NL2SQL 시맨틱 레이어. Gold 테이블 기반 자연어 쿼리 | Vanna AI, LangChain SQL Agent |
 | 2026-04-02 | Wren AI SQL Pairs 29개 등록 | RAG 기반 유사 패턴 검색으로 SQL 생성 정확도 향상 | Instructions만 사용 |
 | 2026-04-02 | Wren AI는 1질문=1SQL 한계 → 복합질문은 LangGraph 통합 (향후) | Wren AI를 SQL 생성 도구로, LangGraph가 오케스트레이션 | Wren AI 단독 사용 |
+| 2026-04-03 | Gold 컬럼 설명 115개 추가 + 계산 힌트 27개 보강 | 컬럼 커버리지 31%→99%. 이격도/괴리율 등 계산 유도 성공 확인 | 설명 없이 LLM 추측에 의존 |
+| 2026-04-03 | NL2SQL 품질을 5차원×3등급 프레임워크로 정량 평가 | 실행/의미/결과/효율/의도 5개 차원. A/B/F 등급. 자동 체크 10개 | 주관적 평가 |
+| 2026-04-03 | 테스트→SQL Pair 추가 사이클 검증 (29→41개, A등급 58%→77%) | 실패 패턴을 SQL Pair로 즉시 해결. Instructions 남발 대신 SQL Pair 우선 | 모든 규칙을 Instructions에 |
+| 2026-04-03 | 계산 폴백 Instruction 1개 추가 (컬럼 없으면 계산식 유도) | 이격도, PSR, 실질금리 등 DB 컬럼 없는 파생 지표 SQL 생성 | 매번 SQL Pair 개별 등록 |
 
 ---
 
