@@ -377,23 +377,36 @@ airflow/dags/
 ### 아키텍처
 
 ```
-08:10  모닝리포트 DAG → 이메일 (전체) + 텔레그램 (체크리스트)
-08:25  체크리스트 파싱 DAG → Haiku 파싱 → DB 저장 → 장전 항목 즉시 체크
+08:10  모닝리포트 DAG → 이메일 (전체) + 텔레그램 (체크리스트 원문)
+08:25  체크리스트 파싱 DAG → DB 저장 (원문 통째로) + 장전 에이전트 분석 발송
 09:00~15:30  장중 모니터링 (10분 간격)
-  ├── Layer 1: 이상치 감지 (지수/환율/수급/원자재/크립토)
-  └── Layer 2: 체크리스트 조건 모니터링
-09:00 / 10:00 / 12:00 / 14:30  정기 현황 리포트
-15:35  장 마감 요약 + 체크리스트 최종 결과
+  └── Layer 1: 이상치 감지 (지수/환율/수급/원자재/크립토)
+09:00 / 10:00 / 12:00 / 14:30  정기 현황 (BIP-Agents 에이전트 분석)
+15:35  장 마감 요약 (에이전트 기반 시장 종합)
+```
+
+### 에이전트 분석 흐름 (B 아키텍처)
+
+```
+Airflow DAG → POST http://bip-agents-api:8100/api/checklist/analyze
+  → LangGraph 에이전트 (Haiku + MCP 도구)
+    → 한투 API: 종목 현재가, 지수, 투자자 수급, 프로그램 매매
+    → ExchangeRate API: 환율
+    → yfinance: EWY 야간선물, 닛케이 등 글로벌 지수
+    → Upbit API: BTC/ETH
+    → 네이버 뉴스 API: 관련 뉴스 검색
+  → 체크리스트 항목별 데이터 기반 판단 + 종합 전망
+  → 텔레그램 발송 (채널 + DM)
 ```
 
 ### 모니터링 DAGs
 
 | DAG | 스케줄 | 역할 |
 |-----|--------|------|
-| `market_monitor_checklist_parse` | 평일 08:25 | 체크리스트 → Haiku 파싱 → DB 저장 |
-| `market_monitor_intraday` | 평일 09:00~15:50 / 10분 | 이상치 감지 + 체크리스트 모니터링 + 정기 현황 |
+| `market_monitor_checklist_parse` | 평일 08:25 | 체크리스트 DB 저장 + 장전 에이전트 분석 발송 |
+| `market_monitor_intraday` | 평일 09:00~15:50 / 10분 | 이상치 감지 + 정기 현황 (09/10/12/14:30) |
 | `market_monitor_open_close` | 평일 09:00 | 장 시작 알림 + 알림 초기화 |
-| `market_monitor_close` | 평일 15:35 | 장 마감 요약 + 체크리스트 결과 |
+| `market_monitor_close` | 평일 15:35 | 장 마감 시장 종합 (에이전트) |
 
 ### 이상치 알림 기준 (Layer 1)
 
@@ -401,32 +414,42 @@ airflow/dags/
 |------|---------|---------|------------|
 | KOSPI/KOSDAQ | ±2% | ±3% | 네이버 금융 |
 | 환율 (원/달러) | ±0.7% | ±1.5% | 네이버 금융 |
-| 외국인/기관 수급 | ±5,000억 | ±1조 | 네이버 금융 |
+| 외국인/기관 수급 | ±4조 | ±5조 | 네이버 금융 |
 | WTI | ±5% | ±8% | 네이버 금융 |
 | 금 | ±3% | ±5% | 네이버 금융 |
 | BTC/ETH | ±8% | ±12% | Upbit API |
 
-### 체크리스트 모니터링 (Layer 2)
+### 체크리스트 모니터링 (에이전트 기반)
 
-- 모닝리포트 LLM 체크리스트를 Haiku로 구조화 파싱
-- 룰 유형: `index_level`, `stock_change`, `fx_level`, `event`, `general`
-- 시간대 구분: `pre_market` (장전), `intraday` (장중), `price_level` (가격 레벨)
-- 조건 충족 시 텔레그램 알림 + DB 기록
+- 모닝리포트 체크리스트 원문을 DB에 통째로 저장
+- BIP-Agents API로 에이전트 호출 → MCP 도구로 실시간 데이터 수집
+- 시간대별 필터링: pre_market (장전), intraday (장중), close (마감)
+- 삼성전자/SK하이닉스는 체크리스트에 없어도 항상 포함
+- 투자자 수급은 에이전트가 한투 API로 실시간 조회
+- 비용: Haiku ~$0.005/회 (하루 ~$0.03)
 
 ### DB 테이블
 
 | 테이블 | 용도 |
 |--------|------|
-| `monitor_checklist` | 체크리스트 룰 + 파싱 결과 + 트리거 이력 |
-| `monitor_alerts` | 발송된 알림 이력 |
+| `monitor_checklist` | 체크리스트 원문 (날짜별 1건) |
+| `monitor_alerts` | 이상치 알림 발송 이력 |
 
 ### 주요 파일
 
-| 파일 | 역할 |
+| 파일 (BIP-Pipeline) | 역할 |
 |------|------|
-| `reports/market_monitor.py` | 모니터링 엔진 (데이터 수집, Layer 1/2, 알림) |
+| `reports/market_monitor.py` | 모니터링 엔진 (이상치 감지, 에이전트 API 호출, 텔레그램) |
 | `dag_market_monitor.py` | Airflow DAGs (4개) |
-| `reports/telegram_sender.py` | 텔레그램 발송 유틸 |
+| `reports/telegram_sender.py` | 텔레그램 발송 (채널 + DM, 테스트 모드) |
+
+| 파일 (BIP-Agents) | 역할 |
+|------|------|
+| `langgraph/api.py` | FastAPI 서버 (Airflow에서 HTTP 호출) |
+| `langgraph/checklist_agent.py` | 체크리스트 분석 에이전트 (Haiku + MCP) |
+| `langgraph/checklist_graph.py` | LangGraph 그래프 |
+| `mcp-servers/bip-stock-mcp/realtime.py` | 한투 API/Upbit/yfinance 실시간 도구 |
+| `mcp-servers/bip-stock-mcp/server.py` | MCP 서버 (22개 도구) |
 
 ---
 
@@ -434,6 +457,10 @@ airflow/dags/
 
 | 날짜 | 변경 내용 |
 |------|----------|
+| 2026-04-03 | **BIP-Agents 에이전트 연동** — 체크리스트 분석을 LangGraph + MCP 에이전트로 전환 |
+| 2026-04-03 | **한투 API 실시간** — 종목/지수/수급/프로그램매매 실시간 (MCP 도구) |
+| 2026-04-03 | **텔레그램 채널/DM 분리** — 채널(운영) + DM(테스트) 동시 발송 |
+| 2026-04-03 | **메시지 포맷 개선** — 텔레그램 마크다운 호환, 시간대별 필터링 |
 | 2026-04-02 | **장중 모니터링 시스템** 추가 (Market Pulse Monitor) |
 | 2026-04-02 | **텔레그램 체크리스트 발송** — 모닝리포트에서 체크리스트만 텔레그램 발송 |
 | 2026-04-02 | **KRX 섹터 퍼포먼스 개선** — 공식 업종 지수 데이터 + 별칭 매핑 |

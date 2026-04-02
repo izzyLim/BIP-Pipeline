@@ -402,13 +402,13 @@ UNIQUE: `(indicator_date, region, indicator_type)`
 - 컬럼: `event_date`, `headline`, `url`, `tone`, `event_code`, `country_code`, `goldstein_scale`, `avg_tone`
 
 **`monitor_checklist` 테이블:**
-- 모닝리포트 체크리스트 → Haiku 파싱 결과 저장
-- 컬럼: `rule_date`, `rule_order`, `rule_type`, `original_text`, `parsed_rule(JSONB)`, `triggered`, `triggered_at`, `triggered_value`
-- UNIQUE: `(rule_date, rule_order)`
+- 모닝리포트 체크리스트 원문 저장 (날짜별 1건)
+- 컬럼: `checklist_date(UNIQUE)`, `checklist_text`
+- BIP-Agents 에이전트가 원문 기반으로 실시간 분석
 
 **`monitor_alerts` 테이블:**
-- 텔레그램 알림 발송 이력
-- 컬럼: `alert_date`, `alert_time`, `level`, `category`, `title`, `description`, `data(JSONB)`, `checklist_id(FK)`
+- 이상치 알림 발송 이력
+- 컬럼: `alert_date`, `alert_time`, `level`, `category`, `title`, `description`, `data(JSONB)`
 
 ---
 
@@ -436,10 +436,10 @@ UNIQUE: `(indicator_date, region, indicator_type)`
 | 07 | `07_portfolio_snapshot_daily` | KIS API (한국투자증권) | `portfolio_snapshot` | 평일 07:00 |
 | 08 | `08_company_info_annual` | DART 사업보고서 | `company_dividend`, `company_employees`, `company_executives`, `company_audit`, `company_treasury_stock`, `company_shareholders`, `company_exec_compensation` | 연간/수동 |
 | 보고 | `morning_report` | DB + OpenAI/Anthropic | 이메일 + 텔레그램 (체크리스트) | 평일 08:10 |
-| 모니터 | `market_monitor_checklist_parse` | Anthropic Haiku | `monitor_checklist` | 평일 08:25 |
-| 모니터 | `market_monitor_intraday` | Naver/Upbit/CoinGecko | `monitor_alerts` | 평일 09:00~15:50 (10분) |
-| 모니터 | `market_monitor_open_close` | Naver Finance | 텔레그램 발송 | 평일 09:00 |
-| 모니터 | `market_monitor_close` | Naver Finance | 텔레그램 발송 | 평일 15:35 |
+| 모니터 | `market_monitor_checklist_parse` | HTML 파싱 + BIP-Agents API | `monitor_checklist` + 텔레그램 | 평일 08:25 |
+| 모니터 | `market_monitor_intraday` | 네이버/Upbit + BIP-Agents API | `monitor_alerts` + 텔레그램 | 평일 09:00~15:50 (10분) |
+| 모니터 | `market_monitor_open_close` | 네이버 금융 | 텔레그램 발송 | 평일 09:00 |
+| 모니터 | `market_monitor_close` | BIP-Agents API | 텔레그램 발송 | 평일 15:35 |
 
 > 모든 DAG는 완료 시 `utils/lineage.py`의 `register_table_lineage_async()`를 통해 OpenMetadata에 lineage를 자동 등록함.
 
