@@ -364,6 +364,45 @@ Layer 5: NL2SQL            ✅ 구현완료
 
 ---
 
+### 3-5-1. 미국 SEC 공시 (EDGAR) — 2026-04-05 추가
+
+| 테이블 | 설명 | 고유키 |
+|--------|------|--------|
+| `sec_filings` | SEC EDGAR 공시 (8-K/10-K/10-Q/4 및 /A) | `accession_no` UNIQUE |
+| `us_cik_mapping` | 미국 ticker ↔ CIK(10자리 zero-padded) 매핑 | `ticker` PK |
+
+**`sec_filings` 주요 컬럼:**
+
+| 컬럼 | 타입 | 설명 |
+|------|------|------|
+| `ticker` | varchar(20) | `stock_info.ticker`와 조인 |
+| `cik` | varchar(10) | SEC CIK |
+| `accession_no` | varchar(30) UNIQUE | SEC 공시 고유 ID |
+| `form_type` | varchar(20) | 8-K, 10-K, 10-Q, 4 및 수정본(/A) |
+| `filing_date` | date | SEC 제출일 |
+| `accepted_dt` | timestamptz | SEC 접수 시각 |
+| `description` | text | primaryDocDescription (nullable) |
+| `filing_url` | text | SEC Archives 원본 URL |
+| `ingest_source` | varchar(30) | `submissions_hot` / `submissions_nightly` (내부 운영용) |
+| `alert_decision` | varchar(30) | `suppressed_backfill` 등 (내부 운영용, 알림 경로 비활성) |
+| `telegram_sent_at` | timestamptz | (내부 운영용) |
+
+**인덱스:** `(ticker, filing_date DESC)` — ticker 기반 UI 조회 최적화.
+
+**수집 파이프라인 (Stage 06):**
+- `06a_sec_edgar_hot` — 평일 10분 주기. hot universe(시총 상위 100 ∪ watchlist(US) ∪ holding(US) ≈ 108개)에 대해 `submissions/CIK{cik}.json` 폴링. 당일 공시가 nightly 이전에도 UI에 노출되도록 보장.
+- `06b_sec_edgar_reconcile` — 매일 23:00 ET(03:00 UTC). us_cik_mapping 전체 6,151 CIK full reconcile. 신규 보충분은 `alert_decision='suppressed_backfill'`로 마킹.
+
+**UPSERT 정책:** `ON CONFLICT (accession_no) DO UPDATE SET ... = COALESCE(EXCLUDED.*, sec_filings.*)` — hot/nightly 경로가 서로의 필드를 보강만 하고 덮어쓰지 않음.
+
+**TARGET_FORMS:** `8-K, 10-K, 10-Q, 4, 8-K/A, 10-K/A, 10-Q/A, 4/A`
+
+**알림 경로:** 검토 후 **비활성화**. 8-K/Form 4 알림 노이즈 대비 가치가 낮다고 판단하여 UI 표시 전용(Option A)으로 결정. 내부 필드(`ingest_source`, `alert_decision`, `telegram_sent_at`, `alerted_at`)는 UI 응답에서 제외할 것.
+
+**UI 개발 요청서:** `docs/us_filings_ui_request.md` — `GET /api/fundamental/filings/{ticker}` 엔드포인트 + 미국주식 기업정보 탭 공시 내역 UI.
+
+---
+
 ### 3-6. 매크로 / 금리 / 감성 지수
 
 > ✅ 모든 매크로 데이터는 `macro_indicators` 단일 테이블에 통합 저장됨 (확인: 2026-03-28)
@@ -445,6 +484,8 @@ UNIQUE: `(indicator_date, region, indicator_type)`
 | 05 | `05_kr_investor_trend` | KRX | `macro_indicators` | 일간 |
 | 06 | `06_news_sentiment_daily` | Google News RSS | `macro_indicators` | 평일 22:00 |
 | 06 | `06_naver_news_*` | Naver News API | `news` | 일간 |
+| 06 | `06a_sec_edgar_hot` | SEC EDGAR submissions API | `sec_filings` | 평일 10분 주기 (hot 108종목) |
+| 06 | `06b_sec_edgar_reconcile` | SEC EDGAR submissions API | `sec_filings` | 매일 23:00 ET (전체 6,151 CIK) |
 | 07 | `07_portfolio_snapshot_daily` | KIS API (한국투자증권) | `portfolio_snapshot` | 평일 07:00 |
 | 08 | `08_company_info_annual` | DART 사업보고서 | `company_dividend`, `company_employees`, `company_executives`, `company_audit`, `company_treasury_stock`, `company_shareholders`, `company_exec_compensation` | 연간/수동 |
 | 보고 | `morning_report` | DB + OpenAI/Anthropic | 이메일 + 텔레그램 (체크리스트) | 평일 08:10 |
