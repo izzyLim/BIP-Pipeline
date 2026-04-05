@@ -20,10 +20,25 @@ from sqlalchemy import create_engine, text
 
 logger = logging.getLogger(__name__)
 
-DATABASE_URL = os.getenv(
-    "DATABASE_URL",
-    "postgresql+psycopg2://user:pw1234@bip-postgres:5432/stockdb"
-)
+def _build_database_url() -> str:
+    """DATABASE_URL 해석. 비밀값 하드코딩 금지 (security_governance 1-7)."""
+    url = os.getenv("DATABASE_URL")
+    if url:
+        return url
+    pg_user = os.getenv("PG_USER", "user")
+    pg_password = os.getenv("PG_PASSWORD")
+    if not pg_password:
+        raise RuntimeError(
+            "DATABASE_URL 또는 PG_PASSWORD 환경변수가 필요합니다. "
+            ".env 또는 Airflow Variable에서 주입하세요."
+        )
+    pg_host = os.getenv("PG_HOST", "bip-postgres")
+    pg_port = os.getenv("PG_PORT", "5432")
+    pg_db = os.getenv("PG_DB", "stockdb")
+    return f"postgresql+psycopg2://{pg_user}:{pg_password}@{pg_host}:{pg_port}/{pg_db}"
+
+
+DATABASE_URL = _build_database_url()
 
 
 def _get_engine():
@@ -277,21 +292,26 @@ def fetch_market_snapshot() -> Dict[str, Any]:
 
 @dataclass
 class Alert:
-    level: str          # "🔴 긴급", "🟡 주의", "🟢 참고"
-    category: str       # "index", "stock", "fx", "checklist"
+    level: str              # "🔴 긴급", "🟡 주의"
+    category: str           # "index", "fx", "flow", "commodity", "crypto"
+    alert_key: str          # "index:KOSPI", "crypto:BTC", "flow:foreign"
     title: str
     description: str
+    metric_type: str = "pct"        # "pct" or "abs"
+    alert_value: float = 0          # 알림 시점 값
+    alert_change_pct: float = 0     # 알림 시점 등락률
+    alert_change_abs: float = 0     # 알림 시점 절대 변동값
     data: Dict = field(default_factory=dict)
 
 
-# 상시 모니터링 임계값 (매크로 + 수급 + 원자재/크립토)
+# 상시 모니터링 임계값
 ALERT_RULES = {
     "index_critical": 3.0,       # 지수 ±3% 긴급
     "index_warning": 2.0,        # 지수 ±2% 주의
     "fx_critical": 1.5,          # 환율 ±1.5% 긴급
     "fx_warning": 0.7,           # 환율 ±0.7% 주의
-    "flow_critical": 50000,      # 외국인/기관 순매수 ±5조 긴급
-    "flow_warning": 40000,       # 외국인/기관 순매수 ±4조 주의
+    "flow_critical": 50000,      # 외국인/기관 ±5조 긴급
+    "flow_warning": 40000,       # 외국인/기관 ±4조 주의
     "wti_critical": 8.0,         # WTI ±8% 긴급
     "wti_warning": 5.0,          # WTI ±5% 주의
     "gold_critical": 5.0,        # 금 ±5% 긴급
@@ -299,6 +319,27 @@ ALERT_RULES = {
     "crypto_critical": 12.0,     # BTC/ETH ±12% 긴급
     "crypto_warning": 8.0,       # BTC/ETH ±8% 주의
 }
+
+# 재알림 delta 기준 (마지막 알림 대비 추가 변동 시 재알림)
+REALERT_DELTA = {
+    "index": 1.0,        # 지수 1.0%p 추가 변동
+    "fx": 0.5,           # 환율 0.5%p
+    "flow": 10000,       # 수급 1조 추가 (abs 기준)
+    "commodity": 3.0,    # 원자재 3.0%p
+    "crypto": 5.0,       # 크립토 5.0%p
+}
+
+
+def _make_alert(level, category, alert_key, title, description,
+                 metric_type="pct", value=0, change_pct=0, change_abs=0, data=None):
+    """Alert 생성 헬퍼"""
+    return Alert(
+        level=level, category=category, alert_key=alert_key,
+        title=title, description=description,
+        metric_type=metric_type, alert_value=value,
+        alert_change_pct=change_pct, alert_change_abs=change_abs,
+        data=data or {},
+    )
 
 
 def check_layer1_rules(snapshot: Dict) -> List[Alert]:
@@ -309,25 +350,23 @@ def check_layer1_rules(snapshot: Dict) -> List[Alert]:
     # 지수 체크
     for idx_name, idx_key in [("KOSPI", "kospi"), ("KOSDAQ", "kosdaq")]:
         idx = indices.get(idx_key, {})
-        pct = abs(idx.get("change_pct", 0))
-        direction = "급등" if idx.get("change_pct", 0) > 0 else "급락"
+        pct = idx.get("change_pct", 0)
+        abs_pct = abs(pct)
+        direction = "급등" if pct > 0 else "급락"
 
-        if pct >= ALERT_RULES["index_critical"]:
-            alerts.append(Alert(
-                level="🔴 긴급",
-                category="index",
-                title=f"{idx_name} {direction} {idx.get('change_pct', 0):+.1f}%",
-                description=f"{idx_name} 현재 {idx.get('value', 0):,.2f} "
-                            f"({idx.get('change_pct', 0):+.1f}%) — 시장 급변동 주의",
-                data=idx,
+        if abs_pct >= ALERT_RULES["index_critical"]:
+            alerts.append(_make_alert(
+                "🔴 긴급", "index", f"index:{idx_name}",
+                f"{idx_name} {direction} {pct:+.1f}%",
+                f"{idx_name} 현재 {idx.get('value', 0):,.2f} ({pct:+.1f}%) — 시장 급변동 주의",
+                value=idx.get("value", 0), change_pct=pct, data=idx,
             ))
-        elif pct >= ALERT_RULES["index_warning"]:
-            alerts.append(Alert(
-                level="🟡 주의",
-                category="index",
-                title=f"{idx_name} {direction} {idx.get('change_pct', 0):+.1f}%",
-                description=f"{idx_name} 현재 {idx.get('value', 0):,.2f}",
-                data=idx,
+        elif abs_pct >= ALERT_RULES["index_warning"]:
+            alerts.append(_make_alert(
+                "🟡 주의", "index", f"index:{idx_name}",
+                f"{idx_name} {direction} {pct:+.1f}%",
+                f"{idx_name} 현재 {idx.get('value', 0):,.2f}",
+                value=idx.get("value", 0), change_pct=pct, data=idx,
             ))
 
     # 장중 투자자 수급 체크
@@ -339,19 +378,19 @@ def check_layer1_rules(snapshot: Dict) -> List[Alert]:
             direction = "순매수" if amount > 0 else "순매도"
 
             if abs_amount >= ALERT_RULES["flow_critical"]:
-                alerts.append(Alert(
-                    level="🔴 긴급",
-                    category="flow",
-                    title=f"{investor} {direction} {abs_amount:,}억원",
-                    description=f"{investor} 장중 {direction} {abs_amount:,}억원 — 대규모 수급 이동",
+                alerts.append(_make_alert(
+                    "🔴 긴급", "flow", f"flow:{key}",
+                    f"{investor} {direction} {abs_amount:,}억원",
+                    f"{investor} 장중 {direction} {abs_amount:,}억원 — 대규모 수급 이동",
+                    metric_type="abs", value=amount, change_abs=amount,
                     data={"investor": investor, "amount": amount},
                 ))
             elif abs_amount >= ALERT_RULES["flow_warning"]:
-                alerts.append(Alert(
-                    level="🟡 주의",
-                    category="flow",
-                    title=f"{investor} {direction} {abs_amount:,}억원",
-                    description=f"{investor} 장중 {direction} {abs_amount:,}억원",
+                alerts.append(_make_alert(
+                    "🟡 주의", "flow", f"flow:{key}",
+                    f"{investor} {direction} {abs_amount:,}억원",
+                    f"{investor} 장중 {direction} {abs_amount:,}억원",
+                    metric_type="abs", value=amount, change_abs=amount,
                     data={"investor": investor, "amount": amount},
                 ))
 
@@ -361,51 +400,49 @@ def check_layer1_rules(snapshot: Dict) -> List[Alert]:
         ("금", "gold", "gold_critical", "gold_warning"),
     ]:
         item = indices.get(key, {})
-        pct = abs(item.get("change_pct", 0))
-        if pct == 0:
+        pct = item.get("change_pct", 0)
+        abs_pct = abs(pct)
+        if abs_pct == 0:
             continue
-        direction = "급등" if item.get("change_pct", 0) > 0 else "급락"
+        direction = "급등" if pct > 0 else "급락"
 
-        if pct >= ALERT_RULES[crit]:
-            alerts.append(Alert(
-                level="🔴 긴급",
-                category="commodity",
-                title=f"{name} {direction} {item['change_pct']:+.1f}%",
-                description=f"{name} ${item.get('value', 0):,.1f} ({item['change_pct']:+.1f}%)",
-                data=item,
+        if abs_pct >= ALERT_RULES[crit]:
+            alerts.append(_make_alert(
+                "🔴 긴급", "commodity", f"commodity:{key}",
+                f"{name} {direction} {pct:+.1f}%",
+                f"{name} ${item.get('value', 0):,.1f} ({pct:+.1f}%)",
+                value=item.get("value", 0), change_pct=pct, data=item,
             ))
-        elif pct >= ALERT_RULES[warn]:
-            alerts.append(Alert(
-                level="🟡 주의",
-                category="commodity",
-                title=f"{name} {direction} {item['change_pct']:+.1f}%",
-                description=f"{name} ${item.get('value', 0):,.1f}",
-                data=item,
+        elif abs_pct >= ALERT_RULES[warn]:
+            alerts.append(_make_alert(
+                "🟡 주의", "commodity", f"commodity:{key}",
+                f"{name} {direction} {pct:+.1f}%",
+                f"{name} ${item.get('value', 0):,.1f}",
+                value=item.get("value", 0), change_pct=pct, data=item,
             ))
 
     # 크립토 체크
     for name, key in [("BTC", "btc"), ("ETH", "eth")]:
         item = indices.get(key, {})
-        pct = abs(item.get("change_pct", 0))
-        if pct == 0:
+        pct = item.get("change_pct", 0)
+        abs_pct = abs(pct)
+        if abs_pct == 0:
             continue
-        direction = "급등" if item.get("change_pct", 0) > 0 else "급락"
+        direction = "급등" if pct > 0 else "급락"
 
-        if pct >= ALERT_RULES["crypto_critical"]:
-            alerts.append(Alert(
-                level="🔴 긴급",
-                category="crypto",
-                title=f"{name} {direction} {item['change_pct']:+.1f}%",
-                description=f"{name} {item.get('value_krw', 0):,.0f}원 ({item['change_pct']:+.1f}%)",
-                data=item,
+        if abs_pct >= ALERT_RULES["crypto_critical"]:
+            alerts.append(_make_alert(
+                "🔴 긴급", "crypto", f"crypto:{key}",
+                f"{name} {direction} {pct:+.1f}%",
+                f"{name} {item.get('value_krw', 0):,.0f}원 ({pct:+.1f}%)",
+                value=item.get("value_krw", 0), change_pct=pct, data=item,
             ))
-        elif pct >= ALERT_RULES["crypto_warning"]:
-            alerts.append(Alert(
-                level="🟡 주의",
-                category="crypto",
-                title=f"{name} {direction} {item['change_pct']:+.1f}%",
-                description=f"{name} {item.get('value_krw', 0):,.0f}원",
-                data=item,
+        elif abs_pct >= ALERT_RULES["crypto_warning"]:
+            alerts.append(_make_alert(
+                "🟡 주의", "crypto", f"crypto:{key}",
+                f"{name} {direction} {pct:+.1f}%",
+                f"{name} {item.get('value_krw', 0):,.0f}원",
+                value=item.get("value_krw", 0), change_pct=pct, data=item,
             ))
 
     return alerts
@@ -441,7 +478,7 @@ def save_checklist(checklist_text: str, target_date: str = None):
 
 
 def load_checklist(target_date: str = None) -> str:
-    """오늘의 체크리스트 원문 DB에서 로드"""
+    """체크리스트 원문 DB에서 로드 (없으면 가장 최근 것으로 fallback)"""
     if not target_date:
         from zoneinfo import ZoneInfo
         target_date = datetime.now(ZoneInfo("Asia/Seoul")).strftime("%Y-%m-%d")
@@ -453,6 +490,16 @@ def load_checklist(target_date: str = None) -> str:
             WHERE checklist_date = :d
         """), {"d": target_date}).fetchone()
 
+        # 오늘 데이터 없으면 가장 최근 체크리스트로 fallback
+        if not row:
+            row = conn.execute(text("""
+                SELECT checklist_text FROM monitor_checklist
+                ORDER BY checklist_date DESC
+                LIMIT 1
+            """)).fetchone()
+            if row:
+                logger.info(f"{target_date} 체크리스트 없음 → 최근 체크리스트 사용")
+
     return row[0] if row else ""
 
 
@@ -463,6 +510,7 @@ def parse_checklist_with_llm(checklist_text: str) -> List[Dict]:
     Returns: 모니터링 가능한 룰 리스트
     """
     import anthropic
+    from utils.audited_llm import audited_anthropic_call
 
     client = anthropic.Anthropic()
 
@@ -489,11 +537,15 @@ def parse_checklist_with_llm(checklist_text: str) -> List[Dict]:
 JSON 배열만 출력. 코드블록 없이."""
 
     try:
-        resp = client.messages.create(
+        resp = audited_anthropic_call(
+            agent_name="market_monitor",
+            agent_type="monitor",
+            prompt_class="parse_checklist_rules",
             model="claude-haiku-4-5-20251001",
             max_tokens=1000,
             system=system,
             messages=[{"role": "user", "content": f"체크리스트:\n{checklist_text}"}],
+            client=client,
         )
         text = resp.content[0].text.strip()
 
@@ -673,21 +725,157 @@ def check_layer2_rules(snapshot: Dict, rules: List[Dict]) -> List[Alert]:
 
 
 # ──────────────────────────────────────────────
-# 4. 알림 발송 (중복 방지 포함)
+# 4. 알림 발송 (DB 기반 delta 체크)
 # ──────────────────────────────────────────────
 
-# 오늘 발송된 알림 키 추적 (메모리)
-_sent_alerts: set = set()
+def _get_last_alert(alert_key: str) -> Optional[Dict]:
+    """오늘 해당 항목의 마지막 알림 조회"""
+    engine = _get_engine()
+    with engine.connect() as conn:
+        row = conn.execute(text("""
+            SELECT alert_change_pct, alert_change_abs, metric_type, event_direction
+            FROM monitor_alerts
+            WHERE alert_date = CURRENT_DATE
+              AND alert_key = :key
+            ORDER BY alert_time DESC, id DESC
+            LIMIT 1
+        """), {"key": alert_key}).fetchone()
+
+    if row:
+        return {
+            "change_pct": float(row[0]) if row[0] else 0,
+            "change_abs": float(row[1]) if row[1] else 0,
+            "metric_type": row[2],
+            "direction": row[3],
+        }
+    return None
 
 
-def _alert_key(alert: Alert) -> str:
-    """알림 중복 방지용 키 생성"""
-    return f"{alert.category}:{alert.title}"
+def _save_alert_to_db(alert: Alert, event_direction: str = "worsen", is_sent: bool = True):
+    """알림 이력 DB 저장 (항상 INSERT)"""
+    try:
+        engine = _get_engine()
+        with engine.begin() as conn:
+            conn.execute(text("""
+                INSERT INTO monitor_alerts
+                    (alert_date, alert_time, alert_key, level, category,
+                     title, description, metric_type,
+                     alert_value, alert_change_pct, alert_change_abs,
+                     event_direction, is_sent, data)
+                VALUES (CURRENT_DATE, NOW(), :key, :level, :cat,
+                        :title, :desc, :metric,
+                        :val, :pct, :abs_val,
+                        :direction, :sent, :data)
+            """), {
+                "key": alert.alert_key,
+                "level": alert.level,
+                "cat": alert.category,
+                "title": alert.title,
+                "desc": alert.description,
+                "metric": alert.metric_type,
+                "val": alert.alert_value,
+                "pct": alert.alert_change_pct,
+                "abs_val": alert.alert_change_abs,
+                "direction": event_direction,
+                "sent": is_sent,
+                "data": json.dumps(alert.data, ensure_ascii=False, default=str),
+            })
+        try:
+            from utils.lineage import register_table_lineage_async
+            register_table_lineage_async("monitor_alerts", source_tables=[])
+        except Exception:
+            pass
+    except Exception as e:
+        logger.warning(f"알림 DB 저장 실패: {e}")
+
+
+def _should_send_alert(alert: Alert) -> str:
+    """
+    알림 발송 여부 판단.
+    Returns: "send" (발송), "recover" (DB만 기록), "skip" (무시)
+    """
+    last = _get_last_alert(alert.alert_key)
+
+    if not last:
+        # 오늘 첫 알림 → 발송
+        return "send"
+
+    if last["direction"] == "recover":
+        # 이전에 recover 기록됨 → 다시 threshold 넘었으면 새 알림
+        return "send"
+
+    # 이전 worsen 알림 대비 delta 계산
+    delta_threshold = REALERT_DELTA.get(alert.category, 1.0)
+
+    if alert.metric_type == "abs":
+        delta = abs(abs(alert.alert_change_abs) - abs(last["change_abs"]))
+        if delta >= delta_threshold:
+            return "send"
+    else:
+        delta = abs(abs(alert.alert_change_pct) - abs(last["change_pct"]))
+        if delta >= delta_threshold:
+            return "send"
+
+    return "skip"
+
+
+def _check_recover(snapshot: Dict):
+    """warning 하회 시 recover 기록 (발송 안 함)"""
+    engine = _get_engine()
+    indices = snapshot.get("indices", {})
+
+    # 오늘 worsen 알림이 있고, 현재 warning 아래인 항목 찾기
+    recover_checks = [
+        ("index:KOSPI", abs(indices.get("kospi", {}).get("change_pct", 0)), ALERT_RULES["index_warning"]),
+        ("index:KOSDAQ", abs(indices.get("kosdaq", {}).get("change_pct", 0)), ALERT_RULES["index_warning"]),
+        ("commodity:wti", abs(indices.get("wti", {}).get("change_pct", 0)), ALERT_RULES["wti_warning"]),
+        ("commodity:gold", abs(indices.get("gold", {}).get("change_pct", 0)), ALERT_RULES["gold_warning"]),
+        ("crypto:btc", abs(indices.get("btc", {}).get("change_pct", 0)), ALERT_RULES["crypto_warning"]),
+        ("crypto:eth", abs(indices.get("eth", {}).get("change_pct", 0)), ALERT_RULES["crypto_warning"]),
+    ]
+
+    # flow는 abs 기준
+    flow = snapshot.get("investor_flow", {})
+    if flow:
+        recover_checks.append(("flow:foreign", abs(flow.get("foreign", 0)), ALERT_RULES["flow_warning"]))
+        recover_checks.append(("flow:institution", abs(flow.get("institution", 0)), ALERT_RULES["flow_warning"]))
+
+    for alert_key, current_val, warning_threshold in recover_checks:
+        if current_val >= warning_threshold:
+            continue  # 아직 warning 이상 → recover 아님
+
+        last = _get_last_alert(alert_key)
+        if not last or last["direction"] == "recover":
+            continue  # 이전 알림 없거나 이미 recover됨
+
+        # warning 하회 → recover 기록
+        with engine.begin() as conn:
+            conn.execute(text("""
+                INSERT INTO monitor_alerts
+                    (alert_date, alert_time, alert_key, level, category,
+                     title, description, metric_type,
+                     alert_value, alert_change_pct, alert_change_abs,
+                     event_direction, is_sent, data)
+                VALUES (CURRENT_DATE, NOW(), :key, '🟢 반등', :cat,
+                        :title, '', :metric,
+                        :val, :pct, :abs_val,
+                        'recover', false, '{}')
+            """), {
+                "key": alert_key,
+                "cat": alert_key.split(":")[0],
+                "title": f"{alert_key} 경계 해제",
+                "metric": "abs" if "flow" in alert_key else "pct",
+                "val": current_val,
+                "pct": current_val if "flow" not in alert_key else 0,
+                "abs_val": current_val if "flow" in alert_key else 0,
+            })
+        logger.info(f"recover 기록: {alert_key} (현재 {current_val})")
 
 
 def format_alert_message(alerts: List[Alert], snapshot: Dict = None) -> str:
-    """알림 리스트를 텔레그램 메시지로 포맷 (시장 현황 포함)"""
-    now = datetime.now().strftime("%H:%M")
+    """알림 리스트를 텔레그램 메시지로 포맷"""
+    from zoneinfo import ZoneInfo
+    now = datetime.now(ZoneInfo("Asia/Seoul")).strftime("%Y-%m-%d %H:%M")
     lines = [f"⏰ *Market Alert — {now}*\n"]
 
     for alert in alerts:
@@ -695,7 +883,6 @@ def format_alert_message(alerts: List[Alert], snapshot: Dict = None) -> str:
         lines.append(f"*{alert.title}*")
         lines.append(f"{alert.description}\n")
 
-    # 시장 현황 요약
     if snapshot:
         lines.append("— 현재 시장 —")
         lines.extend(_format_market_snapshot(snapshot))
@@ -703,66 +890,35 @@ def format_alert_message(alerts: List[Alert], snapshot: Dict = None) -> str:
     return "\n".join(lines)
 
 
-def _save_alert_to_db(alert: Alert):
-    """알림 이력 DB 저장"""
-    try:
-        engine = _get_engine()
-        checklist_id = alert.data.get("db_id") if alert.category == "checklist" else None
-        with engine.begin() as conn:
-            conn.execute(text("""
-                INSERT INTO monitor_alerts
-                    (alert_date, alert_time, level, category, title, description, data, checklist_id)
-                VALUES (CURRENT_DATE, NOW(), :level, :cat, :title, :desc, :data, :cid)
-            """), {
-                "level": alert.level,
-                "cat": alert.category,
-                "title": alert.title,
-                "desc": alert.description,
-                "data": json.dumps(alert.data, ensure_ascii=False, default=str),
-                "cid": checklist_id,
-            })
-        try:
-            from utils.lineage import register_table_lineage_async
-            register_table_lineage_async("monitor_alerts", source_tables=["monitor_checklist"])
-        except Exception:
-            pass
-    except Exception as e:
-        logger.warning(f"알림 DB 저장 실패: {e}")
-
-
 def send_alerts(alerts: List[Alert], snapshot: Dict = None) -> int:
-    """알림 발송 (중복 제거 후 텔레그램 전송 + DB 저장)"""
+    """알림 발송 (DB 기반 delta 체크 + recover 기록)"""
     from reports.telegram_sender import send_telegram_message
 
-    # 중복 제거
-    new_alerts = []
+    # delta 기반 필터링
+    to_send = []
     for alert in alerts:
-        key = _alert_key(alert)
-        if key not in _sent_alerts:
-            _sent_alerts.add(key)
-            new_alerts.append(alert)
+        decision = _should_send_alert(alert)
+        if decision == "send":
+            to_send.append(alert)
 
-    if not new_alerts:
-        return 0
+    # worsen 알림 발송
+    if to_send:
+        message = format_alert_message(to_send, snapshot=snapshot)
+        success = send_telegram_message(message)
 
-    message = format_alert_message(new_alerts, snapshot=snapshot)
-    success = send_telegram_message(message)
+        for alert in to_send:
+            _save_alert_to_db(alert, event_direction="worsen", is_sent=True)
 
-    # DB에 알림 이력 저장
-    for alert in new_alerts:
-        _save_alert_to_db(alert)
-
-    if success:
-        logger.info(f"알림 {len(new_alerts)}건 발송 완료")
+        if success:
+            logger.info(f"알림 {len(to_send)}건 발송 완료")
     else:
-        logger.warning("알림 발송 실패")
+        logger.info("발송할 알림 없음 (delta 미달 또는 중복)")
 
-    return len(new_alerts)
+    # recover 체크 (warning 하회 시 DB 기록만)
+    if snapshot:
+        _check_recover(snapshot)
 
-
-def reset_daily_alerts():
-    """일일 알림 초기화 (매일 장 시작 전 호출)"""
-    _sent_alerts.clear()
+    return len(to_send)
 
 
 # ──────────────────────────────────────────────
@@ -811,7 +967,8 @@ def send_checklist_status(override_hour: int = None) -> Dict:
     snapshot = fetch_market_snapshot()
     checklist_text = load_checklist()
 
-    now = datetime.now()
+    from zoneinfo import ZoneInfo
+    now = datetime.now(ZoneInfo("Asia/Seoul"))
     hour = override_hour if override_hour is not None else now.hour
 
     if hour < 9:
@@ -826,45 +983,32 @@ def send_checklist_status(override_hour: int = None) -> Dict:
     else:
         title, phase = "장 마감", "close"
 
-    lines = [f"📋 *{title} — {now.strftime('%H:%M')}*\n"]
+    lines = [f"📋 *{title} — {now.strftime('%Y-%m-%d %H:%M')}*\n"]
 
     # 시장 현황
     lines.extend(_format_market_snapshot(snapshot))
     lines.append("")
 
-    # 시간대별 체크리스트 필터링
-    phase_headers = {
-        "pre_market": ["장 시작 전"],
-        "intraday": ["장 중", "장중", "모니터링"],
-        "close": [],  # 전체
+    # 전체 체크리스트를 에이전트에 전달 + 시간대 힌트
+    # 에이전트가 time_phase에 맞는 항목만 분석하도록 위임
+    phase_instructions = {
+        "pre_market": "지금은 장 시작 전(08:30~09:00)입니다. 체크리스트에서 '장 시작 전' 관련 항목만 골라서 분석하세요.",
+        "intraday": "지금은 장중(09:00~15:30)입니다. 체크리스트에서 '장 중' 관련 항목과 '주의 가격 레벨' 항목을 분석하세요.",
+        "close": "지금은 장 마감 시점입니다. 체크리스트 전체 항목의 최종 결과를 정리하고, 오늘 시장 요약을 작성하세요. 체크리스트 원문은 반복하지 마세요.",
     }
-    if phase == "close" and checklist_text:
-        # 장 마감: 체크리스트 원문 대신 요약 요청
-        checklist_for_agent = (
-            "오늘 체크리스트 항목:\n" + checklist_text + "\n\n"
-            "위 체크리스트의 최종 결과를 확인하고, "
-            "오늘 시장 전체 요약을 작성해주세요. 체크리스트 원문은 반복하지 마세요."
-        )
-    elif phase != "close" and checklist_text:
-        filtered_lines = []
-        current_section_match = False
-        for line in checklist_text.split("\n"):
-            stripped = line.strip()
-            # 섹션 헤더 감지
-            if stripped and not stripped.startswith("□"):
-                keywords = phase_headers.get(phase, [])
-                current_section_match = any(k in stripped for k in keywords)
-                # 가격 레벨은 장중에도 포함
-                if phase == "intraday" and any(k in stripped for k in ["가격", "레벨", "주의"]):
-                    current_section_match = True
-            if current_section_match and stripped:
-                filtered_lines.append(stripped)
-        checklist_for_agent = "\n".join(filtered_lines) if filtered_lines else checklist_text
-    else:
-        checklist_for_agent = checklist_text
+    instruction = phase_instructions.get(phase, "")
+    checklist_for_agent = (
+        f"[시간대: {phase}]\n{instruction}\n\n"
+        f"=== 오늘 체크리스트 원문 ===\n{checklist_text}"
+    ) if checklist_text else ""
 
     # 체크리스트 + 에이전트 분석 (BIP-Agents API 호출)
     if checklist_for_agent:
+        try:
+            from utils.audited_llm import record_agent_audit
+        except Exception:
+            record_agent_audit = None
+
         try:
             agent_url = os.getenv("BIP_AGENTS_API_URL", "http://bip-agents-api:8100")
             resp = requests.post(
@@ -876,7 +1020,33 @@ def send_checklist_status(override_hour: int = None) -> Dict:
                 timeout=60,
             )
             if resp.status_code == 200:
-                analysis = resp.json().get("analysis_result", "")
+                body = resp.json()
+                analysis = body.get("analysis_result", "")
+                audit_meta = body.get("audit") or {}
+
+                # BIP-Agents 응답 감사 기록 (거버넌스 3-3, 3-4)
+                if record_agent_audit and audit_meta:
+                    try:
+                        record_agent_audit(
+                            agent_name=audit_meta.get("agent_name", "market_monitor_checklist"),
+                            agent_type=audit_meta.get("agent_type", "monitor"),
+                            status=audit_meta.get("status", "success"),
+                            llm_provider=audit_meta.get("llm_provider"),
+                            llm_model=audit_meta.get("llm_model"),
+                            prompt_class=audit_meta.get("prompt_class"),
+                            prompt_tokens=audit_meta.get("prompt_tokens"),
+                            completion_tokens=audit_meta.get("completion_tokens"),
+                            tools_used=audit_meta.get("tools_used"),
+                            data_sources=audit_meta.get("data_sources"),
+                            referenced_tables=audit_meta.get("referenced_tables"),
+                            execution_ms=audit_meta.get("execution_ms"),
+                            run_id=audit_meta.get("run_id"),
+                            triggered_by="airflow_schedule",
+                            error_message=audit_meta.get("error_message") or None,
+                        )
+                    except Exception as audit_err:
+                        logger.warning(f"감사 로그 기록 실패: {audit_err}")
+
                 if analysis:
                     # 에이전트 마크다운 → 텔레그램 Markdown 변환
                     analysis = re.sub(r'\*\*(.+?)\*\*', r'*\1*', analysis)  # **bold** → *bold*

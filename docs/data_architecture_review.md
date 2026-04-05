@@ -410,6 +410,18 @@ UNIQUE: `(indicator_date, region, indicator_type)`
 - 이상치 알림 발송 이력
 - 컬럼: `alert_date`, `alert_time`, `level`, `category`, `title`, `description`, `data(JSONB)`
 
+**`indicator_context_snapshot` 테이블 (2026-04-05 추가):**
+- BIP-Agents 체크리스트 모니터링 에이전트용 지표 시장 맥락 사전 계산
+- 일별 스냅샷: min/max/avg/median/stddev, p10~p95, avg_5d/20d, volatility_20d_pct, trend_label
+- 컬럼: `snapshot_date`, `indicator_type`, `region`, `family`, `direction`, 이외 20여개
+- PK: `(snapshot_date, indicator_type, region)`
+- 소스: `macro_indicators` (매일 17:00 KST에 사전 계산)
+- 참고: `docs/checklist_agent_architecture.md`
+
+**`agent_audit_log` 테이블:**
+- 모든 AI 에이전트(리포트/체크리스트/preopen/NL2SQL) LLM 호출 통합 감사
+- 2026-04-05: `market_monitor_checklist`, `market_monitor_preopen` 감사 경로 연결됨
+
 ---
 
 ## 4. 데이터 소스 & DAG 맵
@@ -436,10 +448,13 @@ UNIQUE: `(indicator_date, region, indicator_type)`
 | 07 | `07_portfolio_snapshot_daily` | KIS API (한국투자증권) | `portfolio_snapshot` | 평일 07:00 |
 | 08 | `08_company_info_annual` | DART 사업보고서 | `company_dividend`, `company_employees`, `company_executives`, `company_audit`, `company_treasury_stock`, `company_shareholders`, `company_exec_compensation` | 연간/수동 |
 | 보고 | `morning_report` | DB + OpenAI/Anthropic | 이메일 + 텔레그램 (체크리스트) | 평일 08:10 |
-| 모니터 | `market_monitor_checklist_parse` | HTML 파싱 + BIP-Agents API | `monitor_checklist` + 텔레그램 | 평일 08:25 |
-| 모니터 | `market_monitor_intraday` | 네이버/Upbit + BIP-Agents API | `monitor_alerts` + 텔레그램 | 평일 09:00~15:50 (10분) |
-| 모니터 | `market_monitor_open_close` | 네이버 금융 | 텔레그램 발송 | 평일 09:00 |
-| 모니터 | `market_monitor_close` | BIP-Agents API | 텔레그램 발송 | 평일 15:35 |
+| 모니터 | `market_monitor_checklist_parse` | HTML 파싱 + BIP-Agents API | `monitor_checklist`, `agent_audit_log` + 텔레그램 | 평일 08:25 |
+| 모니터 | `market_monitor_preopen` | KIS API 예상 체결가 + BIP-Agents | `agent_audit_log` + 텔레그램 | 평일 08:40 |
+| 모니터 | `market_monitor_intraday` | 네이버/Upbit + BIP-Agents API | `monitor_alerts`, `agent_audit_log` + 텔레그램 | 평일 09:00~15:50 (10분) |
+| 모니터 | `market_monitor_close` | BIP-Agents API (체크리스트 복기) | `agent_audit_log` + 텔레그램 | 평일 15:35 |
+| 분석 | `10_indicator_context_snapshot_daily` | `macro_indicators` | `indicator_context_snapshot` | 평일 17:00 |
+| 테스트 | `morning_report_test_sonnet` | Sonnet 4.6 | 본인 이메일/DM만 | 평일 08:20 |
+| 테스트 | `morning_report_test_gpt` | GPT-5.4 | 본인 이메일/DM만 | 평일 08:30 |
 
 > 모든 DAG는 완료 시 `utils/lineage.py`의 `register_table_lineage_async()`를 통해 OpenMetadata에 lineage를 자동 등록함.
 

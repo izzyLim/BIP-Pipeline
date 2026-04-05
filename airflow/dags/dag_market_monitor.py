@@ -118,16 +118,17 @@ def run_market_monitor(**context):
     result = run_monitor_cycle()
 
     print(f"📊 모니터링: {result['timestamp']} | "
-          f"L1: {result['layer1']}건, L2: {result['layer2']}건 | "
+          f"L1: {result.get('layer1', 0)}건 | "
           f"발송: {result['alerts_sent']}건")
 
-    # 정기 현황 리포트 (09:00, 10:00, 12:00, 14:30)
-    now = datetime.now()
+    # 정기 현황 리포트 (09:00, 10:00, 12:00, 14:30 KST)
+    from zoneinfo import ZoneInfo
+    now_kst = datetime.now(ZoneInfo("Asia/Seoul"))
     status_times = [(9, 0), (10, 0), (12, 0), (14, 30)]
     for h, m in status_times:
-        if now.hour == h and now.minute < 10:  # 10분 간격이라 :00~:09 사이 매칭
+        if now_kst.hour == h and now_kst.minute < 10:
             status = send_checklist_status()
-            print(f"📋 정기 현황 발송: {status['rules_triggered']}/{status['rules_total']}")
+            print(f"📋 정기 현황 발송: {status}")
             break
 
     return result
@@ -137,10 +138,8 @@ def send_market_open_summary(**context):
     """장 시작 알림"""
     load_env_vars()
 
-    from reports.market_monitor import fetch_market_indices, reset_daily_alerts
+    from reports.market_monitor import fetch_market_indices
     from reports.telegram_sender import send_telegram_message
-
-    reset_daily_alerts()
 
     indices = fetch_market_indices()
     kospi = indices.get("kospi", {})
@@ -180,6 +179,76 @@ def send_market_close_summary(**context):
     print(f"✅ 장 마감 요약 발송: {result}")
 
 
+def run_preopen_analysis_task(**context):
+    """
+    장 시작 임박 예상 체결가 분석 (08:40 KST)
+    - BIP-Agents API 호출 → Haiku 분석 → 텔레그램 발송
+    - agent_audit_log 기록 (거버넌스 3-3)
+    """
+    load_env_vars()
+
+    import requests
+    import re as _re
+    from reports.telegram_sender import send_telegram_message
+
+    try:
+        from utils.audited_llm import record_agent_audit
+    except Exception:
+        record_agent_audit = None
+
+    agent_url = os.getenv("BIP_AGENTS_API_URL", "http://bip-agents-api:8100")
+
+    try:
+        resp = requests.post(f"{agent_url}/api/preopen/analyze", timeout=90)
+    except Exception as e:
+        print(f"⚠️ preopen API 호출 실패: {e}")
+        return {"sent": False, "error": str(e)}
+
+    if resp.status_code != 200:
+        print(f"⚠️ preopen API 오류: {resp.status_code} {resp.text[:200]}")
+        return {"sent": False, "status_code": resp.status_code}
+
+    body = resp.json()
+    analysis = body.get("analysis_result", "")
+    audit_meta = body.get("audit") or {}
+
+    # 감사 기록
+    if record_agent_audit and audit_meta:
+        try:
+            record_agent_audit(
+                agent_name=audit_meta.get("agent_name", "market_monitor_preopen"),
+                agent_type=audit_meta.get("agent_type", "monitor"),
+                status=audit_meta.get("status", "success"),
+                llm_provider=audit_meta.get("llm_provider"),
+                llm_model=audit_meta.get("llm_model"),
+                prompt_class=audit_meta.get("prompt_class"),
+                prompt_tokens=audit_meta.get("prompt_tokens"),
+                completion_tokens=audit_meta.get("completion_tokens"),
+                tools_used=audit_meta.get("tools_used"),
+                data_sources=audit_meta.get("data_sources"),
+                referenced_tables=audit_meta.get("referenced_tables"),
+                execution_ms=audit_meta.get("execution_ms"),
+                run_id=audit_meta.get("run_id"),
+                triggered_by="airflow_schedule",
+                error_message=audit_meta.get("error_message") or None,
+            )
+        except Exception as audit_err:
+            print(f"⚠️ 감사 로그 기록 실패: {audit_err}")
+
+    if not analysis:
+        print("⚠️ 분석 결과 비어있음")
+        return {"sent": False}
+
+    # 텔레그램 마크다운 정리
+    analysis = _re.sub(r'\*\*(.+?)\*\*', r'*\1*', analysis)
+    analysis = _re.sub(r'^#{1,3}\s+', '', analysis, flags=_re.MULTILINE)
+    analysis = _re.sub(r'-{3,}', '———————————————', analysis)
+
+    success = send_telegram_message(analysis)
+    print(f"✅ preopen 분석 발송: {success}")
+    return {"sent": success, "audit_run_id": audit_meta.get("run_id")}
+
+
 # ──────────────────────────────────
 # DAG 1: 체크리스트 파싱 (1일 1회)
 # ──────────────────────────────────
@@ -196,6 +265,25 @@ with DAG(
     parse_task = PythonOperator(
         task_id="parse_morning_checklist",
         python_callable=parse_morning_checklist,
+    )
+
+
+# ──────────────────────────────────
+# DAG 1-2: 장 시작 임박 예상 체결가 (08:40 KST)
+# ──────────────────────────────────
+with DAG(
+    dag_id="market_monitor_preopen",
+    default_args=default_args,
+    description="장 시작 임박 예상 체결가 + 갭 방향 분석 (BIP-Agents)",
+    schedule_interval="40 8 * * 1-5",  # 평일 08:40 KST (동시호가 10분 경과)
+    start_date=datetime(2026, 4, 1),
+    catchup=False,
+    tags=["monitor", "preopen", "telegram"],
+) as dag_preopen:
+
+    preopen_task = PythonOperator(
+        task_id="run_preopen_analysis",
+        python_callable=run_preopen_analysis_task,
     )
 
 

@@ -140,6 +140,79 @@ def test_report_generation(**context):
         raise Exception(f"리포트 생성 실패: {result['error']}")
 
 
+def _send_model_test_report(model_name: str):
+    """
+    모델별 테스트 리포트 (본인 DM + 본인 이메일만)
+    - TELEGRAM_CHANNEL_ID는 일부러 제외해서 채널 발송 차단
+    - 본인 이메일로만 발송
+
+    Args:
+        model_name: "claude-sonnet-4-6" | "gpt-5.4" 등
+    """
+    try:
+        smtp_user = Variable.get("smtp_user", default_var="")
+        smtp_password = Variable.get("smtp_password", default_var="")
+        anthropic_key = Variable.get("anthropic_api_key", default_var="")
+        openai_key = Variable.get("openai_api_key", default_var="")
+        naver_id = Variable.get("naver_client_id", default_var="")
+        naver_secret = Variable.get("naver_client_secret", default_var="")
+        telegram_token = Variable.get("TELEGRAM_BOT_TOKEN", default_var="")
+        telegram_chat_id = Variable.get("TELEGRAM_CHAT_ID", default_var="")
+
+        if smtp_user:
+            os.environ["SMTP_USER"] = smtp_user
+            os.environ["FROM_EMAIL"] = smtp_user
+        if smtp_password:
+            os.environ["SMTP_PASSWORD"] = smtp_password
+        if anthropic_key:
+            os.environ["ANTHROPIC_API_KEY"] = anthropic_key
+        if openai_key:
+            os.environ["OPENAI_API_KEY"] = openai_key
+        if naver_id:
+            os.environ["NAVER_CLIENT_ID"] = naver_id
+        if naver_secret:
+            os.environ["NAVER_CLIENT_SECRET"] = naver_secret
+        if telegram_token:
+            os.environ["TELEGRAM_BOT_TOKEN"] = telegram_token
+        if telegram_chat_id:
+            os.environ["TELEGRAM_CHAT_ID"] = telegram_chat_id
+
+        # 채널 ID는 절대 설정하지 않음 (DM만 가게)
+        os.environ.pop("TELEGRAM_CHANNEL_ID", None)
+
+        # 모델 오버라이드
+        os.environ["LLM_MODEL"] = model_name
+    except Exception as e:
+        print(f"⚠️ Variable 로드 실패: {e}")
+
+    from reports.report_builder import build_morning_report, save_report_to_file
+
+    test_email = "izzy253@gmail.com"
+    print(f"🧪 [{model_name}] 테스트 발송 대상: {test_email} (DM 전용)")
+
+    result = build_morning_report(
+        to_emails=[test_email],
+        send=True,
+    )
+
+    if result["success"]:
+        filepath = save_report_to_file(result["html"], filename=f"report_test_{model_name.replace('.', '_')}.html")
+        print(f"✅ [{model_name}] 테스트 리포트 발송 완료: {filepath}")
+        return f"발송 완료 [{model_name}]: {test_email}"
+    else:
+        raise Exception(f"[{model_name}] 리포트 발송 실패: {result['error']}")
+
+
+def test_report_sonnet(**context):
+    """Sonnet으로 모닝리포트 생성 (본인 DM만)"""
+    return _send_model_test_report("claude-sonnet-4-6")
+
+
+def test_report_gpt(**context):
+    """GPT-5.4로 모닝리포트 생성 (본인 DM만)"""
+    return _send_model_test_report("gpt-5.4")
+
+
 def test_report_with_send(**context):
     """리포트 생성 및 테스트 이메일 발송 (단일 수신자)"""
     # Airflow Variable에서 설정 로드
@@ -153,6 +226,7 @@ def test_report_with_send(**context):
         naver_secret = Variable.get("naver_client_secret", default_var="")
         telegram_token = Variable.get("TELEGRAM_BOT_TOKEN", default_var="")
         telegram_chat_id = Variable.get("TELEGRAM_CHAT_ID", default_var="")
+        telegram_channel_id = Variable.get("TELEGRAM_CHANNEL_ID", default_var="")
 
         if smtp_user:
             os.environ["SMTP_USER"] = smtp_user
@@ -173,6 +247,8 @@ def test_report_with_send(**context):
             os.environ["TELEGRAM_BOT_TOKEN"] = telegram_token
         if telegram_chat_id:
             os.environ["TELEGRAM_CHAT_ID"] = telegram_chat_id
+        if telegram_channel_id:
+            os.environ["TELEGRAM_CHANNEL_ID"] = telegram_channel_id
     except Exception as e:
         print(f"⚠️ Variable 로드 실패: {e}")
 
@@ -245,5 +321,42 @@ with DAG(
     test_send_task = PythonOperator(
         task_id="test_report_with_send",
         python_callable=test_report_with_send,
+        provide_context=True,
+    )
+
+
+# 모델 비교 테스트 DAG (본인 이메일 + DM만, 채널 발송 없음)
+# 배치: 08:10 Opus (기존) → 08:20 Sonnet → 08:30 GPT
+# 셋 다 08:00 매크로 데이터 기준 동일 조건
+with DAG(
+    dag_id="morning_report_test_sonnet",
+    default_args=default_args,
+    description="모델 비교 테스트 — Sonnet (본인 DM/이메일만)",
+    schedule_interval="20 8 * * 1-5",  # 평일 08:20 KST
+    start_date=datetime(2026, 4, 6),
+    catchup=False,
+    tags=["report", "test", "model-compare"],
+) as test_sonnet_dag:
+
+    test_sonnet_task = PythonOperator(
+        task_id="test_report_sonnet",
+        python_callable=test_report_sonnet,
+        provide_context=True,
+    )
+
+
+with DAG(
+    dag_id="morning_report_test_gpt",
+    default_args=default_args,
+    description="모델 비교 테스트 — GPT-5.4 (본인 DM/이메일만)",
+    schedule_interval="30 8 * * 1-5",  # 평일 08:30 KST
+    start_date=datetime(2026, 4, 6),
+    catchup=False,
+    tags=["report", "test", "model-compare"],
+) as test_gpt_dag:
+
+    test_gpt_task = PythonOperator(
+        task_id="test_report_gpt",
+        python_callable=test_report_gpt,
         provide_context=True,
     )

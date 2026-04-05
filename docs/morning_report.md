@@ -378,11 +378,14 @@ airflow/dags/
 
 ```
 08:10  모닝리포트 DAG → 이메일 (전체) + 텔레그램 (체크리스트 원문)
-08:25  체크리스트 파싱 DAG → DB 저장 (원문 통째로) + 장전 에이전트 분석 발송
+08:20  [테스트] Sonnet 모닝리포트 (본인 DM/이메일)
+08:25  체크리스트 파싱 DAG → DB 저장 + 장전 에이전트 분석 발송
+08:30  [테스트] GPT-5.4 모닝리포트 (본인 DM/이메일)
+08:40  preopen DAG → 예상 체결가 + 갭 방향 분석 (한투 API)
 09:00~15:30  장중 모니터링 (10분 간격)
   └── Layer 1: 이상치 감지 (지수/환율/수급/원자재/크립토)
 09:00 / 10:00 / 12:00 / 14:30  정기 현황 (BIP-Agents 에이전트 분석)
-15:35  장 마감 요약 (에이전트 기반 시장 종합)
+15:35  장 마감 복기 (체크리스트 전체 기반 + 내일 관찰 포인트)
 ```
 
 ### 에이전트 분석 흐름 (B 아키텍처)
@@ -404,9 +407,15 @@ Airflow DAG → POST http://bip-agents-api:8100/api/checklist/analyze
 | DAG | 스케줄 | 역할 |
 |-----|--------|------|
 | `market_monitor_checklist_parse` | 평일 08:25 | 체크리스트 DB 저장 + 장전 에이전트 분석 발송 |
+| `market_monitor_preopen` | 평일 08:40 | 한투 API 예상 체결가 + 갭 방향 분석 |
 | `market_monitor_intraday` | 평일 09:00~15:50 / 10분 | 이상치 감지 + 정기 현황 (09/10/12/14:30) |
-| `market_monitor_open_close` | 평일 09:00 | 장 시작 알림 + 알림 초기화 |
-| `market_monitor_close` | 평일 15:35 | 장 마감 시장 종합 (에이전트) |
+| `market_monitor_close` | 평일 15:35 | 장 마감 체크리스트 복기 + 내일 관찰 포인트 |
+
+**모델 비교 테스트 DAG (본인 DM/이메일 전용, 2026-04-05 추가):**
+| DAG | 스케줄 | 모델 |
+|-----|--------|------|
+| `morning_report_test_sonnet` | 평일 08:20 | Claude Sonnet 4.6 |
+| `morning_report_test_gpt` | 평일 08:30 | GPT-5.4 |
 
 ### 이상치 알림 기준 (Layer 1)
 
@@ -457,6 +466,13 @@ Airflow DAG → POST http://bip-agents-api:8100/api/checklist/analyze
 
 | 날짜 | 변경 내용 |
 |------|----------|
+| 2026-04-05 | **Phase 1/2/3 구현** — get_indicator_context MCP 도구, LangGraph 4단계 파이프라인, 룰 엔진 분리 (`docs/checklist_agent_architecture.md`) |
+| 2026-04-05 | **08:40 preopen DAG 추가** — 한투 API 예상 체결가 + 갭 방향 Haiku 분석 |
+| 2026-04-05 | **주요 종목 10개로 확장** — 삼성전자/SK하이닉스/LG엔솔/삼성바이오/현대차/기아/POSCO/NAVER/카카오/삼성SDI |
+| 2026-04-05 | **감사 로그 통합** — BIP-Agents API 응답 → Airflow `record_agent_audit()` |
+| 2026-04-05 | **Sonnet/GPT 비교 테스트 DAG 추가** — 본인 DM/이메일 전용, 08:20/08:30 |
+| 2026-04-05 | **체크리스트 시간대 필터링** — pre_market/intraday/close 분기 |
+| 2026-04-05 | **장 마감 메시지 체크리스트 복기 + 내일 관찰 포인트** 형식으로 전환 |
 | 2026-04-03 | **BIP-Agents 에이전트 연동** — 체크리스트 분석을 LangGraph + MCP 에이전트로 전환 |
 | 2026-04-03 | **한투 API 실시간** — 종목/지수/수급/프로그램매매 실시간 (MCP 도구) |
 | 2026-04-03 | **텔레그램 채널/DM 분리** — 채널(운영) + DM(테스트) 동시 발송 |
