@@ -249,63 +249,187 @@ OM (편집/원천)
 
 ### 4-3. Layer 3: 시맨틱 (Wren AI + Curated Views)
 
-**핵심 원칙 (Codex):** `View = truth, MDL = alias/join/metric shell, OM = description only`
+#### Wren AI 공식 모델링 권장 (2026-04-06 확인)
+
+Wren AI Best Practices 문서의 **Step 0 — Data Preprocessing** 핵심:
+
+> **Build reporting-ready tables** with pre-joined dimensions and boolean flags.
+> LLMs are much more reliable with **explicit columns** (booleans, fiscal periods, status flags)
+> than with **string parsing and ad-hoc logic**.
+
+| 공식 권장 | BIP 적용 |
+|----------|---------|
+| Denormalized reporting tables | Gold 테이블 (analytics_*) = 이미 pre-joined |
+| Pre-computed boolean flags | Curated View에 `is_value_stock` 등 추가 |
+| Pre-computed metrics | Gold에 안정적 metrics, View에 threshold 분류 |
+| 명시적 Relationship (2개 모델 간만) | stock_info 허브 + grain 일치 View |
+| 도메인별 별도 프로젝트 | 메인 + 상세 원본(선택) |
+| Multi-table JOIN 2-3개 이상 신중 | View로 pre-join하여 0-1 JOIN 유도 |
+
+**결론:** Gold 방식이 Wren AI 공식 권장과 이미 일치. Domain 전환 불필요. **Gold 유지 + PostgreSQL Curated View 보강**이 정답.
+
+#### 용어 정의 — "View"의 3가지 의미 (혼동 주의)
+
+이 프로젝트에서 "View"는 세 가지 다른 것을 가리킬 수 있다. 문서에서는 반드시 접두어를 붙여 구분한다.
+
+| 용어 | 정의 | 용도 | Relationship |
+|------|------|------|:---:|
+| **PostgreSQL Curated View** | `CREATE VIEW v_*` — DB의 물리적 가상 테이블. 계산 SSOT. | 시맨틱 레이어의 계산/분류 고정. Wren AI에 **Model**로 등록. | ✅ (Model이므로) |
+| **Wren AI UI View** | Wren AI UI에서 "Save as View"로 저장되는 **trusted query result**. | 자주 쓰는 질문의 SQL 결과를 재사용하는 용도. 시맨틱 모델링 용도 아님. | ❌ |
+| **Wren Engine MDL view** | MDL JSON의 `views` 섹션에 `statement` SQL로 정의되는 named query. | 엔진 레벨 가상 테이블. 쿼리 가능하지만 Relationship/Calculated Field 미지원. | ❌ |
+
+**핵심 원칙:**
+
+> **PostgreSQL Curated View는 Wren AI에 Model로 등록한다** (View 아님).
+> Wren AI Views는 semantic foundation이 아닌 saved/trusted result 용도.
+> Relationship은 Model 간에만 정의 가능. View에는 Relationship을 걸 수 없다.
+
+근거: Wren AI 공식 엔진 문서 Model vs View 비교표에서 `Relationship columns: Model=Supported, View=Not supported`.
+
+참고:
+- https://docs.getwren.ai/oss/guide/modeling/models
+- https://docs.getwren.ai/oss/guide/modeling/views
+- https://docs.getwren.ai/oss/engine/guide/modeling/view
+
+참고: https://docs.getwren.ai/cp/getting_started/best_practice
+
+#### 핵심 원칙
+
+`View = truth, MDL = alias/join/metric shell, OM = description only`
+
+**하이브리드 전략 (Codex 검증 완료):**
+
+| 대상 | 어디에 | 이유 |
+|------|--------|------|
+| `per_actual`, `net_margin`, `debt_ratio` 같은 안정적 계산값 | **Gold 직접** | grain에 자연스럽고 기준 변경 가능성 낮음 |
+| `golden_cross`, `death_cross` 같은 이벤트 flag | **Gold 직접** | 계산 로직이 확정적, 변경 안 됨 |
+| `is_value_stock`, `is_growth_stock` 같은 threshold 분류 | **Curated View** | 임계값이 바뀔 수 있음, 버전드 View로 유지보수 |
+| `foreign_buy_amount` (= volume × close) 같은 단순 산술 | **View 권장** | 중복만 피하면 어디든 OK |
 
 ```mermaid
 graph LR
     subgraph Semantic["Semantic Layer"]
         direction TB
-        V["Curated Views<br/>(계산 SSOT)<br/>v_valuation_signals<br/>v_technical_signals<br/>v_flow_signals<br/>v_sector_summary"]
-        M["Wren AI MDL<br/>(shell)<br/>- alias<br/>- join<br/>- metric wrapper"]
+        G["Gold Tables<br/>(안정적 base metrics)<br/>analytics_stock_daily<br/>analytics_valuation<br/>analytics_macro_daily"]
+        V["Curated Views<br/>(threshold/분류 SSOT)<br/>v_latest_valuation<br/>v_valuation_signals<br/>v_technical_signals<br/>v_flow_signals"]
+        M["Wren AI MDL<br/>(shell)<br/>- alias / join<br/>- metric wrapper"]
         O["OM description<br/>(display only)"]
 
-        V -->|referenced by| M
+        G -->|base data| V
+        V -->|registered as model| M
+        G -->|registered as model| M
         O -.sync.-> M
-        O -.sync.-> V
     end
 
-    A[Agent] -->|NL2SQL query| M
+    A[Agent / User] -->|NL2SQL query| M
     M -->|SQL SELECT| V
-    V -->|SELECT| DB[(PostgreSQL)]
+    M -->|SQL SELECT| G
+    V -->|reads| DB[(PostgreSQL)]
+    G -->|reads| DB
 
+    style G fill:#c8e6c9
     style V fill:#ffecb3
     style M fill:#fff59d
     style O fill:#fff9c4
 ```
 
-**4-3-1. Curated Views — 계산 SSOT**
+#### 4-3-1. Grain 불일치 해결 — `v_latest_valuation`
 
-복잡한 수식, 단위 변환, boolean 분류는 **모두 View에 고정**한다. Wren AI MDL이나 OM description에 같은 계산식이 있으면 **SSOT 위반 → 금지**.
+**문제:** `analytics_stock_daily` (일별 grain) ↔ `analytics_valuation` (연별 grain)을 `ticker`만으로 JOIN하면 many-to-many 크로스가 발생하여 의미적으로 틀린 SQL이 만들어짐.
+
+**해결:** `v_latest_valuation` 뷰로 1 ticker = 1 row 스냅샷을 만들어 grain을 일치시킴:
 
 ```sql
--- 예시: v_valuation_signals__v1.sql
+CREATE VIEW v_latest_valuation AS
+SELECT av.*
+FROM analytics_valuation av
+INNER JOIN (
+    SELECT ticker, MAX(fiscal_year) AS max_year
+    FROM analytics_valuation
+    GROUP BY ticker
+) latest ON av.ticker = latest.ticker AND av.fiscal_year = latest.max_year;
+
+COMMENT ON VIEW v_latest_valuation IS
+    '종목별 최신 연도 밸류에이션 스냅샷 (1 ticker = 1 row). '
+    'analytics_stock_daily와 안전하게 JOIN 가능 (grain 일치).';
+```
+
+**Relationship 구조 (grain 안전):**
+
+```
+stock_info ↔ analytics_stock_daily       (ticker, Many-to-One)
+stock_info ↔ v_latest_valuation          (ticker, One-to-One)  ← 🆕
+stock_info ↔ stock_price_1d              (ticker, One-to-Many)
+analytics_stock_daily ↔ v_latest_valuation (ticker, Many-to-One) ← 🆕
+```
+
+**⚠️ 금지:** `analytics_stock_daily ↔ analytics_valuation` 직접 Relationship — grain 불일치로 의미 오류 SQL 생성 위험.
+
+#### 4-3-2. Curated Views — Threshold/분류 SSOT
+
+변동 가능한 threshold 기반 boolean 분류는 **모두 View에 고정**한다. Wren AI MDL이나 OM description에 같은 로직이 있으면 **SSOT 위반 → 금지**.
+
+```sql
+-- v_valuation_signals__v1.sql
 CREATE VIEW v_valuation_signals__v1 AS
 SELECT
     ticker, stock_name, fiscal_year,
-    -- 기본 지표
     per_actual, pbr_actual, roe_actual,
 
-    -- 계산식 (여기에만 존재)
-    ROUND((net_income * 100.0 / NULLIF(revenue, 0))::numeric, 2) AS net_margin_pct,
-    ROUND((total_liabilities * 100.0 / NULLIF(total_equity, 0))::numeric, 2) AS debt_ratio_pct,
-
-    -- 분류 (boolean, 용어집 매핑)
+    -- threshold 분류 (여기에만 존재, Gold에 넣지 않음)
     (per_actual > 0 AND per_actual < 10 AND pbr_actual < 1)     AS is_value_stock,
     (per_actual > 0 AND per_actual < 10 AND roe_actual > 15)    AS is_value_growth,
     (revenue_growth > 20 AND operating_margin > 10)              AS is_growth_stock,
 
-    -- 단위 변환 (KRW 원 단위)
+    -- 파생 계산
+    ROUND((net_income * 100.0 / NULLIF(revenue, 0))::numeric, 2) AS net_margin_pct,
+    ROUND((total_liabilities * 100.0 / NULLIF(total_equity, 0))::numeric, 2) AS debt_ratio_pct,
     market_value * 100000000 AS market_value_krw
 FROM analytics_valuation;
+```
 
-COMMENT ON VIEW v_valuation_signals__v1 IS
-    'Gold 밸류에이션 뷰. is_value_stock, is_value_growth 등 용어집 매핑 포함. OM term: valuation_category';
+```sql
+-- v_technical_signals__v1.sql
+CREATE VIEW v_technical_signals__v1 AS
+SELECT
+    ticker, trade_date, stock_name,
+    close, rsi14, macd, bb_pctb, bb_lower, bb_upper,
+
+    -- threshold 분류
+    (rsi14 IS NOT NULL AND rsi14 < 30)                           AS is_oversold_rsi,
+    (rsi14 IS NOT NULL AND rsi14 > 70)                           AS is_overbought_rsi,
+    (close < bb_lower AND bb_lower IS NOT NULL)                  AS is_bollinger_squeeze,
+    (volume_ratio > 3 AND volume_ma20 IS NOT NULL)               AS is_volume_spike,
+
+    -- 파생 계산
+    ROUND(((close - ma20) * 100.0 / NULLIF(ma20, 0))::numeric, 2) AS disparity_20d,
+    close * volume AS trading_value
+FROM analytics_stock_daily;
+```
+
+```sql
+-- v_flow_signals__v1.sql
+CREATE VIEW v_flow_signals__v1 AS
+SELECT
+    ticker, trade_date, stock_name,
+    foreign_buy_volume, institution_buy_volume, individual_buy_volume,
+
+    -- 금액 환산
+    foreign_buy_volume * close     AS foreign_buy_amount,
+    institution_buy_volume * close AS institution_buy_amount,
+
+    -- 수급 강도
+    CASE WHEN volume > 0 THEN
+        ROUND((foreign_buy_volume * 100.0 / volume)::numeric, 2)
+    END AS foreign_ratio_pct
+FROM analytics_stock_daily;
 ```
 
 **View 네이밍 규율:**
 - `v_<domain>_<subject>__v<major>` 형식
 - Breaking change → 새 버전 생성 (`v_valuation_signals__v2`)
 - 호환 변경 → COMMENT diff로 추적
+- **Gold 테이블의 안정적 metrics(per_actual, golden_cross 등)는 View로 이동하지 않음** (하이브리드)
 
 **4-3-2. Wren AI MDL — Shell 역할**
 

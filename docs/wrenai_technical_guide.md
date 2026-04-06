@@ -964,6 +964,245 @@ graph TB
 
 ---
 
+## 12-8. Wren AI 공식 모델링 가이드 (2026-04-06 확인)
+
+Wren AI Best Practices 공식 문서 기반. BIP-Pipeline 적용 맥락과 함께 정리.
+
+참고: https://docs.getwren.ai/cp/getting_started/best_practice
+
+### Step 0 — Data Preprocessing (가장 중요)
+
+Wren AI에 모델을 등록하기 **전에** 데이터를 먼저 가공해야 함:
+
+> **Build reporting-ready tables** with pre-joined dimensions and boolean flags.
+> LLMs are much more reliable with **explicit columns** (booleans, fiscal periods, status flags)
+> than with **string parsing and ad-hoc logic**.
+
+**구체 권장:**
+1. **Denormalized reporting tables**: 자주 쓰는 JOIN을 미리 처리한 와이드 테이블
+2. **Pre-computed boolean flags**: `is_test_account`, `is_refunded`, `is_paid` 같은 명시적 분류 컬럼
+3. **Pre-computed metrics**: PER/PBR/ROE 같은 비즈니스 메트릭을 LLM 추론에 맡기지 말고 컬럼으로 고정
+4. **Meaningful naming**: 컬럼/테이블명이 비즈니스 의미를 담아야 LLM이 intent mapping을 잘 함
+
+**BIP 적용:** Gold 테이블(analytics_*)이 이미 reporting-ready. Curated View로 boolean flags 추가.
+
+### Step 1 — Semantic Layer
+
+MDL에서 정의할 것:
+- **Business-first descriptions**: 기술 용어가 아닌 비즈니스 관점 설명
+- **Measures vs Dimensions 구분**: 집계 대상(measure)과 분류 기준(dimension) 명시
+- **Relationships**: 테이블 간 JOIN 경로를 명시적으로 정의
+
+### Step 2-3 — Instructions & SQL Pairs
+
+- **Instructions**: 글로벌 규칙 (ILIKE 사용, 최신 데이터 조회 방법 등)
+- **SQL Pairs**: gold-standard 질문-SQL 쌍 저장. RAG로 유사 질문 시 참조
+
+### Relationship 제약 사항
+
+| 제약 | 내용 |
+|------|------|
+| **2개 모델 간만 정의 가능** | 3개 이상 테이블을 spanning하는 단일 Relationship 불가 |
+| **Join 타입** | ONE_TO_ONE, ONE_TO_MANY, MANY_TO_ONE, MANY_TO_MANY |
+| **TO_MANY는 집계 필수** | primary_key 기준 GROUP BY 없으면 에러 |
+| **Composite key** | condition에 AND 사용 가능하지만 공식 예제는 전부 단일 컬럼 |
+| **Cycling Relationship** | CTE 순서 제약으로 순환 관계 불가 |
+
+**BIP 주의:** `analytics_stock_daily ↔ analytics_valuation` 직접 Relationship은 grain 불일치(daily vs annual)로 금지. `v_latest_valuation` (1 ticker = 1 row)을 중간에 두어야 안전.
+
+### Wren AI의 Model vs View — 개념 상세 (Codex 검증 2026-04-06)
+
+Wren AI에서 "Model"과 "View"는 **완전히 다른 개념**이며, 이름이 비슷해서 혼동하기 쉽다.
+
+#### Model (1급 시맨틱 객체)
+
+- DB의 물리적 테이블 또는 뷰에 매핑되는 **주 데이터 소스**
+- Relationship, Calculated Fields, Metrics 모두 지원
+- 스키마(컬럼, 타입, description)를 자동 import
+- NL2SQL에서 **SQL 생성의 대상**으로 직접 참조됨
+- Qdrant에 임베딩되어 RAG 검색 대상
+
+```
+예: analytics_stock_daily, stock_info, v_latest_valuation (PostgreSQL View도 Model로 등록 가능)
+```
+
+#### View (3가지 의미)
+
+**① Wren AI UI View ("Save as View")**
+
+- UI에서 질문 후 생성된 SQL 결과를 "Save as View"로 저장하는 기능
+- **trusted query result** (검증된 쿼리 결과) 성격
+- 시맨틱 모델링 용도가 **아님**
+- Relationship/Calculated Field 정의 불가
+- 재사용: 다른 질문에서 참조 가능하지만 1급 데이터 소스는 아님
+
+```
+예: "저평가 종목" 질문 → 결과 SQL → Save as View → 나중에 재사용
+```
+
+**② Wren Engine MDL view (엔진 레벨)**
+
+- MDL JSON의 `views` 섹션에 `statement` SQL로 정의되는 **named query**
+- 엔진에서 테이블처럼 `SELECT` 가능
+- 단, **Relationship 컬럼 미지원**, **Calculated Field 미지원**
+- Model보다 기능이 제한적
+
+```json
+{
+  "name": "my_view",
+  "statement": "SELECT * FROM model_a WHERE status = 'active'"
+}
+```
+
+**③ PostgreSQL View (DB 레벨, Wren AI와 무관)**
+
+- `CREATE VIEW` DDL로 만든 DB 물리 객체
+- Wren AI에는 **Model로 등록**해야 Relationship과 시맨틱 기능 사용 가능
+- 계산 SSOT로 사용 — boolean flags, 파생 계산을 여기에 고정
+
+```sql
+CREATE VIEW v_latest_valuation AS SELECT ... FROM analytics_valuation WHERE ...;
+-- Wren AI에는 Model로 등록
+```
+
+#### 기능 비교표
+
+| 기능 | Wren AI Model | Wren AI UI View | Wren Engine MDL view |
+|------|:---:|:---:|:---:|
+| DB 물리 객체 매핑 | ✅ | ❌ | ❌ |
+| Relationship 정의 | ✅ | ❌ | ❌ |
+| Calculated Fields | ✅ | ❌ | ❌ |
+| Metrics | ✅ | ❌ | ❌ |
+| Description / Column 설명 | ✅ | ❌ | 제한적 |
+| Qdrant RAG 인덱싱 | ✅ | ❌ | ❌ |
+| NL2SQL SQL 생성 대상 | ✅ | ⚠️ 참조 가능 | ⚠️ 엔진에서 쿼리 가능 |
+| 용도 | **시맨틱 데이터 소스** | saved trusted result | named SQL query |
+
+#### BIP-Pipeline 적용 원칙
+
+> **PostgreSQL Curated View는 Wren AI에 Model로 등록한다.**
+> Wren AI의 UI View나 MDL view는 **시맨틱 모델링에 사용하지 않는다.**
+> Relationship은 Model 간에만 정의 가능하므로, Relationship이 필요한 객체는 반드시 Model.
+
+**근거:**
+- Wren AI 공식 엔진 문서 Model vs View 비교: Relationship columns — Model=Supported, View=Not supported
+- Wren AI UI 공식 가이드: Views는 "saved trusted result"로 설명
+- Codex 적대적 리뷰 검증 (2026-04-06): "현재 구성(PostgreSQL View + Wren AI Model)이 맞다"
+
+**참고:**
+- https://docs.getwren.ai/oss/guide/modeling/models
+- https://docs.getwren.ai/oss/guide/modeling/views
+- https://docs.getwren.ai/oss/engine/guide/modeling/view
+- https://docs.getwren.ai/oss/engine/guide/modeling/relation
+
+### Wren AI View 활용 전략 — "검증된 답변 캐시"
+
+Wren AI UI View는 시맨틱 모델링이 아닌 **자주 반복되는 질문의 정답을 캐싱**하는 기능이다.
+
+#### 동작 방식
+
+```
+1. 사용자가 질문 → AI가 SQL 생성 → 결과 반환
+2. 사용자가 결과 확인 후 "Save as View" 클릭
+3. 질문 + SQL이 View로 저장됨
+4. 이후 같은/유사 질문 → 저장된 View에서 직접 반환 (AI 재생성 우회)
+5. UI에 "이 결과는 저장된 View에서 왔다"고 표시
+```
+
+#### View vs SQL Pairs 비교
+
+| 항목 | View | SQL Pair |
+|------|------|---------|
+| **역할** | "이 질문에 이 답을 **그대로 줘**" | "이런 패턴으로 SQL **만들어**" |
+| **생성 시점** | 질문 후 결과 확인 후 저장 (사후, reactive) | 미리 등록 또는 좋은 결과 저장 (사전/사후, proactive) |
+| **작동 방식** | 매칭되면 **직접 반환** (AI 우회) | RAG 검색 → LLM **컨텍스트에 주입** → 유사 SQL 생성 |
+| **유연성** | 정확히 같은 질문만 매칭 | 유사한 질문에도 패턴 적용 |
+| **LLM 호출** | ❌ 없음 (캐시 반환) | ✅ 있음 (생성 보조) |
+| **비용** | 0 (캐시) | LLM 호출 비용 발생 |
+| **적합 용도** | 자주 반복되는 고정 질문 | 복잡한 계산/도메인 규칙 학습 |
+| **Qdrant 인덱싱** | 미확인 (별도 관리 추정) | ✅ 인덱싱됨 (RAG 검색 대상) |
+
+**비유:**
+- View = "이 질문에 대한 정답을 **암기**시킨 것"
+- SQL Pair = "이런 유형의 질문에 이렇게 풀라고 **가르친** 것"
+
+#### 유용한 케이스 (View 적합)
+
+자주 반복되는 정형 질문:
+
+| 질문 | 이유 |
+|------|------|
+| "오늘 시장 현황" | 매일 같은 SQL, AI 재생성 불필요 |
+| "시가총액 상위 10종목" | 결과 패턴 고정 |
+| "현재 VIX" | 단순 반복 |
+| "환율 추이" | 매번 같은 쿼리 |
+| "코스피 코스닥 지수" | 고정 질문 |
+
+**효과:**
+- 응답 속도 향상 (AI 처리 없이 즉시 반환)
+- 정확도 100% 보장 (검증된 SQL 그대로 사용)
+- LLM 비용 절감 (토큰 안 씀)
+
+#### 유용하지 않은 케이스 (SQL Pairs가 더 적합)
+
+변형이 많은 질문:
+
+| 질문 | 이유 |
+|------|------|
+| "삼성전자 최근 주가" | 종목이 바뀌면 다른 질문 |
+| "PER 10 이하 종목" | 조건이 바뀌면 별개 질문 |
+| "하이닉스 3개월 주가 흐름" | 종목+기간 조합이 다양 |
+| "저평가주 중 외국인 순매수" | 복합 조건의 변형 |
+
+#### BIP-Pipeline 적용 계획 (향후)
+
+| 방법 | 대상 | 현재 | 목표 |
+|------|------|:---:|:---:|
+| **View** | 상위 10-20개 고정 FAQ | 0개 | 10-20개 |
+| **SQL Pair** | 다양한 변형 패턴 | 41개 | 100개 |
+| **Model + Relationship** | 시맨틱 구조 | 9+9 | 유지 |
+| **Instructions** | 범용 규칙 | 3개 | 최소 유지 |
+
+**두 가지를 병행하는 것이 최적:**
+- View로 고정 FAQ 즉시 반환 (비용 0)
+- SQL Pairs로 변형 질문 패턴 학습 (RAG 보조)
+
+참고:
+- https://docs.getwren.ai/oss/guide/modeling/views
+- https://docs.getwren.ai/oss/guide/knowledge/overview
+
+### Multi-table JOIN 안정성
+
+- Wren Engine이 자동으로 JOIN을 해결하지만 **2-3개 이상은 careful explicit modeling 필요**
+- 대부분 질문이 **0-1 JOIN으로 끝나도록** 모델을 설계하는 것이 핵심
+- 4-table JOIN은 LLM(gpt-4o-mini)이 안정적으로 생성하기 어려움 → View로 pre-join
+
+### 프로젝트 구조
+
+- 프로젝트당 최대 100개 모델 (기본 제한)
+- **도메인별 별도 프로젝트 권장** — 같은 용어가 도메인마다 다른 의미를 가질 수 있음
+- BIP 적용: 메인 프로젝트 (투자 스크리닝) + 별도 프로젝트 (상세 재무/컨센서스)
+
+### Databricks Genie / Palantir AIP와의 비교
+
+| 도구 | 모델링 전략 |
+|------|----------|
+| **Wren AI** | Relationship 중심, pre-join 권장, boolean flags 강조 |
+| **Databricks Genie** | 5개 이하 테이블, views/metric views로 pre-join, SQL expressions 우선 |
+| **Palantir AIP** | Object type + Link type 온톨로지, raw JOIN graph 미사용 |
+
+**공통점:** 세 도구 모두 **"모든 원본 테이블을 노출하고 LLM이 JOIN 잘하길 기대"하는 방식은 권장하지 않음.** 좁은 semantic space + 구조화된 관계 + 필요한 precompute가 best practice.
+
+### 공식 3-Step 유지보수
+
+> "top 10 questions을 매 스프린트마다 smoke test"
+
+1. 생성된 SQL 리뷰
+2. 스키마 변경 모니터링
+3. Smoke test 실행 (상위 질문 집합)
+
+---
+
 ## 13. 향후 발전 방향
 
 ### 13-1. 단기 (Wren AI 개선)
