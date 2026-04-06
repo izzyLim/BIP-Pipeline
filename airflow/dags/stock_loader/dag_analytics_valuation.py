@@ -1,11 +1,12 @@
 """
 [09_analytics_valuation]
 Gold layer: stock_info + financial_statements(annual) + consensus_estimates
-→ analytics_valuation (ticker, fiscal_year) 밸류에이션 종합 테이블
+→ analytics_valuation (ticker, fiscal_year, data_type) 밸류에이션 종합 테이블
 
+- data_type='actual': 확정 실적 (financial_statements 기반)
+- data_type='estimate': 컨센서스 추정치 (consensus_estimates 기반)
 - PER/PBR/ROE/ROA/영업이익률/순이익률 pre-computed
 - YoY 성장률 (매출/영업이익/순이익) 계산
-- 컨센서스 추정치 JOIN
 - 전체 재처리 방식 (재무제표는 소량, 빠름)
 """
 
@@ -20,9 +21,9 @@ import logging
 logger = logging.getLogger(__name__)
 
 
-UPSERT_SQL = """
+UPSERT_ACTUAL_SQL = """
 INSERT INTO analytics_valuation (
-    ticker, fiscal_year,
+    ticker, fiscal_year, data_type,
     stock_name, market_type, market_value, market_value_krw,
     revenue, gross_profit, operating_profit, net_income,
     total_assets, total_equity, total_liabilities, cash_from_operating,
@@ -65,6 +66,7 @@ latest_consensus AS (
 SELECT
     fs.ticker,
     fs.fiscal_year,
+    'actual'::varchar AS data_type,
     -- 종목 기본 정보 (최신 시총)
     si.stock_name,
     si.market_type,
@@ -169,7 +171,7 @@ JOIN stock_info si ON fs.ticker = si.ticker
 LEFT JOIN fs_prev fp ON fs.ticker = fp.ticker AND fs.fiscal_year = fp.fiscal_year
 LEFT JOIN latest_consensus ce ON fs.ticker = ce.ticker
 
-ON CONFLICT (ticker, fiscal_year) DO UPDATE SET
+ON CONFLICT (ticker, fiscal_year, data_type) DO UPDATE SET
     stock_name          = EXCLUDED.stock_name,
     market_type         = EXCLUDED.market_type,
     market_value        = EXCLUDED.market_value,
@@ -203,14 +205,129 @@ ON CONFLICT (ticker, fiscal_year) DO UPDATE SET
 """
 
 
+UPSERT_ESTIMATE_SQL = """
+INSERT INTO analytics_valuation (
+    ticker, fiscal_year, data_type,
+    stock_name, market_type, market_value, market_value_krw,
+    revenue, operating_profit, net_income,
+    total_assets, total_equity, total_liabilities,
+    per_actual, pbr_actual, roe_actual,
+    operating_margin, net_margin,
+    est_per, est_pbr, est_roe, analyst_rating, target_price, analyst_count,
+    updated_at
+)
+SELECT
+    ce.ticker,
+    ce.estimate_year AS fiscal_year,
+    'estimate'::varchar AS data_type,
+
+    si.stock_name,
+    si.market_type,
+    si.market_value,
+    si.market_value * 100000000 AS market_value_krw,
+
+    -- 컨센서스 추정 실적 (consensus_estimates는 억원 단위 → 원 단위로 변환)
+    ce.est_revenue * 100000000 AS revenue,
+    ce.est_operating_profit * 100000000 AS operating_profit,
+    ce.est_net_income * 100000000 AS net_income,
+
+    NULL AS total_assets,
+    NULL AS total_equity,
+    NULL AS total_liabilities,
+
+    -- 추정 밸류에이션
+    ce.est_per AS per_actual,
+    ce.est_pbr AS pbr_actual,
+    ce.est_roe AS roe_actual,
+
+    -- 추정 마진 계산
+    CASE WHEN ce.est_revenue > 0 THEN
+        ROUND((ce.est_operating_profit * 100.0 / ce.est_revenue)::numeric, 4)
+    END AS operating_margin,
+    CASE WHEN ce.est_revenue > 0 THEN
+        ROUND((ce.est_net_income * 100.0 / ce.est_revenue)::numeric, 4)
+    END AS net_margin,
+
+    ce.est_per, ce.est_pbr, ce.est_roe,
+    ce.rating AS analyst_rating,
+    ce.target_price,
+    ce.analyst_count,
+
+    NOW()
+
+FROM consensus_estimates ce
+JOIN stock_info si ON ce.ticker = si.ticker
+WHERE ce.est_revenue IS NOT NULL AND ce.est_revenue > 0
+
+ON CONFLICT (ticker, fiscal_year, data_type) DO UPDATE SET
+    stock_name          = EXCLUDED.stock_name,
+    market_type         = EXCLUDED.market_type,
+    market_value        = EXCLUDED.market_value,
+    market_value_krw    = EXCLUDED.market_value_krw,
+    revenue             = EXCLUDED.revenue,
+    operating_profit    = EXCLUDED.operating_profit,
+    net_income          = EXCLUDED.net_income,
+    per_actual          = EXCLUDED.per_actual,
+    pbr_actual          = EXCLUDED.pbr_actual,
+    roe_actual          = EXCLUDED.roe_actual,
+    operating_margin    = EXCLUDED.operating_margin,
+    net_margin          = EXCLUDED.net_margin,
+    est_per             = EXCLUDED.est_per,
+    est_pbr             = EXCLUDED.est_pbr,
+    est_roe             = EXCLUDED.est_roe,
+    analyst_rating      = EXCLUDED.analyst_rating,
+    target_price        = EXCLUDED.target_price,
+    analyst_count       = EXCLUDED.analyst_count,
+    updated_at          = NOW()
+"""
+
+
+ESTIMATE_GROWTH_SQL = """
+UPDATE analytics_valuation est
+SET
+    revenue_growth = CASE
+        WHEN prev.revenue > 0
+             AND ABS((est.revenue - prev.revenue) * 100.0 / prev.revenue) <= 9999
+        THEN ROUND(((est.revenue - prev.revenue) * 100.0 / prev.revenue)::numeric, 4)
+    END,
+    op_profit_growth = CASE
+        WHEN prev.operating_profit > 0
+             AND ABS((est.operating_profit - prev.operating_profit) * 100.0 / prev.operating_profit) <= 9999
+        THEN ROUND(((est.operating_profit - prev.operating_profit) * 100.0 / prev.operating_profit)::numeric, 4)
+    END,
+    net_income_growth = CASE
+        WHEN prev.net_income > 0
+             AND ABS((est.net_income - prev.net_income) * 100.0 / prev.net_income) <= 9999
+        THEN ROUND(((est.net_income - prev.net_income) * 100.0 / prev.net_income)::numeric, 4)
+    END,
+    updated_at = NOW()
+FROM analytics_valuation prev
+WHERE est.data_type = 'estimate'
+  AND prev.data_type = 'actual'
+  AND est.ticker = prev.ticker
+  AND est.fiscal_year = prev.fiscal_year + 1
+  AND prev.revenue IS NOT NULL
+"""
+
+
 def build_analytics_valuation(**context):
-    """financial_statements + stock_info + consensus → analytics_valuation"""
+    """financial_statements + stock_info + consensus → analytics_valuation (actual + estimate)"""
     with get_pg_conn(PG_CONN_INFO) as conn:
         with conn.cursor() as cur:
-            cur.execute(UPSERT_SQL)
-            row_count = cur.rowcount
+            # 1) 확정 실적 (data_type='actual')
+            cur.execute(UPSERT_ACTUAL_SQL)
+            actual_count = cur.rowcount
+
+            # 2) 컨센서스 추정치 (data_type='estimate')
+            cur.execute(UPSERT_ESTIMATE_SQL)
+            estimate_count = cur.rowcount
+
+            # 3) 추정치 YoY 성장률 계산 (전년 actual 대비)
+            cur.execute(ESTIMATE_GROWTH_SQL)
+            growth_count = cur.rowcount
+
         conn.commit()
-        logger.info(f"analytics_valuation upsert 완료: {row_count}행")
+        logger.info(f"analytics_valuation upsert 완료: actual={actual_count}행, estimate={estimate_count}행, growth_update={growth_count}행")
 
     register_table_lineage_async(
         "analytics_valuation",

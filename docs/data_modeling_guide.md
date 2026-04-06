@@ -23,6 +23,8 @@
 12. [실전 시나리오 — End-to-End 예시](#12-실전-시나리오--end-to-end-예시)
 13. [체크리스트](#13-체크리스트)
 14. [안티패턴](#14-안티패턴)
+15. [와이드 테이블이란 무엇인가](#15-와이드-테이블이란-무엇인가)
+16. [사내 적용 가이드 — 기존 DW/DM이 있는 경우](#16-사내-적용-가이드--기존-dwdm이-있는-경우)
 
 ---
 
@@ -1066,4 +1068,285 @@ PostgreSQL View를 Wren AI의 UI "View" 기능에 등록
 
 ---
 
-*이 가이드는 BIP-Pipeline에서 검증된 패턴을 기반으로 작성되었습니다. 사내 업무 데이터에 적용할 때는 도메인 특성에 맞게 Grain 정의와 Boolean Flag 기준을 재설계하세요. 핵심 원칙(Grain 우선, SSOT, pre-join, boolean flags)은 도메인과 무관하게 유효합니다.*
+---
+
+## 15. 와이드 테이블이란 무엇인가
+
+### 15-1. 정의
+
+**와이드 테이블 = "자주 함께 질문되는 컬럼들을 같은 Grain으로 한 테이블에 모은 것"**
+
+"컬럼을 다 때려넣는다"가 아니라, **Grain이 같고 자주 같이 쓰이는 데이터**만 합친다.
+
+### 15-2. 와이드 vs 정규화 비교
+
+**정규화 (Star Schema, BI 전통):**
+
+```
+질문: "삼성전자의 오늘 종가와 RSI"
+
+→ 3개 테이블 JOIN 필요:
+  stock_info (종목명)
+  + stock_price_1d (종가)
+  + stock_indicators (RSI)
+
+→ LLM이 3-way JOIN SQL을 생성해야 함 → 실패 확률 높음
+```
+
+**와이드 (Gold 테이블):**
+
+```
+같은 질문:
+
+→ analytics_stock_daily 1개 테이블에서 조회:
+  SELECT stock_name, close, rsi14 FROM analytics_stock_daily
+  WHERE stock_name ILIKE '%삼성전자%'
+  ORDER BY trade_date DESC LIMIT 1
+
+→ JOIN 없음 → LLM이 쉽게 생성 → 정확도 높음
+```
+
+### 15-3. 와이드 테이블의 올바른 기준
+
+```
+✅ 올바른 와이드:
+  같은 Grain (ticker, trade_date)에 해당하는 컬럼만 합침
+  → 시세 + 기술지표 + 컨센서스 = analytics_stock_daily
+  → 한 행 = "특정 종목의 특정 거래일에 대한 모든 정보"
+
+❌ 잘못된 와이드:
+  Grain이 다른 데이터를 억지로 합침
+  → 일봉(일별) + 재무제표(연별) + 뉴스(기사별) = ???
+  → 한 행이 무엇을 의미하는지 불명확 → 크로스조인 발생
+```
+
+### 15-4. 와이드 판단 기준
+
+```
+이 질문에 대해:
+  "매번 3개 이상 테이블을 JOIN해야 하나?"
+    → YES → 와이드 테이블 후보
+    → NO (1-2개면 충분) → Relationship으로 해결
+
+합칠 테이블의 Grain이 같은가?
+    → YES → 와이드로 합칠 수 있음
+    → NO → 합치면 안 됨 (Grain 변환 View로 해결)
+```
+
+### 15-5. BI 도구 vs LLM의 선호 구조
+
+| 관점 | BI 도구 (Tableau, Power BI) | LLM (NL2SQL) |
+|------|---|---|
+| **선호 구조** | **스타 스키마** (팩트 + 디멘션 분리) | **와이드 테이블** (pre-join) |
+| **조인 처리** | 사람이 모델링 시점에 정의 | LLM이 매 질문마다 추론 |
+| **컬럼 수** | 적어도 OK (디멘션 따로) | **많아도 OK** (한 테이블에 다 있으면 유리) |
+| **코드값** | lookup 테이블로 해석 | **명칭이 직접 있어야** (JOIN 줄이기) |
+| **집계** | DAX/LOD 수식 | **pre-compute 해서 컬럼으로** |
+| **복잡한 계산** | 사용자가 수식 작성 | **boolean flag로 단순화** |
+
+**핵심:** BI 도구는 "사람이 구조를 이해하고 조합"하지만, LLM은 **"보이는 그대로 사용"**한다. 그래서 LLM에게는 이미 합쳐진 와이드 테이블이 훨씬 유리하다.
+
+### 15-6. 와이드가 과하면?
+
+컬럼이 100개 이상이면 LLM이 **적절한 컬럼을 선택하는 것** 자체가 어려워진다. 이때는:
+
+```
+1. 도메인별로 와이드 테이블을 분리 (analytics_stock_daily vs analytics_macro_daily)
+2. Wren AI의 column description을 충실히 작성
+3. 자주 안 쓰이는 컬럼은 별도 테이블/View로 분리
+4. Wren AI 프로젝트를 도메인별로 나누기
+```
+
+**목표: 한 와이드 테이블당 20-50개 컬럼이 적정.** 넘으면 분리 검토.
+
+---
+
+## 16. 사내 적용 가이드 — 기존 DW/DM이 있는 경우
+
+### 16-1. 핵심 원칙
+
+> **기존 DW/DM은 건드리지 않는다.**
+> 그 위에 "LLM이 읽기 좋은 형태의 Semantic Gold + Curated View"를 **별도로 구축**한다.
+> 이것이 "NL2SQL을 위한 시맨틱 마트"를 만드는 것이다.
+
+기존 BI용 DM을 그대로 NL2SQL에 쓰면 **BI 도구와 LLM의 데이터 소비 방식 차이** 때문에 정확도가 낮다.
+
+```mermaid
+graph LR
+    subgraph Existing["기존 인프라 (변경 안 함)"]
+        SRC[운영 DB / Source]
+        DW[DW<br/>정규화 팩트+디멘션]
+        DM[DM<br/>BI/리포트용 마트]
+    end
+
+    subgraph New["NL2SQL 전용 (신규 구축)"]
+        SG[Semantic Gold<br/>LLM 친화적 와이드 테이블]
+        CV[Curated Views<br/>boolean flags + 분류]
+        MDL[Wren AI MDL<br/>Model + Relationship]
+    end
+
+    SRC --> DW --> DM
+    DW -->|소스| SG
+    DM -->|소스| SG
+    SG --> CV --> MDL
+
+    style Existing fill:#b0bec5
+    style New fill:#fff59d
+```
+
+### 16-2. 기존 DM 진단 — "그대로 Gold로 쓸 수 있는가?"
+
+각 DM에 대해 다음을 체크:
+
+| # | 진단 항목 | YES면 | NO면 |
+|---|---------|-------|------|
+| 1 | **Grain이 명확한가?** (한 행 = 하나의 비즈니스 단위) | ✅ 그대로 사용 가능 | Grain 재정의 필요 |
+| 2 | **컬럼명이 비즈니스 의미를 담는가?** (dept_name vs dept_cd) | ✅ | 명칭 JOIN 필요 |
+| 3 | **자주 함께 쓰이는 디멘션이 이미 포함되었는가?** | ✅ | pre-join 필요 |
+| 4 | **단위가 통일되고 명시되었는가?** | ✅ | 단위 변환/COMMENT 필요 |
+| 5 | **EAV/피벗 구조가 아닌가?** | ✅ | 피벗 필요 |
+
+```
+5개 중 4개 이상 YES → DM을 그대로 Semantic Gold로 등록
+3개 이하 YES → Semantic Gold 테이블 별도 구축
+```
+
+### 16-3. Semantic Gold 구축 방법
+
+기존 DM/DW를 **소스로** 사용하되, LLM 친화적으로 재구성:
+
+```sql
+-- 예: 영업 실적 DM → Semantic Gold
+CREATE TABLE semantic_sales_daily AS
+SELECT
+    -- ❌ 코드 대신 ✅ 명칭 (디멘션 JOIN)
+    d.dept_name,             -- dept_cd 대신
+    p.product_name,          -- product_cd 대신
+    p.category_name,         -- category_cd 대신
+    r.region_name,           -- region_cd 대신
+
+    -- 기존 DM 팩트 데이터
+    dm.sale_date,
+    dm.quantity,
+    dm.amount,
+    dm.cost,
+
+    -- ❌ LLM에게 계산 맡기지 않고 ✅ pre-compute
+    dm.amount / NULLIF(dm.quantity, 0) AS unit_price,
+    dm.amount - dm.cost AS gross_profit,
+    ROUND((dm.amount - dm.cost) * 100.0 / NULLIF(dm.amount, 0), 2) AS gross_margin_pct,
+
+    -- ❌ 별도 테이블 참조 대신 ✅ 직접 포함
+    dm.prev_month_amount,
+    ROUND((dm.amount - dm.prev_month_amount) * 100.0
+          / NULLIF(dm.prev_month_amount, 0), 2) AS mom_growth_pct
+
+FROM dm_sales dm
+JOIN dim_department d ON dm.dept_cd = d.dept_cd
+JOIN dim_product p ON dm.product_cd = p.product_cd
+JOIN dim_region r ON dm.region_cd = r.region_cd;
+
+-- Grain: (sale_date, dept_name, product_name, region_name)
+COMMENT ON TABLE semantic_sales_daily IS
+    'Grain: (sale_date, dept_name, product_name, region_name). '
+    '영업 실적 + 디멘션 명칭 + 마진/성장률 pre-compute.';
+```
+
+### 16-4. Curated View 추가
+
+```sql
+CREATE VIEW v_sales_signals__v1 AS
+SELECT *,
+    -- Boolean Flags (비즈니스 용어 매핑)
+    (gross_margin_pct > 30)            AS is_high_margin,       -- "고마진"
+    (mom_growth_pct > 20)              AS is_fast_growing,      -- "급성장"
+    (quantity > 1000)                  AS is_large_volume,      -- "대량 거래"
+    (amount > 100000000)               AS is_large_deal         -- "대형 계약"
+FROM semantic_sales_daily;
+```
+
+### 16-5. 기존 DW 스타 스키마 → Semantic Gold 변환 패턴
+
+| 기존 구조 | 문제 | 변환 |
+|---------|------|------|
+| **팩트 + 디멘션 분리** (코드로 연결) | LLM이 매번 JOIN 추론 | **명칭을 팩트에 직접 포함** (pre-join) |
+| **코드값** (dept_cd='A01') | LLM이 코드 의미 모름 | **명칭으로 대체** (dept_name='영업1팀') |
+| **Slowly Changing Dimension** | 어느 시점 기준인지 불명확 | **유효 기간을 행에 명시** 또는 **최신만 사용** |
+| **EAV (메트릭 유형/값)** | LLM이 WHERE type='...' 추론 어려움 | **피벗해서 컬럼으로** |
+| **집계 테이블 (월별 합계만)** | 상세 분석 불가 | **일별 또는 건별 Grain으로** + 집계는 View |
+| **여러 DM에 같은 컬럼** (단위 다름) | 단위 혼란 | **Semantic Gold에서 단위 통일** + COMMENT |
+
+### 16-6. 실적(Actual) + 추정/예산(Estimate/Budget) 통합
+
+사내 데이터에서 흔한 패턴: **실적 vs 예산 vs 전망**을 같이 분석.
+
+```sql
+-- ❌ 분리 (LLM이 UNION 시도 → Wren Engine 파싱 에러)
+SELECT * FROM fact_actual WHERE year = 2025
+UNION ALL
+SELECT * FROM fact_budget WHERE year = 2026
+
+-- ✅ 통합 (data_type 컬럼으로 구분)
+CREATE TABLE semantic_performance AS
+SELECT year, dept_name, revenue, profit, 'actual' AS data_type
+FROM fact_actual
+UNION ALL
+SELECT year, dept_name, budget_revenue, budget_profit, 'budget'
+FROM fact_budget;
+
+-- NL2SQL:
+-- "2025년 실적과 2026년 예산 비교"
+-- → WHERE year IN (2025, 2026) ← 단일 테이블 조회로 해결
+```
+
+**BIP에서 검증된 패턴:** `analytics_valuation`에 `data_type='actual'/'estimate'`를 통합하여 "2023-2026 순이익률"을 단일 쿼리로 해결.
+
+### 16-7. 사내 적용 체크리스트
+
+```
+□ 기존 DW/DM 목록 파악
+□ 각 DM에 대해 16-2 진단 수행 (5개 체크 항목)
+□ NL2SQL 대상 도메인 결정 (전부 X, 핵심 도메인부터)
+□ 도메인별 Semantic Gold 테이블 설계
+   □ Grain 정의
+   □ 코드→명칭 변환 (디멘션 pre-join)
+   □ pre-compute 지표 식별
+   □ 실적/예산 통합 여부 (data_type 패턴)
+□ Curated View 설계
+   □ Boolean flags (비즈니스 용어 매핑)
+   □ Threshold 기반 분류
+   □ Grain 변환 (필요 시)
+□ Wren AI 모델 등록
+   □ Semantic Gold → Model
+   □ Curated View → Model (View 아님!)
+   □ Relationship 정의 (Grain 호환 확인)
+   □ Column description 작성
+□ 평가셋 작성 + 기준선 측정
+□ 기존 BI 도구와 공존 확인 (기존 DM 변경 없음)
+```
+
+### 16-8. 주의사항
+
+```
+1. 기존 DW/DM ETL을 건드리지 않는다
+   → Semantic Gold는 기존 DM을 "읽기만" 하는 별도 ETL
+
+2. Semantic Gold는 "NL2SQL 전용"이라는 걸 명확히 한다
+   → 기존 BI 대시보드가 Semantic Gold를 쓰면 의존성 꼬임
+
+3. 첫 도메인은 "질문이 잘 정의된 영역"부터
+   → "월별 매출 현황" 같은 정형 질문이 많은 도메인 먼저
+   → "왜 매출이 떨어졌나?" 같은 인과 분석은 Phase 3 에이전트에서
+
+4. 컬럼 수 관리
+   → 한 Semantic Gold 테이블당 20-50개 컬럼 적정
+   → 100개 넘으면 도메인 분리
+
+5. 갱신 주기
+   → Semantic Gold는 소스 DM 갱신 직후 ETL 실행
+   → Airflow DAG 또는 dbt job으로 자동화
+```
+
+---
+
+*이 가이드는 BIP-Pipeline에서 검증된 패턴을 기반으로 작성되었습니다. 사내 업무 데이터에 적용할 때는 도메인 특성에 맞게 Grain 정의와 Boolean Flag 기준을 재설계하세요. 핵심 원칙(Grain 우선, SSOT, pre-join, boolean flags, 와이드 테이블)은 도메인과 무관하게 유효합니다.*
