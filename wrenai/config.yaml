@@ -3,12 +3,10 @@ provider: litellm_llm
 timeout: 120
 models:
   - alias: default
-    model: gpt-4o-mini
-    context_window_size: 128000
+    model: gpt-4.1-mini
+    context_window_size: 200000
     kwargs:
       max_tokens: 4096
-      n: 1
-      seed: 0
       temperature: 0
 
 ---

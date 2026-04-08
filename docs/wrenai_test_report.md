@@ -824,3 +824,88 @@ python3 /tmp/wrenai_test.py
 
 *이 리포트는 Wren AI NL2SQL 시스템의 품질 기준선(baseline)을 수립하고, 테스트-개선 사이클의 효과를 검증하기 위해 작성되었습니다.*
 *1차(2026-04-02) → 2차(2026-04-03) 테스트를 통해 A등급 비율이 58%→77%로 개선되었습니다.*
+
+---
+
+## 3차: LLM 모델 비교 테스트 (2026-04-07~08)
+
+### 배경
+
+Wren AI 소스 코드 분석 결과, 응답 포맷 메커니즘(`response_format: json_schema`)이 OpenAI Structured Outputs 전용으로 구현되어 있음을 확인. Claude 모델 사용 시 LiteLLM이 중간 변환하는 방식으로 동작하므로 모델 간 품질 차이를 실측 비교.
+
+### 테스트 환경
+
+- Wren AI Service v0.29.0, Engine v0.22.0
+- 9개 모델 등록 (Gold 3 + Raw 2 + Curated View 4)
+- SQL Pairs 43개, Instructions 4개
+- 테스트: 순차 5문항 + 동시 3문항 + 품질 8문항
+
+### 모델별 결과
+
+| 항목 | GPT-4o-mini | GPT-4o | GPT-4.1 | **GPT-4.1-mini** | GPT-5.4-mini | Haiku 4.5 | **Sonnet 4.5** |
+|------|:-:|:-:|:-:|:-:|:-:|:-:|:-:|
+| **순차 평균** | **11s** | 80s | 75s (rate limit) | **16s** | 39s | **11s** | 30s |
+| **동시 3건 성공** | 1/3 | 3/3 | 1/3 (timeout) | **3/3** | **3/3** | **3/3** | **3/3** |
+| **SQL 생성률** | 높음 | 중 (4/8 NO SQL) | 중 | **높음 (7/8)** | 낮음 (4/8 NO SQL) | 높음 | **높음** |
+| **SQL 품질** | 중 | 중상 | 중 | **상** | 상 | 중 | **상** |
+| **Boolean 플래그** | 일부 | 0/8 | 0/8 | 0/8 | 0/8 | 0/8 | 0/8 |
+| **Curated View 활용** | - | - | - | **v_valuation_signals 사용** | - | - | - |
+| **비용** | 저 | 고 | 고 | **저** | 중 | 저 | 중 |
+| **안정성** | 양호 | TPM 한도 | TPM 한도 | **양호** | 양호 | 양호 | 양호 |
+
+### 주요 발견
+
+1. **GPT-4o/4.1**: OpenAI Tier-1 TPM 30,000 한도로 사용 불가. Tier-2(450,000 TPM) 업그레이드 후 GPT-4o 테스트 → 80s로 매우 느림
+2. **GPT-5.4-mini**: `reasoning_effort` 필수 파라미터 + `temperature=0` 미지원. Wren AI config에서 `reasoning_effort: low` + `max_completion_tokens` 사용 시 동작하나 NO SQL 비율 높음
+3. **Claude 모델 boolean 플래그 미사용**: `response_format: json_schema`가 OpenAI 전용 → LiteLLM 변환 시 Instructions 준수율 저하
+4. **GPT-4.1-mini가 유일하게 Curated View 활용**: "저평가주" 질문에 `v_valuation_signals__v1` 테이블 사용 + `is_oversold_rsi` 시도 (모델 컬럼 미등록으로 실패)
+5. **Sonnet 4.5 SQL 품질 최고**: CTE 적극 활용, DENSE_RANK 일관적 사용, `lower() = lower()` 정확 매칭
+
+### 선정: GPT-4.1-mini
+
+**선정 이유:**
+- 속도(16s)와 품질의 최적 균형점
+- 동시 처리 3/3 안정적
+- Curated View/boolean 플래그 활용 시도 → Instructions 준수력 우수
+- OpenAI `json_schema` 네이티브 지원으로 구조화된 응답 보장
+- 비용 효율적
+
+**config.yaml 설정:**
+```yaml
+type: llm
+provider: litellm_llm
+timeout: 120
+models:
+  - alias: default
+    model: gpt-4.1-mini
+    context_window_size: 200000
+    kwargs:
+      max_tokens: 4096
+      temperature: 0
+```
+
+### Wren AI 프롬프트 분석
+
+소스 코드 분석 (`/src/pipelines/generation/utils/sql.py`):
+- **시스템 프롬프트**: 모델 중립적 (ANSI SQL 규칙, CTE 선호, DENSE_RANK 사용 등)
+- **응답 포맷**: `SQL_GENERATION_MODEL_KWARGS`에서 `response_format: json_schema` 사용 → **OpenAI Structured Outputs 전용**
+- **영향**: Claude 모델은 LiteLLM이 json_schema를 텍스트 프롬프트로 변환하여 전달 → Instructions/boolean 플래그 준수율 저하
+
+### 추가 개선: Instructions 보강 (2026-04-08)
+
+LLM 모델 비교 과정에서 발견된 문제 해결을 위해 Instructions 추가:
+
+| ID | 규칙 | 해결한 문제 |
+|----|------|-----------|
+| 7 | `data_type` 컬럼 설명 (actual/estimate/preliminary) | 잠정실적 조회 시 `data_type` 필터 누락 |
+| 8 | 종목명 한글 필수 + ETF 제외 | "하이닉스" → "SK Hynix" 영문 번역으로 매칭 실패, KODEX ETF 잘못 매칭 |
+
+### 모델 컬럼 추가 (2026-04-08)
+
+`analytics_valuation` 모델에 누락 컬럼 추가:
+- `data_type` (VARCHAR): actual/estimate/preliminary 구분
+- `fiscal_quarter` (INTEGER): 분기 (0=연간, 1~4=분기)
+
+SQL Pair 추가:
+- "삼성전자 1분기 잠정 실적" → `WHERE data_type = 'preliminary'`
+- "삼성전자와 SK하이닉스 2025~2026년 매출 비교" → `data_type` 필터 없이 전체 조회

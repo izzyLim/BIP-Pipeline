@@ -998,6 +998,75 @@ MDL에서 정의할 것:
 - **Instructions**: 글로벌 규칙 (ILIKE 사용, 최신 데이터 조회 방법 등)
 - **SQL Pairs**: gold-standard 질문-SQL 쌍 저장. RAG로 유사 질문 시 참조
 
+### 12-9. LLM 모델 선정 및 프롬프트 분석 (2026-04-08)
+
+#### 프롬프트 구조 (소스 코드 분석)
+
+Wren AI AI Service의 SQL 생성 프롬프트 (`/src/pipelines/generation/utils/sql.py`):
+
+```
+System Prompt (sql_generation_system_prompt)
+├── GENERAL RULES: Instructions/SQL Samples/Reasoning Plan 참조 규칙
+├── SQL RULES (TEXT_TO_SQL_RULES): SELECT only, JOIN 규칙, quoting, LIKE 규칙 등
+└── FINAL ANSWER FORMAT: JSON {"sql": "..."} 형식
+
+User Prompt (sql_generation_user_prompt_template)
+├── DATABASE SCHEMA: Qdrant에서 검색된 관련 테이블 DDL
+├── CALCULATED FIELD / METRIC / JSON INSTRUCTIONS (조건부)
+├── SQL FUNCTIONS (조건부)
+├── SQL SAMPLES: SQL Pairs에서 유사 질문 검색 결과
+├── USER INSTRUCTIONS: Instructions 목록
+├── QUESTION: 사용자 질문
+├── REASONING PLAN (조건부): sql_generation_reasoning 파이프라인 결과
+└── "Let's think step by step."
+```
+
+#### 응답 포맷: OpenAI 전용
+
+```python
+SQL_GENERATION_MODEL_KWARGS = {
+    "response_format": {
+        "type": "json_schema",
+        "json_schema": {
+            "name": "sql_generation_result",
+            "schema": SqlGenerationResult.model_json_schema(),
+        },
+    }
+}
+```
+
+이것은 **OpenAI Structured Outputs** 기능. GPT 모델은 스키마에 100% 보장된 JSON을 출력하지만, Claude 모델은 LiteLLM이 json_schema를 텍스트 프롬프트로 변환하여 전달 → Instructions 준수율이 낮아지는 원인.
+
+#### 모델 비교 결과 (7개 모델 실측)
+
+| 모델 | 순차 속도 | 동시성 | SQL 품질 | 비고 |
+|------|:-:|:-:|:-:|------|
+| gpt-4o-mini | **11s** | 1/3 | 중 | 구형, 동시성 약함 |
+| gpt-4o | 80s | 3/3 | 중상 | Tier-2에서도 느림 |
+| gpt-4.1 | 75s | 1/3 | 중 | TPM 한도 |
+| **gpt-4.1-mini** | **16s** | **3/3** | **상** | **선정 — 속도+품질 최적** |
+| gpt-5.4-mini | 39s | 3/3 | 상 | reasoning_effort 필수, NO SQL 비율 높음 |
+| claude-haiku-4-5 | **11s** | **3/3** | 중 | 빠르지만 Instructions 미준수 |
+| claude-sonnet-4-5 | 30s | **3/3** | **상** | SQL 품질 최고, 속도 열위 |
+
+**선정: GPT-4.1-mini** — Curated View 활용, Instructions 준수, 속도/품질/비용 균형
+
+#### GPT-5 시리즈 사용 시 config 주의사항
+
+```yaml
+# GPT-4.x (기존 방식)
+kwargs:
+  max_tokens: 4096
+  temperature: 0
+
+# GPT-5.x (reasoning 모델 — 별도 파라미터 필수)
+kwargs:
+  max_completion_tokens: 4096
+  reasoning_effort: low  # none/low/medium/high/xhigh
+  # temperature 설정 불가 (1 고정)
+  # max_tokens → max_completion_tokens로 변경
+```
+
 ### Relationship 제약 사항
 
 | 제약 | 내용 |
@@ -1166,6 +1235,147 @@ Wren AI UI View는 시맨틱 모델링이 아닌 **자주 반복되는 질문의
 **두 가지를 병행하는 것이 최적:**
 - View로 고정 FAQ 즉시 반환 (비용 0)
 - SQL Pairs로 변형 질문 패턴 학습 (RAG 보조)
+
+---
+
+## 12-10. Wren AI 포지셔닝: "시맨틱 레이어"가 아닌 "NL2SQL 엔진" (2026-04-08)
+
+### Wren AI는 시맨틱 레이어인가?
+
+**아니다.** 진짜 시맨틱 레이어(dbt Semantic Layer, Cube.js)와 비교하면:
+
+| | 진짜 시맨틱 레이어 (dbt/Cube) | Wren AI MDL |
+|--|--|--|
+| **메트릭 정의** | 한 번 정의 → 모든 도구에서 재사용 | Calculated Field 집계만, 복잡 수식 불가 |
+| **Dimension/Measure 분리** | 명시적 구분, 자동 GROUP BY | 구분 없음 |
+| **소비자** | BI 도구, API, 노트북 등 다양 | Wren AI 자체만 소비 |
+| **거버넌스** | 메트릭 버전 관리, 접근 제어 | 없음 |
+| **역할** | 비즈니스 로직의 SSOT | LLM이 스키마를 이해하게 돕는 주석 |
+
+#### 정확한 분류 (Codex 검증 2026-04-08)
+
+| 컴포넌트 | 역할 |
+|---------|------|
+| **Gold Tables + Curated Views** | canonical semantic layer (계산 SSOT, 비즈니스 로직 고정) |
+| **Wren AI MDL** | NL2SQL-oriented semantic shell (lightweight 주석) |
+| **Wren AI** | semantic-aware Text-to-SQL engine (스키마 RAG + LLM + SQL 검증) |
+| **LangGraph** | orchestration layer (멀티스텝, 비정형 데이터 통합) |
+
+#### 멀티 에이전트 구조에서의 위치
+
+```
+┌─────────────────────────────────────────────┐
+│            LangGraph 에이전트               │
+│  (오케스트레이션, 멀티스텝, 의사결정)         │
+├─────────────────────────────────────────────┤
+│                  Tools                       │
+│  ┌──────────┐  ┌──────┐  ┌───────────────┐  │
+│  │ Wren AI  │  │Neo4j │  │ OM API        │  │
+│  │ (SQL생성)│  │(KG)  │  │(메타/용어집)   │  │
+│  └──────────┘  └──────┘  └───────────────┘  │
+│  ┌──────────┐  ┌──────────────────────────┐  │
+│  │ News RAG │  │ Query Template Executor  │  │
+│  │(비정형)   │  │ (deterministic fallback) │  │
+│  └──────────┘  └──────────────────────────┘  │
+├─────────────────────────────────────────────┤
+│     시맨틱 레이어 (Gold Tables + Views)       │
+├─────────────────────────────────────────────┤
+│            PostgreSQL                        │
+└─────────────────────────────────────────────┘
+```
+
+#### 비정형 데이터 연동
+
+Wren AI는 SQL DB 전용. 비정형 데이터는 LangGraph 에이전트에서 별도 Tool로 처리:
+
+| 데이터 유형 | Wren AI | 필요한 대안 |
+|-----------|:-:|------|
+| 정형 (DB 테이블) | ✅ | - |
+| 뉴스/리포트 텍스트 | ❌ | RAG (임베딩 → 벡터DB → LLM) |
+| PDF/공시문서 | ❌ | 문서 파싱 + RAG |
+| 실시간 API | ❌ | 에이전트 Tool Call |
+
+---
+
+## 12-11. NL2SQL 엔진 비교 및 선택 근거 (2026-04-08)
+
+### 셀프호스팅 가능한 NL2SQL 엔진
+
+| 도구 | 방식 | 관리 UI | SQL 검증 | 특징 |
+|------|------|:-:|:-:|------|
+| **Wren AI** | RAG + LLM + Engine 검증 | ✅ | ✅ (3회 재시도) | 올인원, MDL 시맨틱 셸 |
+| **Vanna AI** | RAG + LLM (Python 라이브러리) | ❌ | ❌ | 가장 경량, pip install |
+| **Defog AI** | Fine-tuned 모델 + RAG | ✅ | ✅ | 자체 SQLCoder 모델 |
+| **DataHerald** | RAG + LLM + 검증 (API 서버) | ✅ | ✅ | Wren AI와 유사 포지션 |
+| **LangChain SQL Agent** | 프레임워크 (직접 조립) | ❌ | 직접 구현 | 자유도 최고 |
+| **LlamaIndex NL2SQL** | 프레임워크 (직접 조립) | ❌ | 직접 구현 | 인덱스 기반 |
+
+#### 포지셔닝
+
+```
+자유도 높음 ←──────────────────────→ 편의성 높음
+
+LangChain    Vanna AI    DataHerald    Wren AI
+(직접 조립)  (라이브러리)  (API 서버)   (올인원)
+```
+
+### NL2SQL 품질 결정 요인
+
+도구 자체보다 **LLM과 컨텍스트가 품질을 결정**한다:
+
+| 품질 영향 요소 | 비중 | BIP 현황 |
+|-------------|:-:|------|
+| LLM 모델 | 50% | GPT-4.1-mini 선정 ✅ |
+| 스키마/컨텍스트 품질 | 30% | OM description 동기화 ✅ |
+| SQL 검증 + 재시도 | 15% | Wren AI 내장 ✅ |
+| 도구 자체 차이 | 5% | - |
+
+같은 LLM을 사용하면 어떤 도구든 SQL 생성 품질 자체는 비슷하다. 차이를 만드는 것은:
+1. **Few-shot 예시 품질과 양** (SQL Pairs 43개 → 목표 100+)
+2. **Gold Table/View 설계** (boolean 플래그, 단위 통일)
+3. **멀티스텝 분해** (Phase 3 LangGraph)
+
+### Wren AI 선택 근거
+
+| Wren AI 강점 | 직접 구현 시 필요한 작업 |
+|-------------|---------------------|
+| 관리 UI (SQL Pairs, Instructions, 모델) | 별도 관리 도구 개발 또는 코드 수정+배포 |
+| SQL 자동 보정 (3회 재시도) | LLM 재호출 + 에러 피드백 로직 구현 |
+| Intent Classification + Reasoning | 별도 파이프라인 구축 |
+| Qdrant RAG (스키마 임베딩) | ChromaDB/pgvector + 임베딩 관리 |
+| Deploy (임베딩 재생성) 버튼 | 수동 임베딩 갱신 스크립트 |
+
+| Wren AI 한계 | 대안 |
+|-------------|------|
+| 1질문 = 1SQL | LangGraph 멀티스텝 |
+| 비정형 데이터 불가 | LangGraph Tool (News RAG 등) |
+| 프롬프트 커스터마이징 불가 | LangGraph 직접 프롬프트 |
+| OpenAI 편향 (json_schema) | LangGraph에서 Claude 직접 사용 |
+
+**결론:** Wren AI를 NL2SQL 엔진으로 유지 + `NL2SQLEngine` 추상화로 감싸서 교체 가능성 확보 + Phase 3 LangGraph로 한계 보완.
+
+### 시맨틱 레이어 도구 (참고)
+
+NL2SQL 엔진과는 별개로, 시맨틱 레이어가 필요한 경우 셀프호스팅 가능한 옵션:
+
+| 도구 | 라이선스 | 역할 | NL2SQL 기능 |
+|------|---------|------|:-:|
+| **dbt Core** (MetricFlow) | Apache 2.0 | 데이터 변환 + 메트릭 정의 | ❌ |
+| **Cube.js** | MIT | 메트릭 정의 + API 서빙 | ❌ |
+
+dbt와 Cube는 NL2SQL 엔진이 아니라 **데이터 변환/메트릭 정의 도구**. NL2SQL 엔진(Wren AI 등)과 함께 사용하는 조합:
+
+```
+dbt (Gold 테이블 생성) → Wren AI (Gold 테이블에 NL2SQL)
+```
+
+BIP 현재 구조는 Airflow DAG가 dbt 역할을 대신하고 있음:
+
+```
+Airflow DAG (= dbt 역할) → Gold/View → Wren AI (NL2SQL)
+```
+
+사내 확장 시 여러 팀이 동일 메트릭을 다른 도구에서 사용할 때 dbt Semantic Layer 도입 검토 가치 있음. 현재 단계에서는 불필요.
 
 참고:
 - https://docs.getwren.ai/oss/guide/modeling/views
