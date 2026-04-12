@@ -336,7 +336,72 @@ FROM customer_360 c;</code></pre>
 <tr><td style="text-align:left">v_flow_signals</td><td style="text-align:left">is_foreign_net_buy</td><td style="text-align:left">외국인 순매수량 &gt; 0</td></tr>
 </tbody></table>
 
-<h3>1-3. 컬럼 Description 작성</h3>
+<h3>1-3. 해석 컬럼 추가 (Interpretation Column)</h3>
+<p><strong>무엇:</strong> 숫자 컬럼의 의미를 LLM이 오해할 수 있는 경우, <strong>텍스트 해석 컬럼</strong>을 View에 추가한다.</p>
+<p><strong>왜 필요한가 (BIP 경험):</strong></p>
+<p>Wren AI의 답변 생성(sql_answer) 파이프라인은 SQL 실행 결과만 LLM에 넘기고 <strong>컬럼 description은 전달하지 않는다.</strong> 따라서 description에 &quot;음수는 정상값&quot;이라고 아무리 상세히 적어도, 답변 생성 시 LLM은 그 정보를 모른 채 데이터만 보고 해석한다.</p>
+<pre><code>문제 상황:
+  컬럼: foreign_buy_volume = -20,778
+  Description: &quot;양수=순매수, 음수=순매도. 음수는 정상값&quot; (SQL 생성 시만 참조)
+  LLM 답변: &quot;음수값 -20,778은 이상치일 수 있습니다&quot; ❌ (description 못 봄)
+
+해결:
+  컬럼 추가: foreign_direction = &#x27;순매도&#x27;
+  LLM 답변: &quot;외국인은 순매도 상태입니다&quot; ✅ (텍스트를 직접 봄)</code></pre>
+<p><strong>이 패턴이 필요한 경우:</strong></p>
+<ul>
+<li>양수/음수가 방향성을 가진 컬럼 (순매수/순매도, 유입/유출, 증가/감소)</li>
+<li>NULL이 특별한 의미를 가진 컬럼 (&quot;데이터 없음&quot; vs &quot;0&quot;)</li>
+<li>숫자 범위에 따라 해석이 달라지는 컬럼 (RSI 30 미만 = 과매도)</li>
+</ul>
+<p><strong>설계 패턴:</strong></p>
+<pre><code class="language-sql">-- 숫자 → 텍스트 해석 컬럼 추가
+CREATE VIEW v_flow_signals AS
+SELECT
+    *,
+    -- 해석 컬럼: LLM이 답변 생성 시 직접 참조
+    CASE
+        WHEN foreign_buy_volume IS NULL THEN &#x27;데이터없음&#x27;
+        WHEN foreign_buy_volume &gt; 0 THEN &#x27;순매수&#x27;
+        WHEN foreign_buy_volume &lt; 0 THEN &#x27;순매도&#x27;
+        ELSE &#x27;보합&#x27;
+    END AS foreign_direction,
+    CASE
+        WHEN institution_buy_volume IS NULL THEN &#x27;데이터없음&#x27;
+        WHEN institution_buy_volume &gt; 0 THEN &#x27;순매수&#x27;
+        WHEN institution_buy_volume &lt; 0 THEN &#x27;순매도&#x27;
+        ELSE &#x27;보합&#x27;
+    END AS institution_direction
+FROM analytics_stock_daily;</code></pre>
+<p><strong>사내 적용 예시:</strong></p>
+<table>
+<thead><tr><th style="text-align:left">원본 컬럼</th><th style="text-align:left">오해 가능성</th><th style="text-align:left">해석 컬럼</th><th style="text-align:left">값</th></tr></thead>
+<tbody>
+<tr><td style="text-align:left">net_amount (-500)</td><td style="text-align:left">&quot;손실?&quot;</td><td style="text-align:left">amount_direction</td><td style="text-align:left">&#x27;지출&#x27;</td></tr>
+<tr><td style="text-align:left">balance_change (-100)</td><td style="text-align:left">&quot;오류?&quot;</td><td style="text-align:left">change_type</td><td style="text-align:left">&#x27;감소&#x27;</td></tr>
+<tr><td style="text-align:left">temperature (38.5)</td><td style="text-align:left">&quot;높은?&quot;</td><td style="text-align:left">temp_status</td><td style="text-align:left">&#x27;발열&#x27;</td></tr>
+<tr><td style="text-align:left">score (25)</td><td style="text-align:left">&quot;낮은?&quot;</td><td style="text-align:left">score_grade</td><td style="text-align:left">&#x27;F등급&#x27;</td></tr>
+<tr><td style="text-align:left">days_since_login (90)</td><td style="text-align:left">&quot;숫자만&quot;</td><td style="text-align:left">activity_status</td><td style="text-align:left">&#x27;이탈위험&#x27;</td></tr>
+</tbody></table>
+
+<p><strong>핵심:</strong> Boolean flag는 &quot;어떤 종목이 해당되는지&quot; 필터링용이고, 해석 컬럼은 &quot;이 숫자가 무엇을 의미하는지&quot; LLM의 답변 품질 향상용이다. 둘 다 Curated View에 추가하되 역할이 다르다.</p>
+<div class="mermaid">
+graph LR
+    subgraph View["Curated View 컬럼 유형"]
+        A[원본 숫자 컬럼<br/>foreign_buy_volume = -20778]
+        B[Boolean Flag<br/>is_foreign_net_buy = false]
+        C[해석 컬럼<br/>foreign_direction = '순매도']
+    end
+
+    A -->|SQL 필터링| Q1["WHERE volume > 1000"]
+    B -->|의미 필터링| Q2["WHERE is_foreign_net_buy = true"]
+    C -->|답변 품질| Q3["LLM: '외국인은 순매도 상태'"]
+
+    style A fill:#fff3e0
+    style B fill:#e8f5e9
+    style C fill:#e3f2fd
+</div>
+<h3>1-4. 컬럼 Description 작성</h3>
 <p><strong>무엇:</strong> 모든 대상 테이블/뷰의 컬럼에 비즈니스 설명을 작성한다.</p>
 <p><strong>왜 필요한가 (BIP 경험):</strong></p>
 <ul>
