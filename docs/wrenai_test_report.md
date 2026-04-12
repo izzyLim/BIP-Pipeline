@@ -1135,9 +1135,45 @@ stock_info (id=1)
 
 **영향:** SQL 품질은 정상이지만 사용자에게 잘못된 답변이 전달됨. Wren AI UI에서 "View SQL" → 결과 테이블을 직접 확인하면 정확한 데이터를 볼 수 있으나, 자연어 답변만 보면 오해 유발.
 
-**대응:** Phase 3 LangGraph 에이전트에서 Result Synthesizer를 직접 구현하여 답변 생성 품질 제어. 현재 Wren AI의 sql_answer는 프롬프트 커스터마이징이 불가능하므로 구조적 한계.
+**대응:** ~~Phase 3 LangGraph 에이전트에서 Result Synthesizer를 직접 구현~~ → **해석 컬럼(Interpretation Column) 추가로 해결** (아래 문제 5 참조).
 
-### 5-4. Phase 1 최종 상태 (2026-04-12)
+#### 문제 5: sql_answer 답변 오해석 — 해석 컬럼으로 해결 (2026-04-13)
+
+**증상:** "외국인과 기관 순매수 데이터에 결측치나 이상치가 있는지" 질문에서 SQL은 정확하지만, 답변이 **"음수값은 이상치, 데이터 오류 가능성"**으로 잘못 해석.
+
+**원인 분석:**
+1. Wren AI의 `sql_answer` 프롬프트(`/src/pipelines/generation/sql_answer.py`)는 SQL 실행 결과(columns + rows)만 LLM에 전달하고, **컬럼 description은 포함하지 않음**
+2. Description에 "음수=순매도, 정상값"이라고 작성해도 답변 생성 시 LLM이 참조 불가
+3. 컬럼명 `foreign_buy_volume`이 "매수량"처럼 읽혀서 LLM이 "매수량인데 왜 음수?"로 오해
+
+**시도한 해결 방법:**
+- ❌ 컬럼 description 보강 → sql_answer에서 참조 안 됨
+- ❌ custom_instruction → Intent가 GENERAL로 분류되어 SQL 미생성
+- ✅ **해석 컬럼(Interpretation Column) 추가** → SQL 결과에 텍스트가 포함되어 LLM이 직접 읽음
+
+**해결:**
+```sql
+-- View에 텍스트 해석 컬럼 추가
+CASE
+    WHEN foreign_buy_volume IS NULL THEN '데이터없음'
+    WHEN foreign_buy_volume > 0 THEN '순매수'
+    WHEN foreign_buy_volume < 0 THEN '순매도'
+    ELSE '보합'
+END AS foreign_direction
+```
+
+**결과 비교:**
+
+| | 이전 (해석 컬럼 없음) | 이후 (해석 컬럼 추가) |
+|--|--|--|
+| 음수 해석 | "이상치, 데이터 오류 가능성" ❌ | **"순매도 의미, 이상치 아님"** ✅ |
+| 방향 인식 | 음수 = 문제 | **foreign_direction = '순매도'** ✅ |
+
+**교훈:** Wren AI에서 LLM 답변 품질을 제어하려면 description이 아니라 **SQL 결과 자체에 해석 정보를 포함**시켜야 한다. 이는 Wren AI의 sql_answer가 description을 전달하지 않는 구조적 한계를 우회하는 패턴이다.
+
+**적용 범위:** 이 패턴은 양수/음수 방향성, NULL 의미, 숫자 범위 해석 등 LLM이 오해할 수 있는 모든 숫자 컬럼에 적용 가능. 상세 가이드는 `docs/nl2sql_enterprise_playbook.md` 1-3절 참조.
+
+### 5-4. Phase 1 최종 상태 (2026-04-13)
 
 | 항목 | 수량/상태 |
 |------|---------|

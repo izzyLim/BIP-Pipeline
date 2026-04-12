@@ -233,17 +233,37 @@ SELECT
         ROUND((institution_buy_volume * 100.0 / volume)::numeric, 2)
     END AS institution_ratio_pct,
 
-    -- 순매수 방향
+    -- 순매수 방향 (boolean)
     (foreign_buy_volume > 0) AS is_foreign_net_buy,
-    (institution_buy_volume > 0) AS is_institution_net_buy
+    (institution_buy_volume > 0) AS is_institution_net_buy,
+
+    -- 수급 방향 해석 (텍스트 — LLM 답변 품질 향상용)
+    CASE
+        WHEN foreign_buy_volume IS NULL THEN '데이터없음'
+        WHEN foreign_buy_volume > 0 THEN '순매수'
+        WHEN foreign_buy_volume < 0 THEN '순매도'
+        ELSE '보합'
+    END AS foreign_direction,
+    CASE
+        WHEN institution_buy_volume IS NULL THEN '데이터없음'
+        WHEN institution_buy_volume > 0 THEN '순매수'
+        WHEN institution_buy_volume < 0 THEN '순매도'
+        ELSE '보합'
+    END AS institution_direction,
+    CASE
+        WHEN individual_buy_volume IS NULL THEN '데이터없음'
+        WHEN individual_buy_volume > 0 THEN '순매수'
+        WHEN individual_buy_volume < 0 THEN '순매도'
+        ELSE '보합'
+    END AS individual_direction
 
 FROM analytics_stock_daily;
 
 COMMENT ON VIEW v_flow_signals__v1 IS
     'Gold 수급 데이터 + 금액 환산 + 순매수 방향. '
-    'foreign_buy_amount: 외국인순매수금액(volume*close). '
-    'foreign_ratio_pct: 외국인비율(%). '
-    'is_foreign_net_buy: 외국인순매수여부.';
+    'foreign/institution/individual_buy_volume: 순매수량(주). 양수=순매수, 음수=순매도, 음수는 정상값. '
+    'foreign/institution/individual_direction: 수급 방향 텍스트(순매수/순매도/데이터없음). '
+    'is_foreign_net_buy: 외국인순매수여부(boolean).';
 
 
 -- ── 5. GRANT (nl2sql_exec 전용 계정) ───────────────────────

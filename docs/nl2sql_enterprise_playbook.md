@@ -310,7 +310,83 @@ FROM customer_360 c;
 | v_technical_signals | is_volume_spike | 거래량 / 20일 평균 > 3배 |
 | v_flow_signals | is_foreign_net_buy | 외국인 순매수량 > 0 |
 
-### 1-3. 컬럼 Description 작성
+### 1-3. 해석 컬럼 추가 (Interpretation Column)
+
+**무엇:** 숫자 컬럼의 의미를 LLM이 오해할 수 있는 경우, **텍스트 해석 컬럼**을 View에 추가한다.
+
+**왜 필요한가 (BIP 경험):**
+
+Wren AI의 답변 생성(sql_answer) 파이프라인은 SQL 실행 결과만 LLM에 넘기고 **컬럼 description은 전달하지 않는다.** 따라서 description에 "음수는 정상값"이라고 아무리 상세히 적어도, 답변 생성 시 LLM은 그 정보를 모른 채 데이터만 보고 해석한다.
+
+```
+문제 상황:
+  컬럼: foreign_buy_volume = -20,778
+  Description: "양수=순매수, 음수=순매도. 음수는 정상값" (SQL 생성 시만 참조)
+  LLM 답변: "음수값 -20,778은 이상치일 수 있습니다" ❌ (description 못 봄)
+
+해결:
+  컬럼 추가: foreign_direction = '순매도'
+  LLM 답변: "외국인은 순매도 상태입니다" ✅ (텍스트를 직접 봄)
+```
+
+**이 패턴이 필요한 경우:**
+- 양수/음수가 방향성을 가진 컬럼 (순매수/순매도, 유입/유출, 증가/감소)
+- NULL이 특별한 의미를 가진 컬럼 ("데이터 없음" vs "0")
+- 숫자 범위에 따라 해석이 달라지는 컬럼 (RSI 30 미만 = 과매도)
+
+**설계 패턴:**
+
+```sql
+-- 숫자 → 텍스트 해석 컬럼 추가
+CREATE VIEW v_flow_signals AS
+SELECT
+    *,
+    -- 해석 컬럼: LLM이 답변 생성 시 직접 참조
+    CASE
+        WHEN foreign_buy_volume IS NULL THEN '데이터없음'
+        WHEN foreign_buy_volume > 0 THEN '순매수'
+        WHEN foreign_buy_volume < 0 THEN '순매도'
+        ELSE '보합'
+    END AS foreign_direction,
+    CASE
+        WHEN institution_buy_volume IS NULL THEN '데이터없음'
+        WHEN institution_buy_volume > 0 THEN '순매수'
+        WHEN institution_buy_volume < 0 THEN '순매도'
+        ELSE '보합'
+    END AS institution_direction
+FROM analytics_stock_daily;
+```
+
+**사내 적용 예시:**
+
+| 원본 컬럼 | 오해 가능성 | 해석 컬럼 | 값 |
+|----------|-----------|---------|-----|
+| net_amount (-500) | "손실?" | amount_direction | '지출' |
+| balance_change (-100) | "오류?" | change_type | '감소' |
+| temperature (38.5) | "높은?" | temp_status | '발열' |
+| score (25) | "낮은?" | score_grade | 'F등급' |
+| days_since_login (90) | "숫자만" | activity_status | '이탈위험' |
+
+**핵심:** Boolean flag는 "어떤 종목이 해당되는지" 필터링용이고, 해석 컬럼은 "이 숫자가 무엇을 의미하는지" LLM의 답변 품질 향상용이다. 둘 다 Curated View에 추가하되 역할이 다르다.
+
+```mermaid
+graph LR
+    subgraph View["Curated View 컬럼 유형"]
+        A[원본 숫자 컬럼<br/>foreign_buy_volume = -20778]
+        B[Boolean Flag<br/>is_foreign_net_buy = false]
+        C[해석 컬럼<br/>foreign_direction = '순매도']
+    end
+
+    A -->|SQL 필터링| Q1["WHERE volume > 1000"]
+    B -->|의미 필터링| Q2["WHERE is_foreign_net_buy = true"]
+    C -->|답변 품질| Q3["LLM: '외국인은 순매도 상태'"]
+
+    style A fill:#fff3e0
+    style B fill:#e8f5e9
+    style C fill:#e3f2fd
+```
+
+### 1-4. 컬럼 Description 작성
 
 **무엇:** 모든 대상 테이블/뷰의 컬럼에 비즈니스 설명을 작성한다.
 
