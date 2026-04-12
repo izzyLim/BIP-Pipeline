@@ -1000,3 +1000,166 @@ python3 scripts/wren_nl2sql_phase1_test.py
 ```
 
 리포트 출력: `reports/wren_phase1_results.json`, `reports/wren_phase1_results.md`
+
+---
+
+## 5차: Phase 1 구조 정비 및 다종목 검증 (2026-04-12)
+
+### 5-1. 구조 정비 — 무엇을 왜 했는가
+
+#### Curated View 4개 모델 전체 컬럼 재등록
+
+**무엇:** `v_latest_valuation`, `v_valuation_signals__v1`, `v_technical_signals__v1`, `v_flow_signals__v1` 4개 모델의 컬럼을 1개(ticker만)에서 전체(17~52개)로 재등록.
+
+**왜 필요했는가:** 3차 테스트에서 boolean flag 사용률이 0/8(0%)로 측정되었다. GPT-4.1-mini가 `is_oversold_rsi` 컬럼을 사용하려 시도했으나 "Schema error: No field named public_v_technical_signals__v1.is_oversold_rsi"로 실패했다. 진단 결과, **Curated View 모델이 최초 등록 시 `fields: ["ticker"]`로만 생성**되어 나머지 16~51개 컬럼이 Wren AI에 존재하지 않았다. LLM은 Qdrant 임베딩에 없는 컬럼은 사용할 수 없으므로, boolean flag가 전혀 활용되지 않는 근본 원인이었다.
+
+**결과:**
+| View | 이전 (컬럼) | 이후 (컬럼) | 핵심 추가 컬럼 |
+|------|:-:|:-:|------|
+| v_latest_valuation | 1 | 34 | per_actual, pbr_actual, roe_actual 등 밸류에이션 지표 |
+| v_valuation_signals__v1 | 1 | 35 | is_value_stock, is_growth_stock, is_deep_value 등 6개 boolean |
+| v_technical_signals__v1 | 1 | 52 | is_oversold_rsi, is_volume_spike, golden_cross 등 기술 지표 |
+| v_flow_signals__v1 | 1 | 17 | is_foreign_net_buy, is_institution_net_buy 등 수급 지표 |
+
+**효과:** boolean flag 사용률 0/8 → 7/8 (87%)
+
+#### Relationship 4개 복구
+
+**무엇:** `v_latest_valuation`, `v_valuation_signals__v1`, `v_technical_signals__v1`, `v_flow_signals__v1` 각각에서 `stock_info`로의 MANY_TO_ONE Relationship 추가.
+
+**왜 필요했는가:** 이전 작업에서 `analytics_valuation` 모델을 삭제/재생성하면서 해당 모델과 연결된 Relationship이 CASCADE 삭제되었고, 신규 View 모델에는 Relationship이 설정되지 않은 상태였다. Relationship이 없으면 Wren AI가 **Cross-model JOIN SQL을 생성할 수 없다**. 예를 들어 "저평가이면서 외국인 매수 종목"은 `v_valuation_signals`와 `v_flow_signals`를 `stock_info`를 경유해 JOIN해야 하는데, Relationship 없이는 이 경로를 LLM이 인식하지 못한다.
+
+**결과:** 기존 2개 + 신규 4개 = 총 6개 Relationship
+
+```
+stock_info (id=1)
+  ↑ MANY_TO_ONE
+  ├── analytics_stock_daily (기존)
+  ├── stock_price_1d (기존)
+  ├── v_latest_valuation (신규)
+  ├── v_valuation_signals__v1 (신규)
+  ├── v_technical_signals__v1 (신규)
+  └── v_flow_signals__v1 (신규)
+```
+
+#### SQL Pairs 27개 추가 (43 → 70개)
+
+**무엇:** 6개 카테고리에 걸쳐 27개 SQL Pair를 등록.
+
+**왜 필요했는가:** SQL Pairs는 Wren AI의 RAG 검색에서 Few-shot 예시로 사용된다. LLM이 유사 질문의 SQL 패턴을 참조하여 더 정확한 SQL을 생성한다. 특히:
+
+1. **Boolean flag 패턴 (6개):** Curated View 컬럼을 등록했지만, LLM이 `is_value_stock = true` 같은 패턴을 자발적으로 사용하려면 Few-shot 예시가 필요하다. SQL Pair가 없으면 LLM은 여전히 `per_actual < 10 AND pbr_actual < 1`처럼 직접 계산하려 한다.
+
+2. **data_type/fiscal_quarter 패턴 (4개):** `analytics_valuation`에 추가된 `data_type`(actual/estimate/preliminary)과 `fiscal_quarter` 컬럼의 정확한 사용법을 LLM에 학습시키기 위해. 특히 "잠정 실적" → `WHERE data_type = 'preliminary'`와 "연도별 비교" → `data_type` 필터 없이 전체 조회, 두 패턴이 상반되므로 명시적 예시가 필수.
+
+3. **종목 비교 패턴 (5개):** 2개 이상 종목을 `IN` 절로 비교하는 SQL 패턴. LLM이 자체적으로 생성할 수 있지만, 종목명 한글 매칭 + ETF 제외 규칙을 일관되게 적용하려면 예시가 있어야 한다.
+
+4. **시계열 패턴 (5개):** `INTERVAL`, `CURRENT_DATE`, `ORDER BY trade_date DESC LIMIT N` 같은 시간 범위 쿼리 패턴.
+
+5. **수급 분석 패턴 (3개):** `v_flow_signals__v1`의 boolean flag를 활용한 외국인/기관 순매수 분석.
+
+6. **복합 조건 패턴 (4개):** 2개 이상의 Curated View를 JOIN하는 고급 패턴. 이것이 가장 LLM이 자력으로 생성하기 어려운 유형이다.
+
+**결과:** SQL Pairs 43 → 70개, 4차 테스트 15/15 (100%) 달성
+
+#### OM → Wren AI description 동기화 DAG 실행
+
+**무엇:** `10_sync_metadata_daily` DAG를 수동 trigger하여 OpenMetadata의 테이블/컬럼 설명을 Wren AI 모델에 반영.
+
+**왜 필요했는가:** Curated View 모델을 삭제/재생성하면 기존에 동기화되어 있던 컬럼 description이 초기화된다. Description이 없으면 LLM이 컬럼의 비즈니스 의미를 이해하지 못해 잘못된 컬럼을 선택하거나 무시한다. 예를 들어 `is_value_stock` 컬럼에 "PER 10 이하이면서 PBR 1 이하인 저평가 종목 여부"라는 설명이 없으면, LLM은 이 컬럼이 무엇을 의미하는지 추론해야 한다.
+
+### 5-2. 다종목 검증 (20문항)
+
+**왜 필요했는가:** 4차 테스트(15문항)가 삼성전자/SK하이닉스 중심으로 편향되어 있었다. 실제 사용 환경에서는 다양한 종목(대형주, 중형주, KOSDAQ, 미국주식)과 약칭/업종 질의가 발생하므로, 이에 대한 커버리지를 검증해야 한다.
+
+**테스트 범위:**
+
+| 카테고리 | 문항수 | 대상 |
+|---------|:-:|------|
+| KOSPI 대형주 | 5 | 현대차, NAVER, 카카오, LG에너지솔루션, 포스코홀딩스 |
+| KOSPI 중형주 | 3 | 셀트리온, 한화에어로, 두산에너빌리티 |
+| KOSDAQ | 2 | 에코프로비엠, 알테오젠 |
+| 미국주식 | 3 | 엔비디아, 테슬라, 애플 |
+| 업종/섹터 | 2 | 자동차, 바이오 |
+| 약칭 테스트 | 3 | 엔솔, 현차, 포스코 |
+| 다종목 비교 | 2 | 3종목 PER, 2종목 밸류에이션 |
+
+**결과:** SQL 생성 18/20 (90%), DB 실행 18/20 (90%)
+
+### 5-3. 발견된 문제와 한계
+
+#### 문제 1: 종목명 영문 번역 (Instructions 위반)
+
+**증상:** "셀트리온 52주 신고가 신저가" → SQL에 `lower('Celltrion')` 사용 → 0행
+**원인:** Instructions에 "종목명은 반드시 한글로 검색" 규칙이 있으나 LLM이 간헐적으로 위반
+**영향:** 한글 종목명이 DB에 있는 종목에서 매칭 실패
+**대응:** SQL Pair 추가로 한글 패턴 강화, 또는 Phase 3 에이전트에서 Entity Resolution 단계 추가
+
+#### 문제 2: 약칭 매핑 한계
+
+**증상:**
+- "현차 PER" → `LIKE '%현차%'` → 0행 (정식명: 현대차)
+- "엔솔 주가" → `LIKE '%엔솔%'` → 케이엔솔 매칭 (의도: LG에너지솔루션)
+- "포스코 실적" → `LIKE '%포스코%'` → 여러 종목 매칭 (의도: 포스코홀딩스)
+
+**원인:** NL2SQL은 자연어 약칭을 정식 종목명으로 변환하는 **Entity Resolution 기능이 없다**. LIKE 패턴 매칭만으로는 약칭→정식명 변환이 불가능.
+**영향:** 실사용 시 사용자들이 약칭을 많이 사용하므로 UX 저하 필연적
+**대응:** Phase 3 LangGraph 에이전트에서 Entity Resolver 노드 구현 (약칭→정식명 매핑 테이블 또는 LLM 기반 해석)
+
+#### 문제 3: 데이터 부재
+
+**증상:**
+- "포스코홀딩스 PBR" → SQL 정상이지만 stock_info에 해당 종목 없음 (ADR만 존재)
+- "테슬라 PER" → per 값이 NULL
+
+**원인:** 데이터 수집 범위 또는 수집 로직 문제. NL2SQL 품질과 무관.
+**대응:** 데이터 수집 DAG 점검 (별도 작업)
+
+#### 문제 4: Wren AI sql_answer 환각
+
+**증상:** "삼성전자와 하이닉스의 5년간 PER/PBR/ROE 비교" 질문에서 SQL은 11행(양쪽 모두 포함)을 정상 반환했으나, Wren AI 답변 텍스트에 **"하이닉스의 데이터는 제공되지 않아 비교가 어렵습니다"**로 표시.
+
+**원인:** Wren AI의 `sql_answer` 파이프라인은 SQL 실행 결과를 LLM에 넣어 자연어로 요약하는데, 행이 많거나 `data_type`이 actual/estimate/preliminary로 섞여있으면 LLM이 일부 데이터를 무시하는 환각이 발생.
+
+**검증:** 동일 SQL을 PostgreSQL에서 직접 실행한 결과:
+```
+ stock_name | fiscal_year | data_type  |  PER   |  PBR  |  ROE
+ 삼성전자   |        2022 | actual     |  21.70 |  3.40 |  15.69
+ 삼성전자   |        2023 | actual     |  77.98 |  3.32 |   4.26
+ ...
+ SK하이닉스 |        2022 | actual     | 317.30 | 11.24 |   3.54
+ SK하이닉스 |        2023 | actual     |        | 13.29 | -17.08
+ ...
+ (11행 — 두 종목 모두 정상)
+```
+
+**영향:** SQL 품질은 정상이지만 사용자에게 잘못된 답변이 전달됨. Wren AI UI에서 "View SQL" → 결과 테이블을 직접 확인하면 정확한 데이터를 볼 수 있으나, 자연어 답변만 보면 오해 유발.
+
+**대응:** Phase 3 LangGraph 에이전트에서 Result Synthesizer를 직접 구현하여 답변 생성 품질 제어. 현재 Wren AI의 sql_answer는 프롬프트 커스터마이징이 불가능하므로 구조적 한계.
+
+### 5-4. Phase 1 최종 상태 (2026-04-12)
+
+| 항목 | 수량/상태 |
+|------|---------|
+| 등록 모델 | 9개 (Gold 3 + Raw 2 + View 4) |
+| 전체 컬럼 | 309개 (DB와 100% 일치) |
+| Relationship | 6개 |
+| SQL Pairs | 70개 |
+| Instructions | 4개 |
+| LLM | GPT-4.1-mini |
+| SQL 생성률 | 100% (15/15 표준 테스트) |
+| DB 실행률 | 100% (15/15) |
+| Boolean flag 사용률 | 87% (7/8) |
+| 다종목 SQL 생성률 | 90% (18/20) |
+| 평균 응답 속도 | 10s |
+
+### 5-5. Phase 2에서 해결해야 할 것
+
+위 문제들은 NL2SQL 엔진(Wren AI) 단독으로는 구조적으로 해결할 수 없으며, LangGraph 에이전트에서 다음 노드를 구현해야 한다:
+
+| 문제 | Phase 2 해결 노드 |
+|------|-----------------|
+| 약칭 매핑 | Entity Resolver (약칭→정식명 변환) |
+| 영문 번역 | Entity Resolver (한글 강제) |
+| 답변 환각 | Result Synthesizer (직접 답변 생성) |
+| 데이터 부재 판단 | Evidence Validator ("데이터 없음" 명시) |

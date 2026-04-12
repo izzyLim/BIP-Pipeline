@@ -857,39 +857,47 @@ Wren AI, Vanna AI, Defog AI, DataHerald, LangChain SQL Agent 비교 후 선택.
 
 ---
 
-## Phase 1 진행 현황 (2026-04-08 기준)
+## Phase 1 진행 현황 (2026-04-12 최종)
 
-### 완료
+### Phase 1 완료 — 최종 상태
 
-| 항목 | 상태 | 비고 |
-|------|:----:|------|
-| Gold 테이블 3종 | ✅ | analytics_stock_daily, analytics_macro_daily, analytics_valuation |
-| Curated View 4종 | ✅ | v_latest_valuation, v_valuation_signals, v_technical_signals, v_flow_signals |
-| Wren AI 모델 등록 | ✅ | 9개 모델 (Gold 3 + Raw 2 + View 4) → 모델 재생성 후 10개 |
-| SQL Pairs | ✅ | 43개 (41 → +2 잠정실적/비교 패턴) |
-| Instructions | ✅ | 4개 (계산식 힌트, 종목검색 규칙, data_type 설명, 한글 필수) |
-| LLM 모델 선정 | ✅ | GPT-4.1-mini (7개 모델 실측 비교 후 결정) |
+| 항목 | 상태 | 수량/결과 |
+|------|:----:|---------|
+| Gold 테이블 | ✅ | 3종 (analytics_stock_daily, analytics_macro_daily, analytics_valuation) |
+| Curated View | ✅ | 4종 (v_latest_valuation, v_valuation_signals, v_technical_signals, v_flow_signals) |
+| Wren AI 모델 | ✅ | 9개, **전체 309개 컬럼** (DB와 100% 일치) |
+| Relationship | ✅ | 6개 (View → stock_info 4개 복구 포함) |
+| SQL Pairs | ✅ | **70개** (43 → +27개 6카테고리) |
+| Instructions | ✅ | 4개 (계산식/종목검색/data_type/한글필수) |
+| LLM 모델 | ✅ | GPT-4.1-mini (7개 모델 비교 후 선정) |
 | 보안 4-layer | ✅ | 구문 → allowlist → DB role → curated view |
 | 감사 로그 | ✅ | nl2sql_audit_log + agent_audit_log |
 | OM 메타데이터 | ✅ | 39 테이블, 77 용어, 전체 lineage |
-| analytics_valuation 확장 | ✅ | data_type(actual/estimate/preliminary) + fiscal_quarter 추가 |
+| OM → Wren AI 동기화 | ✅ | 10_sync_metadata_daily DAG 실행 완료 |
+| 품질 테스트 자동화 | ✅ | scripts/wren_nl2sql_phase1_test.py (Codex 작성) |
 
-### 진행 중 / 미완료
+### 품질 지표
 
-| 항목 | 상태 | 비고 |
-|------|:----:|------|
-| Curated View 컬럼 Wren AI 등록 점검 | 🔲 | is_oversold_rsi 등 boolean 컬럼 누락 확인 필요 |
-| Relationship 재설정 | 🔲 | 모델 삭제/재생성 시 기존 관계 깨짐 |
-| OM → Wren AI description 동기화 실행 | 🔲 | 10_sync_metadata_daily DAG |
-| financial_statements 모델 등록 검토 | 🔲 | 분기별 실적 조회를 위해 필요할 수 있음 |
-| SQL Pairs 100개 목표 확대 | 🔲 | 현재 43개 |
-| 품질 테스트 자동화 | 🔲 | Airflow DAG 기반 정기 테스트 |
+| 지표 | 1차 (04-02) | 2차 (04-03) | 3차 (04-07) | **4차 (04-12)** |
+|------|:-:|:-:|:-:|:-:|
+| SQL 생성률 | 75% | 85% | 100% | **100%** |
+| DB 실행률 | - | - | - | **100%** |
+| Boolean flag | - | - | 0% | **87%** |
+| 평균 속도 | 11s | 11s | 16s | **10s** |
+| SQL Pairs | 29 | 34 | 43 | **70** |
 
-### LLM 모델 비교 결과 요약
+### Phase 2에서 해결할 구조적 한계
 
-7개 모델 실측 비교 (GPT-4o-mini, GPT-4o, GPT-4.1, GPT-4.1-mini, GPT-5.4-mini, Claude Haiku 4.5, Claude Sonnet 4.5):
-- **GPT-4.1-mini 선정**: 속도 16s, 동시성 3/3, SQL 품질 상, Curated View 활용
-- 상세: `docs/wrenai_test_report.md` 3차 테스트 섹션 참조
+Phase 1에서 발견되었으나 NL2SQL 엔진 단독으로 해결 불가능한 문제:
+
+| 문제 | 원인 | Phase 2 해결 방안 |
+|------|------|-----------------|
+| 약칭 매핑 실패 (현차→현대차) | Entity Resolution 기능 없음 | LangGraph Entity Resolver 노드 |
+| 종목명 영문 번역 (셀트리온→Celltrion) | Instructions 간헐적 미준수 | Entity Resolver + 한글 강제 |
+| sql_answer 환각 (데이터 있는데 "없다"고 답변) | Wren AI 답변 생성 커스터마이징 불가 | LangGraph Result Synthesizer |
+| 1질문=1SQL 제약 | Wren AI 구조적 한계 | LangGraph 멀티스텝 쿼리 |
+
+상세: `docs/wrenai_test_report.md` 5차 테스트 섹션 참조
 
 ---
 
