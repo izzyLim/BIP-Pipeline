@@ -1,0 +1,683 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>BIP-Pipeline NL2SQL 설계 및 아키텍처</title>
+<script src="https://cdn.jsdelivr.net/npm/mermaid@11/dist/mermaid.min.js"></script>
+<script>mermaid.initialize({startOnLoad:true, theme:'default', securityLevel:'loose'});</script>
+<style>
+  :root { --bg: #ffffff; --fg: #1a1a1a; --accent: #2563eb; --border: #e5e7eb; --code-bg: #f3f4f6; --bq-border: #3b82f6; --header-bg: #f8fafc; }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body { font-family: 'Pretendard', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; line-height: 1.7; color: var(--fg); max-width: 960px; margin: 0 auto; padding: 2rem 1.5rem; background: var(--bg); }
+  h1 { font-size: 2rem; margin: 2.5rem 0 1rem; padding-bottom: 0.5rem; border-bottom: 3px solid var(--accent); }
+  h2 { font-size: 1.5rem; margin: 2rem 0 0.8rem; padding-bottom: 0.3rem; border-bottom: 1px solid var(--border); color: var(--accent); }
+  h3 { font-size: 1.2rem; margin: 1.5rem 0 0.5rem; }
+  h4 { font-size: 1.05rem; margin: 1.2rem 0 0.4rem; }
+  p { margin: 0.5rem 0; }
+  hr { border: none; border-top: 1px solid var(--border); margin: 2rem 0; }
+  table { width: 100%; border-collapse: collapse; margin: 1rem 0; font-size: 0.9rem; }
+  th, td { border: 1px solid var(--border); padding: 0.5rem 0.75rem; }
+  th { background: var(--header-bg); font-weight: 600; }
+  tr:nth-child(even) { background: #fafafa; }
+  code { background: var(--code-bg); padding: 0.15rem 0.4rem; border-radius: 3px; font-size: 0.85em; font-family: 'JetBrains Mono', 'Fira Code', monospace; }
+  pre { background: #1e293b; color: #e2e8f0; padding: 1rem; border-radius: 8px; overflow-x: auto; margin: 1rem 0; }
+  pre code { background: none; color: inherit; padding: 0; font-size: 0.85rem; }
+  blockquote { border-left: 4px solid var(--bq-border); padding: 0.5rem 1rem; margin: 1rem 0; background: #eff6ff; border-radius: 0 4px 4px 0; }
+  blockquote p { margin: 0.3rem 0; }
+  ul, ol { margin: 0.5rem 0 0.5rem 1.5rem; }
+  li { margin: 0.2rem 0; }
+  strong { color: #1e40af; }
+  a { color: var(--accent); text-decoration: none; }
+  a:hover { text-decoration: underline; }
+  .mermaid { margin: 1.5rem 0; text-align: center; }
+  .mermaid svg { max-width: 100%; }
+  @media (max-width: 768px) {
+    body { padding: 1rem; }
+    table { font-size: 0.8rem; }
+    th, td { padding: 0.3rem 0.5rem; }
+  }
+</style>
+</head>
+<body>
+<h1>BIP-Pipeline NL2SQL 설계 및 아키텍처</h1>
+<blockquote>
+<p><strong>작성일:</strong> 2026-04-12</p>
+<p><strong>통합 원본:</strong> <code>nl2sql_project_plan.md</code>, <code>nl2sql_architecture_v2.md</code>, <code>bip_target_architecture.md</code></p>
+<p><strong>관련 문서:</strong></p>
+<p>- <code>docs/security_governance.md</code> — 보안 불변 조건</p>
+<p>- <code>docs/metadata_governance.md</code> — 메타데이터/리니지/용어 관리 절차</p>
+<p>- <code>docs/wrenai_technical_guide.md</code> — Wren AI 내부 구조</p>
+<p>- <code>docs/wrenai_test_report.md</code> — NL2SQL 품질 테스트 프레임워크</p>
+</blockquote>
+<hr/>
+<h2>1. 개요</h2>
+<h3>1-1. 목표</h3>
+<p>자연어 질문을 SQL로 변환하여 주식 데이터를 동적으로 조회하는 시스템을 구축한다. 개인 투자 데이터를 대상으로 하지만, <strong>사내 업무 데이터에 적용할 NL2SQL 아키텍처의 사전 검증</strong>이 본래 목적이다.</p>
+<h3>1-2. 질문 유형별 커버리지</h3>
+<table>
+<thead><tr><th style="text-align:left">유형</th><th style="text-align:left">예시 질문</th><th style="text-align:left">필요한 것</th><th style="text-align:center">Phase</th></tr></thead>
+<tbody>
+<tr><td style="text-align:left"><strong>단순 조회</strong></td><td style="text-align:left">&quot;삼성전자 현재 PER&quot;</td><td style="text-align:left">NL2SQL</td><td style="text-align:center">1</td></tr>
+<tr><td style="text-align:left"><strong>복합 조건</strong></td><td style="text-align:left">&quot;저평가 반도체 관련주 중 외국인 순매수&quot;</td><td style="text-align:left">NL2SQL + 시맨틱</td><td style="text-align:center">1-2</td></tr>
+<tr><td style="text-align:left"><strong>개념 기반 검색</strong></td><td style="text-align:left">&quot;삼성전자 경쟁사들의 밸류에이션 비교&quot;</td><td style="text-align:left">Knowledge Graph</td><td style="text-align:center">3</td></tr>
+<tr><td style="text-align:left"><strong>시계열/이벤트</strong></td><td style="text-align:left">&quot;골든크로스 발생 후 1개월 수익률&quot;</td><td style="text-align:left">멀티스텝 쿼리</td><td style="text-align:center">2</td></tr>
+<tr><td style="text-align:left"><strong>정형+비정형</strong></td><td style="text-align:left">&quot;삼성전자 실적 발표 후 시장 반응&quot;</td><td style="text-align:left">SQL + News RAG</td><td style="text-align:center">2</td></tr>
+<tr><td style="text-align:left"><strong>인과/추론</strong></td><td style="text-align:left">&quot;금리 인상이 포트폴리오에 미친 영향&quot;</td><td style="text-align:left">KG + 멀티스텝 + 분석</td><td style="text-align:center">3-5</td></tr>
+<tr><td style="text-align:left"><strong>맥락 필요</strong></td><td style="text-align:left">&quot;지금 방어주로 피난할 종목&quot;</td><td style="text-align:left">전체 통합</td><td style="text-align:center">5</td></tr>
+</tbody></table>
+
+<p>단일 도구(NL2SQL/RAG/KG)로는 모든 유형을 답할 수 없으므로 <strong>통합 아키텍처(NL2SQL + KG + RAG + Agent)</strong> 가 필요하다.</p>
+<hr/>
+<h2>2. 전체 아키텍처</h2>
+<h3>2-1. 5-Layer 구조</h3>
+<div class="mermaid">
+graph TB
+    USER[사용자 질문]
+
+    subgraph L5["Layer 5: Agent (LangGraph)"]
+        direction LR
+        A1[Intent Classifier]
+        A2[Entity Resolver]
+        A3[Query Planner]
+        A4[SQL Executor]
+        A5[Result Analyzer]
+    end
+
+    subgraph L4["Layer 4: Knowledge Graph (Neo4j)"]
+        direction LR
+        O1[Concept Graph]
+        O2[Stock ↔ Sector ↔ Theme]
+        O3[Competitor / Supplier]
+    end
+
+    subgraph L3["Layer 3: NL2SQL Engine (Wren AI)"]
+        direction LR
+        S1[MDL: alias / join / metric shell]
+        S2[SQL Pairs + Instructions]
+        S3[Replaceable NL2SQLEngine Interface]
+    end
+
+    subgraph L2["Layer 2: Metadata Hub (OpenMetadata)"]
+        direction LR
+        M1[Description]
+        M2[Glossary 77 terms]
+        M3[Lineage 67 edges]
+        M4[Tags]
+    end
+
+    subgraph L1["Layer 1: Data (PostgreSQL Medallion)"]
+        direction LR
+        D1[Raw]
+        D2[Derived]
+        D3["Gold (analytics_*)"]
+        D4["Curated Views (v_*)"]
+    end
+
+    USER --> L5
+    L5 -->|concept lookup| L4
+    L5 -->|SQL generation| L3
+    L5 -->|metadata context| L2
+    L3 -->|reads| L1
+    L3 <-->|sync| L2
+    L4 <-->|MAPS_TO| L2
+
+    style L5 fill:#e1bee7
+    style L4 fill:#c5e1a5
+    style L3 fill:#ffe082
+    style L2 fill:#90caf9
+    style L1 fill:#b0bec5
+</div>
+<h3>2-2. 아키텍처 포지셔닝</h3>
+<table>
+<thead><tr><th style="text-align:left">컴포넌트</th><th style="text-align:left">역할</th><th style="text-align:left">분류</th></tr></thead>
+<tbody>
+<tr><td style="text-align:left"><strong>Gold Tables + Curated Views</strong></td><td style="text-align:left">비즈니스 로직 SSOT (PER 계산, boolean 플래그, 단위 변환)</td><td style="text-align:left"><strong>canonical semantic layer</strong></td></tr>
+<tr><td style="text-align:left"><strong>Wren AI MDL</strong></td><td style="text-align:left">LLM이 스키마를 이해하도록 돕는 주석 (description, relationship)</td><td style="text-align:left"><strong>NL2SQL semantic shell</strong></td></tr>
+<tr><td style="text-align:left"><strong>Wren AI</strong></td><td style="text-align:left">스키마 RAG + LLM + SQL 검증 + 관리 UI</td><td style="text-align:left"><strong>semantic-aware Text-to-SQL engine</strong></td></tr>
+<tr><td style="text-align:left"><strong>LangGraph</strong> (Phase 2)</td><td style="text-align:left">멀티스텝 쿼리, 비정형 데이터, KG 통합</td><td style="text-align:left"><strong>orchestration layer</strong></td></tr>
+</tbody></table>
+
+<blockquote>
+<p><strong>핵심:</strong> Wren AI는 &quot;시맨틱 레이어&quot;가 아니라 &quot;NL2SQL 엔진&quot;이다. 진짜 시맨틱 레이어는 PostgreSQL Gold Tables + Curated Views에 위치한다.</p>
+</blockquote>
+<hr/>
+<h2>3. 기술 스택</h2>
+<table>
+<thead><tr><th style="text-align:left">컴포넌트</th><th style="text-align:left">역할</th><th style="text-align:left">버전/제품</th><th style="text-align:center">포트</th></tr></thead>
+<tbody>
+<tr><td style="text-align:left">PostgreSQL</td><td style="text-align:left">메인 DB (stockdb)</td><td style="text-align:left">15+</td><td style="text-align:center">5432</td></tr>
+<tr><td style="text-align:left">Airflow</td><td style="text-align:left">ETL 오케스트레이션</td><td style="text-align:left">2.x</td><td style="text-align:center">8080</td></tr>
+<tr><td style="text-align:left">OpenMetadata</td><td style="text-align:left">메타데이터 카탈로그</td><td style="text-align:left">latest</td><td style="text-align:center">8585</td></tr>
+<tr><td style="text-align:left">Wren AI Engine</td><td style="text-align:left">SQL 실행/검증</td><td style="text-align:left">0.22.0</td><td style="text-align:center">-</td></tr>
+<tr><td style="text-align:left">Wren AI Service</td><td style="text-align:left">NL2SQL LLM 파이프라인</td><td style="text-align:left">0.29.0</td><td style="text-align:center">-</td></tr>
+<tr><td style="text-align:left">Wren AI UI</td><td style="text-align:left">관리 인터페이스</td><td style="text-align:left">0.32.2</td><td style="text-align:center">3000</td></tr>
+<tr><td style="text-align:left">GPT-4.1-mini</td><td style="text-align:left">NL2SQL LLM 모델</td><td style="text-align:left">OpenAI</td><td style="text-align:center">-</td></tr>
+<tr><td style="text-align:left">Neo4j (Phase 3)</td><td style="text-align:left">Knowledge Graph</td><td style="text-align:left">Community 5.15</td><td style="text-align:center">7474/7687</td></tr>
+<tr><td style="text-align:left">LangGraph (Phase 2)</td><td style="text-align:left">Agent 오케스트레이션</td><td style="text-align:left">BIP-Agents 내</td><td style="text-align:center">-</td></tr>
+<tr><td style="text-align:left">pgvector</td><td style="text-align:left">뉴스 임베딩 벡터 저장</td><td style="text-align:left">PG extension</td><td style="text-align:center">-</td></tr>
+</tbody></table>
+
+<hr/>
+<h2>4. 데이터 흐름</h2>
+<h3>4-1. 단순 질문 흐름 (Phase 1)</h3>
+<div class="mermaid">
+sequenceDiagram
+    participant U as 사용자
+    participant W as Wren AI
+    participant DB as PostgreSQL
+
+    U->>W: "삼성전자 PER"
+    W->>W: Intent Classification
+    W->>W: Schema RAG (SQL Pairs + MDL)
+    W->>W: SQL 생성 (GPT-4.1-mini)
+    W->>W: SQL 검증 (3회 재시도)
+    W->>DB: SELECT ... FROM v_latest_valuation
+    DB-->>W: 결과
+    W-->>U: 자연어 답변 + SQL
+</div>
+<h3>4-2. 복합 질문 흐름 (Phase 2 목표)</h3>
+<div class="mermaid">
+sequenceDiagram
+    participant U as 사용자
+    participant A as LangGraph Agent
+    participant N as Neo4j
+    participant W as Wren AI
+    participant DB as PostgreSQL
+
+    U->>A: "저평가 반도체 관련주"
+    A->>A: Intent: concept_expansion (결정론)
+    A->>N: EXPAND_CONCEPT(반도체)
+    N-->>A: [삼성전자, SK하이닉스, ...]
+    A->>W: /v1/asks (tickers + is_value_stock)
+    W->>DB: SELECT ... WHERE is_value_stock = true
+    DB-->>W: 결과
+    W-->>A: SQL + 데이터
+    A->>A: Result Analyzer (LLM 1회)
+    A-->>U: "반도체 관련주 중 저평가 종목 3개: ..."
+</div>
+<hr/>
+<h2>5. 레이어별 상세 설계</h2>
+<h3>5-1. Data Layer (Medallion Architecture)</h3>
+<pre><code>Raw:
+  stock_info, stock_price_1d, financial_statements,
+  consensus_estimates, macro_indicators, news, ...
+
+Derived:
+  stock_indicators, market_daily_summary, sector_daily_performance
+
+Gold (분석용 pre-joined):
+  analytics_stock_daily    (시세 + 지표 + 컨센서스 와이드, 1,914,342행)
+  analytics_macro_daily    (거시지표 피벗, 437행)
+  analytics_valuation      (종목별 밸류에이션 종합, 7,609행)
+
+Curated Views (threshold/분류 SSOT):
+  v_latest_valuation       (1 ticker = 1 row 스냅샷)
+  v_valuation_signals      (is_value_stock, is_growth_stock 등)
+  v_technical_signals      (is_oversold_rsi, is_volume_spike 등)
+  v_flow_signals           (외국인/기관 수급 강도)</code></pre>
+<p><strong>하이브리드 전략:</strong></p>
+<table>
+<thead><tr><th style="text-align:left">대상</th><th style="text-align:left">위치</th><th style="text-align:left">이유</th></tr></thead>
+<tbody>
+<tr><td style="text-align:left"><code>per_actual</code>, <code>golden_cross</code> 등 안정적 metrics</td><td style="text-align:left">Gold 직접</td><td style="text-align:left">기준 변경 가능성 낮음</td></tr>
+<tr><td style="text-align:left"><code>is_value_stock</code>, <code>is_growth_stock</code> 등 threshold 분류</td><td style="text-align:left">Curated View</td><td style="text-align:left">임계값이 바뀔 수 있음</td></tr>
+<tr><td style="text-align:left"><code>foreign_buy_amount</code> 등 단순 산술</td><td style="text-align:left">View 권장</td><td style="text-align:left">중복만 피하면 OK</td></tr>
+</tbody></table>
+
+<p><strong>View 네이밍:</strong> <code>v_&lt;domain&gt;_&lt;subject&gt;__v&lt;major&gt;</code>. Breaking change 시 새 버전 생성.</p>
+<h3>5-2. Metadata Hub (OpenMetadata)</h3>
+<p>OM은 <strong>description/glossary only</strong>로 역할 한정. 계산식이나 runtime 의미론은 OM에 두지 않는다.</p>
+<table>
+<thead><tr><th style="text-align:left">역할</th><th style="text-align:left">내용</th></tr></thead>
+<tbody>
+<tr><td style="text-align:left">테이블/컬럼 description</td><td style="text-align:left">설명 텍스트 원천 (Wren AI로 sync)</td></tr>
+<tr><td style="text-align:left">Glossary 용어집</td><td style="text-align:left">77 terms — 설명 원천</td></tr>
+<tr><td style="text-align:left">Lineage</td><td style="text-align:left">API → DAG → Table → Consumer 추적 (67 edges)</td></tr>
+<tr><td style="text-align:left">Tags</td><td style="text-align:left">DataLayer, Domain, SourceType, SecurityLevel</td></tr>
+</tbody></table>
+
+<p><strong>동기화 플로우:</strong></p>
+<pre><code>OM (편집/원천)
+  ├→ om_sync_comments.py → PostgreSQL COMMENT
+  ├→ om_sync_wrenai.py → Wren AI model description
+  └→ (Phase 3) om_sync_neo4j.py → Neo4j Term nodes</code></pre>
+<p><strong>OM에서 빼는 것:</strong> 계산식 설명 (View COMMENT에 고정), 단위 변환 (컬럼명에 내장).</p>
+<h3>5-3. Semantic Layer (Gold + View = 정형 SSOT)</h3>
+<blockquote>
+<p><strong>원칙:</strong> <code>View = truth, MDL = alias/join/metric shell, OM = description only</code></p>
+</blockquote>
+<p>Gold 방식이 Wren AI 공식 권장(pre-joined reporting tables, boolean flags, pre-computed metrics)과 이미 일치. <strong>Gold 유지 + PostgreSQL Curated View 보강</strong>이 정답.</p>
+<div class="mermaid">
+graph LR
+    subgraph Semantic["Semantic Layer"]
+        G["Gold Tables<br/>(안정적 base metrics)"]
+        V["Curated Views<br/>(threshold/분류 SSOT)"]
+        M["Wren AI MDL<br/>(alias/join/metric shell)"]
+        O["OM description<br/>(display only)"]
+
+        G -->|base data| V
+        V -->|registered as model| M
+        G -->|registered as model| M
+        O -.sync.-> M
+    end
+
+    A[Agent / User] -->|NL2SQL query| M
+    M -->|SQL SELECT| V
+    M -->|SQL SELECT| G
+    V & G -->|reads| DB[(PostgreSQL)]
+
+    style G fill:#c8e6c9
+    style V fill:#ffecb3
+    style M fill:#fff59d
+</div>
+<p><strong>Grain 불일치 해결:</strong> <code>v_latest_valuation</code> 뷰로 1 ticker = 1 row 스냅샷을 만들어 grain 일치. <code>analytics_stock_daily ↔ analytics_valuation</code> 직접 Relationship 금지.</p>
+<p><strong>PostgreSQL Curated View &quot;View&quot;의 3가지 의미:</strong></p>
+<table>
+<thead><tr><th style="text-align:left">용어</th><th style="text-align:left">정의</th><th style="text-align:center">Relationship</th></tr></thead>
+<tbody>
+<tr><td style="text-align:left">PostgreSQL Curated View</td><td style="text-align:left"><code>CREATE VIEW v_*</code> — DB 가상 테이블, 계산 SSOT</td><td style="text-align:center">✅ (Model로 등록)</td></tr>
+<tr><td style="text-align:left">Wren AI UI View</td><td style="text-align:left">&quot;Save as View&quot;로 저장된 trusted query result</td><td style="text-align:center">❌</td></tr>
+<tr><td style="text-align:left">Wren Engine MDL view</td><td style="text-align:left">MDL JSON의 named query</td><td style="text-align:center">❌</td></tr>
+</tbody></table>
+
+<blockquote>
+<p><strong>PostgreSQL Curated View는 Wren AI에 Model로 등록한다.</strong> Relationship은 Model 간에만 가능.</p>
+</blockquote>
+<h3>5-4. NL2SQL Engine (Wren AI)</h3>
+<p><strong>Wren AI 현재 구성:</strong></p>
+<ul>
+<li>9개 모델, 309개 컬럼 (DB와 100% 일치)</li>
+<li>6개 Relationship (View → stock_info 포함)</li>
+<li>70개 SQL Pairs (6개 카테고리)</li>
+<li>4개 Instructions (계산식/종목검색/data_type/한글필수)</li>
+<li>LLM: GPT-4.1-mini</li>
+</ul>
+<p><strong>MDL에는 계산식을 넣지 않는다.</strong> 포함하는 것:</p>
+<ul>
+<li>테이블 alias + relationships (JOIN 경로)</li>
+<li>집계 메트릭 wrapper (SUM/AVG/COUNT/MAX/MIN)</li>
+<li>컬럼 description (OM에서 sync)</li>
+<li>SQL Pairs (학습용 예시)</li>
+<li>Instructions (도메인 규칙, 최소)</li>
+</ul>
+<p><strong>Replaceable NL2SQL Interface:</strong></p>
+<pre><code class="language-python">class NL2SQLEngine(Protocol):
+    def generate_sql(self, question: str, context: dict) -&gt; SQLResult: ...
+    def validate(self, sql: str) -&gt; ValidationResult: ...
+    def execute(self, sql: str) -&gt; QueryResult: ...
+
+class WrenAIEngine(NL2SQLEngine): ...   # 기본 구현
+class VannaEngine(NL2SQLEngine): ...    # 향후 대체재</code></pre>
+<p><strong>Consistency Check (자동):</strong></p>
+<ul>
+<li>OM description 해시 vs Wren MDL description 해시 일치 여부</li>
+<li>View column이 MDL에 존재하는지</li>
+<li>View boolean 컬럼이 SQL Pairs에 예시 존재하는지</li>
+<li>불일치 시 DAG 실패 + 경보</li>
+</ul>
+<h3>5-5. Knowledge Graph (Neo4j — Phase 3 예정)</h3>
+<p><strong>핵심 재정의:</strong> KG는 planner/context layer. 수치 계산은 SQL이 담당.</p>
+<div class="mermaid">
+graph TB
+    Q["저평가 반도체 관련주"]
+    Q --> A[Agent]
+    A -->|1. 개념 해석| N[Neo4j]
+    N -->|candidate 확장| A
+    A -->|2. SQL 생성| W[Wren AI]
+    W -->|SELECT ...| PG[(PostgreSQL)]
+    PG -->|결과| A
+    A -->|3. 설명| LLM[LLM]
+
+    style N fill:#c5e1a5
+    style W fill:#ffe082
+</div>
+<p><strong>Node Labels:</strong></p>
+<table>
+<thead><tr><th style="text-align:left">Label</th><th style="text-align:left">용도</th></tr></thead>
+<tbody>
+<tr><td style="text-align:left"><code>Concept</code></td><td style="text-align:left">추상 개념 (반도체, 저평가, 고배당)</td></tr>
+<tr><td style="text-align:left"><code>Stock</code></td><td style="text-align:left">개별 종목</td></tr>
+<tr><td style="text-align:left"><code>Sector</code></td><td style="text-align:left">섹터 (KRX/GICS)</td></tr>
+<tr><td style="text-align:left"><code>Theme</code></td><td style="text-align:left">투자 테마 (HBM, AI, 전기차)</td></tr>
+<tr><td style="text-align:left"><code>Term</code></td><td style="text-align:left">OM Glossary에서 import된 용어</td></tr>
+</tbody></table>
+
+<p><strong>주요 Relationship:</strong> <code>IS_A</code>, <code>BELONGS_TO</code>, <code>HAS_MEMBER</code>, <code>COMPETITOR</code>, <code>SUPPLIER</code>, <code>RELATED_TO</code>, <code>MAPS_TO</code></p>
+<p><strong>Cypher 생성 전략:</strong> free-form Cypher 지양. <strong>템플릿 + slot fill</strong> 방식:</p>
+<pre><code class="language-python">EXPAND_CONCEPT = &quot;&quot;&quot;
+MATCH (c:Concept {name: $concept_name})
+OPTIONAL MATCH (c)&lt;-[:IS_A|PART_OF*1..3]-(sub:Concept)
+MATCH (sub|c)-[:HAS_MEMBER]-&gt;(s:Stock)
+RETURN DISTINCT s.ticker, s.name
+&quot;&quot;&quot;</code></pre>
+<p><strong>저장소:</strong> <code>YAML → Neo4j</code> 단방향 sync. Git이 authoring source of truth.</p>
+<h3>5-6. Agent Layer (LangGraph — Phase 2 예정)</h3>
+<p><strong>5단계 구조 (deterministic-first):</strong></p>
+<div class="mermaid">
+flowchart LR
+    Q[질문] --> S1["Stage 1\nIntent Classifier\n(결정론)"]
+    S1 --> S2["Stage 2\nEntity Resolver\n(결정론+DB)"]
+    S2 --> S3["Stage 3\nQuery Planner\n(결정론)"]
+    S3 --> S4["Stage 4\nSQL Executor\n(LLM via Wren AI)"]
+    S4 --> S5["Stage 5\nResult Analyzer\n(LLM 1회)"]
+    S5 --> R[답변]
+
+    style S1 fill:#b3e5fc
+    style S2 fill:#b3e5fc
+    style S3 fill:#b3e5fc
+    style S4 fill:#ffccbc
+    style S5 fill:#ffccbc
+</div>
+<p>Stage 1-3은 결정론, Stage 4-5만 LLM 호출 (최대 2회).</p>
+<table>
+<thead><tr><th style="text-align:left">Stage</th><th style="text-align:left">구현</th><th style="text-align:left">실패 시</th></tr></thead>
+<tbody>
+<tr><td style="text-align:left">1. Intent Classifier</td><td style="text-align:left">정규식/키워드 분류</td><td style="text-align:left"><code>unknown</code> → Stage 5 직행</td></tr>
+<tr><td style="text-align:left">2. Entity Resolver</td><td style="text-align:left">DB lookup + Neo4j</td><td style="text-align:left">모호 시 clarification 반환</td></tr>
+<tr><td style="text-align:left">3. Query Planner</td><td style="text-align:left">유형+엔티티 기반 라우팅</td><td style="text-align:left">기본값 <code>single_sql</code></td></tr>
+<tr><td style="text-align:left">4. SQL Executor</td><td style="text-align:left">NL2SQLEngine (Wren AI)</td><td style="text-align:left">2회 실패 → 에스컬레이트</td></tr>
+<tr><td style="text-align:left">5. Result Analyzer</td><td style="text-align:left">LLM 자연어 설명</td><td style="text-align:left">근거 부족 → clarification</td></tr>
+</tbody></table>
+
+<p><strong>Evidence Budget:</strong> entity resolved + sql success + result rows &gt; 0 + KG/OM 근거 → 하나라도 부족하면 답변 대신 명확화 요청.</p>
+<p><strong>투자 판단 경계:</strong> 에이전트는 <code>factual retrieval → rule-based scoring → narrative explanation</code>만 수행. &quot;추천&quot; 요청 시 투자 조언 불가 고지.</p>
+<hr/>
+<h2>6. 컴포넌트 책임 경계</h2>
+<table>
+<thead><tr><th style="text-align:left">책임</th><th style="text-align:center">PostgreSQL</th><th style="text-align:center">OM</th><th style="text-align:center">Wren AI</th><th style="text-align:center">Views</th><th style="text-align:center">Neo4j</th><th style="text-align:center">LangGraph</th></tr></thead>
+<tbody>
+<tr><td style="text-align:left">데이터 저장</td><td style="text-align:center">✅</td><td style="text-align:center">—</td><td style="text-align:center">—</td><td style="text-align:center">—</td><td style="text-align:center">—</td><td style="text-align:center">—</td></tr>
+<tr><td style="text-align:left">계산식/boolean 분류</td><td style="text-align:center">—</td><td style="text-align:center">—</td><td style="text-align:center">—</td><td style="text-align:center">✅ SSOT</td><td style="text-align:center">—</td><td style="text-align:center">—</td></tr>
+<tr><td style="text-align:left">테이블/컬럼 description</td><td style="text-align:center">—</td><td style="text-align:center">✅ 원천</td><td style="text-align:center">sync</td><td style="text-align:center">—</td><td style="text-align:center">—</td><td style="text-align:center">—</td></tr>
+<tr><td style="text-align:left">비즈니스 용어집</td><td style="text-align:center">—</td><td style="text-align:center">✅ 원천</td><td style="text-align:center">—</td><td style="text-align:center">—</td><td style="text-align:center">✅ runtime</td><td style="text-align:center">—</td></tr>
+<tr><td style="text-align:left">Lineage</td><td style="text-align:center">—</td><td style="text-align:center">✅</td><td style="text-align:center">—</td><td style="text-align:center">—</td><td style="text-align:center">—</td><td style="text-align:center">—</td></tr>
+<tr><td style="text-align:left">관계 정의 (JOIN)</td><td style="text-align:center">FK</td><td style="text-align:center">—</td><td style="text-align:center">✅ MDL</td><td style="text-align:center">—</td><td style="text-align:center">—</td><td style="text-align:center">—</td></tr>
+<tr><td style="text-align:left">개념 관계 (IS_A 등)</td><td style="text-align:center">—</td><td style="text-align:center">—</td><td style="text-align:center">—</td><td style="text-align:center">—</td><td style="text-align:center">✅</td><td style="text-align:center">—</td></tr>
+<tr><td style="text-align:left">Entity 해석</td><td style="text-align:center">—</td><td style="text-align:center">—</td><td style="text-align:center">—</td><td style="text-align:center">—</td><td style="text-align:center">✅ lookup</td><td style="text-align:center">✅ orch</td></tr>
+<tr><td style="text-align:left">NL → SQL 변환</td><td style="text-align:center">—</td><td style="text-align:center">—</td><td style="text-align:center">✅</td><td style="text-align:center">—</td><td style="text-align:center">—</td><td style="text-align:center">—</td></tr>
+<tr><td style="text-align:left">SQL 검증 (4-layer)</td><td style="text-align:center">✅ role</td><td style="text-align:center">—</td><td style="text-align:center">—</td><td style="text-align:center">✅ allowlist</td><td style="text-align:center">—</td><td style="text-align:center">✅ validator</td></tr>
+<tr><td style="text-align:left">멀티 SQL 오케스트레이션</td><td style="text-align:center">—</td><td style="text-align:center">—</td><td style="text-align:center">—</td><td style="text-align:center">—</td><td style="text-align:center">—</td><td style="text-align:center">✅</td></tr>
+<tr><td style="text-align:left">결과 자연어 설명</td><td style="text-align:center">—</td><td style="text-align:center">—</td><td style="text-align:center">—</td><td style="text-align:center">—</td><td style="text-align:center">—</td><td style="text-align:center">✅ LLM</td></tr>
+<tr><td style="text-align:left">감사 기록</td><td style="text-align:center">✅ write</td><td style="text-align:center">—</td><td style="text-align:center">—</td><td style="text-align:center">—</td><td style="text-align:center">—</td><td style="text-align:center">✅ write</td></tr>
+</tbody></table>
+
+<hr/>
+<h2>7. 보안 아키텍처</h2>
+<h3>7-1. 4-Layer 방어</h3>
+<pre><code>Layer 1 (문법/패턴): SELECT-only, DDL/DML 금지, 위험 패턴 차단
+Layer 2 (Allowlist):  sqlglot AST 파싱 → 허용 테이블만
+Layer 3 (DB Role):    nl2sql_exec 계정, 민감 테이블 GRANT 없음
+Layer 4 (Curated):    Gold/View만으로 allowlist 구성</code></pre>
+<h3>7-2. 민감 테이블 (NL2SQL/LLM 접근 금지)</h3>
+<ul>
+<li>Raw: <code>portfolio</code>, <code>users</code>, <code>user_watchlist</code>, <code>holding</code>, <code>transaction</code>, <code>cash_transaction</code></li>
+<li>Derived: <code>portfolio_snapshot</code></li>
+<li>운영: <code>monitor_alerts</code></li>
+</ul>
+<h3>7-3. 보안 불변 조건</h3>
+<ol>
+<li><strong>LLM은 raw 데이터 값을 절대 보지 않는다</strong> — type_summary만 전달</li>
+<li><strong>NL2SQL 실행은 <code>nl2sql_exec</code> 전용 role만 사용</strong> — 민감 테이블 GRANT 없음</li>
+<li><strong>감사 Fail-Closed</strong> — 감사 기록 실패 시 결과 반환 금지</li>
+<li><strong>4-layer 중 어느 하나가 뚫려도 다음 레이어에서 차단</strong></li>
+</ol>
+<h3>7-4. 감사 기록</h3>
+<pre><code>agent_audit_log: Intent/Entity/Planner/SQL/Analyzer 전 단계
+nl2sql_audit_log: Wren AI 호출 원본 (SQL, validation, execution)</code></pre>
+<h3>7-5. Phase별 추가 보안</h3>
+<ul>
+<li><strong>Neo4j:</strong> <code>nl2sql_read_only</code> user, 민감 노드 생성 금지, Cypher 템플릿 외 자유 쿼리 차단</li>
+<li><strong>LangGraph:</strong> Evidence Budget 거부 이벤트도 감사 기록</li>
+</ul>
+<hr/>
+<h2>8. 현재 상태 (Phase 1 완료 — 2026-04-12)</h2>
+<h3>8-1. 완료 항목</h3>
+<table>
+<thead><tr><th style="text-align:left">항목</th><th style="text-align:center">상태</th><th style="text-align:left">수량</th></tr></thead>
+<tbody>
+<tr><td style="text-align:left">Gold 테이블</td><td style="text-align:center">✅</td><td style="text-align:left">3종</td></tr>
+<tr><td style="text-align:left">Curated View</td><td style="text-align:center">✅</td><td style="text-align:left">4종</td></tr>
+<tr><td style="text-align:left">Wren AI 모델</td><td style="text-align:center">✅</td><td style="text-align:left">9개, 309 컬럼 (DB 100% 일치)</td></tr>
+<tr><td style="text-align:left">Relationship</td><td style="text-align:center">✅</td><td style="text-align:left">6개</td></tr>
+<tr><td style="text-align:left">SQL Pairs</td><td style="text-align:center">✅</td><td style="text-align:left"><strong>70개</strong> (6 카테고리)</td></tr>
+<tr><td style="text-align:left">Instructions</td><td style="text-align:center">✅</td><td style="text-align:left">4개</td></tr>
+<tr><td style="text-align:left">LLM 모델</td><td style="text-align:center">✅</td><td style="text-align:left"><strong>GPT-4.1-mini</strong> (7개 모델 비교 후 선정)</td></tr>
+<tr><td style="text-align:left">보안 4-layer</td><td style="text-align:center">✅</td><td style="text-align:left">39개 통합 테스트 PASS</td></tr>
+<tr><td style="text-align:left">감사 로그</td><td style="text-align:center">✅</td><td style="text-align:left">nl2sql_audit_log + agent_audit_log</td></tr>
+<tr><td style="text-align:left">OM 메타데이터</td><td style="text-align:center">✅</td><td style="text-align:left">39 테이블, 77 용어, 전체 lineage</td></tr>
+<tr><td style="text-align:left">품질 테스트 자동화</td><td style="text-align:center">✅</td><td style="text-align:left">scripts/wren_nl2sql_phase1_test.py</td></tr>
+</tbody></table>
+
+<h3>8-2. 품질 지표 추이</h3>
+<table>
+<thead><tr><th style="text-align:left">지표</th><th style="text-align:center">1차 (04-02)</th><th style="text-align:center">2차 (04-03)</th><th style="text-align:center">3차 (04-07)</th><th style="text-align:center"><strong>4차 (04-12)</strong></th></tr></thead>
+<tbody>
+<tr><td style="text-align:left">SQL 생성률</td><td style="text-align:center">75%</td><td style="text-align:center">85%</td><td style="text-align:center">100%</td><td style="text-align:center"><strong>100%</strong></td></tr>
+<tr><td style="text-align:left">DB 실행률</td><td style="text-align:center">-</td><td style="text-align:center">-</td><td style="text-align:center">-</td><td style="text-align:center"><strong>100%</strong></td></tr>
+<tr><td style="text-align:left">Boolean flag 활용</td><td style="text-align:center">-</td><td style="text-align:center">-</td><td style="text-align:center">0%</td><td style="text-align:center"><strong>87%</strong></td></tr>
+<tr><td style="text-align:left">평균 속도</td><td style="text-align:center">11s</td><td style="text-align:center">11s</td><td style="text-align:center">16s</td><td style="text-align:center"><strong>10s</strong></td></tr>
+<tr><td style="text-align:left">SQL Pairs</td><td style="text-align:center">29</td><td style="text-align:center">34</td><td style="text-align:center">43</td><td style="text-align:center"><strong>70</strong></td></tr>
+</tbody></table>
+
+<h3>8-3. 현재 한계</h3>
+<table>
+<thead><tr><th style="text-align:left">한계</th><th style="text-align:left">원인</th></tr></thead>
+<tbody>
+<tr><td style="text-align:left">Calculated Fields 제약</td><td style="text-align:left">Wren AI는 집계 함수(SUM/AVG/COUNT 등)만 지원</td></tr>
+<tr><td style="text-align:left">온톨로지 부재</td><td style="text-align:left">&quot;경쟁사&quot;, &quot;반도체 관련주&quot; 등 개념 확장 불가</td></tr>
+<tr><td style="text-align:left">1질문 = 1SQL</td><td style="text-align:left">멀티스텝 추론/비교 불가</td></tr>
+<tr><td style="text-align:left">OM Glossary → Wren AI 자동 전파 불가</td><td style="text-align:left">Wren AI에 glossary 개념 없음</td></tr>
+<tr><td style="text-align:left">약칭 매핑 실패 (현차→현대차)</td><td style="text-align:left">Entity Resolution 기능 없음</td></tr>
+<tr><td style="text-align:left">sql_answer 환각</td><td style="text-align:left">Wren AI 답변 생성 커스터마이징 불가</td></tr>
+</tbody></table>
+
+<hr/>
+<h2>9. 최종 목표 아키텍처 (Phase 2-5 로드맵)</h2>
+<h3>9-1. Gantt 차트</h3>
+<div class="mermaid">
+gantt
+    title BIP Target Architecture Roadmap
+    dateFormat YYYY-MM-DD
+    axisFormat %m/%d
+
+    section Phase 1
+    시맨틱 하드닝 (Gold + View)  :done, p1a, 2026-03-20, 21d
+    Wren AI 모델 정비             :done, p1b, 2026-04-01, 10d
+    SQL Pairs 확대 43→70          :done, p1c, 2026-04-11, 14d
+
+    section Phase 2
+    LangGraph 에이전트 설계       :p2a, after p1c, 7d
+    통합 Agent 프로토타입         :p2b, after p2a, 14d
+    Wren AI + RAG Tool 통합       :p2c, after p2b, 10d
+
+    section Phase 3
+    KG 스키마 설계                :p3a, after p2c, 7d
+    Neo4j 구축 + 데이터 적재      :p3b, after p3a, 14d
+    Agent에 KG Tool 추가          :p3c, after p3b, 10d
+
+    section Phase 4
+    문서 RAG (공시/리서치)        :p4a, after p3c, 14d
+    고급 쿼리 패턴 검증           :p4b, after p4a, 14d
+
+    section Phase 5
+    평가 프레임워크 자동화        :p5a, after p4b, 14d
+    프로덕션 안정화               :p5b, after p5a, 14d
+</div>
+<h3>9-2. Phase 상세</h3>
+<table>
+<thead><tr><th style="text-align:center">Phase</th><th style="text-align:left">목표</th><th style="text-align:left">핵심 산출물</th><th style="text-align:left">검증 질문 예시</th></tr></thead>
+<tbody>
+<tr><td style="text-align:center"><strong>2</strong></td><td style="text-align:left">통합 Agent</td><td style="text-align:left">LangGraph 5단계, Wren AI Tool, News RAG Tool</td><td style="text-align:left">&quot;외국인 매수 상위 종목의 뉴스 요약&quot;</td></tr>
+<tr><td style="text-align:center"><strong>3</strong></td><td style="text-align:left">Knowledge Graph</td><td style="text-align:left">Neo4j 구축, Agent에 KG Tool 추가</td><td style="text-align:left">&quot;삼성전자 경쟁사 밸류에이션&quot;</td></tr>
+<tr><td style="text-align:center"><strong>4</strong></td><td style="text-align:left">문서 RAG</td><td style="text-align:left">공시/리서치 임베딩 + Agent Tool</td><td style="text-align:left">&quot;삼성전자 최근 공시 요약&quot;</td></tr>
+<tr><td style="text-align:center"><strong>5</strong></td><td style="text-align:left">평가 + 프로덕션</td><td style="text-align:left">골든셋, 정기 품질 테스트, 신뢰도 스코어</td><td style="text-align:left">전체 유형 자동 검증</td></tr>
+</tbody></table>
+
+<h3>9-3. 갭 분석</h3>
+<table>
+<thead><tr><th style="text-align:left">항목</th><th style="text-align:left">현재</th><th style="text-align:left">목표</th><th style="text-align:center">갭</th></tr></thead>
+<tbody>
+<tr><td style="text-align:left">NL2SQL 엔진</td><td style="text-align:left">Wren AI 운영 중</td><td style="text-align:left">유지 + 보강</td><td style="text-align:center">소</td></tr>
+<tr><td style="text-align:left">정형 시맨틱</td><td style="text-align:left">Gold + View</td><td style="text-align:left">SQL Pairs 100개</td><td style="text-align:center">소</td></tr>
+<tr><td style="text-align:left">에이전트</td><td style="text-align:left">체크리스트/모니터 독립</td><td style="text-align:left">통합 Agent</td><td style="text-align:center">대</td></tr>
+<tr><td style="text-align:left">Knowledge Graph</td><td style="text-align:left">없음</td><td style="text-align:left">Neo4j + 도메인 KG</td><td style="text-align:center">대</td></tr>
+<tr><td style="text-align:left">비정형 통합</td><td style="text-align:left">뉴스 임베딩만</td><td style="text-align:left">Agent Tool로 통합</td><td style="text-align:center">중</td></tr>
+<tr><td style="text-align:left">문서 RAG</td><td style="text-align:left">없음</td><td style="text-align:left">공시/리서치 RAG</td><td style="text-align:center">대</td></tr>
+</tbody></table>
+
+<hr/>
+<h2>10. 의사결정 기록</h2>
+<h3>10-1. 왜 Wren AI를 선택했는가</h3>
+<p>Wren AI, Vanna AI, Defog AI, DataHerald, LangChain SQL Agent 비교 후 선택.</p>
+<table>
+<thead><tr><th style="text-align:left">선택 근거</th><th style="text-align:left">설명</th></tr></thead>
+<tbody>
+<tr><td style="text-align:left">관리 UI</td><td style="text-align:left">SQL Pairs/Instructions를 비개발자도 관리 가능</td></tr>
+<tr><td style="text-align:left">SQL 검증 내장</td><td style="text-align:left">3회 재시도 + 보정 파이프라인</td></tr>
+<tr><td style="text-align:left">Intent Classification</td><td style="text-align:left">Qdrant RAG 기반 유사 질문 검색</td></tr>
+<tr><td style="text-align:left">추상화 가능</td><td style="text-align:left"><code>NL2SQLEngine</code> 인터페이스로 감싸면 교체 가능</td></tr>
+</tbody></table>
+
+<p><strong>한계:</strong> 1질문=1SQL, 비정형 불가, 프롬프트 커스터마이징 불가, OpenAI 편향 → LangGraph로 보완.</p>
+<h3>10-2. 왜 GPT-4.1-mini를 선택했는가</h3>
+<p>7개 모델 비교 (상세: <code>docs/wrenai_test_report.md</code>). SQL 생성률 100%, boolean flag 활용 87%, 평균 10s의 최적 균형.</p>
+<h3>10-3. 왜 dbt/Cube를 안 쓰는가</h3>
+<table>
+<thead><tr><th style="text-align:left">대체재</th><th style="text-align:left">기각 이유</th></tr></thead>
+<tbody>
+<tr><td style="text-align:left">dbt Semantic Layer</td><td style="text-align:left">소비자가 Wren AI 하나뿐이라 재사용 가치 낮음. Airflow가 이미 dbt 역할 수행</td></tr>
+<tr><td style="text-align:left">Cube.js</td><td style="text-align:left">별도 semantic serving 운영 부담, 스프롤</td></tr>
+<tr><td style="text-align:left">Python dataclass 자체 메트릭</td><td style="text-align:left">자체 NL2SQL 플랫폼 구축하는 셈</td></tr>
+</tbody></table>
+
+<h3>10-4. 왜 Palantir 스타일을 안 쓰는가</h3>
+<table>
+<thead><tr><th style="text-align:left">이유</th><th style="text-align:left">설명</th></tr></thead>
+<tbody>
+<tr><td style="text-align:left">구축 비용</td><td style="text-align:left">Ontology 우선 설계는 비즈니스 가치 검증이 늦음</td></tr>
+<tr><td style="text-align:left">경험적 설계</td><td style="text-align:left">Agent 먼저 만들어 한계 경험 후 KG 설계가 실용적</td></tr>
+<tr><td style="text-align:left">Stack 적합성</td><td style="text-align:left">PostgreSQL 중심 스택에서 Ontology 전면 도입은 과잉</td></tr>
+</tbody></table>
+
+<h3>10-5. 왜 Agent First → KG Second인가</h3>
+<p>Palantir와 반대 순서지만 자원 제약하에서 합리적. Agent 운영 후 실제로 필요한 개념 관계만 KG에 추가.</p>
+<h3>10-6. Wren AI = &quot;시맨틱 레이어&quot;가 아니라 &quot;NL2SQL 엔진&quot;</h3>
+<ul>
+<li>Wren AI MDL은 LLM이 스키마를 이해하도록 돕는 <strong>주석 레이어(semantic shell)</strong></li>
+<li>비즈니스 로직 SSOT는 Gold Tables + Curated Views (canonical semantic layer)</li>
+<li>Wren AI는 스키마 RAG + LLM + SQL 검증을 수행하는 <strong>Text-to-SQL 엔진</strong></li>
+<li>비정형 데이터를 아우르는 통합 역할은 <strong>Agent + Knowledge Graph</strong></li>
+</ul>
+<hr/>
+<h2>11. 발견된 한계와 Phase 2 해결 방안</h2>
+<table>
+<thead><tr><th style="text-align:left">문제</th><th style="text-align:left">원인</th><th style="text-align:left">Phase 2 해결 방안</th></tr></thead>
+<tbody>
+<tr><td style="text-align:left">약칭 매핑 실패 (현차→현대차)</td><td style="text-align:left">Entity Resolution 없음</td><td style="text-align:left">LangGraph Entity Resolver 노드</td></tr>
+<tr><td style="text-align:left">종목명 영문 번역</td><td style="text-align:left">Instructions 간헐적 미준수</td><td style="text-align:left">Entity Resolver + 한글 강제</td></tr>
+<tr><td style="text-align:left">sql_answer 환각</td><td style="text-align:left">Wren AI 답변 생성 커스터마이징 불가</td><td style="text-align:left">LangGraph Result Synthesizer</td></tr>
+<tr><td style="text-align:left">1질문=1SQL 제약</td><td style="text-align:left">Wren AI 구조적 한계</td><td style="text-align:left">LangGraph 멀티스텝 쿼리</td></tr>
+<tr><td style="text-align:left">개념 확장 불가</td><td style="text-align:left">온톨로지 부재</td><td style="text-align:left">Neo4j Knowledge Graph (Phase 3)</td></tr>
+<tr><td style="text-align:left">OM Glossary 전파 불가</td><td style="text-align:left">Wren AI glossary 미지원</td><td style="text-align:left">description append 우회 유지</td></tr>
+</tbody></table>
+
+<hr/>
+<h2>12. 아키텍처 불변 조건</h2>
+<h3>12-1. 보안</h3>
+<ul>
+<li>민감 테이블(portfolio, holding 등)은 NL2SQL/LLM 접근 금지</li>
+<li><code>nl2sql_exec</code> 전용 DB role 사용</li>
+<li>모든 LLM/Agent 호출은 <code>agent_audit_log</code> 기록</li>
+<li>4-layer 검증 필수, 감사 실패 시 결과 반환 금지 (fail-closed)</li>
+</ul>
+<h3>12-2. 거버넌스</h3>
+<ul>
+<li>OpenMetadata가 메타데이터 SSOT</li>
+<li>스키마 변경 시 OM → DB COMMENT → Wren AI 동기화 필수</li>
+<li>신규 DAG는 <code>register_table_lineage_async</code> 호출 필수</li>
+</ul>
+<h3>12-3. 결정론 우선</h3>
+<ul>
+<li>규칙/결정론으로 해결할 수 있는 것은 LLM에 맡기지 않음</li>
+<li>LLM은 설명/종합/불확실성 해소에만 사용</li>
+<li>정확한 숫자 계산은 절대 LLM에 맡기지 않음</li>
+</ul>
+<h3>12-4. Grain 일관성</h3>
+<ul>
+<li>Gold 테이블은 명확한 Grain 정의 필수</li>
+<li>Grain 불일치 JOIN 금지 (daily ↔ annual 직접 JOIN 금지)</li>
+<li>중간 View로 Grain 변환 후 결합</li>
+</ul>
+<h3>12-5. 계산 SSOT 중복 금지</h3>
+<ul>
+<li>한 계산식은 한 곳(Curated View)에만 존재</li>
+<li>Wren AI MDL이나 OM description에 같은 수식이 있으면 SSOT 위반</li>
+</ul>
+<h3>12-6. Wren AI 위에 SQL Generator 이중화 금지</h3>
+<ul>
+<li>Wren AI가 이미 intent/retrieval/sql/correction 수행</li>
+<li>에이전트의 Stage 4는 Wren AI 호출로 위임, 직접 SQL은 fallback만</li>
+</ul>
+<hr/>
+<h2>13. 성공 기준</h2>
+<h3>13-1. 기술 지표</h3>
+<table>
+<thead><tr><th style="text-align:left">지표</th><th style="text-align:center">현재 (Phase 1)</th><th style="text-align:center">목표</th></tr></thead>
+<tbody>
+<tr><td style="text-align:left">NL2SQL A등급 비율</td><td style="text-align:center">77%</td><td style="text-align:center">90%</td></tr>
+<tr><td style="text-align:left">SQL Pairs</td><td style="text-align:center">70개</td><td style="text-align:center">100+</td></tr>
+<tr><td style="text-align:left">복합 질문 성공률</td><td style="text-align:center">—</td><td style="text-align:center">70%</td></tr>
+<tr><td style="text-align:left">평균 응답 시간</td><td style="text-align:center">10s</td><td style="text-align:center">&lt;20s</td></tr>
+<tr><td style="text-align:left">Agent 환각 비율</td><td style="text-align:center">—</td><td style="text-align:center">&lt;5%</td></tr>
+</tbody></table>
+
+<h3>13-2. 질문 커버리지</h3>
+<div class="mermaid">
+graph LR
+    P1["Phase 1\n단순 조회"] --> P2["Phase 2\n복합 조건\n정형+비정형"]
+    P2 --> P3["Phase 3\n개념 확장\nKG 추론"]
+    P3 --> P4["Phase 4\n문서 검색\n공시/리서치"]
+    P4 --> P5["Phase 5\n인과/추론\n멀티스텝 종합"]
+
+    style P1 fill:#e8f5e9
+    style P2 fill:#fff9c4
+    style P3 fill:#ffe0b2
+    style P4 fill:#ffccbc
+    style P5 fill:#ffcdd2
+</div>
+<h3>13-3. 리스크 대응</h3>
+<table>
+<thead><tr><th style="text-align:left">리스크</th><th style="text-align:left">영향</th><th style="text-align:left">완화</th></tr></thead>
+<tbody>
+<tr><td style="text-align:left">Agent 환각</td><td style="text-align:left">잘못된 수치/결론</td><td style="text-align:left">결정론 우선, LLM은 설명만, &quot;모른다&quot; 응답</td></tr>
+<tr><td style="text-align:left">LLM 비용 증가</td><td style="text-align:left">운영 비용</td><td style="text-align:left">SQL Pairs 캐시, View 정답 고정, 배칭</td></tr>
+<tr><td style="text-align:left">KG 유지보수 부담</td><td style="text-align:left">데이터 stale</td><td style="text-align:left">자동 구축 파이프라인, 정기 검증</td></tr>
+<tr><td style="text-align:left">Wren AI 락인</td><td style="text-align:left">교체 어려움</td><td style="text-align:left"><code>NL2SQLEngine</code> 추상화, MDL YAML 백업</td></tr>
+<tr><td style="text-align:left">의미론 결손 잔존</td><td style="text-align:left">에이전트 오답</td><td style="text-align:left">Phase 1에서 해결 완료</td></tr>
+<tr><td style="text-align:left">추천 질문 오해</td><td style="text-align:left">투자 조언 위험</td><td style="text-align:left">&quot;투자 조언 아님&quot; 고지 + rule-based만</td></tr>
+</tbody></table>
+
+<hr/>
+<h2>14. 참고 문서</h2>
+<table>
+<thead><tr><th style="text-align:left">문서</th><th style="text-align:left">내용</th></tr></thead>
+<tbody>
+<tr><td style="text-align:left"><code>docs/security_governance.md</code></td><td style="text-align:left">보안 불변 조건, 민감 테이블, 4-layer 방어</td></tr>
+<tr><td style="text-align:left"><code>docs/metadata_governance.md</code></td><td style="text-align:left">메타데이터/리니지/용어 관리 절차</td></tr>
+<tr><td style="text-align:left"><code>docs/wrenai_technical_guide.md</code></td><td style="text-align:left">Wren AI 설치, 아키텍처, 내부 구조</td></tr>
+<tr><td style="text-align:left"><code>docs/wrenai_test_report.md</code></td><td style="text-align:left">LLM 모델 비교, 품질 테스트 프레임워크</td></tr>
+<tr><td style="text-align:left"><code>docs/data_architecture_review.md</code></td><td style="text-align:left">전체 아키텍처 리뷰, 이슈 트래커</td></tr>
+<tr><td style="text-align:left"><code>docs/data_modeling_guide.md</code></td><td style="text-align:left">Gold/View 설계 가이드</td></tr>
+<tr><td style="text-align:left"><code>docs/nl2sql_project_plan.md</code></td><td style="text-align:left">NL2SQL 구현 계획 (원본)</td></tr>
+<tr><td style="text-align:left"><code>docs/nl2sql_architecture_v2.md</code></td><td style="text-align:left">NL2SQL 아키텍처 v2 (원본)</td></tr>
+<tr><td style="text-align:left"><code>docs/bip_target_architecture.md</code></td><td style="text-align:left">최종 목표 아키텍처 (원본)</td></tr>
+</tbody></table>
+
+<hr/>
+<p><em>이 문서는 3개 원본 문서를 통합한 단일 레퍼런스이다. 최종 갱신: 2026-04-12.</em></p>
+<footer style="margin-top:3rem; padding-top:1rem; border-top:1px solid var(--border); color:#6b7280; font-size:0.85rem;">
+  <p>Generated: 2026-04-12 | BIP-Pipeline NL2SQL Documentation</p>
+</footer>
+</body>
+</html>
