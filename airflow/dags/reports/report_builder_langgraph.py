@@ -1,6 +1,7 @@
 """
-리포트 빌더
-- 데이터 수집, 히트맵 생성, LLM 분석을 조합하여 최종 리포트 생성
+리포트 빌더 - LangGraph 멀티 에이전트 버전
+- 데이터 수집, 히트맵 생성은 동일
+- LLM 분석: BIP-Agents LangGraph (병렬 멀티 에이전트 + MCP)
 """
 
 import os
@@ -21,10 +22,10 @@ if str(_reports_dir) not in sys.path:
 
 from macro_collector import collect_all_macro_data, get_korea_market_data, get_us_market_data
 from heatmap_generator import generate_treemap_heatmap
-from llm_analyzer_v2 import analyze_market_v2, generate_insight_summary, calculate_reference_signals
+from langgraph_runner import run_langgraph_analysis
+from llm_analyzer_v2 import calculate_reference_signals, format_reference_signals, generate_insight_summary
 from realtime_news import fetch_realtime_news
 from email_sender import send_email
-from telegram_sender import send_telegram_message
 from pdf_generator import generate_pdf_from_html, generate_pdf_filename
 from glossary import apply_glossary
 
@@ -33,20 +34,16 @@ from glossary import apply_glossary
 TEMPLATE_DIR = Path(__file__).parent / "templates"
 
 
-def build_morning_report(
+def build_morning_report_langgraph(
     to_emails: List[str],
     send: bool = True,
-    save_checklist_to_db: bool = True,
-    send_telegram: bool = True,
 ) -> Dict[str, Any]:
     """
-    모닝 리포트 생성 및 발송
+    모닝 리포트 생성 및 발송 (LangGraph 멀티 에이전트 버전)
 
     Args:
         to_emails: 수신자 이메일 목록
-        send: 실제 이메일 발송 여부 (False면 리포트만 생성)
-        save_checklist_to_db: 체크리스트 DB 저장 여부
-        send_telegram: 텔레그램 체크리스트 발송 여부 (테스트 시 False 권장)
+        send: 실제 발송 여부 (False면 리포트만 생성)
 
     Returns:
         {
@@ -104,8 +101,6 @@ def build_morning_report(
                 "market_value": "market_cap",
                 "change_pct": "change_pct"
             })
-            # 한글 종목명 사용 (stock_name 그대로 유지)
-            # 상위 100개만 사용 (시각화 성능)
             korea_df = korea_df.head(100)
 
             try:
@@ -130,9 +125,7 @@ def build_morning_report(
                 "market_value": "market_cap",
                 "change_pct": "change_pct"
             })
-            # ticker를 종목명으로 사용 (영문)
             us_df["stock_name"] = us_df["ticker"]
-            # 상위 100개만 사용
             us_df = us_df.head(100)
 
             try:
@@ -182,7 +175,6 @@ def build_morning_report(
                 "change_pct": "change_pct"
             })
             nasdaq_df["stock_name"] = nasdaq_df["ticker"]
-            # sector가 None인 종목 필터링
             nasdaq_df = nasdaq_df[nasdaq_df["sector"].notna()]
             nasdaq_df = nasdaq_df.head(100)
 
@@ -198,7 +190,7 @@ def build_morning_report(
             except Exception as e:
                 print(f"⚠️ 나스닥 히트맵 생성 실패: {e}")
 
-        # 3. 실시간 뉴스 수집 + 사전 수집 다이제스트 통합
+        # 3. 실시간 뉴스 수집
         print("🔍 실시간 뉴스 수집 중...")
         news_context = ""
         try:
@@ -209,41 +201,28 @@ def build_morning_report(
         except Exception as e:
             print(f"⚠️ 뉴스 수집 실패 (계속 진행): {e}")
 
-        # 3-1. 사전 수집 뉴스 다이제스트 (최근 48시간) 추가
-        print("📰 뉴스 다이제스트 조회 중...")
+        # 4. LangGraph 멀티 에이전트 분석
+        print("🤖 [LangGraph] 멀티 에이전트 분석 시작...")
+        ref_signals = calculate_reference_signals(macro_data)
+        ref_signals_text = format_reference_signals(ref_signals)
+        print(f"    수치 기반 참고 신호: {ref_signals}")
+        ai_analysis = run_langgraph_analysis(macro_data, news_context, reference_signals=ref_signals_text)
+        if not ai_analysis:
+            raise RuntimeError("LangGraph 분석 결과가 비어있습니다.")
+        print(f"    LangGraph 분석 완료 ({len(ai_analysis)}자)")
+
+        # 5. Haiku로 시장전망 생성
+        print("🤖 [Haiku] 시장전망 생성 중...")
+        insight_text = ""
         try:
-            from reports.news_digest_collector import get_consolidated_digest
-            digest_context = get_consolidated_digest(hours=48)
-            if digest_context:
-                news_context = (
-                    f"## 최근 48시간 뉴스 다이제스트 (사전 수집, 주말 포함)\n"
-                    f"{digest_context}\n\n"
-                    f"## 실시간 수집 뉴스\n"
-                    f"{news_context}"
-                )
-                print(f"    다이제스트 추가 완료 ({len(digest_context)}자)")
-            else:
-                print(f"    다이제스트 없음 (아직 수집 전)")
+            insight_text = generate_insight_summary(ai_analysis)
+            print(f"    시장전망 생성 완료 ({len(insight_text)}자)")
         except Exception as e:
-            print(f"⚠️ 뉴스 다이제스트 조회 실패 (무시): {e}")
+            print(f"⚠️ 시장전망 생성 실패 (계속 진행): {e}")
 
-        # 4. LLM 분석 (RAG 통합)
-        print("🤖 AI 분석 생성 중...")
-        ai_analysis = analyze_market_v2(macro_data, news_context)
-
-        # 4-1. 상세 분석 기반 인사이트 요약 생성 (Haiku)
-        print("💡 인사이트 요약 생성 중 (Haiku)...")
-        insight_summary = ""
-        try:
-            insight_summary = generate_insight_summary(ai_analysis)
-            print(f"    인사이트 요약 생성 완료 ({len(insight_summary)}자)")
-        except Exception as e:
-            print(f"⚠️ 인사이트 요약 생성 실패 (계속 진행): {e}")
-
-        # 5. 용어 설명 추가 (약어에 괄호 설명)
+        # 6. 용어 설명 추가
         print("📚 용어 설명 추가 중...")
         ai_analysis = apply_glossary(ai_analysis)
-        insight_summary = apply_glossary(insight_summary) if insight_summary else ""
 
         # 마크다운을 HTML로 변환
         import re
@@ -257,9 +236,7 @@ def build_morning_report(
 
             for line in lines:
                 stripped = line.strip()
-                # 테이블 행 감지 (| 로 시작하고 끝나는 경우)
                 if stripped.startswith('|') and stripped.endswith('|'):
-                    # 구분선(|---|---|) 제외 - 셀 내용이 -, :, 공백으로만 구성
                     cells_content = stripped.strip('|')
                     if all(c in '-|: ' for c in cells_content):
                         in_table = True
@@ -267,7 +244,6 @@ def build_morning_report(
                     table_lines.append(stripped)
                     in_table = True
                 else:
-                    # 테이블 종료
                     if table_lines:
                         html_table = _build_html_table(table_lines)
                         result.append(html_table)
@@ -275,7 +251,6 @@ def build_morning_report(
                     in_table = False
                     result.append(line)
 
-            # 마지막 테이블 처리
             if table_lines:
                 html_table = _build_html_table(table_lines)
                 result.append(html_table)
@@ -283,17 +258,14 @@ def build_morning_report(
             return '\n'.join(result)
 
         def _is_numeric_cell(text: str) -> bool:
-            """숫자/수치 셀 여부 판단"""
             t = text.strip()
             if not t or t == '-':
                 return False
-            # 숫자, 부호, 소수점, 쉼표, %, $, ₩, bp, %p 등으로만 구성
             return bool(re.match(r'^[+\-]?[\d,]+(\.\d+)?(%p?|bp|억|조|만)?$', t) or
                         re.match(r'^[+\-]?\$[\d,]+(\.\d+)?$', t) or
                         re.match(r'^[+\-]?[\d,]+(\.\d+)?\s*(억|조|만|원|달러)?$', t))
 
         def _build_html_table(table_lines: list) -> str:
-            """테이블 라인들을 HTML 테이블로 변환"""
             if not table_lines:
                 return ""
 
@@ -323,28 +295,21 @@ def build_morning_report(
             return ''.join(html)
 
         def convert_markdown_headings(text: str) -> str:
-            """마크다운 제목을 HTML 헤딩으로 변환"""
             lines = text.split('\n')
             result = []
 
             for line in lines:
                 stripped = line.strip()
-                # ##### → h5
                 if stripped.startswith('##### '):
                     result.append(f'<h5>{stripped[6:]}</h5>')
-                # #### → h4
                 elif stripped.startswith('#### '):
                     result.append(f'<h4>{stripped[5:]}</h4>')
-                # ### → h4 (이메일 가독성상 h3와 동일 처리)
                 elif stripped.startswith('### '):
                     result.append(f'<h4>{stripped[4:]}</h4>')
-                # ## → h3
                 elif stripped.startswith('## '):
                     result.append(f'<h3>{stripped[3:]}</h3>')
-                # # → h2
                 elif stripped.startswith('# '):
                     result.append(f'<h2>{stripped[2:]}</h2>')
-                # --- 구분선 → hr
                 elif stripped == '---' or stripped == '***':
                     result.append('<hr>')
                 else:
@@ -353,10 +318,6 @@ def build_morning_report(
             return '\n'.join(result)
 
         def extract_key_summary(text: str) -> tuple:
-            """
-            AI 분석에서 '오늘의 핵심' 섹션 추출
-            Returns: (key_summary, remaining_text)
-            """
             lines = text.split('\n')
             key_summary_lines = []
             remaining_lines = []
@@ -365,23 +326,19 @@ def build_morning_report(
 
             for line in lines:
                 stripped = line.strip()
-                # "오늘의 핵심" / "어제의 핵심" 섹션 시작 감지
                 if ('오늘의 핵심' in stripped or '어제의 핵심' in stripped) and (stripped.startswith('#') or stripped.startswith('📌')):
                     in_key_summary = True
                     found_key_summary = True
-                    continue  # 제목은 박스에서 별도로 표시하므로 제외
+                    continue
 
-                # 다음 섹션 시작시 종료 (다른 # 제목이 나오면)
                 if in_key_summary and stripped.startswith('#') and '핵심' not in stripped:
                     in_key_summary = False
 
-                # --- 구분선도 섹션 종료로 처리
                 if in_key_summary and (stripped == '---' or stripped == '***'):
                     in_key_summary = False
                     continue
 
                 if in_key_summary:
-                    # 빈 줄이 아니면 추가
                     if stripped:
                         key_summary_lines.append(line)
                 else:
@@ -393,11 +350,7 @@ def build_morning_report(
             return key_summary, remaining
 
         def extract_signals(text: str) -> tuple:
-            """
-            섹션 헤더에서 신호등 추출 후 헤더에서 제거
-            Returns: (signals_dict, cleaned_text)
-            signals_dict = {"글로벌": "🟢", "한국(전일)": "🔴", ...}
-            """
+            """섹션 헤더의 [🟢🟡🔴] 에서 신호등 추출 후 헤더에서 제거"""
             signal_map = {
                 r'글로벌.*정세|글로벌.*매크로': '글로벌',
                 r'한국.*과거|과거.*한국|어제 한국|한국.*마감.*결과': '한국(전일)',
@@ -422,7 +375,6 @@ def build_morning_report(
             return signals, '\n'.join(cleaned)
 
         def extract_checklist(text: str) -> tuple:
-            """체크리스트 섹션을 추출하고 본문에서 제거. Returns (checklist, remaining)"""
             lines = text.split('\n')
             checklist_lines = []
             other_lines = []
@@ -432,8 +384,7 @@ def build_morning_report(
                 stripped = line.strip()
                 if '체크리스트' in stripped and stripped.startswith('#'):
                     in_checklist = True
-                    continue  # 헤더 자체는 제외 (별도 박스에서 타이틀로 표시)
-                # --- 구분선이나 면책조항 텍스트에서 종료
+                    continue
                 if in_checklist and (stripped == '---' or stripped.startswith('참고:')):
                     in_checklist = False
                     other_lines.append(line)
@@ -447,53 +398,36 @@ def build_morning_report(
             remaining = '\n'.join(other_lines)
             return checklist, remaining
 
-        # 0. 핵심 요약 추출 (상단 박스용)
+        # 0. 핵심 요약 추출
         key_summary_raw, ai_analysis_remaining = extract_key_summary(ai_analysis)
 
-        # 0-1. 신호등 추출 (대시보드용)
+        # 0-1. 신호등 추출
         # LLM 출력에서 섹션 헤더의 [🟢|🟡|🔴] 마커 파싱
         llm_signals, ai_analysis_remaining = extract_signals(ai_analysis_remaining)
-        # 수치 기반 사전 계산 신호 (fallback)
-        try:
-            base_signals = calculate_reference_signals(macro_data)
-        except Exception as e:
-            print(f"    ⚠️ 사전 계산 신호 실패: {e}")
-            base_signals = {}
-        # 병합: LLM 신호 우선, 없으면 사전 계산 신호
-        signals = {**base_signals, **llm_signals}
+        # 사전 계산된 ref_signals를 fallback으로 병합 (LLM 우선)
+        signals = {**(ref_signals or {}), **llm_signals}
 
-        # 0-2. 체크리스트 추출 (별도 박스용) + DB 저장 (모니터링용)
+        # 0-2. 체크리스트 추출
         checklist_raw, ai_analysis_remaining = extract_checklist(ai_analysis_remaining)
         print(f"    체크리스트 추출: {len(checklist_raw)}자 / 내용: {checklist_raw[:100] if checklist_raw else '(없음)'}")
-        if checklist_raw and save_checklist_to_db:
-            try:
-                from market_monitor import save_checklist
-                save_checklist(checklist_raw)
-                print("    ✅ 체크리스트 DB 저장 완료 (리포트 빌드 시점)")
-            except Exception as e:
-                print(f"    ⚠️ 체크리스트 DB 저장 실패: {e}")
 
-        # 1. 마크다운 테이블 → HTML 테이블 (줄바꿈 전에 처리)
+        # 1. 마크다운 테이블 → HTML 테이블
         ai_analysis_html = convert_markdown_table_to_html(ai_analysis_remaining)
 
-        # 2. 마크다운 제목 → HTML 헤딩 (줄바꿈 전에 처리)
+        # 2. 마크다운 제목 → HTML 헤딩
         ai_analysis_html = convert_markdown_headings(ai_analysis_html)
 
         # 3. 나머지 마크다운 변환
-        # HTML 블록 태그(h2~h4, hr, table) 앞뒤 빈 줄 제거 → <br> 누적 방지
         ai_analysis_html = re.sub(r'\n{2,}(<(?:h[2-4]|hr|table)[^>]*>)', r'\n\1', ai_analysis_html)
         ai_analysis_html = re.sub(r'(</(?:h[2-4]|hr|table)>)\n{2,}', r'\1\n', ai_analysis_html)
-        # 연속 빈 줄 → 최대 1줄로 축소
         ai_analysis_html = re.sub(r'\n{3,}', '\n\n', ai_analysis_html)
         ai_analysis_html = ai_analysis_html.replace("\n", "<br>")
-        # <br> 가 HTML 블록 태그 바로 앞뒤에 붙지 않도록 제거
         ai_analysis_html = re.sub(r'(<br>)+(<(?:h[2-4]|hr|table)[^>]*>)', r'\2', ai_analysis_html)
         ai_analysis_html = re.sub(r'(</(?:h[2-4]|hr|table)>)(<br>)+', r'\1', ai_analysis_html)
-        # **텍스트** → <strong>텍스트</strong> 변환 (정규식 사용)
         ai_analysis_html = re.sub(r'\*\*(.+?)\*\*', r'<strong>\1</strong>', ai_analysis_html)
         ai_analysis_html = ai_analysis_html.replace("•", "&#8226;")
 
-        # 4. 핵심 요약도 HTML 변환
+        # 4. 핵심 요약 HTML 변환
         key_summary_html = ""
         if key_summary_raw:
             key_summary_html = key_summary_raw.replace("\n", "<br>")
@@ -502,7 +436,6 @@ def build_morning_report(
             key_summary_html = key_summary_html.replace("- ", "• ")
 
         def _to_html(text: str) -> str:
-            """마크다운 텍스트 → HTML 변환 공통 함수"""
             html = convert_markdown_table_to_html(text)
             html = convert_markdown_headings(html)
             html = re.sub(r'\n{2,}(<(?:h[2-4]|hr)[^>]*>)', r'\n\1', html)
@@ -515,99 +448,45 @@ def build_morning_report(
             html = html.replace("•", "&#8226;").replace("- ", "• ")
             return html
 
-        # 4-1. 인사이트 요약 → 시장 전망 / 대응 시나리오 분리
+        # 📊 오늘의 시장 전망 / 대응 시나리오 — Haiku 결과에서 파싱
+        scenario_pattern = re.compile(r'(#+\s*대응 시나리오.*)', re.DOTALL)
+        outlook_pattern = re.compile(r'(#+\s*📊\s*오늘의 시장 전망.*?)(?=\n#+\s*대응 시나리오|\Z)', re.DOTALL)
+
         insight_outlook_html = ""
         insight_scenario_html = ""
-        if insight_summary:
-            # 대응 시나리오 섹션 기준으로 분리
-            scenario_pattern = re.compile(r'(#+\s*대응 시나리오.*)', re.DOTALL)
-            m = scenario_pattern.search(insight_summary)
-            if m:
-                outlook_part = insight_summary[:m.start()].strip()
-                scenario_part = m.group(0).strip()
-            else:
-                outlook_part = insight_summary.strip()
-                scenario_part = ""
 
-            # HTML 박스가 이미 "🔭 오늘의 시장 전망" 제목을 표시하므로,
-            # LLM이 생성한 중복 최상위 제목(# 📊 오늘의 시장 전망 등) 제거
-            outlook_part = re.sub(
-                r'^\s*#+\s*[📊🔭]?\s*오늘의?\s*시장\s*전망\s*\n+',
-                '',
-                outlook_part,
-            )
-            # 대응 시나리오도 동일 — HTML 박스 제목이 있으므로 LLM 제목 제거
-            scenario_part = re.sub(
-                r'^\s*#+\s*[🎯]?\s*대응\s*시나리오\s*\n+',
-                '',
-                scenario_part,
-            )
+        if insight_text:
+            m_outlook = outlook_pattern.search(insight_text)
+            m_scenario = scenario_pattern.search(insight_text)
+            if m_outlook:
+                outlook_raw = m_outlook.group(0).strip()
+                # HTML 박스가 이미 "🔭 오늘의 시장 전망" 제목을 표시하므로
+                # LLM이 생성한 중복 최상위 제목 제거
+                outlook_raw = re.sub(
+                    r'^\s*#+\s*[📊🔭]?\s*오늘의?\s*시장\s*전망\s*\n+',
+                    '',
+                    outlook_raw,
+                )
+                insight_outlook_html = _to_html(outlook_raw)
+            if m_scenario:
+                scenario_raw = m_scenario.group(0).strip()
+                # 대응 시나리오도 동일 — HTML 박스 제목이 있으므로 제거
+                scenario_raw = re.sub(
+                    r'^\s*#+\s*[🎯]?\s*대응\s*시나리오\s*\n+',
+                    '',
+                    scenario_raw,
+                )
+                insight_scenario_html = _to_html(scenario_raw)
 
-            insight_outlook_html = _to_html(outlook_part)
-            insight_scenario_html = _to_html(scenario_part) if scenario_part else ""
+        # aggregator 결과에 혹시 남은 시장전망 섹션이 있으면 제거 (단일 섹션만, DOTALL 미사용)
+        ai_analysis_remaining = re.sub(r'\n#+\s*📊\s*오늘의 시장 전망[^\n]*\n', '', ai_analysis_remaining)
 
-        # 4-2. 체크리스트 HTML 변환 — 고정 섹션 구조 (□ 장 시작 전 / □ 장 중 / □ 주의 가격 레벨)
+        # 4-2. 체크리스트 HTML 변환
         checklist_html = ""
         if checklist_raw:
-            SECTION_HEADERS = {
-                "장 시작 전": "🌅",
-                "장 중": "📊",
-                "주의 가격 레벨": "⚠️",
-            }
-
-            current_section = None
-            sections = {}
-
-            for line in checklist_raw.split("\n"):
-                stripped = line.strip()
-                if not stripped:
-                    continue
-
-                # 마크다운 bold 제거
-                clean = re.sub(r'\*\*(.+?)\*\*', r'\1', stripped)
-
-                # 섹션 헤더 감지: "□ 장 시작 전", "☐ 장 중 모니터링" 등
-                is_header = False
-                for sec_name in SECTION_HEADERS:
-                    if sec_name in clean and re.match(r'^[☐□]?\s*' + re.escape(sec_name.split()[0]), clean):
-                        current_section = sec_name
-                        if current_section not in sections:
-                            sections[current_section] = []
-                        is_header = True
-                        break
-
-                if is_header:
-                    continue
-
-                # 항목 (- 항목 형식)
-                if current_section and re.match(r'^[-•☐□]\s', clean):
-                    item_text = re.sub(r'^[-•☐□]\s*', '', clean)
-                    sections[current_section].append(item_text)
-                elif current_section and clean:
-                    # 들여쓰기 없는 항목도 현재 섹션에 추가
-                    sections[current_section].append(clean)
-
-            # 섹션이 하나도 감지 안 됐으면 (LLM이 형식 무시한 경우) 전체를 그냥 표시
-            if not sections:
-                checklist_html = checklist_raw.replace("\n", "<br>")
-                checklist_html = re.sub(r'\*\*(.+?)\*\*', r'<strong>\1</strong>', checklist_html)
-            else:
-                html_parts = []
-                for sec_name in ["장 시작 전", "장 중", "주의 가격 레벨"]:
-                    items = sections.get(sec_name, [])
-                    if not items:
-                        continue
-                    icon = SECTION_HEADERS[sec_name]
-                    html_parts.append(
-                        f'<div style="margin-top:16px;margin-bottom:8px;font-size:14px;'
-                        f'font-weight:700;color:#1e293b;">{icon} {sec_name}</div>'
-                    )
-                    for item in items:
-                        html_parts.append(
-                            f'<div style="margin-bottom:8px;padding-left:12px;font-size:13px;'
-                            f'color:#1e293b;line-height:1.6;">☐ {item}</div>'
-                        )
-                checklist_html = "\n".join(html_parts)
+            checklist_html = checklist_raw.replace("\n", "<br>")
+            checklist_html = re.sub(r'\*\*(.+?)\*\*', r'<strong>\1</strong>', checklist_html)
+            checklist_html = checklist_html.replace("□", "☐")
 
         # 5. 템플릿 데이터 준비
         print("📝 리포트 생성 중...")
@@ -632,7 +511,6 @@ def build_morning_report(
             foreign = day.get("foreign_amount", 0) or 0
             institution = day.get("institution_amount", 0) or 0
             individual = day.get("individual_amount", 0) or 0
-            # NaN 체크
             foreign = 0 if (isinstance(foreign, float) and math.isnan(foreign)) else foreign
             institution = 0 if (isinstance(institution, float) and math.isnan(institution)) else institution
             individual = 0 if (isinstance(individual, float) and math.isnan(individual)) else individual
@@ -643,7 +521,7 @@ def build_morning_report(
                 "individual": round(individual / 100000000),
             })
 
-        # 반도체 가격 (전체 제품, 추세 포함)
+        # 반도체 가격
         semiconductor = []
         product_names = {
             'dram_ddr5_16gb': 'DDR5 16Gb',
@@ -661,14 +539,12 @@ def build_morning_report(
             'nand_slc_2gb': 'NAND SLC 2Gb',
             'nand_slc_1gb': 'NAND SLC 1Gb',
         }
-        # DRAM 먼저, NAND 나중에 (용량 큰 순)
         product_order = [
             'dram_ddr5_16gb', 'dram_ddr4_16gb', 'dram_ddr4_8gb', 'dram_ddr3_4gb',
             'nand_tlc_512gb', 'nand_tlc_256gb', 'nand_tlc_128gb',
             'nand_mlc_64gb', 'nand_mlc_32gb',
         ]
 
-        # product_order 순서대로 처리
         semi_data = {x.get("product_type"): x for x in macro_data.get("semiconductor", [])}
         for product_key in product_order:
             item = semi_data.get(product_key)
@@ -681,13 +557,11 @@ def build_morning_report(
             week_chg = item.get('week_change_pct')
             month_chg = item.get('month_change_pct')
 
-            # NAND flat 처리: 변동 없으면 마지막 변동일 표시
             is_nand = product_key.startswith("nand_")
             last_change_date = item.get("last_change_date")
             last_change_pct = item.get("last_change_pct")
 
             if is_nand and abs(change) < 0.01 and last_change_date and last_change_pct:
-                # "3/17 +3.54%" 형식
                 date_str = str(last_change_date)
                 if len(date_str) >= 10:
                     month = date_str[5:7].lstrip('0')
@@ -695,7 +569,7 @@ def build_morning_report(
                     change_display = f"{month}/{day} {last_change_pct:+.1f}%"
                 else:
                     change_display = f"{last_change_pct:+.1f}%"
-                change_value = last_change_pct  # 색상 결정용
+                change_value = last_change_pct
             else:
                 change_display = f"{change:+.1f}%"
                 change_value = change
@@ -714,7 +588,7 @@ def build_morning_report(
         # 투자자별 수급 상세 데이터
         investor_trading = macro_data.get("investor_trading", {})
 
-        # 매크로 지표 (환율, 금리, VIX, 원자재)
+        # 매크로 지표
         macro_indicators = []
 
         # 환율
@@ -837,9 +711,8 @@ def build_morning_report(
             if nasdaq_heatmap:
                 images["nasdaq_heatmap"] = nasdaq_heatmap
 
-            subject = f"[Morning Pulse] {today.strftime('%m월 %d일')} ({weekday_kr}) AI 시장 분석"
+            subject = f"[Morning Pulse · LangGraph] {today.strftime('%m월 %d일')} ({weekday_kr}) AI 시장 분석"
 
-            # PDF 생성 (이미지 포함)
             print("📄 PDF 생성 중...")
             pdf_attachment = None
             try:
@@ -859,32 +732,17 @@ def build_morning_report(
             )
 
             if success:
-                print("✅ 리포트 발송 완료!")
+                print("✅ [LangGraph] 리포트 발송 완료!")
                 result["success"] = True
             else:
                 result["error"] = "이메일 발송 실패"
-
-            # 텔레그램 발송 — 체크리스트만 (실패해도 전체 결과에 영향 없음)
-            if send_telegram:
-                try:
-                    today_label = f"{today.strftime('%m/%d')} ({weekday_kr})"
-                    if checklist_raw:
-                        tg_msg = f"📋 *오늘의 체크리스트 — {today_label}*\n\n{checklist_raw}"
-                        send_telegram_message(tg_msg)
-                        print(f"✅ 텔레그램 체크리스트 발송 완료")
-                    else:
-                        print(f"⚠️ 체크리스트 없음 — 텔레그램 발송 건너뜀")
-                except Exception as te:
-                    print(f"⚠️ 텔레그램 발송 실패 (무시): {te}")
-            else:
-                print(f"ℹ️ 텔레그램 발송 건너뜀 (send_telegram=False)")
         else:
-            print("📄 리포트 생성 완료 (발송 안함)")
+            print("📄 [LangGraph] 리포트 생성 완료 (발송 안함)")
             result["success"] = True
 
     except Exception as e:
         result["error"] = str(e)
-        print(f"❌ 리포트 생성 실패: {e}")
+        print(f"❌ [LangGraph] 리포트 생성 실패: {e}")
         import traceback
         traceback.print_exc()
 
@@ -894,9 +752,7 @@ def build_morning_report(
 def save_report_to_file(html: str, filename: Optional[str] = None) -> str:
     """리포트를 파일로 저장 (디버깅/미리보기용)"""
     if filename is None:
-        from zoneinfo import ZoneInfo
-        kst_now = datetime.now(ZoneInfo("Asia/Seoul"))
-        filename = f"report_{kst_now.strftime('%Y%m%d_%H%M%S')}.html"
+        filename = f"report_langgraph_{datetime.now().strftime('%Y%m%d_%H%M%S')}.html"
 
     filepath = Path("/tmp") / filename
     filepath.write_text(html, encoding="utf-8")
@@ -905,14 +761,13 @@ def save_report_to_file(html: str, filename: Optional[str] = None) -> str:
 
 
 if __name__ == "__main__":
-    # 테스트: 리포트 생성만 (발송 안함)
-    result = build_morning_report(
+    result = build_morning_report_langgraph(
         to_emails=["test@example.com"],
         send=False,
     )
 
     if result["success"]:
         filepath = save_report_to_file(result["html"])
-        print(f"✅ 테스트 완료. 파일 확인: {filepath}")
+        print(f"✅ [LangGraph] 테스트 완료. 파일 확인: {filepath}")
     else:
-        print(f"❌ 테스트 실패: {result['error']}")
+        print(f"❌ [LangGraph] 테스트 실패: {result['error']}")

@@ -3,6 +3,7 @@
 - 모닝 리포트 생성 시점에 최신 뉴스 검색
 - 네이버 뉴스 검색 API 활용
 - RAG 대신 실시간 검색으로 항상 최신 뉴스 제공
+- 품질 필터링: 신뢰도, 제목, 중복 제거
 """
 
 import os
@@ -12,9 +13,27 @@ import re
 from typing import List, Dict, Any, Optional
 from datetime import datetime
 from urllib.parse import quote
+from difflib import SequenceMatcher
 import requests
 
 logger = logging.getLogger(__name__)
+
+# 신뢰할 수 있는 언론사 목록 (URL 패턴 또는 제목에 포함된 경우)
+TRUSTED_SOURCES = [
+    "연합뉴스", "한국경제", "매일경제", "조선비즈", "머니투데이",
+    "이데일리", "서울경제", "파이낸셜뉴스", "뉴스1", "아시아경제",
+    "한경", "매경", "헤럴드경제", "SBS", "KBS", "MBC", "YTN",
+    "블룸버그", "로이터", "CNBC", "WSJ",
+]
+
+# 필터링할 스팸/광고 패턴
+SPAM_PATTERNS = [
+    r'\[광고\]', r'\[AD\]', r'\[PR\]', r'\[제휴\]',
+    r'무료상담', r'이벤트', r'할인', r'쿠폰',
+    r'주식리딩방', r'종목추천', r'급등주', r'테마주',
+    r'비트코인.*투자', r'코인.*추천',
+    r'대출', r'카드론', r'신용대출',
+]
 
 
 def get_naver_credentials():
@@ -36,6 +55,107 @@ def clean_html_tags(text: str) -> str:
     # 여러 공백을 하나로
     text = re.sub(r'\s+', ' ', text)
     return text.strip()
+
+
+def is_spam_title(title: str) -> bool:
+    """스팸/광고성 제목인지 확인"""
+    if not title:
+        return True
+
+    for pattern in SPAM_PATTERNS:
+        if re.search(pattern, title, re.IGNORECASE):
+            return True
+    return False
+
+
+def calculate_similarity(s1: str, s2: str) -> float:
+    """두 문자열의 유사도 계산 (0~1)"""
+    if not s1 or not s2:
+        return 0.0
+    return SequenceMatcher(None, s1, s2).ratio()
+
+
+def is_duplicate_news(title: str, existing_titles: List[str], threshold: float = 0.7) -> bool:
+    """기존 뉴스와 중복인지 확인 (유사도 기반)"""
+    if not title:
+        return True
+
+    for existing in existing_titles:
+        if calculate_similarity(title, existing) >= threshold:
+            return True
+    return False
+
+
+def get_source_priority(news: Dict) -> int:
+    """
+    뉴스 신뢰도 점수 계산 (높을수록 좋음)
+    - 신뢰 언론사: +10
+    - 제목 길이 적절 (20~100자): +3
+    - 설명 있음: +2
+    """
+    score = 0
+    title = news.get("title", "")
+    link = news.get("link", "")
+    desc = news.get("description", "")
+
+    # 신뢰 언론사 체크
+    for source in TRUSTED_SOURCES:
+        if source in title or source in link:
+            score += 10
+            break
+
+    # 제목 길이
+    if 20 <= len(title) <= 100:
+        score += 3
+
+    # 설명 유무
+    if desc and len(desc) > 30:
+        score += 2
+
+    return score
+
+
+def filter_and_rank_news(news_list: List[Dict], max_count: int = 40) -> List[Dict]:
+    """
+    뉴스 품질 필터링 및 랭킹
+
+    1. 스팸 제거
+    2. 중복 제거 (유사도 기반)
+    3. 신뢰도 기반 정렬
+    """
+    filtered = []
+    seen_titles = []
+
+    for news in news_list:
+        title = news.get("title", "")
+
+        # 1. 스팸 필터
+        if is_spam_title(title):
+            logger.debug(f"스팸 필터됨: {title[:50]}")
+            continue
+
+        # 2. 중복 필터 (유사도 70% 이상)
+        if is_duplicate_news(title, seen_titles, threshold=0.7):
+            logger.debug(f"중복 필터됨: {title[:50]}")
+            continue
+
+        seen_titles.append(title)
+
+        # 신뢰도 점수 추가
+        news["_priority"] = get_source_priority(news)
+        filtered.append(news)
+
+    # 3. 신뢰도 기반 정렬 (높은 점수 먼저)
+    filtered.sort(key=lambda x: x.get("_priority", 0), reverse=True)
+
+    # 내부 필드 제거 후 반환
+    result = []
+    for news in filtered[:max_count]:
+        news.pop("_priority", None)
+        result.append(news)
+
+    logger.info(f"뉴스 필터링: {len(news_list)} → {len(result)}건")
+    return result
 
 
 def search_naver_news(
@@ -150,27 +270,44 @@ def generate_news_queries(market_data: Dict[str, Any]) -> List[str]:
     ]
     queries.extend(event_queries)
 
+    # 8. 월요일: 주말 동안 발생한 돌발 이슈 탐지 (범용 쿼리)
+    from datetime import datetime
+    try:
+        from zoneinfo import ZoneInfo
+        now = datetime.now(ZoneInfo("Asia/Seoul"))
+    except Exception:
+        now = datetime.now()
+    if now.weekday() == 0:  # 월요일
+        weekend_queries = [
+            "주말 증시 영향",
+            "월요일 증시 전망",
+            "글로벌 긴급 속보",
+        ]
+        # 주말 쿼리를 상위에 배치 (최신 이슈 우선 탐지)
+        queries = weekend_queries + queries
+
     # 중복 제거
     return list(dict.fromkeys(queries))[:15]
 
 
 def fetch_realtime_news(
     market_data: Dict[str, Any],
-    max_per_query: int = 5,
-    max_total: int = 20
+    max_per_query: int = 10,
+    max_total: int = 40
 ) -> Dict[str, Any]:
     """
     실시간 뉴스 수집 (메인 함수)
 
     Args:
         market_data: 시장 데이터
-        max_per_query: 쿼리당 최대 뉴스 수
-        max_total: 총 최대 뉴스 수
+        max_per_query: 쿼리당 최대 뉴스 수 (필터링 전)
+        max_total: 총 최대 뉴스 수 (필터링 후)
 
     Returns:
         {
             "queries": [...],
             "news": [...],
+            "news_before_filter": int,
             "formatted": "..."
         }
     """
@@ -178,7 +315,7 @@ def fetch_realtime_news(
     queries = generate_news_queries(market_data)
     logger.info(f"실시간 뉴스 검색 쿼리: {queries}")
 
-    # 뉴스 검색
+    # 뉴스 검색 (필터링 전 더 많이 수집)
     all_news = []
     seen_titles = set()
 
@@ -186,24 +323,26 @@ def fetch_realtime_news(
         news_list = search_naver_news(query, display=max_per_query, sort="date")
 
         for news in news_list:
-            # 중복 제거 (제목 기준)
-            title_key = news["title"][:30]
-            if title_key not in seen_titles:
-                seen_titles.add(title_key)
+            # 기본 중복 제거 (정확히 같은 제목)
+            title = news["title"]
+            if title not in seen_titles:
+                seen_titles.add(title)
                 all_news.append(news)
 
-        if len(all_news) >= max_total:
-            break
+    news_before_filter = len(all_news)
+    logger.info(f"뉴스 수집 완료 (필터 전): {news_before_filter}건")
 
-    all_news = all_news[:max_total]
-    logger.info(f"실시간 뉴스 수집 완료: {len(all_news)}건")
+    # 품질 필터링 및 랭킹
+    filtered_news = filter_and_rank_news(all_news, max_count=max_total)
+    logger.info(f"뉴스 필터링 완료: {len(filtered_news)}건")
 
     # LLM용 포맷팅
-    formatted = format_news_for_analysis(all_news)
+    formatted = format_news_for_analysis(filtered_news)
 
     return {
         "queries": queries,
-        "news": all_news,
+        "news": filtered_news,
+        "news_before_filter": news_before_filter,
         "formatted": formatted
     }
 

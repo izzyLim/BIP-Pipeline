@@ -160,14 +160,17 @@ Plotly Treemap을 사용하여 4개의 시장 히트맵 생성:
 
 ### 지원 LLM 모델
 
-| 모델 | 설정값 | 성능 | 속도 | 비용 |
-|------|-------|------|------|------|
-| **Claude Opus 4.5** | `claude-opus` | ⭐⭐⭐⭐⭐ 최고 | 느림 | $$$$ |
-| Claude Sonnet 4 (기본) | `claude-sonnet` | ⭐⭐⭐⭐ 고품질 | 중간 | $$ |
-| Claude Haiku 4.5 | `claude-haiku` | ⭐⭐⭐ 양호 | 빠름 | $ |
-| GPT-5.4 | `gpt-5.4` | ⭐⭐⭐⭐ 고품질 | 중간 | $$$ |
+| 모델 | 설정값 | 성능 | 속도 | 비용 | 비고 |
+|------|-------|------|------|------|------|
+| **Claude Sonnet 4.6 (운영)** | `claude-sonnet-4-6` | ⭐⭐⭐⭐⭐ 최고 | 중간 | $0.10/회 | 2026-04-07부터 운영 모델 |
+| Claude Opus 4.6 | `claude-opus-4-6` | ⭐⭐⭐⭐ 고품질 | 느림 | $0.49/회 | 비용 대비 Sonnet보다 열위 |
+| Claude Haiku 4.5 | `claude-haiku-4-5-20251001` | ⭐⭐⭐ 양호 | 빠름 | $0.003/회 | 체크리스트 에이전트용 |
+| GPT-5.4 | `gpt-5.4` | ⭐⭐⭐⭐ 고품질 | 중간 | $0.07/회 | 대안 |
 
-설정: Airflow Variable `llm_model` 또는 환경변수 `LLM_MODEL`
+설정: Airflow Variable `llm_model` = `claude-sonnet-4-6` (운영)
+
+> **모델 비교 결과 (2026-04-07):** 동일 데이터로 Opus/Sonnet/GPT-5.4 3종 비교.
+> Sonnet이 분석 깊이, 체크리스트 품질, 비용 대비 가치 모두 최우수. Opus는 용어 설명만 우위.
 
 ### 프롬프트에 주입되는 데이터
 
@@ -235,6 +238,39 @@ Plotly Treemap을 사용하여 4개의 시장 히트맵 생성:
 5. **균형 잡힌 시각**: 기회와 리스크를 모두 분석
 6. **이벤트 감지 필수**: GTC, FOMC, 지정학적 이슈 등 반드시 심층 분석
 
+## 뉴스 다이제스트 파이프라인 (news_digest_collector.py)
+
+4시간마다 뉴스를 자동 수집/요약하여 `news_digest` 테이블에 저장. 모닝리포트에서 최근 48시간 다이제스트를 LLM 컨텍스트에 주입.
+
+### 흐름
+```
+[4시간마다] 네이버 뉴스 API × 10~13개 쿼리 → ~100건 수집
+    → 중복 제거/필터 → ~50건
+    → Haiku 1회: "시장 영향 이슈 3~5개 요약" → DB 저장
+
+[모닝리포트 08:10] 최근 48시간 다이제스트 조회
+    → Haiku 1회: "오늘 장에 영향 줄 핵심 3개 추출"
+    → LLM 프롬프트에 "## 최근 48시간 뉴스 다이제스트" 섹션으로 주입
+```
+
+### 요약 형식
+```
+[상] 미이란 협상 결렬 — 호르무즈 봉쇄 확정, 유가 급등 (부정, 에너지/운송)
+[중] 삼성전자 1Q 실적 — 영업이익 사상최대 전망 (긍정, 반도체)
+```
+
+### DB 테이블
+- `news_digest` — collected_at, queries(jsonb), raw_count, digest(text), raw_items(jsonb)
+- DAG: `news_digest_collector` (`0 */4 * * *`, 주말 포함)
+- 비용: Haiku ~$0.02/일 (수집 6회 + 통합 1회)
+
+### 월요일/연휴 후 특수 처리
+- 수집 시: `WEEKEND_EXTRA_QUERIES`("주말 증시 영향", "월요일 증시 전망", "글로벌 긴급 속보") 자동 추가
+- 모닝리포트: 데이터 신선도 경고 자동 주입 (한국/미국 데이터가 2일 이상 전이면 LLM에 "뉴스 특히 참고" 지시)
+- 프롬프트에서 "어제" 표현 제거 → 실제 날짜({korea_date}, {us_date}) 사용
+
+---
+
 ## 뉴스 활용 방식
 
 ❌ 절대 금지:
@@ -255,8 +291,11 @@ Plotly Treemap을 사용하여 4개의 시장 히트맵 생성:
 
 ## 시간순 분석 (중요!)
 
-1. 🇰🇷 [과거] 어제 한국 시장 마감 - 미국장 언급 금지 (인과관계 역전 방지)
-2. 🇺🇸 [밤사이] 미국 시장 마감 - 한국장 마감 후 움직임
+1. 🇰🇷 한국 시장 마감 ({korea_date} 15:30 KST) - 미국장 언급 금지 (인과관계 역전 방지)
+2. 🇺🇸 미국 시장 마감 ({us_date} 마감 → KST 익일 06:00) - 한국장 마감 후 움직임
+
+> **날짜 표현 변경 (2026-04-07):** "어제/오늘 새벽" → 실제 거래일 날짜.
+> 미국 휴장(Good Friday 등) 시 "어제"가 3일 전 데이터를 가리키는 오류 방지.
 3. 🔮 [오늘] 한국 시장 전망 - 야간선물, 갭 예측
 ```
 
@@ -325,14 +364,21 @@ with smtplib.SMTP(host, port) as server:
 
 ## DAG 스케줄
 
-| DAG | 실행 시간 (KST) | 대상 테이블 | 설명 |
-|-----|----------------|------------|------|
-| `02_price_kr_ohlcv_daily` | 전날 18:30 (평일) | `stock_price_1d` | KOSPI/KOSDAQ 일봉 |
-| `05_kr_investor_trend_daily` | 전날 17:00 (평일) | `stock_price_1d` | 투자자 수급 |
-| `02_price_us_ohlcv_daily` | **05:40** (화-토) | `stock_price_1d` | 미국 주식 일봉 |
-| `04_macro_global_hourly` | **매시간** | `macro_indicators` | 매크로 지표 |
-| `05_kr_sectors_daily` | 전날 18:00 (평일) | `macro_indicators` | 한국 섹터 지수 |
-| `morning_report` | **08:00** (평일) | — | 리포트 생성 및 발송 |
+| DAG | 실행 시간 (KST) | 대상 테이블 | 설명 | retries |
+|-----|----------------|------------|------|---------|
+| `02_price_kr_ohlcv_daily` | 전날 18:30 (평일) | `stock_price_1d` | KOSPI/KOSDAQ 일봉 | 1 |
+| `05_kr_investor_trend_daily` | 전날 17:00 (평일) | `stock_price_1d` | ��자자 수급 | 1 |
+| `02_price_us_ohlcv_daily` | **05:40** (화-토) | `stock_price_1d` | 미국 주식 일봉 | 1 |
+| `04_macro_global_hourly` | **매시간** | `macro_indicators` | 매크로 지표 | 2 |
+| `05_kr_sectors_daily` | 전날 18:00 (평일) | `macro_indicators` | 한국 섹터 지수 | 2 |
+| `05_kr_preliminary_earnings` | **19:00** (평일) | `financial_statements` | 잠정실적 공시 수집 | 2 |
+| `morning_report` | **08:10** (평일) | — | 모닝리포트 생성 (Sonnet) | **0** |
+| `market_monitor_checklist_parse` | **08:25** (평일) | — | 체크리스트 장전 분석 | **0** |
+| `market_monitor_preopen` | **08:40** (평일) | — | 예상 체결가 분석 | **0** |
+| `market_monitor_intraday` | 09:10~15:50 (10분) | — | 이상치 감지 + 정기현황 | **0** |
+| `market_monitor_close` | **15:35** (평일) | — | 장마감 종합점검 | **0** |
+
+> **retries: 0 (2026-04-06):** 모든 알림 DAG는 재시도 비활성. 발송 후 후속 코드 예외 시 재시도로 중복 메시지 발송 방지.
 
 ---
 
@@ -466,12 +512,32 @@ Airflow DAG → POST http://bip-agents-api:8100/api/checklist/analyze
 
 | 날짜 | 변경 내용 |
 |------|----------|
+| 2026-04-13 | **뉴스 다이제스트 파이프라인** — `news_digest` 테이블 + `dag_news_digest` (4시간마다, 주말 포함). 모닝리포트에 48시간 통합 다이제스트 주입. 월요일 주말 이슈 커버 |
+| 2026-04-13 | **데이터 신선도 경고** — 한국/미국 데이터가 2일+ 전이면 LLM에 경고 주입. "어제" → 날짜 기반. 미국 시장 ET/KST 병기 |
+| 2026-04-13 | **data_date 라벨링** — 체크리스트/preopen에서 과거 데이터에 "(MM/DD 기준)" 라벨 필수. preopen fallback 3단계(antc_cnpr→antc_cntg_prc→stck_prpr) |
+| 2026-04-11 | **체크리스트 알림 가독성 전면 개선** — 하이브리드 포맷(체크 결과 1줄씩 + 📈📉 움직임 + 👀 관찰 포인트), 방향성 규칙 명시(USD/KRW·유가·VIX = higher_is_risk), 항목 병합(동일 indicator 하나로), 섹션 빈 줄 유지, 09:00→09:30 첫 리포트 이동, 에이전트 타임아웃 180초, 도구 호출 상세 로깅 |
+| 2026-04-11 | **preopen 예상 체결가 API 교체** — `FHKST01010200 output2 / antc_cnpr` + `_is_preopen_window()` 시간 가드(평일 08:30~09:00 KST) |
+| 2026-04-11 | **모닝리포트 개선** — 시장 전망/대응 시나리오 중복 제목 제거, 투자자 동향 콤마 포맷, 신호 대시보드 날짜 라벨(MM/DD) + 설명, 신호등 `calculate_reference_signals()` fallback |
+| 2026-04-11 | **장중 스냅샷 강화** — `ALWAYS_COLLECT_STOCKS`(10종목) 강제 + `resolve_stock_code()` 종목명→코드 자동 매칭 + 실시간 스냅샷 에이전트 전달 |
+| 2026-04-11 | **테스트 DAG 텔레그램 차단** — `build_morning_report(send_telegram=False)` 파라미터 추가. 테스트 DAG는 운영 채널 발송 안 함 |
+| 2026-04-11 | **EWY 장중 반복 체크 제거** — 야간선물/애프터마켓 항목은 `phase=pre_market` 강제 |
 | 2026-04-05 | **Phase 1/2/3 구현** — get_indicator_context MCP 도구, LangGraph 4단계 파이프라인, 룰 엔진 분리 (`docs/checklist_agent_architecture.md`) |
 | 2026-04-05 | **08:40 preopen DAG 추가** — 한투 API 예상 체결가 + 갭 방향 Haiku 분석 |
 | 2026-04-05 | **주요 종목 10개로 확장** — 삼성전자/SK하이닉스/LG엔솔/삼성바이오/현대차/기아/POSCO/NAVER/카카오/삼성SDI |
 | 2026-04-05 | **감사 로그 통합** — BIP-Agents API 응답 → Airflow `record_agent_audit()` |
 | 2026-04-05 | **Sonnet/GPT 비교 테스트 DAG 추가** — 본인 DM/이메일 전용, 08:20/08:30 |
 | 2026-04-05 | **체크리스트 시간대 필터링** — pre_market/intraday/close 분기 |
+| 2026-04-11 | **종목 추천 에이전트** — Phase 1(deterministic 스크리닝) + Phase 2(Bull/Bear 토론) 구현. 7개 프리셋 + VCP 돌파 |
+| 2026-04-08 | **잠정실적 수집 파이프라인** — DART 공시에서 잠정실적 파싱 → financial_statements 적재. analytics_valuation에 fiscal_quarter 추가 |
+| 2026-04-07 | **운영 모델 Sonnet 4.6으로 변경** — 3종 비교(Opus/Sonnet/GPT) 후 Sonnet 선정. Airflow Variable `llm_model` = `claude-sonnet-4-6` |
+| 2026-04-07 | **프롬프트 날짜 변경** — "어제/오늘 새벽" → 실제 거래일 날짜({korea_date}, {us_date}). 미국 휴장일 오판 방지 |
+| 2026-04-07 | **S&P500/NASDAQ 0값 수정** — 지수별 독립 최신 날짜 조회 (KOSPI 기준 JOIN → 미국 휴장 시 0 문제) |
+| 2026-04-07 | **EWY/글로벌 지수 data_date 추가** — yfinance 응답에 기준일 표시 |
+| 2026-04-07 | **환율 간헐 누락 수정** — exchange_rate 조회 시 South Korea 기준 직접 최신 (다른 region 적재 순서에 무��) |
+| 2026-04-07 | **���크리스트 HTML 섹션 그룹핑** — 프롬프트에서 3개 섹션 강제 + report_builder에서 아이콘(🌅/📊/⚠️) 자동 분류 |
+| 2026-04-06 | **체크리스트 에이전트 Phase 5** — 4단계 파이프라인 폐기 → Haiku + MCP ReAct 직접 호출. 코드 변경 없이 새 항목 대응 |
+| 2026-04-06 | **체크리스트 DB 저장 변경** — HTML 사후 파싱 → report_builder에서 빌드 시점 직접 저장 |
+| 2026-04-06 | **retries: 0** — 모든 알림 DAG 재시도 비활성 (중복 발송 방지) |
 | 2026-04-05 | **장 마감 메시지 체크리스트 복기 + 내일 관찰 포인트** 형식으로 전환 |
 | 2026-04-03 | **BIP-Agents 에이전트 연동** — 체크리스트 분석을 LangGraph + MCP 에이전트로 전환 |
 | 2026-04-03 | **한투 API 실시간** — 종목/지수/수급/프로그램매매 실시간 (MCP 도구) |

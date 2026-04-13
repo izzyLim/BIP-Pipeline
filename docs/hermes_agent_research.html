@@ -1,0 +1,520 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Hermes Agent 조사 보고서</title>
+<style>
+  :root { --bg: #f8fafc; --card: #fff; --text: #1e293b; --muted: #64748b; --border: #e2e8f0; --accent: #7c3aed; --green: #059669; --yellow: #d97706; --red: #dc2626; --blue: #2563eb; }
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; background: var(--bg); color: var(--text); line-height: 1.7; padding: 24px; max-width: 1000px; margin: 0 auto; }
+  h1 { font-size: 28px; margin-bottom: 8px; color: var(--accent); }
+  h2 { font-size: 20px; margin: 36px 0 12px; padding-bottom: 8px; border-bottom: 2px solid var(--accent); color: var(--accent); }
+  h3 { font-size: 16px; margin: 20px 0 8px; color: var(--text); }
+  p, li { font-size: 14px; }
+  .subtitle { font-size: 14px; color: var(--muted); margin-bottom: 24px; }
+  .card { background: var(--card); border: 1px solid var(--border); border-radius: 8px; padding: 16px 20px; margin: 12px 0; }
+  .card-accent { border-left: 4px solid var(--accent); }
+  .card-green { border-left: 4px solid var(--green); }
+  .card-blue { border-left: 4px solid var(--blue); }
+  .card-yellow { border-left: 4px solid var(--yellow); }
+  .card-red { border-left: 4px solid var(--red); }
+  table { width: 100%; border-collapse: collapse; margin: 12px 0; font-size: 13px; }
+  th, td { padding: 8px 12px; border: 1px solid var(--border); text-align: left; }
+  th { background: #f1f5f9; font-weight: 600; }
+  code { background: #f1f5f9; padding: 2px 6px; border-radius: 4px; font-size: 13px; }
+  pre { background: #1e293b; color: #e2e8f0; padding: 16px; border-radius: 8px; overflow-x: auto; margin: 12px 0; font-size: 13px; }
+  .tag { display: inline-block; padding: 2px 8px; border-radius: 4px; font-size: 11px; font-weight: 600; }
+  .tag-green { background: #d1fae5; color: #065f46; }
+  .tag-blue { background: #dbeafe; color: #1e40af; }
+  .tag-yellow { background: #fef3c7; color: #92400e; }
+  .tag-red { background: #fee2e2; color: #991b1b; }
+  .grid-2 { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+  .stat { text-align: center; padding: 16px; }
+  .stat-num { font-size: 28px; font-weight: 800; color: var(--accent); }
+  .stat-label { font-size: 12px; color: var(--muted); margin-top: 4px; }
+  .flow { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; margin: 16px 0; }
+  .flow-step { background: var(--card); border: 2px solid var(--accent); border-radius: 8px; padding: 8px 16px; font-size: 13px; font-weight: 600; }
+  .flow-arrow { color: var(--accent); font-size: 20px; }
+  .updated { text-align: center; padding: 20px; font-size: 12px; color: var(--muted); border-top: 1px solid var(--border); margin-top: 40px; }
+  ul { padding-left: 20px; margin: 8px 0; }
+  li { margin: 4px 0; }
+  a { color: var(--blue); text-decoration: none; }
+  a:hover { text-decoration: underline; }
+</style>
+</head>
+<body>
+
+<h1>Hermes Agent 조사 보고서</h1>
+<p class="subtitle">Nous Research의 자기 개선형 오픈소스 AI 에이전트 | 2026-04-13 조사</p>
+
+<!-- 핵심 지표 -->
+<div class="grid-2">
+  <div class="card" style="display:grid; grid-template-columns:repeat(3,1fr);">
+    <div class="stat"><div class="stat-num">69.9K</div><div class="stat-label">GitHub Stars</div></div>
+    <div class="stat"><div class="stat-num">40+</div><div class="stat-label">Built-in Tools</div></div>
+    <div class="stat"><div class="stat-num">118</div><div class="stat-label">Bundled Skills</div></div>
+  </div>
+  <div class="card" style="display:grid; grid-template-columns:repeat(3,1fr);">
+    <div class="stat"><div class="stat-num">200+</div><div class="stat-label">지원 LLM</div></div>
+    <div class="stat"><div class="stat-num">15+</div><div class="stat-label">플랫폼</div></div>
+    <div class="stat"><div class="stat-num">MIT</div><div class="stat-label">라이선스</div></div>
+  </div>
+</div>
+
+<!-- 1. 개요 -->
+<h2>1. 개요</h2>
+
+<div class="card card-accent">
+  <h3>Hermes Agent란?</h3>
+  <p>Nous Research가 개발한 <strong>자기 개선형(Self-Improving) 오픈소스 AI 에이전트</strong>. 2026년 2월 출시, v0.7.0 (2026-04-03 기준).</p>
+  <p style="margin-top:8px;">핵심 차별점: <strong>내장 학습 루프(Built-in Learning Loop)</strong> — 작업 완료 후 자동으로 스킬을 생성/개선하고, 세션 간 지식을 유지하며, 사용할수록 더 똑똑해짐.</p>
+  <p style="margin-top:8px;">IDE 종속 코파일럿이나 단순 챗봇 래퍼가 아닌, <strong>인프라 위에서 독립적으로 실행되는 자율 에이전트</strong>.</p>
+</div>
+
+<div class="card card-blue">
+  <h3>Nous Research</h3>
+  <p>Hermes, Nomos, Psyche 언어 모델을 개발한 AI 연구 조직. Hermes Agent는 이들의 에이전트 프레임워크 제품.</p>
+  <p style="margin-top:4px;">호환 제공자: Nous Portal, OpenRouter (200+모델), OpenAI, Anthropic, z.ai, Kimi/Moonshot, 커스텀 엔드포인트</p>
+</div>
+
+<!-- 2. 핵심 학습 루프 -->
+<h2>2. 핵심 학습 루프 (Closed Learning Loop)</h2>
+
+<div class="flow">
+  <div class="flow-step">1. Receive<br/><span style="font-size:11px;color:var(--muted);">메시지 수신</span></div>
+  <div class="flow-arrow">&rarr;</div>
+  <div class="flow-step">2. Retrieve<br/><span style="font-size:11px;color:var(--muted);">메모리/스킬 검색</span></div>
+  <div class="flow-arrow">&rarr;</div>
+  <div class="flow-step">3. Reason & Act<br/><span style="font-size:11px;color:var(--muted);">LLM 추론 + 도구 호출</span></div>
+  <div class="flow-arrow">&rarr;</div>
+  <div class="flow-step">4. Document<br/><span style="font-size:11px;color:var(--muted);">스킬 자동 생성/갱신</span></div>
+  <div class="flow-arrow">&rarr;</div>
+  <div class="flow-step">5. Persist<br/><span style="font-size:11px;color:var(--muted);">지식 영구 저장</span></div>
+</div>
+
+<div class="card card-green">
+  <h3>자기 개선 효과</h3>
+  <ul>
+    <li>자동 생성된 스킬을 사용한 에이전트는 연구 작업을 <strong>40% 더 빠르게</strong> 완료 (프롬프트 튜닝 없이)</li>
+    <li>5+ 도구 호출이 필요한 복잡 작업 완료 시 자동으로 스킬 문서 생성</li>
+    <li>반복 작업은 점진적으로 효율 향상 (사용자 선호 형식 학습)</li>
+    <li>리플렉션 토큰 오버헤드: 일반 에이전트 대비 15~25% 추가</li>
+  </ul>
+</div>
+
+<!-- 3. 메모리 아키텍처 -->
+<h2>3. 메모리 아키텍처 (3계층)</h2>
+
+<table>
+  <tr>
+    <th>계층</th>
+    <th>역할</th>
+    <th>기술</th>
+    <th>지속성</th>
+  </tr>
+  <tr>
+    <td><strong>Session Memory</strong></td>
+    <td>현재 대화 컨텍스트</td>
+    <td>컨텍스트 윈도우 내 유지, <code>context_compressor.py</code>로 초과 시 요약</td>
+    <td>세션 내</td>
+  </tr>
+  <tr>
+    <td><strong>Persistent Memory</strong></td>
+    <td>세션 간 장기 기억 (대화, 사실, 선호도)</td>
+    <td>SQLite + FTS5 전문검색, LLM 요약 기반 압축, ~10ms 검색 (10K+ 문서)</td>
+    <td>영구</td>
+  </tr>
+  <tr>
+    <td><strong>Procedural Memory (Skills)</strong></td>
+    <td>방법론 기억 — "어떻게 했는지" 절차 저장</td>
+    <td>Markdown 스킬 파일, agentskills.io 표준, Progressive Disclosure (3단계)</td>
+    <td>영구</td>
+  </tr>
+</table>
+
+<div class="card card-yellow">
+  <h3>핵심 혁신: Procedural Memory</h3>
+  <p>전통적 에이전트가 <strong>사실(facts)</strong>을 기억하는 반면, Hermes는 <strong>방법(methods)</strong>을 기억한다. 성공한 워크플로우를 재사용 가능한 절차로 변환하여 유사 문제 발생 시 자동 로드.</p>
+  <p style="margin-top:4px;">캐시 인식 설계: 시스템 프롬프트 스냅샷을 세션 초기화 시 고정하여 고빈도 모델 호출이 캐시된 컨텍스트 윈도우를 효율적으로 사용.</p>
+</div>
+
+<!-- 4. 스킬 시스템 -->
+<h2>4. 스킬 시스템</h2>
+
+<div class="grid-2">
+  <div class="card">
+    <h3>스킬 구조</h3>
+    <pre>my-skill/
+  SKILL.md          # YAML frontmatter + 절차 내용
+  scripts/          # 실행 스크립트
+  references/       # 참조 문서
+  assets/           # 이미지 등</pre>
+    <p style="font-size:12px;color:var(--muted);margin-top:8px;">agentskills.io 오픈 표준 준수</p>
+  </div>
+  <div class="card">
+    <h3>Progressive Disclosure (3단계)</h3>
+    <ul>
+      <li><strong>Level 0</strong>: 스킬 이름+설명 목록만 (토큰 최소)</li>
+      <li><strong>Level 1</strong>: 특정 스킬 전체 내용 로드</li>
+      <li><strong>Level 2</strong>: 스킬 내 특정 참조 파일 로드</li>
+    </ul>
+    <p style="font-size:12px;color:var(--muted);margin-top:8px;">필요할 때만 상세 로드 &rarr; 토큰 절약</p>
+  </div>
+</div>
+
+<div class="card">
+  <h3>스킬 생명주기</h3>
+  <table>
+    <tr><th>단계</th><th>설명</th></tr>
+    <tr><td>자동 생성</td><td>5+ 도구 호출 복잡 작업 완료 후 에이전트가 자동으로 <code>SKILL.md</code> 생성</td></tr>
+    <tr><td>자기 개선</td><td>사용 중 모순/확장 정보 발견 시 스킬 문서 자동 패치</td></tr>
+    <tr><td>공유</td><td>agentskills.io Skills Hub를 통해 커뮤니티 공유 (보안 스캔 통과 필수)</td></tr>
+    <tr><td>검색</td><td>FTS5 전문검색으로 ~10ms 내 관련 스킬 조회</td></tr>
+  </table>
+  <p style="font-size:12px;color:var(--muted);margin-top:8px;">118개 번들 스킬 (96 기본 + 22 선택), 26+ 카테고리</p>
+</div>
+
+<!-- 5. 아키텍처 -->
+<h2>5. 코어 아키텍처</h2>
+
+<div class="card">
+  <h3>5개 주요 서브시스템</h3>
+  <table>
+    <tr><th>서브시스템</th><th>핵심 파일</th><th>역할</th></tr>
+    <tr>
+      <td><strong>AIAgent Loop</strong></td>
+      <td><code>run_agent.py</code> (~9,200줄)</td>
+      <td>중앙 오케스트레이션 — 프로바이더 선택, 프롬프트 구성, 도구 실행, 영속성</td>
+    </tr>
+    <tr>
+      <td><strong>Prompt System</strong></td>
+      <td><code>prompt_builder.py</code>, <code>context_compressor.py</code></td>
+      <td>성격 파일 + 메모리 + 스킬 + 컨텍스트 문서 조립, Anthropic 캐시 최적화</td>
+    </tr>
+    <tr>
+      <td><strong>Provider Resolver</strong></td>
+      <td>공유 런타임</td>
+      <td>(provider, model) 튜플 → 자격증명 + API 모드 매핑 (18+ 프로바이더)</td>
+    </tr>
+    <tr>
+      <td><strong>Tool System</strong></td>
+      <td>자기등록 레지스트리</td>
+      <td>47개 도구 / 20개 도구셋, 6개 터미널 백엔드 (local, Docker, SSH, Daytona, Modal, Singularity)</td>
+    </tr>
+    <tr>
+      <td><strong>Messaging Gateway</strong></td>
+      <td>장기 실행 프로세스</td>
+      <td>14개 플랫폼 어댑터, 통합 세션 라우팅, 인가</td>
+    </tr>
+  </table>
+</div>
+
+<div class="card">
+  <h3>데이터 플로우</h3>
+  <table>
+    <tr><th>경로</th><th>흐름</th></tr>
+    <tr>
+      <td><strong>CLI</strong></td>
+      <td>user input &rarr; <code>HermesCLI.process_input()</code> &rarr; <code>AIAgent.run_conversation()</code> &rarr; API call &rarr; tool dispatch &rarr; response &rarr; DB persist</td>
+    </tr>
+    <tr>
+      <td><strong>Gateway</strong></td>
+      <td>platform event &rarr; adapter &rarr; auth &rarr; session resolve &rarr; <code>AIAgent.run_conversation()</code> &rarr; platform delivery</td>
+    </tr>
+    <tr>
+      <td><strong>Cron</strong></td>
+      <td>scheduler tick &rarr; job load &rarr; fresh AIAgent &rarr; skill inject &rarr; response &rarr; state update</td>
+    </tr>
+  </table>
+</div>
+
+<div class="card">
+  <h3>설계 원칙</h3>
+  <ul>
+    <li><strong>Prompt Stability</strong>: 대화 중 시스템 프롬프트 변경 불가</li>
+    <li><strong>Observable Execution</strong>: 모든 도구 호출이 사용자에게 가시적</li>
+    <li><strong>Interruptible</strong>: 작업 중단 가능</li>
+    <li><strong>Platform-Agnostic Core</strong>: 코어와 플랫폼 분리</li>
+    <li><strong>Loose Coupling</strong>: 레지스트리 기반 느슨한 결합</li>
+    <li><strong>Profile Isolation</strong>: 여러 프로필 동시 실행 가능</li>
+  </ul>
+</div>
+
+<!-- 6. 멀티 플랫폼 -->
+<h2>6. 실행 환경 & 플랫폼</h2>
+
+<div class="grid-2">
+  <div class="card">
+    <h3>터미널 백엔드 (6개)</h3>
+    <ul>
+      <li><strong>Local</strong> — 로컬 머신 직접 실행</li>
+      <li><strong>Docker</strong> — 컨테이너 격리</li>
+      <li><strong>SSH</strong> — 원격 서버</li>
+      <li><strong>Daytona</strong> — 클라우드 개발환경</li>
+      <li><strong>Modal</strong> — 서버리스 실행</li>
+      <li><strong>Singularity</strong> — HPC 컨테이너</li>
+    </ul>
+  </div>
+  <div class="card">
+    <h3>메시징 플랫폼 (15+)</h3>
+    <ul>
+      <li>CLI, Telegram, Discord, Slack</li>
+      <li>WhatsApp, Signal, Matrix, Mattermost</li>
+      <li>Email, SMS, DingTalk, Feishu</li>
+      <li>WeCom, BlueBubbles, Home Assistant</li>
+    </ul>
+  </div>
+</div>
+
+<div class="card">
+  <h3>설치</h3>
+  <pre>curl -fsSL https://raw.githubusercontent.com/NousResearch/hermes-agent/main/scripts/install.sh | bash</pre>
+  <p style="font-size:12px;color:var(--muted);">Linux, macOS, WSL2, Termux (Android) 지원. 최소 사양: 2코어, 8GB RAM, $5/월 VPS</p>
+</div>
+
+<!-- 7. 비교 -->
+<h2>7. 다른 에이전트와 비교</h2>
+
+<table>
+  <tr>
+    <th>항목</th>
+    <th>Hermes Agent</th>
+    <th>Claude Code</th>
+    <th>OpenClaw</th>
+  </tr>
+  <tr>
+    <td><strong>철학</strong></td>
+    <td>자기 개선하는 에이전트</td>
+    <td>코드 생성 전문가</td>
+    <td>다중 플랫폼 연결</td>
+  </tr>
+  <tr>
+    <td><strong>학습 루프</strong></td>
+    <td><span class="tag tag-green">내장</span> 스킬 자동 생성/개선</td>
+    <td><span class="tag tag-yellow">부분적</span> 메모리 파일 수동</td>
+    <td><span class="tag tag-red">없음</span></td>
+  </tr>
+  <tr>
+    <td><strong>메모리</strong></td>
+    <td>3계층 (세션/영구/절차적)</td>
+    <td>CLAUDE.md + auto memory</td>
+    <td>없음</td>
+  </tr>
+  <tr>
+    <td><strong>플랫폼</strong></td>
+    <td>15+ (Telegram, Slack 등)</td>
+    <td>터미널/IDE/웹</td>
+    <td>50+</td>
+  </tr>
+  <tr>
+    <td><strong>도구</strong></td>
+    <td>47개 + MCP 서버</td>
+    <td>파일/터미널/웹</td>
+    <td>플러그인 기반</td>
+  </tr>
+  <tr>
+    <td><strong>강점</strong></td>
+    <td>자율 학습, 스킬 생태계</td>
+    <td>코딩 품질, 프론티어 모델</td>
+    <td>플랫폼 커버리지</td>
+  </tr>
+  <tr>
+    <td><strong>GitHub Stars</strong></td>
+    <td>~70K</td>
+    <td>N/A (Anthropic 제품)</td>
+    <td>~345K</td>
+  </tr>
+  <tr>
+    <td><strong>라이선스</strong></td>
+    <td>MIT</td>
+    <td>상용</td>
+    <td>Apache 2.0</td>
+  </tr>
+</table>
+
+<!-- 8. BIP 관점 시사점 -->
+<h2>8. BIP 프로젝트 관점 시사점</h2>
+
+<div class="card card-green">
+  <h3>참고 가능한 개념</h3>
+  <ul>
+    <li><strong>스킬 시스템</strong>: BIP의 체크리스트 에이전트가 반복적으로 수행하는 분석 패턴을 "스킬"로 저장하면 프롬프트 토큰 절약 + 일관성 확보 가능</li>
+    <li><strong>Progressive Disclosure</strong>: 현재 모든 체크리스트 항목을 한 번에 LLM에 전달하는데, 레벨별 로딩으로 토큰 최적화 가능</li>
+    <li><strong>Procedural Memory</strong>: "환율 방향성 판정법", "유가 영향 분석법" 같은 반복 절차를 스킬 문서로 관리하면 방향성 오판 문제 구조적 해결</li>
+    <li><strong>Cron 스케줄링</strong>: Hermes의 자연어 크론 스케줄링이 Airflow DAG보다 유연할 수 있음 (단, 엔터프라이즈 안정성은 Airflow가 우위)</li>
+  </ul>
+</div>
+
+<div class="card card-yellow">
+  <h3>현재 BIP와의 차이</h3>
+  <ul>
+    <li>BIP는 <strong>파이프라인 중심</strong> (Airflow DAG → 정해진 흐름), Hermes는 <strong>에이전트 중심</strong> (자율 판단)</li>
+    <li>BIP의 체크리스트 에이전트는 Haiku ReAct 방식 → Hermes의 학습 루프와 유사하지만 스킬 저장/재활용 메커니즘은 없음</li>
+    <li>BIP의 뉴스 다이제스트 파이프라인은 Hermes의 "반복 작업 학습" 개념과 유사 (패턴 인식 → 효율화)</li>
+    <li>Hermes의 멀티 플랫폼 게이트웨이는 BIP의 텔레그램 + 이메일 구조보다 확장성이 높음</li>
+  </ul>
+</div>
+
+<div class="card card-red">
+  <h3>도입 시 고려사항</h3>
+  <ul>
+    <li>리플렉션 토큰 오버헤드 15~25% — 비용 민감한 환경에서는 부담</li>
+    <li>월 API 비용 $15~$400+ — BIP 현재 ~$5/월 대비 크게 증가</li>
+    <li>코딩 전문 작업은 Claude Code/Cursor가 더 적합 (Hermes 공식 인정)</li>
+    <li>SQLite 기반 → PostgreSQL 중심의 BIP 인프라와 통합 시 추가 작업 필요</li>
+    <li>자율 에이전트의 예측 불가능성 — BIP의 거버넌스(보안, 감사 로그) 요구사항과 충돌 가능</li>
+  </ul>
+</div>
+
+<!-- 9. 웹앱 연동 -->
+<h2>9. 웹앱 / Open WebUI 연동</h2>
+
+<div class="card card-green">
+  <h3>Hermes Agent — 웹 연동 (최상)</h3>
+  <p>OpenAI 호환 API 서버를 노출하므로, <strong>아무 프론트엔드와 바로 연결</strong> 가능.</p>
+  <table>
+    <tr><th>방식</th><th>설명</th></tr>
+    <tr><td><strong>Open WebUI</strong></td><td>공식 연동 문서 제공. OPENAI_API_BASE_URL만 설정하면 완료</td></tr>
+    <tr><td><strong>hermes-webui</strong></td><td><a href="https://github.com/nesquena/hermes-webui" target="_blank">전용 웹 UI</a> — CLI과 동일한 기능을 브라우저에서</td></tr>
+    <tr><td><strong>hermes-workspace</strong></td><td><a href="https://github.com/outsourc-e/hermes-workspace" target="_blank">네이티브 워크스페이스</a> — 채팅+터미널+메모리+스킬 인스펙터</td></tr>
+    <tr><td><strong>기타</strong></td><td>LobeChat, LibreChat, NextChat, ChatBox 등 OpenAI 포맷 지원 프론트엔드 모두 가능</td></tr>
+  </table>
+</div>
+
+<div class="card card-yellow">
+  <h3>Deep Agents — 웹 연동 (제한적)</h3>
+  <table>
+    <tr><th>방식</th><th>설명</th></tr>
+    <tr><td><strong>deep-agents-ui</strong></td><td><a href="https://github.com/langchain-ai/deep-agents-ui" target="_blank">LangChain 공식 전용 UI</a></td></tr>
+    <tr><td><strong>Open WebUI</strong></td><td>직접 연동 불가. OpenAI 호환 래퍼를 별도 구현해야 연결 가능</td></tr>
+  </table>
+  <p style="margin-top:8px;font-size:13px;color:var(--muted);">LangChain/LangGraph 기반이라 범용 프론트엔드와 바로 붙는 구조는 아님</p>
+</div>
+
+<!-- 10. BIP 도입 전략 -->
+<h2>10. BIP에 Hermes를 도입한다면?</h2>
+
+<div class="card">
+  <h3>현재 BIP 구조 vs Hermes 최상단 구조</h3>
+  <div class="grid-2">
+    <div class="card card-blue">
+      <h3 style="font-size:14px;">현재 BIP</h3>
+      <pre style="font-size:12px;background:#1e293b;color:#e2e8f0;padding:12px;border-radius:6px;">Airflow (스케줄링/모니터링)
+  → BIP-Agents (LLM + MCP)
+    → checklist_agent
+    → preopen_analyzer
+    → stock_screener
+  → 텔레그램 / 이메일</pre>
+    </div>
+    <div class="card card-accent">
+      <h3 style="font-size:14px;">Hermes 최상단</h3>
+      <pre style="font-size:12px;background:#1e293b;color:#e2e8f0;padding:12px;border-radius:6px;">Hermes Agent (오케스트레이션+학습+웹UI)
+  → BIP-Agents (도구로 호출)
+  → Airflow (스케줄링만)
+  → 웹 / 텔레그램 / Slack</pre>
+    </div>
+  </div>
+</div>
+
+<div class="card">
+  <h3>3가지 선택지</h3>
+  <table>
+    <tr>
+      <th>옵션</th>
+      <th>설명</th>
+      <th>장점</th>
+      <th>단점</th>
+      <th>리스크</th>
+    </tr>
+    <tr>
+      <td><span class="tag tag-green">A. 개념만 차용 (추천)</span></td>
+      <td>현재 구조 유지하면서 Hermes의 좋은 아이디어를 BIP에 점진적으로 적용</td>
+      <td>안정적, 기존 투자 보존, 점진적 개선</td>
+      <td>웹 UI/멀티플랫폼은 직접 구현 필요</td>
+      <td><span class="tag tag-green">낮음</span></td>
+    </tr>
+    <tr>
+      <td><span class="tag tag-blue">B. 인터페이스 레이어</span></td>
+      <td>Hermes를 사용자 대화 창구로, 실제 분석은 BIP-Agents가 처리</td>
+      <td>웹 UI 즉시 확보, 학습 루프 활용</td>
+      <td>Hermes↔BIP 연동 개발 필요, 이중 인프라</td>
+      <td><span class="tag tag-yellow">중간</span></td>
+    </tr>
+    <tr>
+      <td><span class="tag tag-red">C. 전면 교체</span></td>
+      <td>BIP-Agents를 Hermes 프레임워크로 마이그레이션</td>
+      <td>통합된 아키텍처, 학습 루프 네이티브</td>
+      <td>기존 코드 폐기, 거버넌스 재구축, SQLite↔PostgreSQL</td>
+      <td><span class="tag tag-red">높음</span></td>
+    </tr>
+  </table>
+</div>
+
+<div class="card card-green">
+  <h3>옵션 A: 차용 가능한 Hermes 개념</h3>
+  <ul>
+    <li><strong>스킬 시스템</strong> → 체크리스트 에이전트의 반복 분석 패턴을 스킬 문서로 저장 (환율 방향성 판정, 유가 분석 등)</li>
+    <li><strong>Procedural Memory</strong> → "어떻게 했는지"를 기억 — 현재 auto memory는 "무엇을" 기억</li>
+    <li><strong>Progressive Disclosure</strong> → 프롬프트에 스킬 전체를 넣지 않고 레벨별 로딩으로 토큰 절약</li>
+    <li><strong>웹 UI</strong> → 기존 React-FastAPI에 채팅 인터페이스 추가 (Hermes 불필요)</li>
+    <li><strong>뉴스 다이제스트</strong> → 이미 BIP에서 구현 완료 (Hermes의 "반복 작업 학습"과 유사)</li>
+  </ul>
+</div>
+
+<div class="card card-yellow">
+  <h3>옵션 B: Hermes를 인터페이스 레이어로 쓸 때</h3>
+  <pre style="font-size:12px;">사용자 ↔ Hermes (대화/웹UI/학습)
+           ↕ OpenAI 호환 API
+       BIP-Agents API (실제 분석)
+           ↕
+       Airflow + PostgreSQL + MCP</pre>
+  <ul style="margin-top:8px;">
+    <li>Hermes가 BIP-Agents의 <code>/api/checklist/analyze</code>, <code>/api/screener/daily</code> 등을 도구로 호출</li>
+    <li>사용자는 "오늘 시장 어때?" 같은 자연어로 질문 → Hermes가 판단해서 적절한 BIP API 호출</li>
+    <li>학습 루프로 자주 묻는 질문의 응답 패턴을 스킬로 저장</li>
+  </ul>
+</div>
+
+<div class="card card-red">
+  <h3>Hermes 도입 시 잃는 것</h3>
+  <ul>
+    <li><strong>Airflow 안정성</strong> — 스케줄링/재시도/모니터링 UI → Hermes cron은 이만큼 성숙하지 않음</li>
+    <li><strong>PostgreSQL 인프라</strong> → Hermes는 SQLite 기반, 기존 39개 테이블과 통합 어려움</li>
+    <li><strong>감사 로그/보안</strong> → agent_audit_log, security_governance 등 다시 구축 필요</li>
+    <li><strong>토큰 비용</strong> → 리플렉션 오버헤드 15~25% 증가 (BIP 현재 ~$5/월 → ~$20+/월)</li>
+    <li><strong>예측 가능성</strong> → 자율 에이전트의 행동이 규칙 기반보다 불확실</li>
+  </ul>
+</div>
+
+<!-- 11. 비용 -->
+<h2>11. 비용 구조</h2>
+
+<table>
+  <tr><th>항목</th><th>수치</th></tr>
+  <tr><td>최소 호스팅</td><td>$5/월 VPS (2코어, 8GB RAM)</td></tr>
+  <tr><td>월 API 비용</td><td>$15~$400+ (모델/사용량 따라)</td></tr>
+  <tr><td>리플렉션 오버헤드</td><td>토큰 15~25% 추가</td></tr>
+  <tr><td>FTS5 검색 지연</td><td>~10ms (10K+ 문서)</td></tr>
+</table>
+
+<!-- 12. 참고 자료 -->
+<h2>12. 참고 자료</h2>
+
+<div class="card">
+  <ul>
+    <li><a href="https://github.com/nousresearch/hermes-agent" target="_blank">GitHub - NousResearch/hermes-agent</a> (69.9K stars, MIT)</li>
+    <li><a href="https://hermes-agent.nousresearch.com/docs/" target="_blank">공식 문서</a></li>
+    <li><a href="https://hermes-agent.nousresearch.com/docs/developer-guide/architecture" target="_blank">아키텍처 상세</a></li>
+    <li><a href="https://www.nxcode.io/resources/news/hermes-agent-complete-guide-self-improving-ai-2026" target="_blank">Complete Guide (NxCode, 2026)</a></li>
+    <li><a href="https://www.mindstudio.ai/blog/what-is-hermes-agent-openclaw-alternative" target="_blank">OpenClaw 비교 분석 (MindStudio)</a></li>
+    <li><a href="https://dev.to/arshtechpro/hermes-agent-a-self-improving-ai-agent-that-runs-anywhere-2b7d" target="_blank">Self-Improving AI Agent (DEV Community)</a></li>
+  </ul>
+</div>
+
+<div class="updated">
+  마지막 업데이트: 2026-04-13 | BIP-Pipeline 내부 조사 문서
+</div>
+
+</body>
+</html>

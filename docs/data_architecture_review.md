@@ -149,7 +149,7 @@ Layer 1: Raw / Operational  (현재와 동일, 스키마 정리)
 Layer 2: Derived            (현재와 동일)
 Layer 3: Gold / Serving     ✅ 구현완료
   analytics_macro_daily     — 거시지표 EAV pivot (437행, DAG: 09_analytics_macro_daily)
-  analytics_valuation       — 밸류에이션 종합 PER/PBR/ROE (7,609행, DAG: 09_analytics_valuation)
+  analytics_valuation       — 밸류에이션 종합 PER/PBR/ROE + 잠정실적(preliminary) + fiscal_quarter 컬럼 추가 (DAG: 09_analytics_valuation)
   analytics_stock_daily     — 시세 + 기술지표 + 컨센서스 (1,870,328행, DAG: 09_analytics_stock_daily)
 
 Layer 4: Semantic           ✅ 구현완료
@@ -457,6 +457,12 @@ UNIQUE: `(indicator_date, region, indicator_type)`
 - 소스: `macro_indicators` (매일 17:00 KST에 사전 계산)
 - 참고: `docs/checklist_agent_architecture.md`
 
+**`news_digest` 테이블 (2026-04-13 추가):**
+- 4시간마다 네이버 뉴스 수집 → Haiku 요약(이슈 3~5개, 중요도/방향/섹터) → 저장
+- `collected_at`, `queries`(jsonb), `raw_count`, `digest`(text), `raw_items`(jsonb)
+- 모닝리포트에서 최근 48시간 다이제스트를 통합하여 LLM 컨텍스트에 주입
+- 주말 포함 수집 → 월요일 모닝리포트에 주말 이슈 반영
+
 **`agent_audit_log` 테이블:**
 - 모든 AI 에이전트(리포트/체크리스트/preopen/NL2SQL) LLM 호출 통합 감사
 - 2026-04-05: `market_monitor_checklist`, `market_monitor_preopen` 감사 경로 연결됨
@@ -493,6 +499,7 @@ UNIQUE: `(indicator_date, region, indicator_type)`
 | 모니터 | `market_monitor_preopen` | KIS API 예상 체결가 + BIP-Agents | `agent_audit_log` + 텔레그램 | 평일 08:40 |
 | 모니터 | `market_monitor_intraday` | 네이버/Upbit + BIP-Agents API | `monitor_alerts`, `agent_audit_log` + 텔레그램 | 평일 09:00~15:50 (10분) |
 | 모니터 | `market_monitor_close` | BIP-Agents API (체크리스트 복기) | `agent_audit_log` + 텔레그램 | 평일 15:35 |
+| 뉴스 | `news_digest_collector` | Naver News API + Haiku 요약 | `news_digest` | 4시간마다 (주말 포함) |
 | 분석 | `10_indicator_context_snapshot_daily` | `macro_indicators` | `indicator_context_snapshot` | 평일 17:00 |
 | 테스트 | `morning_report_test_sonnet` | Sonnet 4.6 | 본인 이메일/DM만 | 평일 08:20 |
 | 테스트 | `morning_report_test_gpt` | GPT-5.4 | 본인 이메일/DM만 | 평일 08:30 |
@@ -1269,6 +1276,20 @@ JOIN stock_indicators ind ON sp.ticker = ind.ticker
 | 4-4 | 데이터 품질 자동 검증 DAG | DAG | 🔴 미시작 |
 | 4-5 | Wren AI Calculated Fields (MDL 비즈니스 지표) | AI | 🔴 미시작 |
 
+### Phase 5: AI 에이전트 고도화 (2026-04-06~현재)
+
+| # | 작업 | 담당 | 상태 |
+|---|------|------|------|
+| 5-1 | 체크리스트 에이전트 Phase 5 — LLM + MCP 직접 호출로 전환 | AI | ✅ 완료 (2026-04-06) |
+| 5-2 | 모닝리포트 운영 모델 Sonnet 전환 (3종 비교 결과) | AI | ✅ 완료 (2026-04-07) |
+| 5-3 | 프롬프트 날짜 실제 거래일 기반으로 변경 | AI | ✅ 완료 (2026-04-07) |
+| 5-4 | 잠정실적 수집 파이프라인 (DART 공시 파싱) | DAG | ✅ 완료 (2026-04-08) |
+| 5-5 | analytics_valuation에 fiscal_quarter 추가 + preliminary 데이터 타입 | DB | ✅ 완료 (2026-04-08) |
+| 5-6 | 종목 추천 에이전트 Phase 1 (deterministic 스크리닝 + 스코어링) | AI | ✅ 완료 (2026-04-09) |
+| 5-7 | 종목 추천 에이전트 Phase 2 (Bull/Bear 토론 + Manager 판정) | AI | ✅ 완료 (2026-04-11) |
+| 5-8 | 종목 추천 Shadow mode + 백테스트 | AI | 🔴 미시작 |
+| 5-9 | stock_info.sector 데이터 보강 (현재 NULL) | DAG | 🔴 미시작 |
+
 ---
 
 ## 11. 결정 로그
@@ -1303,6 +1324,21 @@ JOIN stock_indicators ind ON sp.ticker = ind.ticker
 | 2026-04-03 | Gold 컬럼 설명 115개 추가 + 계산 힌트 27개 보강 | 컬럼 커버리지 31%→99%. 이격도/괴리율 등 계산 유도 성공 확인 | 설명 없이 LLM 추측에 의존 |
 | 2026-04-03 | NL2SQL 품질을 5차원×3등급 프레임워크로 정량 평가 | 실행/의미/결과/효율/의도 5개 차원. A/B/F 등급. 자동 체크 10개 | 주관적 평가 |
 | 2026-04-03 | 테스트→SQL Pair 추가 사이클 검증 (29→41개, A등급 58%→77%) | 실패 패턴을 SQL Pair로 즉시 해결. Instructions 남발 대신 SQL Pair 우선 | 모든 규칙을 Instructions에 |
+| 2026-04-06 | 체크리스트 에이전트 Phase 5: 4단계 파이프라인→LLM+MCP 직접 호출 | 키워드 파서가 LLM 출력 형식 변화에 취약. 새 항목마다 코드 수정 필요 | 4단계 파이프라인(parser/collector/signal/explainer) 유지 |
+| 2026-04-06 | 체크리스트 DB 저장을 report_builder에서 직접 (HTML 파싱 제거) | HTML 사후 파싱이 형식 의존적 — `□`→`- [ ]` 변경 시 전체 실패 | HTML에서 사후 파싱 |
+| 2026-04-06 | 모든 알림 DAG retries: 0 적용 | 발송 후 후속 코드 예외 시 재시도로 중복 메시지 발송 (preopen 2번 도착 실제 발생) | retries: 1~2 (기존) |
+| 2026-04-07 | 모닝리포트 운영 모델 Sonnet 4.6으로 변경 | 3종 비교(Opus/Sonnet/GPT) 결과 Sonnet이 분석 깊이/비용 최우수. Opus $0.49→Sonnet $0.10 | Opus 유지 |
+| 2026-04-07 | 프롬프트 날짜 "어제/오늘 새벽"→실제 거래일(korea_date/us_date) | 미국 휴장(Good Friday)에 3일 전 EWY로 "갭 하락 유력" 오판 | 상대 표현("어제") 유지 |
+| 2026-04-07 | S&P500/NASDAQ 지수 조회를 지수별 독립 최신 날짜로 변경 | KOSPI 기준 날짜로 JOIN → 미국 휴장 시 0 반환 | KOSPI MAX(date) 공통 사용 |
+| 2026-04-07 | EWY/global_index 응답에 data_date 필드 추가 | 휴장 시 데이터 시점 불명확 → LLM이 stale 데이터를 최신으로 오인 | data_date 없이 반환 |
+| 2026-04-07 | 환율 조회 South Korea 기준 직접 최신 (region 독립) | 다른 region이 먼저 적재 → KR 없는 날짜 기준 조회 → 빈 결과 | MAX(date) 전체 region 기준 |
+| 2026-04-08 | 잠정실적 수집 파이프라인 (05_kr_preliminary_earnings DAG) | DART 재무제표 API에 잠정실적 미반영. 공시문서 파싱으로 매출/영업이익 조기 확보 | XBRL 재무제표 업로드 대기 |
+| 2026-04-08 | analytics_valuation에 fiscal_quarter 컬럼 추가 + PK 변경 | 잠정실적은 분기 데이터인데 기존 테이블은 연간만. 분기 구분 필요 | 별도 테이블 분리 |
+| 2026-04-08 | API overview에서 Q4 자동 계산 (연간 - Q1~Q3) | DART에 Q4 보고서 없어서 최근 분기 항상 Q3로 표시 | Q4 별도 적재 |
+| 2026-04-09 | 종목 추천 에이전트 Phase 1 (deterministic 스크리닝 + 4카테고리 스코어링) | 단순 숫자 필터링만으로는 신뢰성 부족. TradingAgents 참고 | 단순 스크리닝만 |
+| 2026-04-11 | 종목 추천 에이전트 Phase 2 (Bull/Bear 토론 + Manager 판정) | Phase 1 스크리닝 → 상위 5개만 토론. 등급은 deterministic(Phase1 스코어 + 방향) | LLM이 등급 직접 결정 |
+| 2026-04-11 | 종목 추천 VCP 돌파 프리셋 추가 (완전정배열 + 거래량 200%+) | 모멘텀 투자자가 선호하는 패턴. 기존 6개 프리셋에 추가 | 프리셋 6개만 유지 |
+| 2026-04-11 | 종목 추천 Phase 2 병렬화 (asyncio.gather) | 5종목 순차 15분 → 병렬 2분으로 단축 | 순차 실행 |
 | 2026-04-03 | 계산 폴백 Instruction 1개 추가 (컬럼 없으면 계산식 유도) | 이격도, PSR, 실질금리 등 DB 컬럼 없는 파생 지표 SQL 생성 | 매번 SQL Pair 개별 등록 |
 
 ---

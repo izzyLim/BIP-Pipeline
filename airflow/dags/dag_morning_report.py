@@ -18,7 +18,7 @@ default_args = {
     "depends_on_past": False,
     "email_on_failure": False,
     "email_on_retry": False,
-    "retries": 2,
+    "retries": 0,  # 이메일/텔레그램 중복 발송 방지 — 발송 후 후속 코드 예외 시 재시도 금지
     "retry_delay": timedelta(minutes=5),
 }
 
@@ -130,6 +130,7 @@ def test_report_generation(**context):
     result = build_morning_report(
         to_emails=["test@example.com"],
         send=False,
+        save_checklist_to_db=False,  # 테스트는 운영 체크리스트 덮어쓰기 방지
     )
 
     if result["success"]:
@@ -193,6 +194,8 @@ def _send_model_test_report(model_name: str):
     result = build_morning_report(
         to_emails=[test_email],
         send=True,
+        save_checklist_to_db=False,  # 테스트 DAG는 운영 체크리스트 덮어쓰기 방지
+        send_telegram=False,         # 테스트 DAG는 텔레그램 발송 안 함 (채널 오염 방지)
     )
 
     if result["success"]:
@@ -261,6 +264,8 @@ def test_report_with_send(**context):
     result = build_morning_report(
         to_emails=[test_email],
         send=True,
+        save_checklist_to_db=False,  # 테스트 DAG는 운영 체크리스트 덮어쓰기 방지
+        send_telegram=False,         # 테스트 DAG는 텔레그램 발송 안 함 (채널 오염 방지)
     )
 
     if result["success"]:
@@ -333,7 +338,7 @@ with DAG(
     default_args=default_args,
     description="모델 비교 테스트 — Sonnet (본인 DM/이메일만)",
     schedule_interval="20 8 * * 1-5",  # 평일 08:20 KST
-    start_date=datetime(2026, 4, 6),
+    start_date=datetime(2026, 4, 5),
     catchup=False,
     tags=["report", "test", "model-compare"],
 ) as test_sonnet_dag:
@@ -350,7 +355,7 @@ with DAG(
     default_args=default_args,
     description="모델 비교 테스트 — GPT-5.4 (본인 DM/이메일만)",
     schedule_interval="30 8 * * 1-5",  # 평일 08:30 KST
-    start_date=datetime(2026, 4, 6),
+    start_date=datetime(2026, 4, 5),
     catchup=False,
     tags=["report", "test", "model-compare"],
 ) as test_gpt_dag:

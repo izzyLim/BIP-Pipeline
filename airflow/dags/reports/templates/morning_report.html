@@ -3,7 +3,9 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>BIP 모닝 브리핑</title>
+    <meta name="format-detection" content="telephone=no, date=no, address=no, email=no">
+    <meta name="x-apple-disable-message-reformatting">
+    <title>Morning Pulse</title>
     <style>
         body {
             font-family: -apple-system, BlinkMacSystemFont, 'Pretendard', 'Segoe UI', Roboto, sans-serif;
@@ -11,6 +13,8 @@
             margin: 0;
             padding: 0;
             line-height: 1.5;
+            -webkit-text-size-adjust: 100%;
+            -ms-text-size-adjust: 100%;
         }
         .container {
             max-width: 680px;
@@ -53,12 +57,43 @@
             padding: 16px 20px;
             border-radius: 0 8px 8px 0;
             font-size: 14px;
-            line-height: 1.8;
+            line-height: 1.7;
             color: #334155;
         }
         .ai-analysis strong {
             color: #1e40af;
             font-weight: 600;
+        }
+        .ai-analysis h2 {
+            font-size: 18px;
+            font-weight: 800;
+            color: #1e3a5f;
+            margin: 24px 0 10px 0;
+            padding-bottom: 8px;
+            border-bottom: 3px solid #2563eb;
+        }
+        .ai-analysis h3 {
+            font-size: 16px;
+            font-weight: 700;
+            color: #1e3a5f;
+            margin: 20px 0 8px 0;
+            padding-bottom: 6px;
+            border-bottom: 2px solid #dbeafe;
+        }
+        .ai-analysis h4 {
+            font-size: 15px;
+            font-weight: 700;
+            color: #1e40af;
+            margin: 18px 0 6px 0;
+            padding: 8px 12px;
+            background: #eff6ff;
+            border-left: 4px solid #3b82f6;
+            border-radius: 0 6px 6px 0;
+        }
+        .ai-analysis hr {
+            border: none;
+            border-top: 1px solid #e5e7eb;
+            margin: 8px 0;
         }
         .heatmap-container {
             text-align: center;
@@ -149,23 +184,176 @@
             padding: 20px;
             font-size: 13px;
         }
+        /* 핵심 요약 박스 */
+        .key-summary {
+            background: linear-gradient(135deg, #fef3c7 0%, #fde68a 100%);
+            border: 2px solid #f59e0b;
+            border-radius: 12px;
+            padding: 20px 24px;
+            margin: 0;
+        }
+        .key-summary-title {
+            font-size: 16px;
+            font-weight: 800;
+            color: #92400e;
+            margin-bottom: 12px;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+        .key-summary-content {
+            font-size: 14px;
+            line-height: 1.9;
+            color: #78350f;
+        }
+        .key-summary-content li {
+            margin-bottom: 6px;
+        }
+        /* 인사이트 요약 박스 */
+        .insight-summary {
+            background: linear-gradient(135deg, #dbeafe 0%, #bfdbfe 100%);
+            border: 2px solid #3b82f6;
+            border-radius: 12px;
+            padding: 20px 24px;
+            margin: 0;
+        }
+        .insight-summary-title {
+            font-size: 16px;
+            font-weight: 800;
+            color: #1e40af;
+            margin-bottom: 12px;
+        }
+        .insight-summary-content {
+            font-size: 14px;
+            line-height: 1.7;
+            color: #1e3a8a;
+        }
+        .insight-summary-content h2 {
+            font-size: 15px;
+            font-weight: 800;
+            color: #1e3a8a;
+            margin: 14px 0 6px 0;
+            padding-bottom: 6px;
+            border-bottom: 2px solid #93c5fd;
+        }
+        .insight-summary-content h3 {
+            font-size: 13px;
+            font-weight: 700;
+            color: #1e40af;
+            margin: 10px 0 4px 0;
+            padding-bottom: 4px;
+            border-bottom: 1px solid #bfdbfe;
+        }
+        .insight-summary-content h4 {
+            font-size: 13px;
+            font-weight: 700;
+            color: #1e40af;
+            margin: 8px 0 3px 0;
+        }
+        .insight-summary-content hr {
+            border: none;
+            border-top: 1px solid #bfdbfe;
+            margin: 8px 0;
+        }
+        /* 수급 섹션 레이아웃 */
+        .trading-card {
+            border: 1px solid #e5e7eb;
+            border-radius: 8px;
+            overflow: hidden;
+        }
+        .trading-card-title {
+            background: #eff6ff;
+            color: #1e40af;
+            font-size: 12px;
+            font-weight: 700;
+            padding: 7px 10px;
+            border-bottom: 1px solid #dbeafe;
+        }
+        .trading-card-title.buy { background: #ecfdf5; color: #065f46; border-bottom-color: #a7f3d0; }
+        .trading-card-title.sell { background: #fef2f2; color: #991b1b; border-bottom-color: #fecaca; }
+        .trading-card table {
+            width: 100%;
+            border-collapse: collapse;
+            font-size: 12px;
+        }
+        .trading-card td {
+            padding: 5px 8px;
+            border-bottom: 1px solid #f9fafb;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            max-width: 130px;
+        }
+        .trading-card td.amt {
+            text-align: right;
+            font-family: 'SF Mono', 'Consolas', monospace;
+            font-size: 11px;
+        }
+        .trading-sub-title {
+            font-size: 13px;
+            font-weight: 700;
+            color: #374151;
+            margin: 16px 0 8px 0;
+            padding-bottom: 4px;
+            border-bottom: 1px solid #e5e7eb;
+        }
     </style>
 </head>
 <body>
     <div class="container">
         <!-- 헤더 -->
         <div class="header">
-            <h1>BIP 모닝 브리핑</h1>
-            <div class="date">{{ date }}</div>
+            <h1>Morning Pulse</h1>
+            <div class="date">{{ date }} AI 시장 분석</div>
         </div>
 
-        <!-- AI 분석 요약 -->
+        <!-- 핵심 요약 박스 (최상단) -->
+        {% if key_summary %}
         <div class="section">
-            <div class="section-title">💡 AI 분석 요약</div>
-            <div class="ai-analysis">
-                {{ ai_analysis | safe }}
+            <div class="key-summary">
+                <div class="key-summary-title">📌 오늘의 핵심</div>
+                <div class="key-summary-content">
+                    {{ key_summary | safe }}
+                </div>
             </div>
         </div>
+        {% endif %}
+
+        <!-- 시장 전망 박스 -->
+        {% if insight_outlook %}
+        <div class="section">
+            <div class="insight-summary">
+                <div class="insight-summary-title">🔭 오늘의 시장 전망</div>
+                <div class="insight-summary-content">
+                    {{ insight_outlook | safe }}
+                </div>
+            </div>
+        </div>
+        {% endif %}
+
+        <!-- 체크리스트 박스 -->
+        {% if checklist %}
+        <div class="section">
+            <div style="background:linear-gradient(135deg,#f0fdf4 0%,#dcfce7 100%); border:2px solid #22c55e; border-radius:12px; padding:20px 24px;">
+                <div style="font-size:16px; font-weight:800; color:#166534; margin-bottom:12px;">✅ 오늘의 체크리스트</div>
+                <div style="font-size:14px; line-height:1.9; color:#14532d;">
+                    {{ checklist | safe }}
+                </div>
+            </div>
+        </div>
+        {% endif %}
+
+        <!-- 대응 시나리오 박스 -->
+        {% if insight_scenario %}
+        <div class="section">
+            <div style="background:linear-gradient(135deg,#faf5ff 0%,#ede9fe 100%); border:2px solid #8b5cf6; border-radius:12px; padding:20px 24px;">
+                <div style="font-size:16px; font-weight:800; color:#4c1d95; margin-bottom:12px;">🎯 대응 시나리오</div>
+                <div class="insight-summary-content" style="color:#3b0764;">
+                    {{ insight_scenario | safe }}
+                </div>
+            </div>
+        </div>
+        {% endif %}
 
         <!-- 주요 지수 (가로 테이블) -->
         <div class="section">
@@ -210,6 +398,9 @@
                         {% for item in macro_indicators %}
                         <td>
                             <div class="value">{{ item.value }}</div>
+                            {% if item.label is defined and item.label %}
+                            <div style="font-size:11px; color:#6b7280; margin-top:3px;">({{ item.label }})</div>
+                            {% endif %}
                             {% if item.change is defined and item.change is not none %}
                             <div class="change {{ 'positive' if item.change >= 0 else 'negative' }}">
                                 {{ '+' if item.change >= 0 else '' }}{{ item.change }}%
@@ -220,6 +411,300 @@
                     </tr>
                 </tbody>
             </table>
+        </div>
+        {% endif %}
+
+        <!-- 투자자 동향 -->
+        {% if investor_flow %}
+        <div class="section">
+            <div class="section-title">💰 투자자 동향 (최근 5일)</div>
+            <table class="data-table">
+                <thead>
+                    <tr>
+                        <th>날짜</th>
+                        <th class="num">외국인</th>
+                        <th class="num">기관</th>
+                        <th class="num">개인</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for day in investor_flow %}
+                    <tr>
+                        <td>{{ day.date }}</td>
+                        <td class="num {{ 'positive' if day.foreign >= 0 else 'negative' }}">
+                            {{ "{:+,.0f}".format(day.foreign) }}억
+                        </td>
+                        <td class="num {{ 'positive' if day.institution >= 0 else 'negative' }}">
+                            {{ "{:+,.0f}".format(day.institution) }}억
+                        </td>
+                        <td class="num {{ 'positive' if day.individual >= 0 else 'negative' }}">
+                            {{ "{:+,.0f}".format(day.individual) }}억
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+        {% endif %}
+
+        <!-- 거래량/거래대금 미니 섹션 (AI 분석 전 배치용) -->
+        {% macro volume_section(mdata, market_label) %}
+        {% if mdata %}
+            <div class="trading-sub-title">{{ market_label }}</div>
+            <table width="100%" cellspacing="0" cellpadding="0" style="margin-bottom:12px;"><tr>
+                <td width="49%" valign="top">
+                    <div class="trading-card">
+                        <div class="trading-card-title">거래량 TOP 12</div>
+                        <table>
+                            {% for item in mdata.volume_top12 %}
+                            <tr><td>{{ item.name }}</td><td class="amt">{{ "{:,.0f}".format(item.value) }}</td></tr>
+                            {% endfor %}
+                        </table>
+                    </div>
+                </td>
+                <td width="2%"></td>
+                <td width="49%" valign="top">
+                    <div class="trading-card">
+                        <div class="trading-card-title">거래대금 TOP 12 (억원)</div>
+                        <table>
+                            {% for item in mdata.amount_top12 %}
+                            <tr><td>{{ item.name }}</td><td class="amt">{{ "{:,.0f}".format(item.value) }}</td></tr>
+                            {% endfor %}
+                        </table>
+                    </div>
+                </td>
+            </tr></table>
+        {% endif %}
+        {% endmacro %}
+
+        <!-- 투자자별 수급 상세 -->
+        {% macro trading_section(mdata) %}
+        {% if mdata %}
+            <div class="trading-sub-title" style="margin-top:4px;">외국인 순매수 / 순매도 (억원)</div>
+            <table width="100%" cellspacing="0" cellpadding="0" style="margin-bottom:12px;"><tr>
+                <td width="49%" valign="top">
+                    <div class="trading-card">
+                        <div class="trading-card-title buy">순매수 TOP 5</div>
+                        <table>
+                            {% for item in mdata.foreign_buy_top5 %}
+                            <tr><td>{{ item.name }}</td><td class="amt positive">+{{ "{:,.0f}".format(item.value) }}</td></tr>
+                            {% endfor %}
+                        </table>
+                    </div>
+                </td>
+                <td width="2%"></td>
+                <td width="49%" valign="top">
+                    <div class="trading-card">
+                        <div class="trading-card-title sell">순매도 TOP 5</div>
+                        <table>
+                            {% for item in mdata.foreign_sell_top5 %}
+                            <tr><td>{{ item.name }}</td><td class="amt negative">{{ "{:,.0f}".format(item.value) }}</td></tr>
+                            {% endfor %}
+                        </table>
+                    </div>
+                </td>
+            </tr></table>
+            <div class="trading-sub-title" style="margin-top:12px;">기관 순매수 / 순매도 (억원)</div>
+            <table width="100%" cellspacing="0" cellpadding="0" style="margin-bottom:12px;"><tr>
+                <td width="49%" valign="top">
+                    <div class="trading-card">
+                        <div class="trading-card-title buy">순매수 TOP 5</div>
+                        <table>
+                            {% for item in mdata.institution_buy_top5 %}
+                            <tr><td>{{ item.name }}</td><td class="amt positive">+{{ "{:,.0f}".format(item.value) }}</td></tr>
+                            {% endfor %}
+                        </table>
+                    </div>
+                </td>
+                <td width="2%"></td>
+                <td width="49%" valign="top">
+                    <div class="trading-card">
+                        <div class="trading-card-title sell">순매도 TOP 5</div>
+                        <table>
+                            {% for item in mdata.institution_sell_top5 %}
+                            <tr><td>{{ item.name }}</td><td class="amt negative">{{ "{:,.0f}".format(item.value) }}</td></tr>
+                            {% endfor %}
+                        </table>
+                    </div>
+                </td>
+            </tr></table>
+            <div class="trading-sub-title" style="margin-top:12px;">개인 순매수 / 순매도 (억원)</div>
+            <table width="100%" cellspacing="0" cellpadding="0" style="margin-bottom:12px;"><tr>
+                <td width="49%" valign="top">
+                    <div class="trading-card">
+                        <div class="trading-card-title buy">순매수 TOP 5</div>
+                        <table>
+                            {% for item in mdata.individual_buy_top5 %}
+                            <tr><td>{{ item.name }}</td><td class="amt positive">+{{ "{:,.0f}".format(item.value) }}</td></tr>
+                            {% endfor %}
+                        </table>
+                    </div>
+                </td>
+                <td width="2%"></td>
+                <td width="49%" valign="top">
+                    <div class="trading-card">
+                        <div class="trading-card-title sell">순매도 TOP 5</div>
+                        <table>
+                            {% for item in mdata.individual_sell_top5 %}
+                            <tr><td>{{ item.name }}</td><td class="amt negative">{{ "{:,.0f}".format(item.value) }}</td></tr>
+                            {% endfor %}
+                        </table>
+                    </div>
+                </td>
+            </tr></table>
+        {% endif %}
+        {% endmacro %}
+
+        {% if investor_trading and investor_trading.available %}
+        <!-- 거래량/거래대금 (AI 분석 전) -->
+        <div class="section">
+            <div class="section-title">📊 거래량 · 거래대금 순위 ({{ investor_trading.date }})</div>
+            {{ volume_section(investor_trading.kospi, "KOSPI 개별주 (ETF/ETN 제외)") }}
+            {{ volume_section(investor_trading.kosdaq, "KOSDAQ 개별주 (ETF/ETN 제외)") }}
+        </div>
+        {% endif %}
+
+        <!-- 시장 신호등 대시보드 (AI 분석 직전) -->
+        {% if signals %}
+        <div class="section" style="padding:16px 24px; background:#f8fafc;">
+            <div style="font-size:12px; font-weight:700; color:#6b7280; margin-bottom:10px; text-transform:uppercase; letter-spacing:0.5px;">📡 섹션별 시장 신호</div>
+            <table width="100%" cellspacing="0" cellpadding="0">
+                <tr>
+                    {% set items = [
+                        ("글로벌", "글로벌"),
+                        ("한국(전일)", "한국 " ~ (korea_date_label or "전일")),
+                        ("미국", "미국 " ~ (us_date_label or "")),
+                        ("한국(전망)", "한국 전망"),
+                        ("반도체", "반도체")
+                    ] %}
+                    {% for key, label in items %}
+                    <td style="text-align:center; padding:8px 4px;">
+                        <div style="font-size:22px; line-height:1;">{{ signals.get(key, '⚪') }}</div>
+                        <div style="font-size:11px; color:#6b7280; margin-top:4px; white-space:nowrap;">{{ label }}</div>
+                    </td>
+                    {% endfor %}
+                </tr>
+            </table>
+            <!-- 신호등 설명 -->
+            <div style="margin-top:12px; padding-top:10px; border-top:1px dashed #e2e8f0; font-size:11px; color:#6b7280; line-height:1.8;">
+                <span style="margin-right:14px;">🟢 긍정/강세</span>
+                <span style="margin-right:14px;">🟡 중립/관찰</span>
+                <span>🔴 부정/약세</span>
+            </div>
+        </div>
+        {% endif %}
+
+        <!-- 구분선 -->
+        <div style="padding: 8px 24px; background:#f1f5f9; text-align:center; font-size:12px; color:#94a3b8; border-top:1px solid #e2e8f0; border-bottom:1px solid #e2e8f0;">
+            ── AI 상세 분석 ──
+        </div>
+
+        <!-- AI 분석 상세 -->
+        <div class="section">
+            <div class="section-title">💡 AI 분석 상세</div>
+            <div class="ai-analysis">
+                {{ ai_analysis | safe }}
+            </div>
+        </div>
+
+        {% if investor_trading and investor_trading.available %}
+        <!-- 수급 상세 (순매수/순매도) -->
+        <div class="section">
+            <div class="section-title">📊 투자자별 수급 상세 ({{ investor_trading.date }})</div>
+
+            <!-- KOSPI -->
+            <div class="trading-sub-title">KOSPI 개별주 (ETF/ETN 제외)</div>
+            {{ trading_section(investor_trading.kospi) }}
+
+            <!-- KOSDAQ -->
+            <div class="trading-sub-title" style="margin-top:20px;">KOSDAQ 개별주 (ETF/ETN 제외)</div>
+            {{ trading_section(investor_trading.kosdaq) }}
+
+            <!-- ETF/ETN -->
+            <div class="trading-sub-title" style="margin-top:20px;">ETF/ETN 수급 동향 (억원)</div>
+            <table width="100%" cellspacing="0" cellpadding="0" style="margin-bottom:12px;"><tr>
+                <td width="49%" valign="top">
+                    <div class="trading-card">
+                        <div class="trading-card-title buy">외국인 순매수 TOP 3</div>
+                        <table>{% for item in investor_trading.etf_foreign_buy_top3 %}<tr><td>{{ item.name }}</td><td class="amt positive">+{{ "{:,.0f}".format(item.value) }}</td></tr>{% endfor %}</table>
+                    </div>
+                </td>
+                <td width="2%"></td>
+                <td width="49%" valign="top">
+                    <div class="trading-card">
+                        <div class="trading-card-title sell">외국인 순매도 TOP 3</div>
+                        <table>{% for item in investor_trading.etf_foreign_sell_top3 %}<tr><td>{{ item.name }}</td><td class="amt negative">{{ "{:,.0f}".format(item.value) }}</td></tr>{% endfor %}</table>
+                    </div>
+                </td>
+            </tr></table>
+            <table width="100%" cellspacing="0" cellpadding="0" style="margin-bottom:12px;"><tr>
+                <td width="49%" valign="top">
+                    <div class="trading-card">
+                        <div class="trading-card-title buy">기관 순매수 TOP 3</div>
+                        <table>{% for item in investor_trading.etf_institution_buy_top3 %}<tr><td>{{ item.name }}</td><td class="amt positive">+{{ "{:,.0f}".format(item.value) }}</td></tr>{% endfor %}</table>
+                    </div>
+                </td>
+                <td width="2%"></td>
+                <td width="49%" valign="top">
+                    <div class="trading-card">
+                        <div class="trading-card-title sell">기관 순매도 TOP 3</div>
+                        <table>{% for item in investor_trading.etf_institution_sell_top3 %}<tr><td>{{ item.name }}</td><td class="amt negative">{{ "{:,.0f}".format(item.value) }}</td></tr>{% endfor %}</table>
+                    </div>
+                </td>
+            </tr></table>
+            <table width="100%" cellspacing="0" cellpadding="0" style="margin-bottom:12px;"><tr>
+                <td width="49%" valign="top">
+                    <div class="trading-card">
+                        <div class="trading-card-title buy">개인 순매수 TOP 3</div>
+                        <table>{% for item in investor_trading.etf_individual_buy_top3 %}<tr><td>{{ item.name }}</td><td class="amt positive">+{{ "{:,.0f}".format(item.value) }}</td></tr>{% endfor %}</table>
+                    </div>
+                </td>
+                <td width="2%"></td>
+                <td width="49%" valign="top">
+                    <div class="trading-card">
+                        <div class="trading-card-title sell">개인 순매도 TOP 3</div>
+                        <table>{% for item in investor_trading.etf_individual_sell_top3 %}<tr><td>{{ item.name }}</td><td class="amt negative">{{ "{:,.0f}".format(item.value) }}</td></tr>{% endfor %}</table>
+                    </div>
+                </td>
+            </tr></table>
+        </div>
+        {% endif %}
+
+        <!-- 반도체 가격 -->
+        {% if semiconductor %}
+        <div class="section">
+            <div class="section-title">🔧 반도체 현물가 (DRAMeXchange)</div>
+            <table class="data-table">
+                <thead>
+                    <tr>
+                        <th>제품</th>
+                        <th class="num">현재가</th>
+                        <th class="num">전일</th>
+                        <th class="num">1주</th>
+                        <th class="num">1개월</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for item in semiconductor %}
+                    <tr>
+                        <td>{{ item.product }}</td>
+                        <td class="num">${{ item.price }}</td>
+                        <td class="num {{ 'positive' if item.change_value >= 0 else 'negative' }}">
+                            {{ item.change_display }}
+                        </td>
+                        <td class="num {{ 'positive' if item.week_value >= 0 else 'negative' }}">
+                            {{ item.week }}
+                        </td>
+                        <td class="num {{ 'positive' if item.month_value >= 0 else 'negative' }}">
+                            {{ item.month }}
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+            <p style="font-size: 11px; color: #9ca3af; margin-top: 8px; text-align: right;">
+                * NAND는 주 1-2회 업데이트, 보합 시 마지막 변동일 표시
+            </p>
         </div>
         {% endif %}
 
@@ -268,66 +753,6 @@
             {% endif %}
         </div>
 
-        <!-- 투자자 동향 -->
-        {% if investor_flow %}
-        <div class="section">
-            <div class="section-title">💰 투자자 동향 (최근 5일)</div>
-            <table class="data-table">
-                <thead>
-                    <tr>
-                        <th>날짜</th>
-                        <th class="num">외국인</th>
-                        <th class="num">기관</th>
-                        <th class="num">개인</th>
-                    </tr>
-                </thead>
-                <tbody>
-                    {% for day in investor_flow %}
-                    <tr>
-                        <td>{{ day.date }}</td>
-                        <td class="num {{ 'positive' if day.foreign >= 0 else 'negative' }}">
-                            {{ day.foreign }}억
-                        </td>
-                        <td class="num {{ 'positive' if day.institution >= 0 else 'negative' }}">
-                            {{ day.institution }}억
-                        </td>
-                        <td class="num {{ 'positive' if day.individual >= 0 else 'negative' }}">
-                            {{ day.individual }}억
-                        </td>
-                    </tr>
-                    {% endfor %}
-                </tbody>
-            </table>
-        </div>
-        {% endif %}
-
-        <!-- 반도체 가격 -->
-        {% if semiconductor %}
-        <div class="section">
-            <div class="section-title">🔧 반도체 가격</div>
-            <table class="data-table">
-                <thead>
-                    <tr>
-                        <th>제품</th>
-                        <th class="num">가격</th>
-                        <th class="num">변동</th>
-                    </tr>
-                </thead>
-                <tbody>
-                    {% for item in semiconductor %}
-                    <tr>
-                        <td>{{ item.product }}</td>
-                        <td class="num">${{ item.price }}</td>
-                        <td class="num {{ 'positive' if item.change >= 0 else 'negative' }}">
-                            {{ '+' if item.change >= 0 else '' }}{{ item.change }}%
-                        </td>
-                    </tr>
-                    {% endfor %}
-                </tbody>
-            </table>
-        </div>
-        {% endif %}
-
         <!-- 푸터 -->
         <div class="footer">
             <p>본 리포트는 투자 권유가 아닌 정보 제공 목적입니다.</p>
@@ -335,7 +760,7 @@
                 <a href="{{ web_url }}">웹에서 보기</a> |
                 <a href="{{ unsubscribe_url }}">수신거부</a>
             </p>
-            <p style="margin-top: 12px;">© 2026 BIP - Better Investment Platform</p>
+            <p style="margin-top: 12px;">© 2026 Morning Pulse</p>
         </div>
     </div>
 </body>

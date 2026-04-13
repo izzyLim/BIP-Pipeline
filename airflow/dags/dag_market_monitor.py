@@ -18,7 +18,7 @@ default_args = {
     "owner": "bip",
     "depends_on_past": False,
     "email_on_failure": False,
-    "retries": 1,
+    "retries": 0,  # 알림 중복 발송 방지 — 재시도 시 텔레그램 메시지가 중복으로 나감
     "retry_delay": timedelta(minutes=2),
 }
 
@@ -42,59 +42,23 @@ def load_env_vars():
 
 def parse_morning_checklist(**context):
     """
-    모닝리포트에서 체크리스트 추출 → DB에 원문 저장
+    체크리스트 확인 + 장전 에이전트 분석 발송
+    - 체크리스트는 report_builder가 리포트 생성 시점에 DB에 이미 저장
+    - 이 task는 DB에서 읽어서 에이전트 분석만 수행
     """
     load_env_vars()
 
-    from reports.market_monitor import save_checklist
-    from pathlib import Path
-    import re
+    from reports.market_monitor import load_checklist, send_checklist_status
 
-    report_dir = Path("/tmp")
-    from zoneinfo import ZoneInfo
-    today_str = datetime.now(ZoneInfo("Asia/Seoul")).strftime("%Y%m%d")
-
-    checklist_text = ""
-
-    # HTML 리포트에서 체크리스트 섹션 추출
-    for f in sorted(report_dir.glob(f"report_{today_str}*.html"), reverse=True):
-        try:
-            content = f.read_text(encoding="utf-8")
-            lines = []
-            in_checklist = False
-            for line in content.split("\n"):
-                if "체크리스트" in line:
-                    in_checklist = True
-                    continue
-                if in_checklist and ("□" in line or "☐" in line):
-                    # <br> → 줄바꿈 변환 후 HTML 태그 제거
-                    chunk = line.replace("<br>", "\n").replace("<br/>", "\n")
-                    chunk = re.sub(r'<[^>]+>', '', chunk)
-                    chunk = chunk.replace("☐", "□")
-                    for sub in chunk.split("\n"):
-                        sub = sub.strip()
-                        if sub:
-                            lines.append(sub)
-                elif in_checklist and lines and ("---" in line or "</div>" in line):
-                    break
-            if lines:
-                checklist_text = "\n".join(lines)
-                print(f"📋 리포트에서 체크리스트 추출: {f.name} ({len(lines)}줄)")
-                break
-        except Exception as e:
-            print(f"리포트 파싱 실패: {e}")
-
+    checklist_text = load_checklist()
     if not checklist_text:
-        print("⚠️ 체크리스트 추출 실패")
+        print("⚠️ 오늘 체크리스트 없음 (모닝리포트 미생성?)")
         return {"saved": False}
 
-    # DB에 원문 저장
-    save_checklist(checklist_text)
-    print(f"✅ 체크리스트 DB 저장 완료 ({len(checklist_text)}자)")
+    print(f"📋 DB 체크리스트 로드 완료 ({len(checklist_text)}자)")
 
     # 장전 체크리스트 에이전트 분석 + 텔레그램 발송
     try:
-        from reports.market_monitor import send_checklist_status
         result = send_checklist_status(override_hour=8)  # pre_market
         print(f"📢 장전 체크리스트 분석 발송: {result}")
     except Exception as e:
@@ -121,12 +85,13 @@ def run_market_monitor(**context):
           f"L1: {result.get('layer1', 0)}건 | "
           f"발송: {result['alerts_sent']}건")
 
-    # 정기 현황 리포트 (09:00, 10:00, 12:00, 14:30 KST)
+    # 정기 현황 리포트 (09:30, 10:00, 12:00, 14:30 KST)
+    # 09:00 → 09:30: 동시호가 체결 + 수급 첫 집계(~20분) 대기
     from zoneinfo import ZoneInfo
     now_kst = datetime.now(ZoneInfo("Asia/Seoul"))
-    status_times = [(9, 0), (10, 0), (12, 0), (14, 30)]
+    status_times = [(9, 30), (10, 0), (12, 0), (14, 30)]
     for h, m in status_times:
-        if now_kst.hour == h and now_kst.minute < 10:
+        if now_kst.hour == h and m <= now_kst.minute < m + 10:
             status = send_checklist_status()
             print(f"📋 정기 현황 발송: {status}")
             break

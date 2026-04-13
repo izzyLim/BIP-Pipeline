@@ -259,17 +259,67 @@ def fetch_investor_flow() -> Dict[str, Any]:
         return {}
 
 
+ALWAYS_COLLECT_STOCKS = {
+    "005930": "삼성전자",
+    "000660": "SK하이닉스",
+    "373220": "LG에너지솔루션",
+    "207940": "삼성바이오로직스",
+    "005380": "현대차",
+    "000270": "기아",
+    "005490": "POSCO홀딩스",
+    "035420": "NAVER",
+    "035720": "카카오",
+    "006400": "삼성SDI",
+}
+
+
+def resolve_stock_code(name: str) -> Optional[str]:
+    """종목명으로 stock_info 테이블에서 6자리 종목코드 조회"""
+    try:
+        engine = _get_engine()
+        with engine.connect() as conn:
+            row = conn.execute(text(
+                "SELECT stock_code FROM stock_info "
+                "WHERE stock_name = :name LIMIT 1"
+            ), {"name": name.strip()}).fetchone()
+            if row:
+                return row[0]
+            # 부분 매칭 (종목명에 포함)
+            row = conn.execute(text(
+                "SELECT stock_code FROM stock_info "
+                "WHERE stock_name LIKE :pattern LIMIT 1"
+            ), {"pattern": f"%{name.strip()}%"}).fetchone()
+            return row[0] if row else None
+    except Exception as e:
+        logger.warning(f"종목코드 조회 실패 ({name}): {e}")
+        return None
+
+
 def fetch_market_snapshot() -> Dict[str, Any]:
-    """장중 시장 전체 스냅샷 (체크리스트 종목 자동 포함)"""
+    """장중 시장 전체 스냅샷 (핵심 종목 + 체크리스트 종목 자동 포함)"""
     indices = fetch_market_indices()
     investor_flow = fetch_investor_flow()
 
-    # 체크리스트에 있는 종목 자동 조회
     stocks = {}
+
+    # 1) ALWAYS_COLLECT: 핵심 10개 종목은 무조건 실시간 조회
+    for code, name in ALWAYS_COLLECT_STOCKS.items():
+        data = fetch_stock_price(code)
+        if data:
+            data["name"] = name
+            stocks[code] = data
+
+    # 2) 체크리스트에 있는 종목 추가 조회
     try:
         rules = load_checklist_rules()
         for r in rules:
             code = r.get("code", "")
+            # code가 없으면 종목명으로 자동 조회
+            if not code and r.get("name"):
+                resolved = resolve_stock_code(r["name"])
+                if resolved:
+                    code = resolved
+                    r["code"] = code  # 이후 룰 체크에서도 사용
             if code and code not in stocks:
                 data = fetch_stock_price(code)
                 if data:
@@ -533,6 +583,7 @@ def parse_checklist_with_llm(checklist_text: str) -> List[Dict]:
 - "코스피 5,500 돌파/5,300 이탈" 같이 양방향 조건은 1개 룰로 통합 (condition은 더 중요한 쪽)
 - 항목당 1개 룰만 생성 (중복 금지)
 - 주요 종목코드: 삼성전자=005930, SK하이닉스=000660, LG에너지솔루션=373220, 현대차=005380, NAVER=035420, 카카오=035720
+- EWY, 야간선물, 애프터마켓 관련 항목은 반드시 phase="pre_market"으로 설정 (장중 체크 불필요)
 
 JSON 배열만 출력. 코드블록 없이."""
 
@@ -983,13 +1034,11 @@ def send_checklist_status(override_hour: int = None) -> Dict:
     else:
         title, phase = "장 마감", "close"
 
-    lines = [f"📋 *{title} — {now.strftime('%Y-%m-%d %H:%M')}*\n"]
+    # 헤더는 에이전트 출력이 자체적으로 포함하므로 생략
+    # (기존: 제목 + _format_market_snapshot 7줄 → 새 프롬프트가 대체)
+    lines = []
 
-    # 시장 현황
-    lines.extend(_format_market_snapshot(snapshot))
-    lines.append("")
-
-    # 전체 체크리스트를 에이전트에 전달 + 시간대 힌트
+    # 전체 체크리스트를 에이전트에 전달 + 시간대 힌트 + 실시간 데이터
     # 에이전트가 time_phase에 맞는 항목만 분석하도록 위임
     phase_instructions = {
         "pre_market": "지금은 장 시작 전(08:30~09:00)입니다. 체크리스트에서 '장 시작 전' 관련 항목만 골라서 분석하세요.",
@@ -997,8 +1046,53 @@ def send_checklist_status(override_hour: int = None) -> Dict:
         "close": "지금은 장 마감 시점입니다. 체크리스트 전체 항목의 최종 결과를 정리하고, 오늘 시장 요약을 작성하세요. 체크리스트 원문은 반복하지 마세요.",
     }
     instruction = phase_instructions.get(phase, "")
+
+    # 헤더 제목/시간 (아래 === 섹션으로 전달됨, pure_checklist에 포함됨)
+    header_title = title
+    header_time = now.strftime("%H:%M")
+
+    # 실시간 스냅샷을 텍스트로 변환하여 에이전트에 함께 전달
+    realtime_lines = [f"[수집 시각: {snapshot.get('timestamp', 'N/A')}]"]
+    idx = snapshot.get("indices", {})
+    for key, label in [("kospi", "KOSPI"), ("kosdaq", "KOSDAQ")]:
+        d = idx.get(key, {})
+        if d.get("value"):
+            realtime_lines.append(f"{label}: {d['value']:,.2f} ({d.get('change_pct', 0):+.1f}%)")
+    fx = idx.get("usd_krw", {})
+    if fx.get("value"):
+        realtime_lines.append(f"USD/KRW: {fx['value']:,.1f}원")
+    for key, label in [("wti", "WTI"), ("gold", "금")]:
+        d = idx.get(key, {})
+        if d.get("value"):
+            realtime_lines.append(f"{label}: ${d['value']:,.1f} ({d.get('change_pct', 0):+.1f}%)")
+    for key, label in [("btc", "BTC"), ("eth", "ETH")]:
+        d = idx.get(key, {})
+        if d.get("value_krw"):
+            realtime_lines.append(f"{label}: {d['value_krw']:,.0f}원 ({d.get('change_pct', 0):+.1f}%)")
+    flow = snapshot.get("investor_flow", {})
+    if flow:
+        realtime_lines.append(
+            f"수급: 외국인 {flow.get('foreign', 0):+,}억 / "
+            f"기관 {flow.get('institution', 0):+,}억 / "
+            f"개인 {flow.get('individual', 0):+,}억"
+        )
+    stk = snapshot.get("stocks", {})
+    if stk:
+        realtime_lines.append("주요종목:")
+        for code, d in stk.items():
+            realtime_lines.append(
+                f"  {d.get('name', code)}({code}): "
+                f"{d.get('price', 0):,}원 ({d.get('change_pct', 0):+.1f}%)"
+            )
+    realtime_data = "\n".join(realtime_lines)
+
     checklist_for_agent = (
         f"[시간대: {phase}]\n{instruction}\n\n"
+        f"=== 실시간 시장 데이터 (반드시 이 데이터를 기준으로 판단) ===\n{realtime_data}\n\n"
+        f"=== 헤더 고정값 (출력 첫 줄에 반드시 이대로 사용) ===\n"
+        f"제목: {header_title}\n"
+        f"시간: {header_time}\n"
+        f"→ 첫 줄 형식: 📊 *{header_title} — {header_time}* {{🟢상승|🔴하락|🟡혼조}}\n\n"
         f"=== 오늘 체크리스트 원문 ===\n{checklist_text}"
     ) if checklist_text else ""
 
@@ -1017,7 +1111,7 @@ def send_checklist_status(override_hour: int = None) -> Dict:
                     "checklist_text": checklist_for_agent,
                     "time_phase": phase,
                 },
-                timeout=60,
+                timeout=180,
             )
             if resp.status_code == 200:
                 body = resp.json()
@@ -1055,10 +1149,11 @@ def send_checklist_status(override_hour: int = None) -> Dict:
                     analysis = re.sub(r'[━─]{3,}', '———————————————', analysis)  # ━━━ → 구분선
                     # 연속 구분선 제거
                     analysis = re.sub(r'(———————————————\n?){2,}', '———————————————\n', analysis)
+                    # 연속 3개 이상 빈 줄만 2개로 축소 (섹션 구분용 빈 줄은 유지)
+                    analysis = re.sub(r'\n{3,}', '\n\n', analysis)
                     for line in analysis.split("\n"):
-                        stripped = line.strip()
-                        if stripped:
-                            lines.append(stripped)
+                        # 빈 줄도 그대로 유지 (섹션 구분)
+                        lines.append(line.rstrip())
                 else:
                     lines.append("에이전트 분석 결과 없음")
             else:

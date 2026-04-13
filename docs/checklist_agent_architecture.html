@@ -1,0 +1,496 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>BIP 체크리스트 모니터링 에이전트 아키텍처</title>
+<script src="https://cdn.jsdelivr.net/npm/mermaid@10/dist/mermaid.min.js"></script>
+<script>mermaid.initialize({startOnLoad:true, theme:'default', themeVariables:{fontSize:'13px'}});</script>
+<style>
+  :root { --bg: #f8fafc; --card: #fff; --text: #1e293b; --muted: #64748b; --border: #e2e8f0; --accent: #2563eb; --green: #059669; --yellow: #d97706; --red: #dc2626; --purple: #7c3aed; }
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; background: var(--bg); color: var(--text); line-height: 1.7; padding: 24px; max-width: 1000px; margin: 0 auto; }
+  h1 { font-size: 28px; margin-bottom: 8px; color: var(--accent); }
+  h2 { font-size: 20px; margin: 36px 0 12px; padding-bottom: 8px; border-bottom: 2px solid var(--accent); color: var(--accent); }
+  h3 { font-size: 16px; margin: 20px 0 8px; color: var(--text); }
+  p, li { font-size: 14px; }
+  .subtitle { font-size: 14px; color: var(--muted); margin-bottom: 24px; }
+  .card { background: var(--card); border: 1px solid var(--border); border-radius: 8px; padding: 16px 20px; margin: 12px 0; }
+  .card-accent { border-left: 4px solid var(--accent); }
+  .card-green { border-left: 4px solid var(--green); }
+  .card-yellow { border-left: 4px solid var(--yellow); }
+  .card-red { border-left: 4px solid var(--red); }
+  .card-purple { border-left: 4px solid var(--purple); }
+  table { width: 100%; border-collapse: collapse; margin: 12px 0; font-size: 13px; }
+  th { background: #f1f5f9; padding: 8px 12px; text-align: left; font-weight: 600; border-bottom: 2px solid var(--border); }
+  td { padding: 8px 12px; border-bottom: 1px solid var(--border); vertical-align: top; }
+  tr:hover td { background: #f8fafc; }
+  code { background: #f1f5f9; padding: 2px 6px; border-radius: 4px; font-size: 13px; font-family: 'SF Mono', Consolas, monospace; }
+  pre { background: #1e293b; color: #e2e8f0; padding: 16px; border-radius: 8px; overflow-x: auto; font-size: 13px; line-height: 1.5; margin: 12px 0; }
+  pre code { background: none; padding: 0; color: inherit; }
+  .grid-2 { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+  .grid-3 { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 12px; }
+  .grid-4 { display: grid; grid-template-columns: 1fr 1fr 1fr 1fr; gap: 10px; }
+  @media (max-width: 768px) { .grid-2, .grid-3, .grid-4 { grid-template-columns: 1fr; } body { padding: 16px; } }
+  .toc { background: var(--card); border: 1px solid var(--border); border-radius: 8px; padding: 16px 20px; margin: 16px 0; }
+  .toc a { color: var(--accent); text-decoration: none; font-size: 14px; }
+  .toc a:hover { text-decoration: underline; }
+  .toc ol { padding-left: 20px; }
+  .toc li { margin: 4px 0; }
+  ul { padding-left: 20px; margin: 8px 0; }
+  li { margin: 4px 0; }
+  .mermaid { margin: 16px 0; background: white; border-radius: 8px; padding: 16px; border: 1px solid var(--border); overflow-x: auto; }
+  .diagram-label { font-size: 12px; color: var(--muted); text-align: center; margin-top: 4px; }
+  .metric-box { text-align: center; padding: 16px; }
+  .metric-box .num { font-size: 28px; font-weight: 800; color: var(--accent); }
+  .metric-box .label { font-size: 12px; color: var(--muted); }
+  .updated { font-size: 12px; color: var(--muted); text-align: right; margin-top: 32px; border-top: 1px solid var(--border); padding-top: 8px; }
+  .timeline { position: relative; padding-left: 24px; }
+  .timeline::before { content: ''; position: absolute; left: 8px; top: 0; bottom: 0; width: 2px; background: var(--border); }
+  .timeline-item { position: relative; margin-bottom: 16px; padding-left: 16px; }
+  .timeline-item::before { content: ''; position: absolute; left: -20px; top: 6px; width: 12px; height: 12px; border-radius: 50%; background: var(--accent); }
+  .timeline-item .time { font-size: 13px; font-weight: 700; color: var(--accent); }
+  .timeline-item .desc { font-size: 13px; color: var(--text); }
+  .timeline-item .detail { font-size: 12px; color: var(--muted); }
+</style>
+</head>
+<body>
+
+<h1>BIP 체크리스트 모니터링 에이전트</h1>
+<p class="subtitle">Version 6.2 | Haiku + MCP ReAct 에이전트 | Phase 6 (가독성 개선 + 실시간 강화)</p>
+
+<div class="grid-4">
+  <div class="card metric-box"><div class="num">44</div><div class="label">MCP 도구</div></div>
+  <div class="card metric-box"><div class="num">6회</div><div class="label">일일 분석 발송</div></div>
+  <div class="card metric-box"><div class="num">$0.03</div><div class="label">일일 비용</div></div>
+  <div class="card metric-box"><div class="num">Haiku</div><div class="label">LLM 모델</div></div>
+</div>
+
+<div class="toc">
+  <strong>목차</strong>
+  <ol>
+    <li><a href="#overview">시스템 개요</a></li>
+    <li><a href="#architecture">현재 아키텍처 (Phase 5)</a></li>
+    <li><a href="#data-flow">체크리스트 데이터 흐름</a></li>
+    <li><a href="#schedule">발송 스케줄</a></li>
+    <li><a href="#tools">MCP 도구 매핑</a></li>
+    <li><a href="#prompt">프롬프트 설계</a></li>
+    <li><a href="#html">이메일 체크리스트 렌더링</a></li>
+    <li><a href="#cost">비용</a></li>
+    <li><a href="#history">Phase 이력 + 결정 로그</a></li>
+    <li><a href="#files">관련 파일</a></li>
+  </ol>
+</div>
+
+<!-- 1. 개요 -->
+<h2 id="overview">1. 시스템 개요</h2>
+
+<div class="card card-accent">
+  <p><strong>목표:</strong> 모닝리포트 체크리스트를 장 시작 전 / 장중 / 장 마감 시점에 실시간 데이터로 확인하고 텔레그램 알림 발송</p>
+  <p><strong>핵심 원칙:</strong> LLM(Haiku)이 체크리스트를 읽고 필요한 MCP 도구를 직접 선택/호출. 키워드 파싱 불필요.</p>
+</div>
+
+<div class="card">
+  <h3>Phase 5 전환 이유</h3>
+  <div class="mermaid">
+  graph LR
+    subgraph Phase2["Phase 2: 4단계 파이프라인 (폐기)"]
+      P[파서] -->|키워드 매칭| C[수집기]
+      C -->|코드 레벨 도구 호출| S[룰 엔진]
+      S --> E[Haiku 설명]
+    end
+    subgraph Phase5["Phase 5: LLM 직접 호출 (현재)"]
+      A[Haiku + MCP 44개] -->|도구 직접 선택| R[결과]
+    end
+
+    Phase2 -.->|취약: 형식 변경 시 파싱 실패<br/>새 항목마다 코드 수정 필요| X[문제]
+    Phase5 -.->|유연: 형식 무관<br/>새 항목 자동 대응| O[해결]
+
+    style Phase2 fill:#fee2e2,stroke:#dc2626
+    style Phase5 fill:#d1fae5,stroke:#059669
+    style X fill:#fee2e2,stroke:#dc2626
+    style O fill:#d1fae5,stroke:#059669
+  </div>
+</div>
+
+<!-- 2. 현재 아키텍처 -->
+<h2 id="architecture">2. 현재 아키텍처 (Phase 5)</h2>
+
+<div class="mermaid">
+graph TD
+    DAG[Airflow DAG<br/>market_monitor_*] -->|HTTP POST| API[BIP-Agents API<br/>/api/checklist/analyze]
+    API --> AGENT[checklist_agent.py<br/>run_checklist_agent]
+    AGENT --> REACT["create_react_agent<br/>(Haiku + MCP 44개)"]
+
+    REACT -->|도구 선택| MCP["MCP 서버<br/>(bip-stock-mcp)"]
+
+    subgraph tools["사용 가능한 도구 (일부)"]
+        T1[realtime_index<br/>KOSPI/KOSDAQ]
+        T2[realtime_fx_rate<br/>원/달러]
+        T3[realtime_stock_price<br/>종목 현재가]
+        T4[night_futures_ewy<br/>EWY 야간선물]
+        T5[news_search_naver<br/>뉴스 검색]
+        T6[realtime_investor<br/>수급]
+    end
+
+    MCP --> tools
+    REACT --> MSG[텔레그램 메시지 생성]
+    MSG --> TG[텔레그램 발송<br/>채널 + DM]
+
+    style REACT fill:#f3e8ff,stroke:#7c3aed
+    style MCP fill:#dbeafe,stroke:#2563eb
+    style TG fill:#fef3c7,stroke:#d97706
+</div>
+<p class="diagram-label">Phase 5: Haiku가 도구를 직접 선택하는 ReAct 에이전트</p>
+
+<!-- 3. 데이터 흐름 -->
+<h2 id="data-flow">3. 체크리스트 데이터 흐름</h2>
+
+<div class="mermaid">
+graph TD
+    LLM["모닝리포트 LLM<br/>(Sonnet)"] -->|체크리스트 생성| RB["report_builder.py<br/>extract_checklist()"]
+    RB -->|직접 저장<br/>HTML 파싱 불필요| DB[(monitor_checklist<br/>테이블)]
+    RB -->|HTML 렌더링| EMAIL[이메일 발송<br/>섹션별 그룹핑]
+
+    DB -->|load_checklist()| PARSE_DAG["08:25 DAG<br/>장전 분석"]
+    DB -->|load_checklist()| INTRA_DAG["09:30~14:30 DAG<br/>정기 현황"]
+    DB -->|load_checklist()| CLOSE_DAG["15:35 DAG<br/>장마감 복기"]
+
+    PARSE_DAG & INTRA_DAG & CLOSE_DAG -->|POST /api/checklist/analyze| AGENT["Haiku 에이전트"]
+    AGENT --> TELEGRAM["텔레그램 발송"]
+
+    style LLM fill:#f3e8ff,stroke:#7c3aed
+    style DB fill:#dbeafe,stroke:#2563eb
+    style EMAIL fill:#fef3c7,stroke:#d97706
+    style TELEGRAM fill:#fef3c7,stroke:#d97706
+</div>
+<p class="diagram-label">체크리스트 생성 → DB 저장 → 시간대별 분석 → 발송</p>
+
+<!-- 4. 발송 스케줄 -->
+<h2 id="schedule">4. 발송 스케줄</h2>
+
+<div class="mermaid">
+gantt
+    title 평일 발송 타임라인 (KST)
+    dateFormat HH:mm
+    axisFormat %H:%M
+
+    section 모닝리포트
+    모닝리포트 생성+발송 (Sonnet)    :08:10, 6min
+    Sonnet/GPT 테스트 (중지)          :08:20, 10min
+
+    section 체크리스트
+    체크리스트 파싱+장전 분석         :08:25, 2min
+    Preopen 예상 체결가               :08:40, 2min
+
+    section 장중
+    장 시작                           :milestone, 09:00, 0min
+    정기현황 09:30                    :09:30, 2min
+    정기현황 10:00                    :10:00, 2min
+    이상치 감지 (10분 주기)           :09:10, 390min
+    정기현황 12:00                    :12:00, 2min
+    정기현황 14:30                    :14:30, 2min
+
+    section 마감
+    장 마감                           :milestone, 15:30, 0min
+    장마감 종합점검                   :15:35, 3min
+</div>
+
+<table>
+  <tr><th>시각</th><th>DAG</th><th>목적</th><th>LLM</th></tr>
+  <tr><td><strong>08:10</strong></td><td>morning_report</td><td>모닝리포트 + 체크리스트 DB 저장</td><td>Sonnet</td></tr>
+  <tr><td><strong>08:25</strong></td><td>checklist_parse</td><td>DB에서 읽기 + 장전 분석 발송</td><td>Haiku (에이전트)</td></tr>
+  <tr><td><strong>08:40</strong></td><td>preopen</td><td>예상 체결가 + 갭 방향</td><td>Haiku</td></tr>
+  <tr><td>09:30 / 10:00 / 12:00 / 14:30</td><td>intraday</td><td>정기 체크리스트 현황</td><td>Haiku (에이전트)</td></tr>
+  <tr><td>09:10~15:50</td><td>intraday</td><td>10분 이상치 감지</td><td>없음 (규칙)</td></tr>
+  <tr><td><strong>15:35</strong></td><td>close</td><td>장마감 종합점검</td><td>Haiku (에이전트)</td></tr>
+</table>
+
+<div class="card card-red">
+  <p><strong>모든 알림 DAG: <code>retries: 0</code></strong> — 중복 발송 방지. 실패 시 수동 trigger.</p>
+</div>
+
+<!-- 5. MCP 도구 -->
+<h2 id="tools">5. MCP 도구 매핑</h2>
+
+<div class="mermaid">
+graph LR
+    subgraph LLM_Choice["Haiku가 직접 선택"]
+        direction TB
+        Q1["KOSPI 5,200선 지지?"] --> T1["realtime_index"]
+        Q2["원/달러 1,520원?"] --> T2["realtime_fx_rate"]
+        Q3["SK하이닉스 850,000원?"] --> T3["realtime_stock_price"]
+        Q4["EWY 갭 예측?"] --> T4["night_futures_ewy"]
+        Q5["이란 협상 뉴스?"] --> T5["news_search_naver"]
+        Q6["WTI $120 돌파?"] --> T6["get_indicator_context<br/>(commodity_oil)"]
+    end
+
+    style LLM_Choice fill:#faf5ff,stroke:#7c3aed
+</div>
+<p class="diagram-label">프롬프트에 도구 매핑을 명시 → Haiku가 체크리스트 항목에 맞는 도구를 직접 선택</p>
+
+<table>
+  <tr><th>데이터</th><th>MCP 도구</th><th>비고</th></tr>
+  <tr><td>KOSPI/KOSDAQ/KOSPI200</td><td><code>realtime_index</code></td><td>한투 API</td></tr>
+  <tr><td>원/달러 환율</td><td><code>realtime_fx_rate</code></td><td>한투 API</td></tr>
+  <tr><td>개별 종목 가격</td><td><code>realtime_stock_price(code)</code></td><td>6자리 코드</td></tr>
+  <tr><td>코스피 갭 예측</td><td><code>night_futures_ewy</code></td><td>EWY, 코스피 전용 (WTI 아님!)</td></tr>
+  <tr><td>외국인/기관 수급</td><td><code>realtime_investor</code></td><td>한투 API</td></tr>
+  <tr><td>BTC/ETH</td><td><code>crypto_price</code></td><td>Upbit API</td></tr>
+  <tr><td>S&P500/NASDAQ/Nikkei</td><td><code>global_index</code></td><td>yfinance + data_date</td></tr>
+  <tr><td>뉴스 검색</td><td><code>news_search_naver</code></td><td>네이버 뉴스 API</td></tr>
+  <tr><td>WTI/유가</td><td><code>get_indicator_context(commodity_oil)</code></td><td>DB macro_indicators</td></tr>
+  <tr><td>금</td><td><code>get_indicator_context(commodity_gold)</code></td><td>DB macro_indicators</td></tr>
+</table>
+
+<!-- 6. 프롬프트 -->
+<h2 id="prompt">6. 프롬프트 설계</h2>
+
+<div class="grid-3">
+  <div class="card" style="border-top: 3px solid #2563eb;">
+    <h3>장 시작 전</h3>
+    <p style="font-size:12px;">"장 시작 전 항목만 확인. 한국 주식 실시간 조회 불가. EWY/환율/뉴스만 사용."</p>
+  </div>
+  <div class="card" style="border-top: 3px solid #059669;">
+    <h3>장중</h3>
+    <p style="font-size:12px;">"장전 항목 제외, 나머지 전부 확인. 주요 종목 현재가 포함."</p>
+  </div>
+  <div class="card" style="border-top: 3px solid #7c3aed;">
+    <h3>장마감</h3>
+    <p style="font-size:12px;">"전체 항목 최종 결과. 종합점검 + 내일 관찰 포인트."</p>
+  </div>
+</div>
+
+<div class="card">
+  <h3>출력 형식 (모든 시간대 공통)</h3>
+<pre><code>각 항목 2줄:
+✅ *{항목 원문 요약}*
+{신호등} {현재값 vs 기준 비교 1줄}
+
+마지막:
+———————————————
+📊 *주요 종목*
+삼성전자 xxx원 (+x.x%)
+SK하이닉스 xxx원 (+x.x%)
+→ 특이 움직임 1줄
+
+💡 *종합*: 1줄</code></pre>
+</div>
+
+<div class="card card-red">
+  <h3>프롬프트 금지 사항</h3>
+  <ul>
+    <li>percentile, zscore, 90일 맥락 분석 — 불필요</li>
+    <li>추가 섹션/해설/권장조치/테이블</li>
+    <li>##헤딩, **볼드** (텔레그램은 *볼드*만)</li>
+    <li>같은 indicator에 대한 2개 이상 항목</li>
+  </ul>
+</div>
+
+<!-- 7. HTML 렌더링 -->
+<h2 id="html">7. 이메일 체크리스트 렌더링</h2>
+
+<div class="mermaid">
+graph TD
+    LLM_OUT["Sonnet 출력<br/>□ 장 시작 전<br/>- 항목1<br/>- 항목2<br/>□ 장 중 모니터링<br/>..."] --> EXTRACT["extract_checklist()<br/>체크리스트 섹션 추출"]
+    EXTRACT --> PARSE["고정 섹션 감지<br/>장 시작 전 / 장 중 / 주의 가격 레벨"]
+    PARSE --> HTML["HTML 그룹핑<br/>🌅 장 시작 전<br/>☐ 항목<br/>📊 장 중<br/>☐ 항목<br/>⚠️ 주의 레벨<br/>☐ 항목"]
+    HTML --> EMAIL["이메일 템플릿<br/>morning_report.html"]
+
+    style LLM_OUT fill:#f3e8ff,stroke:#7c3aed
+    style HTML fill:#d1fae5,stroke:#059669
+    style EMAIL fill:#fef3c7,stroke:#d97706
+</div>
+<p class="diagram-label">LLM 출력 → 섹션 감지 → HTML 그룹핑 (형식 독립적)</p>
+
+<div class="card">
+  <p>프롬프트에서 "□ 장 시작 전 / □ 장 중 모니터링 / □ 주의 가격 레벨" 3개 섹션 강제. <code>report_builder.py</code>에서 고정 섹션 헤더를 감지하여 아이콘(🌅/📊/⚠️)과 함께 그룹핑. LLM이 형식을 안 따르면 fallback으로 원문 그대로 표시.</p>
+</div>
+
+<!-- 8. 비용 -->
+<h2 id="cost">8. 비용</h2>
+
+<div class="grid-2">
+  <div class="card">
+    <h3>일일 비용</h3>
+    <div class="mermaid">
+    pie title 일일 LLM 비용 배분
+        "모닝리포트 (Sonnet)" : 77
+        "체크리스트 에이전트 (Haiku x6)" : 23
+    </div>
+    <table>
+      <tr><th>항목</th><th>모델</th><th>호출</th><th>비용</th></tr>
+      <tr><td>모닝리포트</td><td>Sonnet</td><td>1회</td><td>~$0.10</td></tr>
+      <tr><td>체크리스트 분석</td><td>Haiku</td><td>~6회</td><td>~$0.03</td></tr>
+      <tr><td><strong>합계</strong></td><td></td><td></td><td><strong>~$0.13/일</strong></td></tr>
+    </table>
+  </div>
+  <div class="card">
+    <h3>월간/연간</h3>
+    <table>
+      <tr><th>기간</th><th>비용</th></tr>
+      <tr><td>일일</td><td>$0.13</td></tr>
+      <tr><td>월간 (22거래일)</td><td>$2.86</td></tr>
+      <tr><td>연간</td><td>~$34</td></tr>
+    </table>
+  </div>
+</div>
+
+<!-- 9. Phase 이력 -->
+<h2 id="history">9. Phase 이력 + 결정 로그</h2>
+
+<div class="mermaid">
+graph LR
+    P1["Phase 1<br/>4/5<br/>get_indicator_context"] --> P2["Phase 2<br/>4/5<br/>4단계 파이프라인"]
+    P2 --> P3["Phase 3<br/>4/5<br/>snapshot 테이블"]
+    P3 --> P4["Phase 4<br/>4/5<br/>preopen DAG"]
+    P4 --> P5["Phase 5<br/>4/6<br/>LLM 직접 호출"]
+    P5 --> P5_1["5-1<br/>DB 저장 변경"]
+    P5_1 --> P5_2["5-2<br/>프롬프트 간소화"]
+    P5_2 --> P5_3["5-3<br/>시간대별 분리"]
+    P5_3 --> P5_4["5-4<br/>Sonnet 전환<br/>체크리스트 그룹핑"]
+    P5_4 --> P6["Phase 6<br/>4/11<br/>가독성 전면 개선"]
+    P6 --> P6_1["6-1<br/>preopen API 교체"]
+    P6_1 --> P6_2["6-2<br/>실시간 스냅샷 강화"]
+    P6_2 --> P6_3["6-3<br/>4/13<br/>뉴스 다이제스트<br/>+ data_date 라벨"]
+
+    style P2 fill:#fee2e2,stroke:#dc2626
+    style P5 fill:#d1fae5,stroke:#059669
+    style P6 fill:#dbeafe,stroke:#2563eb
+    style P6_3 fill:#dbeafe,stroke:#2563eb
+</div>
+<p class="diagram-label">Phase 6: 가독성 개선 → 실시간 강화 → 뉴스 다이제스트 + 과거 데이터 라벨링</p>
+
+<div class="card">
+  <h3>주요 결정 로그</h3>
+  <div class="timeline">
+    <div class="timeline-item">
+      <div class="time">2026-04-05 — Phase 2: 4단계 파이프라인 도입</div>
+      <div class="desc">Haiku 임계값 판단 오류 → deterministic 룰 엔진 분리</div>
+      <div class="detail">환율 1,510 역대 고점인데 "1,520 미돌파"로 🟢 판정한 문제 해결</div>
+    </div>
+    <div class="timeline-item">
+      <div class="time">2026-04-06 — Phase 5: LLM 직접 호출로 전환</div>
+      <div class="desc">키워드 파서가 LLM 출력 형식 변화에 취약 → ReAct 에이전트로 전환</div>
+      <div class="detail">□ → - [ ] 변경 시 전체 파싱 실패. 새 항목(코스피200 선물)에 코드 매핑 누락</div>
+    </div>
+    <div class="timeline-item">
+      <div class="time">2026-04-06 — 체크리스트 DB 저장 방식 변경</div>
+      <div class="desc">HTML 사후 파싱 → report_builder에서 직접 저장</div>
+      <div class="detail">HTML 형식 의존성 제거. 테스트 DAG는 save_checklist_to_db=False로 운영 체크리스트 보호</div>
+    </div>
+    <div class="timeline-item">
+      <div class="time">2026-04-07 — 모닝리포트 Sonnet 전환</div>
+      <div class="desc">3개 모델 비교(Opus/Sonnet/GPT-5.4) → Sonnet이 분석 깊이/비용 최적</div>
+      <div class="detail">Opus $0.49/회 → Sonnet $0.10/회, 분석 품질은 오히려 향상</div>
+    </div>
+    <div class="timeline-item">
+      <div class="time">2026-04-07 — EWY data_date + 프롬프트 날짜 변경</div>
+      <div class="desc">미국 휴장일에 3일 전 데이터로 "갭 하락" 오판 → 실제 날짜 표시</div>
+      <div class="detail">S&P500/NASDAQ 0값 수정 (지수별 독립 최신 날짜 조회)</div>
+    </div>
+    <div class="timeline-item">
+      <div class="time">2026-04-07 — 중복 발송 방지</div>
+      <div class="desc">모든 알림 DAG retries: 0 적용</div>
+      <div class="detail">preopen 메시지 2번 발송되던 문제 해결</div>
+    </div>
+    <div class="timeline-item">
+      <div class="time">2026-04-11 — Phase 6: 체크리스트 알림 가독성 전면 개선</div>
+      <div class="desc">40+줄 → 15~20줄 하이브리드 포맷 (체크 결과 + 📈📉 움직임 + 👀 관찰 포인트)</div>
+      <div class="detail">방향성 규칙(USD/KRW·유가·VIX = higher_is_risk) 프롬프트 명시, 동일 indicator 항목 병합, 첫 리포트 09:00→09:30, 에이전트 타임아웃 180초</div>
+    </div>
+    <div class="timeline-item">
+      <div class="time">2026-04-11 — preopen 예상 체결가 API 교체</div>
+      <div class="desc">FHKST01010100 (간헐적 0) → FHKST01010200 output2/antc_cnpr (안정적)</div>
+      <div class="detail">_is_preopen_window() 시간 가드(평일 08:30~09:00 KST)로 장 외 stale 데이터 차단</div>
+    </div>
+    <div class="timeline-item">
+      <div class="time">2026-04-11 — 실시간 스냅샷 에이전트 전달 + 도구 로깅</div>
+      <div class="desc">에이전트 도구 미호출 시 어제 데이터 사용 방지 → 스냅샷 텍스트 주입</div>
+      <div class="detail">ALWAYS_COLLECT_STOCKS 10종목 강제 조회, resolve_stock_code() 자동 매칭, tool_call_details/summary 로깅</div>
+    </div>
+    <div class="timeline-item">
+      <div class="time">2026-04-11 — 모닝리포트 개선 + 테스트 DAG 텔레그램 차단</div>
+      <div class="desc">신호등 fallback(⚪방지), 날짜 라벨(MM/DD), 투자자 동향 콤마, 중복 제목 제거</div>
+      <div class="detail">build_morning_report(send_telegram=False)로 테스트 DAG의 운영 채널 오염 방지</div>
+    </div>
+    <div class="timeline-item">
+      <div class="time">2026-04-13 — 뉴스 다이제스트 파이프라인</div>
+      <div class="desc">4시간마다 뉴스 수집+Haiku 요약 → news_digest 테이블, 모닝리포트에 48시간 통합 주입</div>
+      <div class="detail">주말 포함 상시 수집으로 월요일 리포트 뉴스 커버리지 확대. 비용 +$0.02/일</div>
+    </div>
+    <div class="timeline-item">
+      <div class="time">2026-04-13 — 데이터 신선도 경고 + data_date 라벨링</div>
+      <div class="desc">월요일/연휴 후: 데이터 간격 2일+ 시 프롬프트에 신선도 경고. 도구 응답에 "(MM/DD 기준)" 라벨</div>
+      <div class="detail">preopen fallback 3단계(antc_cnpr→antc_cntg_prc→stck_prpr). "어제"→날짜 기반. 미국 ET/KST 병기</div>
+    </div>
+  </div>
+</div>
+
+<!-- 10. 파일 -->
+<h2 id="files">10. 관련 파일</h2>
+
+<div class="mermaid">
+graph TD
+    subgraph Pipeline["BIP-Pipeline (Airflow)"]
+        DAG_M["dag_market_monitor.py<br/>DAG 4개"]
+        DAG_R["dag_morning_report.py<br/>모닝리포트"]
+        MM["market_monitor.py<br/>발송 로직"]
+        RB["report_builder.py<br/>체크리스트 추출+저장"]
+        LLM_A["llm_analyzer_v2.py<br/>LLM 프롬프트"]
+        TPL["morning_report.html<br/>이메일 템플릿"]
+    end
+
+    subgraph Agents["BIP-Agents"]
+        CA["checklist_agent.py<br/>Haiku ReAct 에이전트"]
+        CM["checklist_main.py<br/>진입점"]
+        AP["api.py<br/>FastAPI"]
+        PA["preopen_analyzer.py<br/>08:40 분석"]
+    end
+
+    subgraph MCP["MCP 서버"]
+        SV["server.py<br/>도구 44개"]
+        RT["realtime.py<br/>한투/Upbit/yfinance"]
+        CTX["context.py<br/>get_indicator_context"]
+    end
+
+    DAG_M --> MM --> AP
+    DAG_R --> RB --> LLM_A
+    AP --> CM --> CA
+    CA --> SV
+    SV --> RT & CTX
+
+    style Pipeline fill:#f0fdf4,stroke:#059669
+    style Agents fill:#faf5ff,stroke:#7c3aed
+    style MCP fill:#dbeafe,stroke:#2563eb
+</div>
+
+<div class="grid-2">
+  <div class="card">
+    <h3>BIP-Pipeline</h3>
+    <table>
+      <tr><td><code>dags/dag_market_monitor.py</code></td><td>DAG 4개</td></tr>
+      <tr><td><code>dags/dag_morning_report.py</code></td><td>모닝리포트</td></tr>
+      <tr><td><code>dags/reports/market_monitor.py</code></td><td>체크리스트 저장/로드/발송</td></tr>
+      <tr><td><code>dags/reports/report_builder.py</code></td><td>체크리스트 추출 + DB 저장 + HTML</td></tr>
+      <tr><td><code>dags/reports/llm_analyzer_v2.py</code></td><td>모닝리포트 LLM 프롬프트</td></tr>
+    </table>
+  </div>
+  <div class="card">
+    <h3>BIP-Agents</h3>
+    <table>
+      <tr><td><code>checklist_agent.py</code></td><td><strong>핵심: Haiku ReAct</strong></td></tr>
+      <tr><td><code>checklist_main.py</code></td><td>진입점</td></tr>
+      <tr><td><code>api.py</code></td><td>FastAPI + AuditMeta</td></tr>
+      <tr><td><code>preopen_analyzer.py</code></td><td>08:40 분석</td></tr>
+    </table>
+    <p style="font-size:12px; color:var(--muted); margin-top:8px;">폐기: checklist_parser.py, checklist_collector.py, checklist_signal.py, checklist_rules.py, checklist_explainer.py, checklist_graph.py (Phase 2~4, 참조용 유지)</p>
+  </div>
+</div>
+
+<div class="updated">
+  마지막 업데이트: 2026-04-13 | Phase 6.3
+</div>
+
+</body>
+</html>
