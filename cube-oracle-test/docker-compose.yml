@@ -1,0 +1,44 @@
+version: '3.8'
+
+services:
+  oracle19c:
+    image: container-registry.oracle.com/database/enterprise:19.3.0.0
+    container_name: oracle19c-test
+    environment:
+      ORACLE_SID: ORCLCDB
+      ORACLE_PDB: ORCLPDB1
+      ORACLE_PWD: TestPass123
+    ports:
+      - "1521:1521"
+      - "5500:5500"
+    volumes:
+      - oracle-data:/opt/oracle/oradata
+    healthcheck:
+      test: ["CMD", "sqlplus", "-L", "sys/TestPass123@//localhost:1521/ORCLCDB as sysdba", "@/dev/null"]
+      interval: 30s
+      timeout: 10s
+      retries: 10
+      start_period: 300s
+
+  cube:
+    image: cubejs/cube:latest
+    container_name: cube-test
+    environment:
+      CUBEJS_DB_TYPE: oracle
+      CUBEJS_DB_HOST: oracle19c-test
+      CUBEJS_DB_PORT: 1521
+      CUBEJS_DB_NAME: ORCLPDB1
+      CUBEJS_DB_USER: testuser
+      CUBEJS_DB_PASS: TestPass123
+      CUBEJS_DEV_MODE: "true"
+      CUBEJS_API_SECRET: cube-test-secret-key
+    ports:
+      - "4000:4000"
+    volumes:
+      - ./model:/cube/conf/model
+    depends_on:
+      oracle19c:
+        condition: service_healthy
+
+volumes:
+  oracle-data:

@@ -1,0 +1,980 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>dbt Core 개념 및 사용 가이드</title>
+<script src="https://cdn.jsdelivr.net/npm/mermaid@11/dist/mermaid.min.js"></script>
+<script>mermaid.initialize({startOnLoad:true, theme:'default', securityLevel:'loose'});</script>
+<style>
+  body { font-family: 'Pretendard', -apple-system, sans-serif; line-height: 1.7; color: #1a1a1a; max-width: 960px; margin: 0 auto; padding: 2rem 1.5rem; }
+  h1 { font-size: 2rem; margin: 2.5rem 0 1rem; padding-bottom: 0.5rem; border-bottom: 3px solid #2563eb; }
+  h2 { font-size: 1.5rem; margin: 2rem 0 0.8rem; padding-bottom: 0.3rem; border-bottom: 1px solid #e5e7eb; color: #2563eb; }
+  h3 { font-size: 1.2rem; margin: 1.5rem 0 0.5rem; }
+  h4 { font-size: 1.05rem; margin: 1.2rem 0 0.4rem; }
+  table { width: 100%; border-collapse: collapse; margin: 1rem 0; font-size: 0.9rem; }
+  th, td { border: 1px solid #e5e7eb; padding: 0.5rem 0.75rem; }
+  th { background: #f8fafc; font-weight: 600; }
+  tr:nth-child(even) { background: #fafafa; }
+  code { background: #f3f4f6; padding: 0.15rem 0.4rem; border-radius: 3px; font-size: 0.85em; }
+  pre { background: #1e293b; color: #e2e8f0; padding: 1rem; border-radius: 8px; overflow-x: auto; margin: 1rem 0; }
+  pre code { background: none; color: inherit; padding: 0; }
+  blockquote { border-left: 4px solid #3b82f6; padding: 0.5rem 1rem; margin: 1rem 0; background: #eff6ff; }
+  .mermaid { margin: 1.5rem 0; text-align: center; }
+  strong { color: #1e40af; }
+  a { color: #2563eb; }
+</style>
+</head>
+<body>
+<h1 id="dbt-core">dbt Core 개념 및 사용 가이드</h1>
+<h2 id="1">1. 개요</h2>
+<h3 id="dbt">dbt란 무엇인가</h3>
+<p>dbt(data build tool)는 ELT 파이프라인에서 <strong>T(Transform)</strong> 를 담당하는 데이터 변환 도구다. 데이터 엔지니어와 애널리틱스 엔지니어가 SQL SELECT 문만으로 데이터 웨어하우스 내의 데이터를 변환하고, 테스트하고, 문서화할 수 있게 해준다.</p>
+<h3 id="analytics-as-code">핵심 철학: Analytics as Code</h3>
+<p>dbt의 핵심 철학은 <strong>"Analytics as Code"</strong> 다.</p>
+<ul>
+<li>SQL 변환 로직을 <strong>코드</strong>로 관리 (Git 버전 관리)</li>
+<li>테스트, 문서, 배포를 소프트웨어 엔지니어링 방식으로 수행</li>
+<li>데이터 품질을 CI/CD 파이프라인에 통합</li>
+<li>모든 변환의 <strong>계보(lineage)</strong> 를 자동 추적</li>
+</ul>
+<h3 id="dbt-core-vs-dbt-cloud">dbt Core vs dbt Cloud</h3>
+<table>
+<thead>
+<tr>
+<th>항목</th>
+<th>dbt Core</th>
+<th>dbt Cloud</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>라이선스</td>
+<td>Apache 2.0 (오픈소스)</td>
+<td>유료 SaaS</td>
+</tr>
+<tr>
+<td>실행 방식</td>
+<td>CLI (로컬/컨테이너)</td>
+<td>웹 IDE + 스케줄러</td>
+</tr>
+<tr>
+<td>Semantic Layer API</td>
+<td>불가 (CLI만)</td>
+<td>제공</td>
+</tr>
+<tr>
+<td>스케줄링</td>
+<td>외부 필요 (Airflow 등)</td>
+<td>내장</td>
+</tr>
+<tr>
+<td>비용</td>
+<td>무료</td>
+<td>Developer 무료, Team $100/seat/월</td>
+</tr>
+</tbody>
+</table>
+<h3 id="dbt_1">dbt의 역할</h3>
+<p>dbt는 데이터를 <strong>추출하거나 적재하지 않는다</strong>. 이미 웨어하우스에 적재된 raw 데이터를 SELECT 문으로 변환하여 새로운 테이블/뷰를 생성하는 것이 전부다.</p>
+<div class="codehilite"><pre><span></span><code><span class="k">[Extract] → [Load] → [Transform (dbt)] → [Serve]</span>
+<span class="w">  </span><span class="na">Airbyte    Airflow     dbt Core       Cube/API</span>
+</code></pre></div>
+
+<hr />
+<h2 id="2">2. 아키텍처</h2>
+<h3 id="_1">전체 동작 흐름</h3>
+<div class="codehilite"><pre><span></span><code><span class="n">graph</span><span class="w"> </span><span class="n">LR</span>
+<span class="w">    </span><span class="n">A</span><span class="p">[</span><span class="n">Raw</span><span class="w"> </span><span class="n">Sources</span><span class="p">]</span><span class="w"> </span><span class="o">--&gt;|</span><span class="n">source</span><span class="w"> </span><span class="n">함수</span><span class="o">|</span><span class="w"> </span><span class="n">B</span><span class="p">[</span><span class="n">Staging</span><span class="w"> </span><span class="n">Models</span><span class="p">]</span>
+<span class="w">    </span><span class="n">B</span><span class="w"> </span><span class="o">--&gt;|</span><span class="n">ref</span><span class="w"> </span><span class="n">함수</span><span class="o">|</span><span class="w"> </span><span class="n">C</span><span class="p">[</span><span class="n">Intermediate</span><span class="w"> </span><span class="n">Models</span><span class="p">]</span>
+<span class="w">    </span><span class="n">C</span><span class="w"> </span><span class="o">--&gt;|</span><span class="n">ref</span><span class="w"> </span><span class="n">함수</span><span class="o">|</span><span class="w"> </span><span class="n">D</span><span class="p">[</span><span class="n">Mart</span><span class="w"> </span><span class="n">Models</span><span class="p">]</span>
+<span class="w">    </span><span class="n">D</span><span class="w"> </span><span class="o">--&gt;</span><span class="w"> </span><span class="n">E</span><span class="p">[</span><span class="n">Tests</span><span class="p">]</span>
+<span class="w">    </span><span class="n">D</span><span class="w"> </span><span class="o">--&gt;</span><span class="w"> </span><span class="n">F</span><span class="p">[</span><span class="n">Documentation</span><span class="p">]</span>
+<span class="w">    </span><span class="n">E</span><span class="w"> </span><span class="o">--&gt;</span><span class="w"> </span><span class="n">G</span><span class="p">[</span><span class="n">Target</span><span class="w"> </span><span class="n">DB</span><span class="w"> </span><span class="n">Tables</span><span class="o">/</span><span class="n">Views</span><span class="p">]</span>
+<span class="w">    </span><span class="n">F</span><span class="w"> </span><span class="o">--&gt;</span><span class="w"> </span><span class="n">H</span><span class="p">[</span><span class="n">dbt</span><span class="w"> </span><span class="n">Docs</span><span class="w"> </span><span class="n">Site</span><span class="p">]</span>
+
+<span class="w">    </span><span class="n">style</span><span class="w"> </span><span class="n">A</span><span class="w"> </span><span class="n">fill</span><span class="o">:</span><span class="err">#</span><span class="n">e74c3c</span><span class="p">,</span><span class="n">color</span><span class="o">:</span><span class="err">#</span><span class="n">fff</span>
+<span class="w">    </span><span class="n">style</span><span class="w"> </span><span class="n">B</span><span class="w"> </span><span class="n">fill</span><span class="o">:</span><span class="err">#</span><span class="n">f39c12</span><span class="p">,</span><span class="n">color</span><span class="o">:</span><span class="err">#</span><span class="n">fff</span>
+<span class="w">    </span><span class="n">style</span><span class="w"> </span><span class="n">C</span><span class="w"> </span><span class="n">fill</span><span class="o">:</span><span class="err">#</span><span class="mi">3498</span><span class="n">db</span><span class="p">,</span><span class="n">color</span><span class="o">:</span><span class="err">#</span><span class="n">fff</span>
+<span class="w">    </span><span class="n">style</span><span class="w"> </span><span class="n">D</span><span class="w"> </span><span class="n">fill</span><span class="o">:</span><span class="err">#</span><span class="mi">2</span><span class="n">ecc71</span><span class="p">,</span><span class="n">color</span><span class="o">:</span><span class="err">#</span><span class="n">fff</span>
+<span class="w">    </span><span class="n">style</span><span class="w"> </span><span class="n">G</span><span class="w"> </span><span class="n">fill</span><span class="o">:</span><span class="err">#</span><span class="mi">9</span><span class="n">b59b6</span><span class="p">,</span><span class="n">color</span><span class="o">:</span><span class="err">#</span><span class="n">fff</span>
+</code></pre></div>
+
+<h3 id="_2">동작 방식</h3>
+<ol>
+<li>개발자가 SQL 모델 파일을 작성한다</li>
+<li>dbt가 Jinja 템플릿을 컴파일하여 순수 SQL로 변환한다</li>
+<li>모델 간 <code>ref()</code> 참조를 분석하여 DAG(방향 비순환 그래프)를 구성한다</li>
+<li>DAG 순서에 따라 SQL을 데이터베이스에 실행하여 테이블/뷰를 생성한다</li>
+</ol>
+<h3 id="jinja-sql">Jinja + SQL 템플릿 엔진</h3>
+<p>dbt는 Jinja2 템플릿 엔진을 SQL 위에 얹어 <strong>변수, 조건문, 반복문, 매크로</strong> 를 사용할 수 있게 한다.</p>
+<div class="codehilite"><pre><span></span><code><span class="c1">-- Jinja 조건문 예시</span>
+<span class="k">SELECT</span>
+<span class="w">    </span><span class="n">order_id</span><span class="p">,</span>
+<span class="w">    </span><span class="n">amount</span><span class="p">,</span>
+<span class="w">    </span><span class="err">{</span><span class="o">%</span><span class="w"> </span><span class="k">if</span><span class="w"> </span><span class="n">target</span><span class="p">.</span><span class="n">name</span><span class="w"> </span><span class="o">==</span><span class="w"> </span><span class="s1">&#39;prod&#39;</span><span class="w"> </span><span class="o">%</span><span class="err">}</span>
+<span class="w">        </span><span class="n">amount</span><span class="w"> </span><span class="o">*</span><span class="w"> </span><span class="mi">1</span><span class="p">.</span><span class="mi">1</span><span class="w"> </span><span class="k">AS</span><span class="w"> </span><span class="n">amount_with_tax</span>
+<span class="w">    </span><span class="err">{</span><span class="o">%</span><span class="w"> </span><span class="k">else</span><span class="w"> </span><span class="o">%</span><span class="err">}</span>
+<span class="w">        </span><span class="n">amount</span><span class="w"> </span><span class="k">AS</span><span class="w"> </span><span class="n">amount_with_tax</span>
+<span class="w">    </span><span class="err">{</span><span class="o">%</span><span class="w"> </span><span class="n">endif</span><span class="w"> </span><span class="o">%</span><span class="err">}</span>
+<span class="k">FROM</span><span class="w"> </span><span class="err">{{</span><span class="w"> </span><span class="k">ref</span><span class="p">(</span><span class="s1">&#39;stg_orders&#39;</span><span class="p">)</span><span class="w"> </span><span class="err">}}</span>
+</code></pre></div>
+
+<h3 id="dag">DAG 기반 의존성 관리</h3>
+<div class="codehilite"><pre><span></span><code><span class="n">graph</span><span class="w"> </span><span class="n">TD</span>
+<span class="w">    </span><span class="n">src_orders</span><span class="o">[</span><span class="n">source: orders</span><span class="o">]</span><span class="w"> </span><span class="c1">--&gt; stg_orders[stg_orders]</span>
+<span class="w">    </span><span class="n">src_customers</span><span class="o">[</span><span class="n">source: customers</span><span class="o">]</span><span class="w"> </span><span class="c1">--&gt; stg_customers[stg_customers]</span>
+<span class="w">    </span><span class="n">stg_orders</span><span class="w"> </span><span class="c1">--&gt; int_order_items[int_order_items]</span>
+<span class="w">    </span><span class="n">stg_customers</span><span class="w"> </span><span class="c1">--&gt; mart_customers[mart_customers]</span>
+<span class="w">    </span><span class="n">int_order_items</span><span class="w"> </span><span class="c1">--&gt; mart_customers</span>
+<span class="w">    </span><span class="n">int_order_items</span><span class="w"> </span><span class="c1">--&gt; mart_orders[mart_orders]</span>
+
+<span class="w">    </span><span class="n">style</span><span class="w"> </span><span class="n">src_orders</span><span class="w"> </span><span class="nl">fill</span><span class="p">:</span><span class="n">#e74c3c</span><span class="p">,</span><span class="nl">color</span><span class="p">:</span><span class="n">#fff</span>
+<span class="w">    </span><span class="n">style</span><span class="w"> </span><span class="n">src_customers</span><span class="w"> </span><span class="nl">fill</span><span class="p">:</span><span class="n">#e74c3c</span><span class="p">,</span><span class="nl">color</span><span class="p">:</span><span class="n">#fff</span>
+<span class="w">    </span><span class="n">style</span><span class="w"> </span><span class="n">stg_orders</span><span class="w"> </span><span class="nl">fill</span><span class="p">:</span><span class="n">#f39c12</span><span class="p">,</span><span class="nl">color</span><span class="p">:</span><span class="n">#fff</span>
+<span class="w">    </span><span class="n">style</span><span class="w"> </span><span class="n">stg_customers</span><span class="w"> </span><span class="nl">fill</span><span class="p">:</span><span class="n">#f39c12</span><span class="p">,</span><span class="nl">color</span><span class="p">:</span><span class="n">#fff</span>
+<span class="w">    </span><span class="n">style</span><span class="w"> </span><span class="n">int_order_items</span><span class="w"> </span><span class="nl">fill</span><span class="p">:</span><span class="n">#3498db</span><span class="p">,</span><span class="nl">color</span><span class="p">:</span><span class="n">#fff</span>
+<span class="w">    </span><span class="n">style</span><span class="w"> </span><span class="n">mart_customers</span><span class="w"> </span><span class="nl">fill</span><span class="p">:</span><span class="n">#2ecc71</span><span class="p">,</span><span class="nl">color</span><span class="p">:</span><span class="n">#fff</span>
+<span class="w">    </span><span class="n">style</span><span class="w"> </span><span class="n">mart_orders</span><span class="w"> </span><span class="nl">fill</span><span class="p">:</span><span class="n">#2ecc71</span><span class="p">,</span><span class="nl">color</span><span class="p">:</span><span class="n">#fff</span>
+</code></pre></div>
+
+<hr />
+<h2 id="3">3. 핵심 개념</h2>
+<h3 id="3-1-models">3-1. Models</h3>
+<p>모델은 dbt의 기본 단위다. <strong>SQL 파일 하나가 하나의 모델</strong>이며, 실행하면 데이터베이스에 테이블 또는 뷰가 생성된다.</p>
+<h4 id="ref">ref() 함수</h4>
+<p>모델 간 참조에는 <code>ref()</code> 함수를 사용한다. dbt가 이를 분석하여 실행 순서(DAG)를 자동 결정한다.</p>
+<div class="codehilite"><pre><span></span><code><span class="c1">-- models/marts/mart_daily_returns.sql</span>
+<span class="k">SELECT</span>
+<span class="w">    </span><span class="n">sp</span><span class="p">.</span><span class="n">ticker</span><span class="p">,</span>
+<span class="w">    </span><span class="n">sp</span><span class="p">.</span><span class="n">trade_date</span><span class="p">,</span>
+<span class="w">    </span><span class="n">sp</span><span class="p">.</span><span class="n">close_price</span><span class="p">,</span>
+<span class="w">    </span><span class="n">sp</span><span class="p">.</span><span class="n">close_price</span><span class="w"> </span><span class="o">/</span><span class="w"> </span><span class="n">LAG</span><span class="p">(</span><span class="n">sp</span><span class="p">.</span><span class="n">close_price</span><span class="p">)</span><span class="w"> </span><span class="n">OVER</span><span class="w"> </span><span class="p">(</span>
+<span class="w">        </span><span class="n">PARTITION</span><span class="w"> </span><span class="k">BY</span><span class="w"> </span><span class="n">sp</span><span class="p">.</span><span class="n">ticker</span><span class="w"> </span><span class="k">ORDER</span><span class="w"> </span><span class="k">BY</span><span class="w"> </span><span class="n">sp</span><span class="p">.</span><span class="n">trade_date</span>
+<span class="w">    </span><span class="p">)</span><span class="w"> </span><span class="o">-</span><span class="w"> </span><span class="mi">1</span><span class="w"> </span><span class="k">AS</span><span class="w"> </span><span class="n">daily_return</span><span class="p">,</span>
+<span class="w">    </span><span class="n">si</span><span class="p">.</span><span class="n">market_cap</span>
+<span class="k">FROM</span><span class="w"> </span><span class="err">{{</span><span class="w"> </span><span class="k">ref</span><span class="p">(</span><span class="s1">&#39;stg_stock_prices&#39;</span><span class="p">)</span><span class="w"> </span><span class="err">}}</span><span class="w"> </span><span class="n">sp</span>
+<span class="k">LEFT</span><span class="w"> </span><span class="k">JOIN</span><span class="w"> </span><span class="err">{{</span><span class="w"> </span><span class="k">ref</span><span class="p">(</span><span class="s1">&#39;stg_stock_info&#39;</span><span class="p">)</span><span class="w"> </span><span class="err">}}</span><span class="w"> </span><span class="n">si</span>
+<span class="w">    </span><span class="k">ON</span><span class="w"> </span><span class="n">sp</span><span class="p">.</span><span class="n">ticker</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">si</span><span class="p">.</span><span class="n">ticker</span>
+</code></pre></div>
+
+<h4 id="materialization">Materialization (구체화 방식)</h4>
+<table>
+<thead>
+<tr>
+<th>방식</th>
+<th>설명</th>
+<th>용도</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>view</code></td>
+<td>CREATE VIEW (기본값)</td>
+<td>경량 변환, 자주 변경되는 로직</td>
+</tr>
+<tr>
+<td><code>table</code></td>
+<td>CREATE TABLE AS</td>
+<td>자주 조회되는 집계 테이블</td>
+</tr>
+<tr>
+<td><code>incremental</code></td>
+<td>INSERT/MERGE (신규분만)</td>
+<td>대용량 팩트 테이블</td>
+</tr>
+<tr>
+<td><code>ephemeral</code></td>
+<td>CTE로 인라인 삽입</td>
+<td>중간 단계, DB에 생성 안 됨</td>
+</tr>
+</tbody>
+</table>
+<div class="codehilite"><pre><span></span><code><span class="c1">-- models/marts/mart_stock_summary.sql</span>
+<span class="err">{{</span><span class="w"> </span><span class="n">config</span><span class="p">(</span><span class="n">materialized</span><span class="o">=</span><span class="s1">&#39;incremental&#39;</span><span class="p">,</span><span class="w"> </span><span class="n">unique_key</span><span class="o">=</span><span class="s1">&#39;ticker || trade_date&#39;</span><span class="p">)</span><span class="w"> </span><span class="err">}}</span>
+
+<span class="k">SELECT</span>
+<span class="w">    </span><span class="n">ticker</span><span class="p">,</span>
+<span class="w">    </span><span class="n">trade_date</span><span class="p">,</span>
+<span class="w">    </span><span class="n">close_price</span><span class="p">,</span>
+<span class="w">    </span><span class="n">volume</span><span class="p">,</span>
+<span class="w">    </span><span class="k">CURRENT_TIMESTAMP</span><span class="w"> </span><span class="k">AS</span><span class="w"> </span><span class="n">updated_at</span>
+<span class="k">FROM</span><span class="w"> </span><span class="err">{{</span><span class="w"> </span><span class="k">ref</span><span class="p">(</span><span class="s1">&#39;stg_stock_prices&#39;</span><span class="p">)</span><span class="w"> </span><span class="err">}}</span>
+
+<span class="err">{</span><span class="o">%</span><span class="w"> </span><span class="k">if</span><span class="w"> </span><span class="n">is_incremental</span><span class="p">()</span><span class="w"> </span><span class="o">%</span><span class="err">}</span>
+<span class="k">WHERE</span><span class="w"> </span><span class="n">trade_date</span><span class="w"> </span><span class="o">&gt;</span><span class="w"> </span><span class="p">(</span><span class="k">SELECT</span><span class="w"> </span><span class="k">MAX</span><span class="p">(</span><span class="n">trade_date</span><span class="p">)</span><span class="w"> </span><span class="k">FROM</span><span class="w"> </span><span class="err">{{</span><span class="w"> </span><span class="n">this</span><span class="w"> </span><span class="err">}}</span><span class="p">)</span>
+<span class="err">{</span><span class="o">%</span><span class="w"> </span><span class="n">endif</span><span class="w"> </span><span class="o">%</span><span class="err">}</span>
+</code></pre></div>
+
+<p>모델 설정은 <code>dbt_project.yml</code>에서 일괄 지정하거나 모델 파일 내 <code>config()</code> 블록으로 개별 지정한다 (7-2절 참고).</p>
+<h3 id="3-2-sources">3-2. Sources</h3>
+<p>소스는 dbt 외부에서 적재된 raw 테이블을 참조하는 방법이다. <code>source()</code> 함수로 참조하며, freshness 체크를 통해 데이터 적시성을 모니터링할 수 있다.</p>
+<div class="codehilite"><pre><span></span><code><span class="c1"># models/staging/_sources.yml</span>
+<span class="nt">version</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">2</span>
+<span class="nt">sources</span><span class="p">:</span>
+<span class="w">  </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="nt">name</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">stockdb</span>
+<span class="w">    </span><span class="nt">database</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">stockdb</span>
+<span class="w">    </span><span class="nt">schema</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">public</span>
+<span class="w">    </span><span class="nt">freshness</span><span class="p">:</span>
+<span class="w">      </span><span class="nt">warn_after</span><span class="p">:</span><span class="w"> </span><span class="p p-Indicator">{</span><span class="nt"> count</span><span class="p">:</span><span class="w"> </span><span class="nv">24</span><span class="p p-Indicator">,</span><span class="nt"> period</span><span class="p">:</span><span class="w"> </span><span class="nv">hour</span><span class="w"> </span><span class="p p-Indicator">}</span>
+<span class="w">      </span><span class="nt">error_after</span><span class="p">:</span><span class="w"> </span><span class="p p-Indicator">{</span><span class="nt"> count</span><span class="p">:</span><span class="w"> </span><span class="nv">48</span><span class="p p-Indicator">,</span><span class="nt"> period</span><span class="p">:</span><span class="w"> </span><span class="nv">hour</span><span class="w"> </span><span class="p p-Indicator">}</span>
+<span class="w">    </span><span class="nt">loaded_at_field</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">updated_at</span>
+<span class="w">    </span><span class="nt">tables</span><span class="p">:</span>
+<span class="w">      </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="nt">name</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">stock_price_1d</span>
+<span class="w">        </span><span class="nt">description</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;일봉</span><span class="nv"> </span><span class="s">시세</span><span class="nv"> </span><span class="s">데이터&quot;</span>
+<span class="w">      </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="nt">name</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">stock_info</span>
+<span class="w">        </span><span class="nt">description</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;종목</span><span class="nv"> </span><span class="s">메타데이터&quot;</span>
+</code></pre></div>
+
+<div class="codehilite"><pre><span></span><code><span class="c1">-- models/staging/stg_stock_prices.sql</span>
+<span class="k">SELECT</span><span class="w"> </span><span class="n">ticker</span><span class="p">,</span><span class="w"> </span><span class="n">trade_date</span><span class="p">,</span><span class="w"> </span><span class="n">open_price</span><span class="p">,</span><span class="w"> </span><span class="n">high_price</span><span class="p">,</span><span class="w"> </span><span class="n">low_price</span><span class="p">,</span><span class="w"> </span><span class="n">close_price</span><span class="p">,</span><span class="w"> </span><span class="n">volume</span>
+<span class="k">FROM</span><span class="w"> </span><span class="err">{{</span><span class="w"> </span><span class="k">source</span><span class="p">(</span><span class="s1">&#39;stockdb&#39;</span><span class="p">,</span><span class="w"> </span><span class="s1">&#39;stock_price_1d&#39;</span><span class="p">)</span><span class="w"> </span><span class="err">}}</span>
+<span class="k">WHERE</span><span class="w"> </span><span class="n">trade_date</span><span class="w"> </span><span class="o">&gt;=</span><span class="w"> </span><span class="s1">&#39;2020-01-01&#39;</span>
+</code></pre></div>
+
+<p>freshness 체크: <code>dbt source freshness</code></p>
+<h3 id="3-3-tests">3-3. Tests</h3>
+<p>dbt 테스트는 데이터 품질을 검증한다. 실패 시 빌드를 중단할 수 있다.</p>
+<h4 id="schema-tests-yaml">Schema Tests (YAML 정의)</h4>
+<div class="codehilite"><pre><span></span><code><span class="c1"># models/staging/_schema.yml</span>
+<span class="nt">version</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">2</span>
+<span class="nt">models</span><span class="p">:</span>
+<span class="w">  </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="nt">name</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">stg_stock_prices</span>
+<span class="w">    </span><span class="nt">description</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;정제된</span><span class="nv"> </span><span class="s">일봉</span><span class="nv"> </span><span class="s">시세&quot;</span>
+<span class="w">    </span><span class="nt">columns</span><span class="p">:</span>
+<span class="w">      </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="nt">name</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">ticker</span>
+<span class="w">        </span><span class="nt">tests</span><span class="p">:</span><span class="w"> </span><span class="p p-Indicator">[</span><span class="nv">not_null</span><span class="p p-Indicator">]</span>
+<span class="w">      </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="nt">name</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">trade_date</span>
+<span class="w">        </span><span class="nt">tests</span><span class="p">:</span><span class="w"> </span><span class="p p-Indicator">[</span><span class="nv">not_null</span><span class="p p-Indicator">]</span>
+<span class="w">    </span><span class="nt">tests</span><span class="p">:</span>
+<span class="w">      </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="nt">unique</span><span class="p">:</span>
+<span class="w">          </span><span class="nt">column_name</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;ticker</span><span class="nv"> </span><span class="s">||</span><span class="nv"> </span><span class="s">&#39;-&#39;</span><span class="nv"> </span><span class="s">||</span><span class="nv"> </span><span class="s">trade_date&quot;</span>
+<span class="w">  </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="nt">name</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">stg_stock_info</span>
+<span class="w">    </span><span class="nt">columns</span><span class="p">:</span>
+<span class="w">      </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="nt">name</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">ticker</span>
+<span class="w">        </span><span class="nt">tests</span><span class="p">:</span><span class="w"> </span><span class="p p-Indicator">[</span><span class="nv">unique</span><span class="p p-Indicator">,</span><span class="w"> </span><span class="nv">not_null</span><span class="p p-Indicator">]</span>
+<span class="w">      </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="nt">name</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">market</span>
+<span class="w">        </span><span class="nt">tests</span><span class="p">:</span>
+<span class="w">          </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="nt">accepted_values</span><span class="p">:</span>
+<span class="w">              </span><span class="nt">values</span><span class="p">:</span><span class="w"> </span><span class="p p-Indicator">[</span><span class="s">&#39;KOSPI&#39;</span><span class="p p-Indicator">,</span><span class="w"> </span><span class="s">&#39;KOSDAQ&#39;</span><span class="p p-Indicator">,</span><span class="w"> </span><span class="s">&#39;NYSE&#39;</span><span class="p p-Indicator">,</span><span class="w"> </span><span class="s">&#39;NASDAQ&#39;</span><span class="p p-Indicator">]</span>
+</code></pre></div>
+
+<h4 id="custom-tests-sql">Custom Tests (SQL 기반)</h4>
+<p><code>tests/</code> 디렉토리에 SQL 파일로 작성한다. 쿼리 결과가 0행이면 통과, 1행 이상이면 실패다.</p>
+<div class="codehilite"><pre><span></span><code><span class="c1">-- tests/assert_positive_close_price.sql</span>
+<span class="k">SELECT</span><span class="w"> </span><span class="o">*</span>
+<span class="k">FROM</span><span class="w"> </span><span class="err">{{</span><span class="w"> </span><span class="k">ref</span><span class="p">(</span><span class="s1">&#39;stg_stock_prices&#39;</span><span class="p">)</span><span class="w"> </span><span class="err">}}</span>
+<span class="k">WHERE</span><span class="w"> </span><span class="n">close_price</span><span class="w"> </span><span class="o">&lt;=</span><span class="w"> </span><span class="mi">0</span>
+</code></pre></div>
+
+<div class="codehilite"><pre><span></span><code>dbt<span class="w"> </span><span class="nb">test</span><span class="w">                          </span><span class="c1"># 전체 테스트</span>
+dbt<span class="w"> </span><span class="nb">test</span><span class="w"> </span>--select<span class="w"> </span>stg_stock_prices<span class="w">  </span><span class="c1"># 특정 모델만</span>
+</code></pre></div>
+
+<h3 id="3-4-documentation">3-4. Documentation</h3>
+<p>YAML의 <code>description</code> 필드에 모델/컬럼 설명을 작성하면, <code>dbt docs generate</code>로 <code>catalog.json</code>, <code>manifest.json</code>이 생성되고 <code>dbt docs serve</code>로 모델 DAG 시각화, 컬럼 설명, 테스트 결과를 포함한 문서 사이트를 확인할 수 있다.</p>
+<h3 id="3-5-seeds">3-5. Seeds</h3>
+<p>Seeds는 CSV 파일을 데이터베이스 테이블로 로드하는 기능이다. 참조 데이터(코드 테이블, 매핑 테이블)에 적합하다. <code>seeds/market_codes.csv</code>를 만들고 <code>dbt seed</code>를 실행하면 테이블이 생성되며, 모델에서 <code>{{ ref('market_codes') }}</code>로 참조한다.</p>
+<h3 id="3-6-snapshots">3-6. Snapshots</h3>
+<p>스냅샷은 <strong>SCD Type 2 (Slowly Changing Dimension)</strong> 를 구현한다. 시간에 따라 변하는 데이터의 이력을 추적한다.</p>
+<div class="codehilite"><pre><span></span><code><span class="c1">-- snapshots/snap_stock_info.sql</span>
+<span class="err">{</span><span class="o">%</span><span class="w"> </span><span class="n">snapshot</span><span class="w"> </span><span class="n">snap_stock_info</span><span class="w"> </span><span class="o">%</span><span class="err">}</span>
+<span class="err">{{</span><span class="w"> </span><span class="n">config</span><span class="p">(</span><span class="n">target_schema</span><span class="o">=</span><span class="s1">&#39;snapshots&#39;</span><span class="p">,</span><span class="w"> </span><span class="n">unique_key</span><span class="o">=</span><span class="s1">&#39;ticker&#39;</span><span class="p">,</span>
+<span class="w">          </span><span class="n">strategy</span><span class="o">=</span><span class="s1">&#39;timestamp&#39;</span><span class="p">,</span><span class="w"> </span><span class="n">updated_at</span><span class="o">=</span><span class="s1">&#39;updated_at&#39;</span><span class="p">)</span><span class="w"> </span><span class="err">}}</span>
+<span class="k">SELECT</span><span class="w"> </span><span class="n">ticker</span><span class="p">,</span><span class="w"> </span><span class="n">company_name</span><span class="p">,</span><span class="w"> </span><span class="n">sector</span><span class="p">,</span><span class="w"> </span><span class="n">market_cap</span><span class="p">,</span><span class="w"> </span><span class="n">updated_at</span>
+<span class="k">FROM</span><span class="w"> </span><span class="err">{{</span><span class="w"> </span><span class="k">source</span><span class="p">(</span><span class="s1">&#39;stockdb&#39;</span><span class="p">,</span><span class="w"> </span><span class="s1">&#39;stock_info&#39;</span><span class="p">)</span><span class="w"> </span><span class="err">}}</span>
+<span class="err">{</span><span class="o">%</span><span class="w"> </span><span class="n">endsnapshot</span><span class="w"> </span><span class="o">%</span><span class="err">}</span>
+</code></pre></div>
+
+<p><code>dbt snapshot</code> 실행 시 <code>dbt_valid_from</code>, <code>dbt_valid_to</code> 컬럼이 자동 추가되어 변경 이력이 보존된다.</p>
+<h3 id="3-7-macros">3-7. Macros</h3>
+<p>매크로는 Jinja로 작성하는 <strong>재사용 가능한 SQL 함수</strong>다.</p>
+<div class="codehilite"><pre><span></span><code><span class="c1">-- macros/cents_to_won.sql</span>
+<span class="err">{</span><span class="o">%</span><span class="w"> </span><span class="n">macro</span><span class="w"> </span><span class="n">cents_to_won</span><span class="p">(</span><span class="k">column_name</span><span class="p">)</span><span class="w"> </span><span class="o">%</span><span class="err">}</span>
+<span class="w">    </span><span class="n">ROUND</span><span class="p">(</span><span class="err">{{</span><span class="w"> </span><span class="k">column_name</span><span class="w"> </span><span class="err">}}</span><span class="w"> </span><span class="o">*</span><span class="w"> </span><span class="mi">1350</span><span class="p">,</span><span class="w"> </span><span class="mi">0</span><span class="p">)</span>
+<span class="err">{</span><span class="o">%</span><span class="w"> </span><span class="n">endmacro</span><span class="w"> </span><span class="o">%</span><span class="err">}</span>
+</code></pre></div>
+
+<p>모델에서 <code>{{ cents_to_won('close_price_usd') }}</code> 형태로 호출한다.</p>
+<h4 id="_3">패키지</h4>
+<p>외부 매크로 패키지를 <code>packages.yml</code>로 설치할 수 있다 (<code>dbt deps</code> 실행).</p>
+<div class="codehilite"><pre><span></span><code><span class="c1"># packages.yml</span>
+<span class="nt">packages</span><span class="p">:</span>
+<span class="w">  </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="nt">package</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">dbt-labs/dbt_utils</span>
+<span class="w">    </span><span class="nt">version</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;1.3.0&quot;</span>
+<span class="w">  </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="nt">package</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">dbt-labs/codegen</span>
+<span class="w">    </span><span class="nt">version</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;0.12.1&quot;</span>
+</code></pre></div>
+
+<hr />
+<h2 id="4-dbt-semantic-layer-metricflow">4. dbt Semantic Layer (MetricFlow)</h2>
+<h3 id="4-1-metricflow">4-1. MetricFlow란</h3>
+<p>MetricFlow는 dbt에 통합된 <strong>중앙 메트릭 정의 프레임워크</strong>다. 비즈니스 메트릭(매출, 수익률 등)을 YAML로 한 번 정의하면 일관된 방식으로 쿼리할 수 있다.</p>
+<div class="codehilite"><pre><span></span><code><span class="n">graph</span><span class="w"> </span><span class="n">LR</span>
+<span class="w">    </span><span class="n">A</span><span class="p">[</span><span class="n">dbt</span><span class="w"> </span><span class="n">Models</span><span class="p">]</span><span class="w"> </span><span class="o">--&gt;</span><span class="w"> </span><span class="n">B</span><span class="p">[</span><span class="n">Semantic</span><span class="w"> </span><span class="n">Models</span><span class="p">]</span>
+<span class="w">    </span><span class="n">B</span><span class="w"> </span><span class="o">--&gt;</span><span class="w"> </span><span class="n">C</span><span class="p">[</span><span class="n">Metrics</span><span class="w"> </span><span class="n">정의</span><span class="p">]</span>
+<span class="w">    </span><span class="n">C</span><span class="w"> </span><span class="o">--&gt;</span><span class="w"> </span><span class="n">D</span><span class="p">{</span><span class="n">dbt</span><span class="w"> </span><span class="n">Cloud</span><span class="o">?</span><span class="p">}</span>
+<span class="w">    </span><span class="n">D</span><span class="w"> </span><span class="o">--&gt;|</span><span class="n">Yes</span><span class="o">|</span><span class="w"> </span><span class="n">E</span><span class="p">[</span><span class="n">Semantic</span><span class="w"> </span><span class="n">Layer</span><span class="w"> </span><span class="n">API</span><span class="p">]</span>
+<span class="w">    </span><span class="n">D</span><span class="w"> </span><span class="o">--&gt;|</span><span class="n">No</span><span class="o">|</span><span class="w"> </span><span class="n">F</span><span class="p">[</span><span class="n">MetricFlow</span><span class="w"> </span><span class="n">CLI만</span><span class="p">]</span>
+<span class="w">    </span><span class="n">E</span><span class="w"> </span><span class="o">--&gt;</span><span class="w"> </span><span class="n">G</span><span class="p">[</span><span class="n">BI</span><span class="w"> </span><span class="n">Tool</span><span class="w"> </span><span class="o">/</span><span class="w"> </span><span class="n">Agent</span><span class="p">]</span>
+<span class="w">    </span><span class="n">F</span><span class="w"> </span><span class="o">--&gt;</span><span class="w"> </span><span class="n">H</span><span class="p">[</span><span class="n">로컬</span><span class="w"> </span><span class="n">쿼리만</span><span class="p">]</span>
+
+<span class="w">    </span><span class="n">style</span><span class="w"> </span><span class="n">E</span><span class="w"> </span><span class="n">fill</span><span class="o">:</span><span class="err">#</span><span class="mi">2</span><span class="n">ecc71</span><span class="p">,</span><span class="n">color</span><span class="o">:</span><span class="err">#</span><span class="n">fff</span>
+<span class="w">    </span><span class="n">style</span><span class="w"> </span><span class="n">F</span><span class="w"> </span><span class="n">fill</span><span class="o">:</span><span class="err">#</span><span class="n">e74c3c</span><span class="p">,</span><span class="n">color</span><span class="o">:</span><span class="err">#</span><span class="n">fff</span>
+</code></pre></div>
+
+<h3 id="4-2-semantic-models">4-2. Semantic Models</h3>
+<p>Semantic Model은 메트릭 계산의 기반이 되는 논리적 데이터 모델이다.</p>
+<div class="codehilite"><pre><span></span><code><span class="c1"># models/semantic/sem_stock_daily.yml</span>
+<span class="nt">semantic_models</span><span class="p">:</span>
+<span class="w">  </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="nt">name</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">stock_daily</span>
+<span class="w">    </span><span class="nt">defaults</span><span class="p">:</span>
+<span class="w">      </span><span class="nt">agg_time_dimension</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">trade_date</span>
+<span class="w">    </span><span class="nt">model</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">ref(&#39;mart_stock_daily&#39;)</span>
+<span class="w">    </span><span class="nt">entities</span><span class="p">:</span>
+<span class="w">      </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="nt">name</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">stock</span>
+<span class="w">        </span><span class="nt">type</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">primary</span>
+<span class="w">        </span><span class="nt">expr</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">ticker</span>
+<span class="w">      </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="nt">name</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">market</span>
+<span class="w">        </span><span class="nt">type</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">foreign</span>
+<span class="w">        </span><span class="nt">expr</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">market_code</span>
+<span class="w">    </span><span class="nt">measures</span><span class="p">:</span>
+<span class="w">      </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="nt">name</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">total_volume</span>
+<span class="w">        </span><span class="nt">agg</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">sum</span>
+<span class="w">        </span><span class="nt">expr</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">volume</span>
+<span class="w">      </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="nt">name</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">avg_close</span>
+<span class="w">        </span><span class="nt">agg</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">average</span>
+<span class="w">        </span><span class="nt">expr</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">close_price</span>
+<span class="w">      </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="nt">name</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">trade_count</span>
+<span class="w">        </span><span class="nt">agg</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">count</span>
+<span class="w">        </span><span class="nt">expr</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">ticker</span>
+<span class="w">    </span><span class="nt">dimensions</span><span class="p">:</span>
+<span class="w">      </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="nt">name</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">trade_date</span>
+<span class="w">        </span><span class="nt">type</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">time</span>
+<span class="w">        </span><span class="nt">type_params</span><span class="p">:</span>
+<span class="w">          </span><span class="nt">time_granularity</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">day</span>
+<span class="w">      </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="nt">name</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">market_code</span>
+<span class="w">        </span><span class="nt">type</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">categorical</span>
+</code></pre></div>
+
+<p><strong>구성 요소:</strong></p>
+<table>
+<thead>
+<tr>
+<th>요소</th>
+<th>설명</th>
+<th>종류</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>entities</td>
+<td>조인 키 정의</td>
+<td>primary, foreign, natural</td>
+</tr>
+<tr>
+<td>measures</td>
+<td>집계 가능한 수치</td>
+<td>sum, count, average, min, max, count_distinct</td>
+</tr>
+<tr>
+<td>dimensions</td>
+<td>필터/그룹 기준</td>
+<td>categorical, time</td>
+</tr>
+</tbody>
+</table>
+<h3 id="4-3-metrics">4-3. Metrics</h3>
+<p>메트릭은 measure를 조합하여 비즈니스 지표를 정의한다.</p>
+<div class="codehilite"><pre><span></span><code><span class="c1"># models/semantic/metrics_stock.yml</span>
+<span class="nt">metrics</span><span class="p">:</span>
+<span class="w">  </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="nt">name</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">daily_avg_close</span>
+<span class="w">    </span><span class="nt">description</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;일별</span><span class="nv"> </span><span class="s">평균</span><span class="nv"> </span><span class="s">종가&quot;</span>
+<span class="w">    </span><span class="nt">type</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">simple</span>
+<span class="w">    </span><span class="nt">type_params</span><span class="p">:</span>
+<span class="w">      </span><span class="nt">measure</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">avg_close</span>
+<span class="w">    </span><span class="nt">filter</span><span class="p">:</span><span class="w"> </span><span class="p p-Indicator">|</span>
+<span class="w">      </span><span class="no">{{ Dimension(&#39;stock__market_code&#39;) }} = &#39;KOSPI&#39;</span>
+
+<span class="w">  </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="nt">name</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">cumulative_volume</span>
+<span class="w">    </span><span class="nt">description</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;누적</span><span class="nv"> </span><span class="s">거래량&quot;</span>
+<span class="w">    </span><span class="nt">type</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">cumulative</span>
+<span class="w">    </span><span class="nt">type_params</span><span class="p">:</span>
+<span class="w">      </span><span class="nt">measure</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">total_volume</span>
+<span class="w">      </span><span class="nt">window</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">30</span>
+<span class="w">      </span><span class="nt">grain_to_date</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">month</span>
+</code></pre></div>
+
+<p><strong>메트릭 유형:</strong></p>
+<table>
+<thead>
+<tr>
+<th>유형</th>
+<th>설명</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>simple</code></td>
+<td>단일 measure 직접 참조</td>
+</tr>
+<tr>
+<td><code>derived</code></td>
+<td>여러 메트릭 조합 (수식)</td>
+</tr>
+<tr>
+<td><code>cumulative</code></td>
+<td>기간 누적</td>
+</tr>
+<tr>
+<td><code>ratio</code></td>
+<td>두 measure의 비율</td>
+</tr>
+</tbody>
+</table>
+<h3 id="4-4">4-4. 한계</h3>
+<p>MetricFlow의 현실적 제약을 이해해야 한다.</p>
+<table>
+<thead>
+<tr>
+<th>기능</th>
+<th>dbt Core</th>
+<th>dbt Cloud</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Semantic Model 정의</td>
+<td>O</td>
+<td>O</td>
+</tr>
+<tr>
+<td>Metric 정의</td>
+<td>O</td>
+<td>O</td>
+</tr>
+<tr>
+<td>MetricFlow CLI 쿼리</td>
+<td>O</td>
+<td>O</td>
+</tr>
+<tr>
+<td><strong>Semantic Layer API</strong></td>
+<td><strong>불가</strong></td>
+<td><strong>제공</strong></td>
+</tr>
+<tr>
+<td>BI 도구 연동 (Tableau 등)</td>
+<td>불가</td>
+<td>제공</td>
+</tr>
+<tr>
+<td>Agent Tool 호출</td>
+<td>불가</td>
+<td>제공</td>
+</tr>
+</tbody>
+</table>
+<blockquote>
+<p>dbt Core만으로는 정의한 메트릭을 API로 서빙할 수 없다. API 서빙이 필요하면 <strong>Cube.js</strong> 같은 별도 도구를 함께 사용해야 한다.</p>
+</blockquote>
+<hr />
+<h2 id="5">5. 데이터 소스 연결</h2>
+<h3 id="5-1">5-1. 지원 어댑터 목록</h3>
+<table>
+<thead>
+<tr>
+<th>어댑터</th>
+<th>설치 명령</th>
+<th>유지 주체</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>PostgreSQL</td>
+<td><code>pip install dbt-postgres</code></td>
+<td>dbt Labs (공식)</td>
+</tr>
+<tr>
+<td>Snowflake</td>
+<td><code>pip install dbt-snowflake</code></td>
+<td>dbt Labs (공식)</td>
+</tr>
+<tr>
+<td>BigQuery</td>
+<td><code>pip install dbt-bigquery</code></td>
+<td>dbt Labs (공식)</td>
+</tr>
+<tr>
+<td>Redshift</td>
+<td><code>pip install dbt-redshift</code></td>
+<td>dbt Labs (공식)</td>
+</tr>
+<tr>
+<td>Databricks</td>
+<td><code>pip install dbt-databricks</code></td>
+<td>Databricks (공식)</td>
+</tr>
+<tr>
+<td>Oracle</td>
+<td><code>pip install dbt-oracle</code></td>
+<td>Oracle (커뮤니티)</td>
+</tr>
+<tr>
+<td>SQL Server</td>
+<td><code>pip install dbt-sqlserver</code></td>
+<td>커뮤니티</td>
+</tr>
+<tr>
+<td>Spark</td>
+<td><code>pip install dbt-spark</code></td>
+<td>dbt Labs</td>
+</tr>
+</tbody>
+</table>
+<h3 id="5-2-oracle">5-2. Oracle 연결 설정</h3>
+<div class="codehilite"><pre><span></span><code><span class="c1"># profiles.yml (Oracle)</span>
+<span class="nt">bip_pipeline</span><span class="p">:</span>
+<span class="w">  </span><span class="nt">target</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">dev</span>
+<span class="w">  </span><span class="nt">outputs</span><span class="p">:</span>
+<span class="w">    </span><span class="nt">dev</span><span class="p">:</span>
+<span class="w">      </span><span class="nt">type</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">oracle</span>
+<span class="w">      </span><span class="nt">host</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">oracle-host.example.com</span>
+<span class="w">      </span><span class="nt">port</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">1521</span>
+<span class="w">      </span><span class="nt">user</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;{{</span><span class="nv"> </span><span class="s">env_var(&#39;ORACLE_USER&#39;)</span><span class="nv"> </span><span class="s">}}&quot;</span>
+<span class="w">      </span><span class="nt">pass</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;{{</span><span class="nv"> </span><span class="s">env_var(&#39;ORACLE_PASSWORD&#39;)</span><span class="nv"> </span><span class="s">}}&quot;</span>
+<span class="w">      </span><span class="nt">database</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">ORCL</span>
+<span class="w">      </span><span class="nt">service</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">orcl_service</span>
+<span class="w">      </span><span class="nt">schema</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">ANALYTICS</span>
+<span class="w">      </span><span class="nt">threads</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">4</span>
+</code></pre></div>
+
+<p>dbt-oracle 1.7+ 에서 Oracle 19c 이상을 공식 지원한다. <code>python-oracledb</code> (thin 모드)를 사용하면 Oracle Instant Client 없이도 연결 가능하다.</p>
+<h3 id="5-3-postgresql">5-3. PostgreSQL 연결 설정</h3>
+<div class="codehilite"><pre><span></span><code><span class="c1"># profiles.yml (PostgreSQL)</span>
+<span class="nt">bip_pipeline</span><span class="p">:</span>
+<span class="w">  </span><span class="nt">target</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">dev</span>
+<span class="w">  </span><span class="nt">outputs</span><span class="p">:</span>
+<span class="w">    </span><span class="nt">dev</span><span class="p">:</span>
+<span class="w">      </span><span class="nt">type</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">postgres</span>
+<span class="w">      </span><span class="nt">host</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">localhost</span>
+<span class="w">      </span><span class="nt">port</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">5432</span>
+<span class="w">      </span><span class="nt">user</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;{{</span><span class="nv"> </span><span class="s">env_var(&#39;POSTGRES_USER&#39;)</span><span class="nv"> </span><span class="s">}}&quot;</span>
+<span class="w">      </span><span class="nt">pass</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;{{</span><span class="nv"> </span><span class="s">env_var(&#39;POSTGRES_PASSWORD&#39;)</span><span class="nv"> </span><span class="s">}}&quot;</span>
+<span class="w">      </span><span class="nt">dbname</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">stockdb</span>
+<span class="w">      </span><span class="nt">schema</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">public</span>
+<span class="w">      </span><span class="nt">threads</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">4</span>
+
+<span class="w">    </span><span class="nt">prod</span><span class="p">:</span>
+<span class="w">      </span><span class="nt">type</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">postgres</span>
+<span class="w">      </span><span class="nt">host</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">bip-postgres</span>
+<span class="w">      </span><span class="nt">port</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">5432</span>
+<span class="w">      </span><span class="nt">user</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;{{</span><span class="nv"> </span><span class="s">env_var(&#39;POSTGRES_USER&#39;)</span><span class="nv"> </span><span class="s">}}&quot;</span>
+<span class="w">      </span><span class="nt">pass</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;{{</span><span class="nv"> </span><span class="s">env_var(&#39;POSTGRES_PASSWORD&#39;)</span><span class="nv"> </span><span class="s">}}&quot;</span>
+<span class="w">      </span><span class="nt">dbname</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">stockdb</span>
+<span class="w">      </span><span class="nt">schema</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">analytics</span>
+<span class="w">      </span><span class="nt">threads</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">8</span>
+</code></pre></div>
+
+<hr />
+<h2 id="6-docker">6. Docker 컨테이너 설치</h2>
+<h3 id="6-1-dbt-core-docker">6-1. dbt Core Docker 설치</h3>
+<h4 id="dockerfile">Dockerfile</h4>
+<div class="codehilite"><pre><span></span><code><span class="c"># Dockerfile.dbt</span>
+<span class="k">FROM</span><span class="w"> </span><span class="s">python:3.11-slim</span>
+
+<span class="k">RUN</span><span class="w"> </span>apt-get<span class="w"> </span>update<span class="w"> </span><span class="o">&amp;&amp;</span><span class="w"> </span>apt-get<span class="w"> </span>install<span class="w"> </span>-y<span class="w"> </span>--no-install-recommends<span class="w"> </span><span class="se">\</span>
+<span class="w">    </span>git<span class="w"> </span><span class="se">\</span>
+<span class="w">    </span><span class="o">&amp;&amp;</span><span class="w"> </span>rm<span class="w"> </span>-rf<span class="w"> </span>/var/lib/apt/lists/*
+
+<span class="c"># dbt Core + PostgreSQL 어댑터</span>
+<span class="k">RUN</span><span class="w"> </span>pip<span class="w"> </span>install<span class="w"> </span>--no-cache-dir<span class="w"> </span><span class="se">\</span>
+<span class="w">    </span>dbt-core<span class="o">==</span><span class="m">1</span>.9.*<span class="w"> </span><span class="se">\</span>
+<span class="w">    </span>dbt-postgres<span class="o">==</span><span class="m">1</span>.9.*
+
+<span class="c"># 작업 디렉토리</span>
+<span class="k">WORKDIR</span><span class="w"> </span><span class="s">/dbt</span>
+
+<span class="c"># profiles.yml 위치 지정</span>
+<span class="k">ENV</span><span class="w"> </span><span class="nv">DBT_PROFILES_DIR</span><span class="o">=</span>/dbt
+
+<span class="c"># 프로젝트 파일 복사</span>
+<span class="k">COPY</span><span class="w"> </span>dbt_project/<span class="w"> </span>/dbt/
+
+<span class="c"># 기본 명령</span>
+<span class="k">ENTRYPOINT</span><span class="w"> </span><span class="p">[</span><span class="s2">&quot;dbt&quot;</span><span class="p">]</span>
+<span class="k">CMD</span><span class="w"> </span><span class="p">[</span><span class="s2">&quot;run&quot;</span><span class="p">]</span>
+</code></pre></div>
+
+<h4 id="docker-composeyml">docker-compose.yml</h4>
+<div class="codehilite"><pre><span></span><code><span class="c1"># docker-compose.dbt.yml</span>
+<span class="nt">version</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;3.8&quot;</span>
+
+<span class="nt">services</span><span class="p">:</span>
+<span class="w">  </span><span class="nt">dbt</span><span class="p">:</span>
+<span class="w">    </span><span class="nt">build</span><span class="p">:</span>
+<span class="w">      </span><span class="nt">context</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">.</span>
+<span class="w">      </span><span class="nt">dockerfile</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">Dockerfile.dbt</span>
+<span class="w">    </span><span class="nt">container_name</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">bip-dbt</span>
+<span class="w">    </span><span class="nt">volumes</span><span class="p">:</span>
+<span class="w">      </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">./dbt_project:/dbt</span>
+<span class="w">      </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">./profiles.yml:/dbt/profiles.yml:ro</span>
+<span class="w">    </span><span class="nt">environment</span><span class="p">:</span>
+<span class="w">      </span><span class="nt">POSTGRES_USER</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">${POSTGRES_USER}</span>
+<span class="w">      </span><span class="nt">POSTGRES_PASSWORD</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">${POSTGRES_PASSWORD}</span>
+<span class="w">    </span><span class="nt">networks</span><span class="p">:</span>
+<span class="w">      </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">bip-network</span>
+<span class="w">    </span><span class="nt">depends_on</span><span class="p">:</span>
+<span class="w">      </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">postgres</span>
+<span class="w">    </span><span class="nt">profiles</span><span class="p">:</span>
+<span class="w">      </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">dbt</span>
+
+<span class="w">  </span><span class="nt">postgres</span><span class="p">:</span>
+<span class="w">    </span><span class="nt">image</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">postgres:16-alpine</span>
+<span class="w">    </span><span class="nt">container_name</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">bip-postgres</span>
+<span class="w">    </span><span class="nt">environment</span><span class="p">:</span>
+<span class="w">      </span><span class="nt">POSTGRES_DB</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">stockdb</span>
+<span class="w">      </span><span class="nt">POSTGRES_USER</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">${POSTGRES_USER}</span>
+<span class="w">      </span><span class="nt">POSTGRES_PASSWORD</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">${POSTGRES_PASSWORD}</span>
+<span class="w">    </span><span class="nt">ports</span><span class="p">:</span>
+<span class="w">      </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="s">&quot;5432:5432&quot;</span>
+<span class="w">    </span><span class="nt">volumes</span><span class="p">:</span>
+<span class="w">      </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">pgdata:/var/lib/postgresql/data</span>
+<span class="w">    </span><span class="nt">networks</span><span class="p">:</span>
+<span class="w">      </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">bip-network</span>
+
+<span class="nt">volumes</span><span class="p">:</span>
+<span class="w">  </span><span class="nt">pgdata</span><span class="p">:</span>
+
+<span class="nt">networks</span><span class="p">:</span>
+<span class="w">  </span><span class="nt">bip-network</span><span class="p">:</span>
+<span class="w">    </span><span class="nt">driver</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">bridge</span>
+</code></pre></div>
+
+<div class="codehilite"><pre><span></span><code><span class="c1"># 실행 방법</span>
+docker<span class="w"> </span>compose<span class="w"> </span>-f<span class="w"> </span>docker-compose.dbt.yml<span class="w"> </span>run<span class="w"> </span>--rm<span class="w"> </span>dbt<span class="w"> </span>run<span class="w">    </span><span class="c1"># 모델 빌드</span>
+docker<span class="w"> </span>compose<span class="w"> </span>-f<span class="w"> </span>docker-compose.dbt.yml<span class="w"> </span>run<span class="w"> </span>--rm<span class="w"> </span>dbt<span class="w"> </span><span class="nb">test</span><span class="w">   </span><span class="c1"># 테스트</span>
+docker<span class="w"> </span>compose<span class="w"> </span>-f<span class="w"> </span>docker-compose.dbt.yml<span class="w"> </span>run<span class="w"> </span>--rm<span class="w"> </span>dbt<span class="w"> </span>docs<span class="w"> </span>generate<span class="w">  </span><span class="c1"># 문서 생성</span>
+</code></pre></div>
+
+<h3 id="6-2-oracle-docker">6-2. Oracle 연결 Docker 설정</h3>
+<p>Oracle 연결에는 <code>python-oracledb</code> (thin 모드) 또는 Oracle Instant Client가 필요하다. Dockerfile에서 <code>dbt-oracle</code>과 <code>oracledb</code>를 추가 설치하고, 필요 시 <code>libaio1</code>을 포함한다.</p>
+<div class="codehilite"><pre><span></span><code><span class="c"># Dockerfile.dbt-oracle (PostgreSQL 버전과 차이점만)</span>
+<span class="k">RUN</span><span class="w"> </span>pip<span class="w"> </span>install<span class="w"> </span>--no-cache-dir<span class="w"> </span>dbt-core<span class="o">==</span><span class="m">1</span>.9.*<span class="w"> </span>dbt-oracle<span class="o">==</span><span class="m">1</span>.9.*<span class="w"> </span>oracledb
+<span class="c"># (선택) Oracle Instant Client - thick 모드 필요 시</span>
+<span class="c"># COPY instantclient_21_x/ /opt/oracle/instantclient/</span>
+<span class="c"># ENV LD_LIBRARY_PATH=/opt/oracle/instantclient</span>
+</code></pre></div>
+
+<p>docker-compose에서는 <code>ORACLE_USER</code>, <code>ORACLE_PASSWORD</code> 환경 변수를 전달하고, 외부 Oracle DB는 <code>extra_hosts</code>로 연결한다.</p>
+<h3 id="6-3-airflow">6-3. Airflow와 연동</h3>
+<h4 id="1-bashoperator">방법 1: BashOperator</h4>
+<div class="codehilite"><pre><span></span><code><span class="c1"># airflow/dags/dag_dbt_run.py</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">airflow</span><span class="w"> </span><span class="kn">import</span> <span class="n">DAG</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">airflow.operators.bash</span><span class="w"> </span><span class="kn">import</span> <span class="n">BashOperator</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">datetime</span><span class="w"> </span><span class="kn">import</span> <span class="n">datetime</span>
+
+<span class="k">with</span> <span class="n">DAG</span><span class="p">(</span><span class="s2">&quot;dbt_daily_transform&quot;</span><span class="p">,</span> <span class="n">schedule_interval</span><span class="o">=</span><span class="s2">&quot;0 7 * * *&quot;</span><span class="p">,</span>
+         <span class="n">start_date</span><span class="o">=</span><span class="n">datetime</span><span class="p">(</span><span class="mi">2026</span><span class="p">,</span> <span class="mi">1</span><span class="p">,</span> <span class="mi">1</span><span class="p">),</span> <span class="n">catchup</span><span class="o">=</span><span class="kc">False</span><span class="p">)</span> <span class="k">as</span> <span class="n">dag</span><span class="p">:</span>
+    <span class="n">dbt_deps</span> <span class="o">=</span> <span class="n">BashOperator</span><span class="p">(</span><span class="n">task_id</span><span class="o">=</span><span class="s2">&quot;dbt_deps&quot;</span><span class="p">,</span> <span class="n">bash_command</span><span class="o">=</span><span class="s2">&quot;cd /dbt &amp;&amp; dbt deps&quot;</span><span class="p">)</span>
+    <span class="n">dbt_run</span>  <span class="o">=</span> <span class="n">BashOperator</span><span class="p">(</span><span class="n">task_id</span><span class="o">=</span><span class="s2">&quot;dbt_run&quot;</span><span class="p">,</span>  <span class="n">bash_command</span><span class="o">=</span><span class="s2">&quot;cd /dbt &amp;&amp; dbt run --target prod&quot;</span><span class="p">)</span>
+    <span class="n">dbt_test</span> <span class="o">=</span> <span class="n">BashOperator</span><span class="p">(</span><span class="n">task_id</span><span class="o">=</span><span class="s2">&quot;dbt_test&quot;</span><span class="p">,</span> <span class="n">bash_command</span><span class="o">=</span><span class="s2">&quot;cd /dbt &amp;&amp; dbt test --target prod&quot;</span><span class="p">)</span>
+    <span class="n">dbt_deps</span> <span class="o">&gt;&gt;</span> <span class="n">dbt_run</span> <span class="o">&gt;&gt;</span> <span class="n">dbt_test</span>
+</code></pre></div>
+
+<h4 id="2-cosmos-astronomer">방법 2: Cosmos (Astronomer)</h4>
+<p>Cosmos(<code>astronomer-cosmos</code>)는 dbt 프로젝트를 Airflow DAG로 자동 변환하는 통합 패키지다. 모델 단위로 task가 생성되어 세밀한 재시도와 모니터링이 가능하다. <code>DbtTaskGroup</code>을 사용하면 dbt 모델 DAG가 Airflow task로 1:1 매핑된다.</p>
+<hr />
+<h2 id="7">7. 프로젝트 구조</h2>
+<h3 id="7-1">7-1. 디렉토리 구조</h3>
+<div class="codehilite"><pre><span></span><code><span class="nx">dbt_project</span><span class="o">/</span>
+<span class="err">├──</span><span class="w"> </span><span class="nx">dbt_project</span><span class="p">.</span><span class="nx">yml</span><span class="w">       </span><span class="err">#</span><span class="w"> </span><span class="nx">프로젝트</span><span class="w"> </span><span class="nx">설정</span>
+<span class="err">├──</span><span class="w"> </span><span class="nx">profiles</span><span class="p">.</span><span class="nx">yml</span><span class="w">          </span><span class="err">#</span><span class="w"> </span><span class="nx">DB</span><span class="w"> </span><span class="nx">연결</span><span class="w"> </span><span class="p">(</span><span class="nx">보통</span><span class="w"> </span><span class="o">~/</span><span class="p">.</span><span class="nx">dbt</span><span class="o">/</span><span class="p">)</span>
+<span class="err">├──</span><span class="w"> </span><span class="nx">packages</span><span class="p">.</span><span class="nx">yml</span><span class="w">          </span><span class="err">#</span><span class="w"> </span><span class="nx">외부</span><span class="w"> </span><span class="nx">패키지</span>
+<span class="err">├──</span><span class="w"> </span><span class="nx">models</span><span class="o">/</span>
+<span class="err">│</span><span class="w">   </span><span class="err">├──</span><span class="w"> </span><span class="nx">staging</span><span class="o">/</span><span class="w">          </span><span class="err">#</span><span class="w"> </span><span class="nx">Bronze</span><span class="p">:</span><span class="w"> </span><span class="nx">raw</span><span class="w"> </span><span class="nx">정제</span><span class="w"> </span><span class="p">(</span><span class="nx">_sources</span><span class="p">.</span><span class="nx">yml</span><span class="p">,</span><span class="w"> </span><span class="nx">_schema</span><span class="p">.</span><span class="nx">yml</span><span class="p">,</span><span class="w"> </span><span class="nx">stg_</span><span class="o">*</span><span class="p">.</span><span class="nx">sql</span><span class="p">)</span>
+<span class="err">│</span><span class="w">   </span><span class="err">├──</span><span class="w"> </span><span class="nx">intermediate</span><span class="o">/</span><span class="w">     </span><span class="err">#</span><span class="w"> </span><span class="nx">Silver</span><span class="p">:</span><span class="w"> </span><span class="nx">비즈니스</span><span class="w"> </span><span class="nx">로직</span><span class="w"> </span><span class="nx">조합</span><span class="w"> </span><span class="p">(</span><span class="nx">int_</span><span class="o">*</span><span class="p">.</span><span class="nx">sql</span><span class="p">)</span>
+<span class="err">│</span><span class="w">   </span><span class="err">├──</span><span class="w"> </span><span class="nx">marts</span><span class="o">/</span><span class="w">            </span><span class="err">#</span><span class="w"> </span><span class="nx">Gold</span><span class="p">:</span><span class="w"> </span><span class="nx">최종</span><span class="w"> </span><span class="nx">소비</span><span class="w"> </span><span class="nx">테이블</span><span class="w"> </span><span class="p">(</span><span class="nx">mart_</span><span class="o">*</span><span class="p">.</span><span class="nx">sql</span><span class="p">)</span>
+<span class="err">│</span><span class="w">   </span><span class="err">└──</span><span class="w"> </span><span class="nx">semantic</span><span class="o">/</span><span class="w">         </span><span class="err">#</span><span class="w"> </span><span class="nx">MetricFlow</span><span class="w"> </span><span class="nx">정의</span><span class="w"> </span><span class="p">(</span><span class="nx">sem_</span><span class="o">*</span><span class="p">.</span><span class="nx">yml</span><span class="p">,</span><span class="w"> </span><span class="nx">metrics_</span><span class="o">*</span><span class="p">.</span><span class="nx">yml</span><span class="p">)</span>
+<span class="err">├──</span><span class="w"> </span><span class="nx">tests</span><span class="o">/</span><span class="w">                </span><span class="err">#</span><span class="w"> </span><span class="nx">커스텀</span><span class="w"> </span><span class="nx">SQL</span><span class="w"> </span><span class="nx">테스트</span>
+<span class="err">├──</span><span class="w"> </span><span class="nx">seeds</span><span class="o">/</span><span class="w">                </span><span class="err">#</span><span class="w"> </span><span class="nx">CSV</span><span class="w"> </span><span class="nx">참조</span><span class="w"> </span><span class="nx">데이터</span>
+<span class="err">├──</span><span class="w"> </span><span class="nx">snapshots</span><span class="o">/</span><span class="w">            </span><span class="err">#</span><span class="w"> </span><span class="nx">SCD</span><span class="w"> </span><span class="nx">Type</span><span class="w"> </span><span class="mi">2</span><span class="w"> </span><span class="nx">이력</span><span class="w"> </span><span class="nx">추적</span>
+<span class="err">├──</span><span class="w"> </span><span class="nx">macros</span><span class="o">/</span><span class="w">               </span><span class="err">#</span><span class="w"> </span><span class="nx">재사용</span><span class="w"> </span><span class="nx">SQL</span><span class="w"> </span><span class="nx">함수</span>
+<span class="err">└──</span><span class="w"> </span><span class="nx">docs</span><span class="o">/</span><span class="w">                 </span><span class="err">#</span><span class="w"> </span><span class="nx">doc</span><span class="w"> </span><span class="nx">blocks</span>
+</code></pre></div>
+
+<h3 id="7-2-dbt_projectyml">7-2. dbt_project.yml 예시</h3>
+<div class="codehilite"><pre><span></span><code><span class="c1"># dbt_project.yml</span>
+<span class="nt">name</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">bip_pipeline</span>
+<span class="nt">version</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;1.0.0&quot;</span>
+<span class="nt">config-version</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">2</span>
+<span class="nt">profile</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">bip_pipeline</span>
+
+<span class="nt">model-paths</span><span class="p">:</span><span class="w"> </span><span class="p p-Indicator">[</span><span class="s">&quot;models&quot;</span><span class="p p-Indicator">]</span>
+<span class="nt">test-paths</span><span class="p">:</span><span class="w"> </span><span class="p p-Indicator">[</span><span class="s">&quot;tests&quot;</span><span class="p p-Indicator">]</span>
+<span class="nt">seed-paths</span><span class="p">:</span><span class="w"> </span><span class="p p-Indicator">[</span><span class="s">&quot;seeds&quot;</span><span class="p p-Indicator">]</span>
+<span class="nt">macro-paths</span><span class="p">:</span><span class="w"> </span><span class="p p-Indicator">[</span><span class="s">&quot;macros&quot;</span><span class="p p-Indicator">]</span>
+<span class="nt">snapshot-paths</span><span class="p">:</span><span class="w"> </span><span class="p p-Indicator">[</span><span class="s">&quot;snapshots&quot;</span><span class="p p-Indicator">]</span>
+
+<span class="nt">clean-targets</span><span class="p">:</span>
+<span class="w">  </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">target</span>
+<span class="w">  </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">dbt_packages</span>
+
+<span class="nt">models</span><span class="p">:</span>
+<span class="w">  </span><span class="nt">bip_pipeline</span><span class="p">:</span>
+<span class="w">    </span><span class="nt">staging</span><span class="p">:</span>
+<span class="w">      </span><span class="nt">+materialized</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">view</span>
+<span class="w">      </span><span class="nt">+schema</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">staging</span>
+<span class="w">    </span><span class="nt">intermediate</span><span class="p">:</span>
+<span class="w">      </span><span class="nt">+materialized</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">ephemeral</span>
+<span class="w">    </span><span class="nt">marts</span><span class="p">:</span>
+<span class="w">      </span><span class="nt">+materialized</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">table</span>
+<span class="w">      </span><span class="nt">+schema</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">analytics</span>
+
+<span class="nt">seeds</span><span class="p">:</span>
+<span class="w">  </span><span class="nt">bip_pipeline</span><span class="p">:</span>
+<span class="w">    </span><span class="nt">+schema</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">seeds</span>
+</code></pre></div>
+
+<h3 id="7-3-medallion">7-3. Medallion 패턴 적용</h3>
+<div class="codehilite"><pre><span></span><code><span class="n">graph</span><span class="w"> </span><span class="n">LR</span>
+<span class="w">    </span><span class="n">subgraph</span><span class="w"> </span><span class="n">Bronze</span><span class="w"> </span><span class="o">[</span><span class="n">staging - Bronze</span><span class="o">]</span>
+<span class="w">        </span><span class="n">stg1</span><span class="o">[</span><span class="n">stg_stock_prices</span><span class="o">]</span>
+<span class="w">        </span><span class="n">stg2</span><span class="o">[</span><span class="n">stg_stock_info</span><span class="o">]</span>
+<span class="w">        </span><span class="n">stg3</span><span class="o">[</span><span class="n">stg_financial_statements</span><span class="o">]</span>
+<span class="w">    </span><span class="k">end</span>
+
+<span class="w">    </span><span class="n">subgraph</span><span class="w"> </span><span class="n">Silver</span><span class="w"> </span><span class="o">[</span><span class="n">intermediate - Silver</span><span class="o">]</span>
+<span class="w">        </span><span class="n">int1</span><span class="o">[</span><span class="n">int_daily_returns</span><span class="o">]</span>
+<span class="w">        </span><span class="n">int2</span><span class="o">[</span><span class="n">int_valuation_ratios</span><span class="o">]</span>
+<span class="w">    </span><span class="k">end</span>
+
+<span class="w">    </span><span class="n">subgraph</span><span class="w"> </span><span class="n">Gold</span><span class="w"> </span><span class="o">[</span><span class="n">marts - Gold</span><span class="o">]</span>
+<span class="w">        </span><span class="n">mart1</span><span class="o">[</span><span class="n">mart_stock_summary</span><span class="o">]</span>
+<span class="w">        </span><span class="n">mart2</span><span class="o">[</span><span class="n">mart_sector_analysis</span><span class="o">]</span>
+<span class="w">    </span><span class="k">end</span>
+
+<span class="w">    </span><span class="n">stg1</span><span class="w"> </span><span class="c1">--&gt; int1</span>
+<span class="w">    </span><span class="n">stg1</span><span class="w"> </span><span class="c1">--&gt; int2</span>
+<span class="w">    </span><span class="n">stg2</span><span class="w"> </span><span class="c1">--&gt; int2</span>
+<span class="w">    </span><span class="n">stg3</span><span class="w"> </span><span class="c1">--&gt; int2</span>
+<span class="w">    </span><span class="n">int1</span><span class="w"> </span><span class="c1">--&gt; mart1</span>
+<span class="w">    </span><span class="n">int2</span><span class="w"> </span><span class="c1">--&gt; mart1</span>
+<span class="w">    </span><span class="n">int1</span><span class="w"> </span><span class="c1">--&gt; mart2</span>
+
+<span class="w">    </span><span class="n">style</span><span class="w"> </span><span class="n">Bronze</span><span class="w"> </span><span class="nl">fill</span><span class="p">:</span><span class="n">#cd7f32</span><span class="p">,</span><span class="nl">color</span><span class="p">:</span><span class="n">#fff</span>
+<span class="w">    </span><span class="n">style</span><span class="w"> </span><span class="n">Silver</span><span class="w"> </span><span class="nl">fill</span><span class="p">:</span><span class="n">#c0c0c0</span><span class="p">,</span><span class="nl">color</span><span class="p">:</span><span class="n">#000</span>
+<span class="w">    </span><span class="n">style</span><span class="w"> </span><span class="n">Gold</span><span class="w"> </span><span class="nl">fill</span><span class="p">:</span><span class="n">#ffd700</span><span class="p">,</span><span class="nl">color</span><span class="p">:</span><span class="n">#000</span>
+</code></pre></div>
+
+<p><strong>네이밍 컨벤션:</strong></p>
+<table>
+<thead>
+<tr>
+<th>레이어</th>
+<th>접두사</th>
+<th>예시</th>
+<th>규칙</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Staging</td>
+<td><code>stg_</code></td>
+<td><code>stg_stock_prices</code></td>
+<td>소스별 1:1 매핑, 타입 캐스팅/리네이밍만</td>
+</tr>
+<tr>
+<td>Intermediate</td>
+<td><code>int_</code></td>
+<td><code>int_daily_returns</code></td>
+<td>비즈니스 로직 조합, 여러 stg 조인</td>
+</tr>
+<tr>
+<td>Marts</td>
+<td><code>mart_</code></td>
+<td><code>mart_stock_summary</code></td>
+<td>최종 소비용, 도메인별 그룹핑</td>
+</tr>
+</tbody>
+</table>
+<hr />
+<h2 id="8-dbt-nl2sql">8. dbt와 NL2SQL 연동</h2>
+<p>dbt는 데이터 변환과 메트릭 정의를 담당하고, NL2SQL 엔진(Cube, Agent 등)이 이를 활용하여 자연어 쿼리를 처리하는 구조다.</p>
+<div class="codehilite"><pre><span></span><code><span class="n">graph</span><span class="w"> </span><span class="n">LR</span>
+<span class="w">    </span><span class="n">A</span><span class="p">[</span><span class="n">Raw</span><span class="w"> </span><span class="n">Tables</span><span class="p">]</span><span class="w"> </span><span class="o">--&gt;|</span><span class="n">dbt</span><span class="w"> </span><span class="n">run</span><span class="o">|</span><span class="w"> </span><span class="n">B</span><span class="p">[</span><span class="n">Gold</span><span class="w"> </span><span class="n">Tables</span><span class="p">]</span>
+<span class="w">    </span><span class="n">B</span><span class="w"> </span><span class="o">--&gt;</span><span class="w"> </span><span class="n">C</span><span class="p">{</span><span class="n">NL2SQL</span><span class="w"> </span><span class="n">Engine</span><span class="p">}</span>
+<span class="w">    </span><span class="n">C</span><span class="w"> </span><span class="o">--&gt;|</span><span class="n">Cube</span><span class="p">.</span><span class="n">js</span><span class="o">|</span><span class="w"> </span><span class="n">D</span><span class="p">[</span><span class="n">REST</span><span class="o">/</span><span class="n">GraphQL</span><span class="w"> </span><span class="n">API</span><span class="p">]</span>
+<span class="w">    </span><span class="n">C</span><span class="w"> </span><span class="o">--&gt;|</span><span class="n">LangGraph</span><span class="w"> </span><span class="n">Agent</span><span class="o">|</span><span class="w"> </span><span class="n">E</span><span class="p">[</span><span class="n">Tool</span><span class="w"> </span><span class="n">Call</span><span class="p">]</span>
+
+<span class="w">    </span><span class="n">F</span><span class="p">[</span><span class="n">dbt</span><span class="w"> </span><span class="n">Artifacts</span><span class="p">]</span><span class="w"> </span><span class="o">--&gt;|</span><span class="n">manifest</span><span class="p">.</span><span class="n">json</span><span class="o">|</span><span class="w"> </span><span class="n">C</span>
+<span class="w">    </span><span class="n">F</span><span class="w"> </span><span class="o">--&gt;|</span><span class="n">catalog</span><span class="p">.</span><span class="n">json</span><span class="o">|</span><span class="w"> </span><span class="n">C</span>
+
+<span class="w">    </span><span class="n">style</span><span class="w"> </span><span class="n">B</span><span class="w"> </span><span class="n">fill</span><span class="o">:</span><span class="err">#</span><span class="n">ffd700</span><span class="p">,</span><span class="n">color</span><span class="o">:</span><span class="err">#</span><span class="mo">000</span>
+<span class="w">    </span><span class="n">style</span><span class="w"> </span><span class="n">C</span><span class="w"> </span><span class="n">fill</span><span class="o">:</span><span class="err">#</span><span class="mi">9</span><span class="n">b59b6</span><span class="p">,</span><span class="n">color</span><span class="o">:</span><span class="err">#</span><span class="n">fff</span>
+</code></pre></div>
+
+<h3 id="_4">활용 방식</h3>
+<ol>
+<li><strong>dbt가 Gold Table 생성</strong>: mart 레이어의 테이블을 dbt가 주기적으로 빌드</li>
+<li><strong>메타데이터 전달</strong>: <code>manifest.json</code>(모델 정의, 컬럼 설명)과 <code>catalog.json</code>(실제 스키마)을 Agent 컨텍스트로 활용</li>
+<li><strong>Semantic Layer API</strong> (dbt Cloud 전용): Agent가 dbt Semantic Layer API를 Tool로 호출하여 메트릭 쿼리 실행</li>
+</ol>
+<p>dbt Core에서는 Semantic Layer API를 사용할 수 없으므로, Cube.js REST API를 Agent Tool로 호출하는 방식을 권장한다.</p>
+<hr />
+<h2 id="9-cubejs-vs-dbt">9. Cube.js vs dbt 비교</h2>
+<table>
+<thead>
+<tr>
+<th>항목</th>
+<th>dbt Core</th>
+<th>Cube.js</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>역할</td>
+<td>데이터 변환 + 메트릭 정의</td>
+<td>메트릭 정의 + API 서빙</td>
+</tr>
+<tr>
+<td>실행 방식</td>
+<td>배치 (SQL 변환, 스케줄 실행)</td>
+<td>실시간 (API 요청 시 쿼리)</td>
+</tr>
+<tr>
+<td>API 제공</td>
+<td>CLI만 (Cloud에서만 API)</td>
+<td>REST / GraphQL / SQL API</td>
+</tr>
+<tr>
+<td>캐싱</td>
+<td>없음 (테이블 구체화로 대체)</td>
+<td>Pre-aggregation 캐싱</td>
+</tr>
+<tr>
+<td>Oracle 지원</td>
+<td>dbt-oracle (Oracle 공식 유지)</td>
+<td>node-oracledb (커뮤니티)</td>
+</tr>
+<tr>
+<td>메트릭 정의</td>
+<td>YAML (MetricFlow)</td>
+<td>JavaScript (cube.js 파일)</td>
+</tr>
+<tr>
+<td>데이터 변환</td>
+<td>핵심 기능 (SQL 모델링)</td>
+<td>없음 (쿼리만)</td>
+</tr>
+<tr>
+<td>문서화</td>
+<td>내장 (dbt docs)</td>
+<td>별도 구성 필요</td>
+</tr>
+<tr>
+<td>테스트</td>
+<td>내장 (schema + custom tests)</td>
+<td>없음</td>
+</tr>
+</tbody>
+</table>
+<h3 id="dbt-cube">함께 쓰기: dbt + Cube 하이브리드</h3>
+<p>가장 강력한 조합은 <strong>dbt(변환) + Cube(API 서빙)</strong> 이다.</p>
+<div class="codehilite"><pre><span></span><code><span class="n">graph</span><span class="w"> </span><span class="n">LR</span>
+<span class="w">    </span><span class="n">A</span><span class="p">[</span><span class="n">Raw</span><span class="w"> </span><span class="n">Data</span><span class="p">]</span><span class="w"> </span><span class="o">--&gt;|</span><span class="n">Airflow</span><span class="o">|</span><span class="w"> </span><span class="n">B</span><span class="p">[</span><span class="n">Warehouse</span><span class="p">]</span>
+<span class="w">    </span><span class="n">B</span><span class="w"> </span><span class="o">--&gt;|</span><span class="n">dbt</span><span class="o">|</span><span class="w"> </span><span class="n">C</span><span class="p">[</span><span class="n">Gold</span><span class="w"> </span><span class="n">Tables</span><span class="p">]</span>
+<span class="w">    </span><span class="n">C</span><span class="w"> </span><span class="o">--&gt;|</span><span class="n">Cube</span><span class="p">.</span><span class="n">js</span><span class="o">|</span><span class="w"> </span><span class="n">D</span><span class="p">[</span><span class="n">REST</span><span class="w"> </span><span class="n">API</span><span class="p">]</span>
+<span class="w">    </span><span class="n">D</span><span class="w"> </span><span class="o">--&gt;</span><span class="w"> </span><span class="n">E</span><span class="p">[</span><span class="n">Frontend</span><span class="p">]</span>
+<span class="w">    </span><span class="n">D</span><span class="w"> </span><span class="o">--&gt;</span><span class="w"> </span><span class="n">F</span><span class="p">[</span><span class="n">NL2SQL</span><span class="w"> </span><span class="n">Agent</span><span class="p">]</span>
+
+<span class="w">    </span><span class="n">style</span><span class="w"> </span><span class="n">C</span><span class="w"> </span><span class="n">fill</span><span class="o">:</span><span class="err">#</span><span class="n">ffd700</span><span class="p">,</span><span class="n">color</span><span class="o">:</span><span class="err">#</span><span class="mo">000</span>
+<span class="w">    </span><span class="n">style</span><span class="w"> </span><span class="n">D</span><span class="w"> </span><span class="n">fill</span><span class="o">:</span><span class="err">#</span><span class="mf">8e44</span><span class="n">ad</span><span class="p">,</span><span class="n">color</span><span class="o">:</span><span class="err">#</span><span class="n">fff</span>
+</code></pre></div>
+
+<ul>
+<li>dbt: 스케줄 기반으로 데이터 변환, 테스트, 문서화</li>
+<li>Cube: Gold Table 위에 메트릭 정의, 캐싱, API 서빙</li>
+<li>NL2SQL Agent: Cube API를 Tool로 호출하여 자연어 쿼리 처리</li>
+</ul>
+<hr />
+<h2 id="10-bip">10. BIP 경험과의 매핑</h2>
+<p>현재 BIP-Pipeline에서 Airflow DAG가 수행하는 역할과 dbt의 대응 관계를 정리한다.</p>
+<table>
+<thead>
+<tr>
+<th>현재 (Airflow DAG)</th>
+<th>dbt 대응</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>dag_daily_loader</code> (주가 수집)</td>
+<td>Extract/Load - dbt 범위 밖</td>
+</tr>
+<tr>
+<td>SQL 변환 로직 (Python 내 SQL)</td>
+<td><code>models/</code> 디렉토리의 SQL 모델</td>
+</tr>
+<tr>
+<td>데이터 품질 체크 (수동)</td>
+<td><code>tests/</code> 자동 테스트</td>
+</tr>
+<tr>
+<td>테이블 설명 (OM에 수동 등록)</td>
+<td>YAML description (자동 생성)</td>
+</tr>
+<tr>
+<td>DAG lineage (OM 연동)</td>
+<td>dbt lineage (자동 추적)</td>
+</tr>
+<tr>
+<td><code>indicator_context_snapshot</code> 생성</td>
+<td><code>models/marts/mart_indicator_context.sql</code></td>
+</tr>
+</tbody>
+</table>
+<h3 id="_5">마이그레이션 검토 포인트</h3>
+<ol>
+<li><strong>점진적 도입</strong>: 기존 Airflow DAG의 변환 로직만 dbt로 분리하고, 오케스트레이션은 Airflow가 유지</li>
+<li><strong>Cosmos 활용</strong>: Airflow + dbt 통합 시 Cosmos 패키지로 모델별 task 자동 생성</li>
+<li><strong>하이브리드 구성</strong>: dbt(변환/테스트/문서) + Cube(API 서빙) + Airflow(스케줄링)</li>
+</ol>
+<hr />
+<h2 id="11">11. 주의사항</h2>
+<ol>
+<li>
+<p><strong>dbt Semantic Layer API는 dbt Cloud 유료 전용</strong>이다. dbt Core만으로는 메트릭을 API로 서빙할 수 없다. API 서빙이 필요하면 Cube.js 등 별도 도구를 사용해야 한다.</p>
+</li>
+<li>
+<p><strong>dbt Core만으로는 실시간 API 서빙 불가</strong>하다. dbt는 배치 변환 도구이므로, 실시간 쿼리 API가 필요하면 Cube.js, Metriql 등을 별도 구성해야 한다.</p>
+</li>
+<li>
+<p><strong>Oracle 어댑터는 커뮤니티 지원</strong>이다. Oracle이 직접 유지하지만, dbt Labs 공식 어댑터 대비 기능 격차나 버전 지연이 있을 수 있다.</p>
+</li>
+<li>
+<p><strong>profiles.yml에 비밀값 직접 기재 금지</strong>. 반드시 <code>env_var()</code> 함수로 환경 변수를 참조해야 한다.</p>
+</li>
+<li>
+<p><strong>incremental 모델 주의</strong>: <code>is_incremental()</code> 조건을 잘못 설정하면 데이터 누락이나 중복이 발생할 수 있다. unique_key 설정을 반드시 확인해야 한다.</p>
+</li>
+<li>
+<p><strong>dbt run과 dbt test 분리</strong>: <code>dbt build</code> 명령은 모델 빌드와 테스트를 함께 실행하지만, 프로덕션에서는 분리 실행하여 실패 지점을 명확히 파악하는 것이 좋다.</p>
+</li>
+</ol>
+<h2 id="12">12. 참고</h2>
+<ul>
+<li>공식 문서: <a href="https://docs.getdbt.com">https://docs.getdbt.com</a></li>
+<li>GitHub: <a href="https://github.com/dbt-labs/dbt-core">https://github.com/dbt-labs/dbt-core</a></li>
+<li>dbt-oracle: <a href="https://github.com/oracle/dbt-oracle">https://github.com/oracle/dbt-oracle</a></li>
+<li>MetricFlow: <a href="https://docs.getdbt.com/docs/build/about-metricflow">https://docs.getdbt.com/docs/build/about-metricflow</a></li>
+<li>Cosmos (Airflow + dbt): <a href="https://github.com/astronomer/astronomer-cosmos">https://github.com/astronomer/astronomer-cosmos</a></li>
+<li>dbt 패키지 허브: <a href="https://hub.getdbt.com">https://hub.getdbt.com</a></li>
+<li>Cube.js 공식: <a href="https://cube.dev/docs">https://cube.dev/docs</a></li>
+</ul>
+<footer style="margin-top:3rem; padding-top:1rem; border-top:1px solid #e5e7eb; color:#6b7280; font-size:0.85rem;">
+<p>Generated: 2026-04-18 | BIP-Pipeline Documentation</p>
+</footer>
+</body>
+</html>

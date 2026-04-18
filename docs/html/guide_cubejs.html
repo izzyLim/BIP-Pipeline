@@ -1,0 +1,981 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Cube.js 개념 및 사용 가이드</title>
+<script src="https://cdn.jsdelivr.net/npm/mermaid@11/dist/mermaid.min.js"></script>
+<script>mermaid.initialize({startOnLoad:true, theme:'default', securityLevel:'loose'});</script>
+<style>
+  body { font-family: 'Pretendard', -apple-system, sans-serif; line-height: 1.7; color: #1a1a1a; max-width: 960px; margin: 0 auto; padding: 2rem 1.5rem; }
+  h1 { font-size: 2rem; margin: 2.5rem 0 1rem; padding-bottom: 0.5rem; border-bottom: 3px solid #2563eb; }
+  h2 { font-size: 1.5rem; margin: 2rem 0 0.8rem; padding-bottom: 0.3rem; border-bottom: 1px solid #e5e7eb; color: #2563eb; }
+  h3 { font-size: 1.2rem; margin: 1.5rem 0 0.5rem; }
+  h4 { font-size: 1.05rem; margin: 1.2rem 0 0.4rem; }
+  table { width: 100%; border-collapse: collapse; margin: 1rem 0; font-size: 0.9rem; }
+  th, td { border: 1px solid #e5e7eb; padding: 0.5rem 0.75rem; }
+  th { background: #f8fafc; font-weight: 600; }
+  tr:nth-child(even) { background: #fafafa; }
+  code { background: #f3f4f6; padding: 0.15rem 0.4rem; border-radius: 3px; font-size: 0.85em; }
+  pre { background: #1e293b; color: #e2e8f0; padding: 1rem; border-radius: 8px; overflow-x: auto; margin: 1rem 0; }
+  pre code { background: none; color: inherit; padding: 0; }
+  blockquote { border-left: 4px solid #3b82f6; padding: 0.5rem 1rem; margin: 1rem 0; background: #eff6ff; }
+  .mermaid { margin: 1.5rem 0; text-align: center; }
+  strong { color: #1e40af; }
+  a { color: #2563eb; }
+</style>
+</head>
+<body>
+<h1 id="cubejs">Cube.js 개념 및 사용 가이드</h1>
+<blockquote>
+<p>작성일: 2026-04-18 | 대상: BIP-Pipeline 데이터 엔지니어 / 백엔드 개발자</p>
+</blockquote>
+<hr />
+<h2 id="1">1. 개요</h2>
+<h3 id="cubejs_1">Cube.js란 무엇인가</h3>
+<p>Cube.js는 <strong>Headless BI</strong> 플랫폼이자 <strong>시맨틱 레이어(Semantic Layer)</strong> 엔진이다.
+데이터 웨어하우스 위에 비즈니스 메트릭(Measure)과 차원(Dimension)을 코드로 정의하고,
+REST / GraphQL / SQL API를 통해 모든 애플리케이션에 일관된 데이터를 제공한다.</p>
+<h3 id="_1">핵심 가치</h3>
+<table>
+<thead>
+<tr>
+<th>가치</th>
+<th>설명</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><strong>SSOT</strong></td>
+<td>메트릭 정의를 한 곳에서 관리. 대시보드마다 다른 계산식 문제 해소</td>
+</tr>
+<tr>
+<td><strong>Headless</strong></td>
+<td>특정 시각화 도구에 종속되지 않음. React, Tableau, Metabase 등 어디서든 소비</td>
+</tr>
+<tr>
+<td><strong>캐싱</strong></td>
+<td>Pre-aggregation과 Cube Store로 대규모 데이터도 서브초 응답</td>
+</tr>
+<tr>
+<td><strong>거버넌스</strong></td>
+<td>접근 제어, 멀티테넌시, 감사 로그를 API 레벨에서 제공</td>
+</tr>
+</tbody>
+</table>
+<h3 id="_2">라이선스</h3>
+<ul>
+<li><strong>Cube Core</strong>: MIT 라이선스 (오픈소스)</li>
+<li><strong>Cube Cloud</strong>: 매니지드 서비스 (유료). 모니터링, 자동 스케일링, 팀 협업 기능 추가</li>
+</ul>
+<hr />
+<h2 id="2">2. 아키텍처</h2>
+<div class="codehilite"><pre><span></span><code><span class="n">graph</span><span class="w"> </span><span class="n">TB</span>
+<span class="w">    </span><span class="n">subgraph</span><span class="w"> </span><span class="n">Clients</span><span class="p">[</span><span class="s">&quot;클라이언트&quot;</span><span class="p">]</span>
+<span class="w">        </span><span class="n">APP</span><span class="p">[</span><span class="n">웹</span><span class="o">/</span><span class="n">모바일</span><span class="w"> </span><span class="n">앱</span><span class="p">]</span>
+<span class="w">        </span><span class="n">BI</span><span class="p">[</span><span class="n">BI</span><span class="w"> </span><span class="n">도구</span><span class="p">]</span>
+<span class="w">        </span><span class="n">AGENT</span><span class="p">[</span><span class="n">AI</span><span class="w"> </span><span class="n">Agent</span><span class="w"> </span><span class="o">/</span><span class="w"> </span><span class="n">NL2SQL</span><span class="p">]</span>
+<span class="w">    </span><span class="n">end</span>
+<span class="w">    </span><span class="n">subgraph</span><span class="w"> </span><span class="n">CubeServer</span><span class="p">[</span><span class="s">&quot;Cube Server&quot;</span><span class="p">]</span>
+<span class="w">        </span><span class="n">API</span><span class="p">[</span><span class="n">API</span><span class="w"> </span><span class="n">Layer</span><span class="o">&lt;</span><span class="n">br</span><span class="o">/&gt;</span><span class="n">REST</span><span class="w"> </span><span class="err">·</span><span class="w"> </span><span class="n">GraphQL</span><span class="w"> </span><span class="err">·</span><span class="w"> </span><span class="n">SQL</span><span class="p">]</span>
+<span class="w">        </span><span class="n">COMPILER</span><span class="p">[</span><span class="n">Query</span><span class="w"> </span><span class="n">Compiler</span><span class="p">]</span>
+<span class="w">        </span><span class="n">ORCHESTRATOR</span><span class="p">[</span><span class="n">Query</span><span class="w"> </span><span class="n">Orchestrator</span><span class="p">]</span>
+<span class="w">        </span><span class="n">CACHE</span><span class="p">[</span><span class="n">캐시</span><span class="w"> </span><span class="n">레이어</span><span class="p">]</span>
+<span class="w">        </span><span class="n">STORE</span><span class="p">[</span><span class="n">Cube</span><span class="w"> </span><span class="n">Store</span><span class="o">&lt;</span><span class="n">br</span><span class="o">/&gt;</span><span class="n">Pre</span><span class="o">-</span><span class="n">aggregation</span><span class="w"> </span><span class="n">엔진</span><span class="p">]</span>
+<span class="w">    </span><span class="n">end</span>
+<span class="w">    </span><span class="n">subgraph</span><span class="w"> </span><span class="n">DataSources</span><span class="p">[</span><span class="s">&quot;데이터 소스&quot;</span><span class="p">]</span>
+<span class="w">        </span><span class="n">PG</span><span class="p">[(</span><span class="n">PostgreSQL</span><span class="p">)]</span>
+<span class="w">        </span><span class="n">ORACLE</span><span class="p">[(</span><span class="n">Oracle</span><span class="w"> </span><span class="mi">19</span><span class="n">c</span><span class="p">)]</span>
+<span class="w">        </span><span class="n">BQ</span><span class="p">[(</span><span class="n">BigQuery</span><span class="p">)]</span>
+<span class="w">    </span><span class="n">end</span>
+<span class="w">    </span><span class="n">APP</span><span class="w"> </span><span class="o">--&gt;</span><span class="w"> </span><span class="n">API</span>
+<span class="w">    </span><span class="n">BI</span><span class="w"> </span><span class="o">--&gt;</span><span class="w"> </span><span class="n">API</span>
+<span class="w">    </span><span class="n">AGENT</span><span class="w"> </span><span class="o">--&gt;</span><span class="w"> </span><span class="n">API</span>
+<span class="w">    </span><span class="n">API</span><span class="w"> </span><span class="o">--&gt;</span><span class="w"> </span><span class="n">COMPILER</span><span class="w"> </span><span class="o">--&gt;</span><span class="w"> </span><span class="n">ORCHESTRATOR</span><span class="w"> </span><span class="o">--&gt;</span><span class="w"> </span><span class="n">CACHE</span>
+<span class="w">    </span><span class="n">CACHE</span><span class="w"> </span><span class="o">--&gt;|</span><span class="n">cache</span><span class="w"> </span><span class="n">miss</span><span class="o">|</span><span class="w"> </span><span class="n">STORE</span>
+<span class="w">    </span><span class="n">CACHE</span><span class="w"> </span><span class="o">--&gt;|</span><span class="n">cache</span><span class="w"> </span><span class="n">miss</span><span class="o">|</span><span class="w"> </span><span class="n">PG</span>
+<span class="w">    </span><span class="n">STORE</span><span class="w"> </span><span class="o">--&gt;</span><span class="w"> </span><span class="n">PG</span>
+<span class="w">    </span><span class="n">STORE</span><span class="w"> </span><span class="o">--&gt;</span><span class="w"> </span><span class="n">ORACLE</span>
+<span class="w">    </span><span class="n">STORE</span><span class="w"> </span><span class="o">--&gt;</span><span class="w"> </span><span class="n">BQ</span>
+</code></pre></div>
+
+<h3 id="_3">주요 컴포넌트</h3>
+<ul>
+<li><strong>Cube Store</strong>: Rust로 작성된 고성능 분석 엔진. Pre-aggregation 결과를 Parquet으로 저장하여 원본 DB 부하 최소화</li>
+<li><strong>API Layer</strong>: REST(4000), GraphQL(4000), SQL API(15432, Postgres 호환)</li>
+<li><strong>캐싱</strong>: In-memory(TTL 6시간) + Pre-aggregation(Cube Store 물리 저장) + Refresh Key(변경 감지)</li>
+</ul>
+<div class="codehilite"><pre><span></span><code><span class="n">flowchart</span><span class="w"> </span><span class="n">LR</span>
+<span class="w">    </span><span class="n">REQ</span><span class="p">[</span><span class="n">쿼리</span><span class="w"> </span><span class="n">요청</span><span class="p">]</span><span class="w"> </span><span class="o">--&gt;</span><span class="w"> </span><span class="n">CHECK</span><span class="p">{</span><span class="n">캐시</span><span class="w"> </span><span class="n">확인</span><span class="p">}</span>
+<span class="w">    </span><span class="n">CHECK</span><span class="w"> </span><span class="o">--&gt;|</span><span class="n">Hit</span><span class="o">|</span><span class="w"> </span><span class="n">RET</span><span class="p">[</span><span class="n">서브초</span><span class="w"> </span><span class="n">반환</span><span class="p">]</span>
+<span class="w">    </span><span class="n">CHECK</span><span class="w"> </span><span class="o">--&gt;|</span><span class="n">Miss</span><span class="o">|</span><span class="w"> </span><span class="n">PA</span><span class="p">{</span><span class="n">Pre</span><span class="o">-</span><span class="n">agg</span><span class="o">?</span><span class="p">}</span>
+<span class="w">    </span><span class="n">PA</span><span class="w"> </span><span class="o">--&gt;|</span><span class="n">Yes</span><span class="o">|</span><span class="w"> </span><span class="n">CS</span><span class="p">[</span><span class="n">Cube</span><span class="w"> </span><span class="n">Store</span><span class="p">]</span>
+<span class="w">    </span><span class="n">PA</span><span class="w"> </span><span class="o">--&gt;|</span><span class="n">No</span><span class="o">|</span><span class="w"> </span><span class="n">DB</span><span class="p">[</span><span class="n">원본</span><span class="w"> </span><span class="n">DB</span><span class="p">]</span>
+<span class="w">    </span><span class="n">CS</span><span class="w"> </span><span class="o">--&gt;</span><span class="w"> </span><span class="n">RET</span>
+<span class="w">    </span><span class="n">DB</span><span class="w"> </span><span class="o">--&gt;</span><span class="w"> </span><span class="n">RET</span>
+</code></pre></div>
+
+<hr />
+<h2 id="3">3. 핵심 개념</h2>
+<h3 id="3-1-data-model">3-1. Data Model (큐브 정의)</h3>
+<p>큐브(Cube)는 시맨틱 레이어의 기본 단위로, 하나의 테이블을 감싸고 measures/dimensions/joins를 선언한다.</p>
+<p><strong>JavaScript 방식:</strong></p>
+<div class="codehilite"><pre><span></span><code><span class="nx">cube</span><span class="p">(</span><span class="sb">`StockPrice`</span><span class="p">,</span><span class="w"> </span><span class="p">{</span>
+<span class="w">  </span><span class="nx">sql</span><span class="o">:</span><span class="w"> </span><span class="sb">`SELECT * FROM stock_price_1d`</span><span class="p">,</span>
+<span class="w">  </span><span class="nx">title</span><span class="o">:</span><span class="w"> </span><span class="sb">`일봉 시세`</span><span class="p">,</span>
+<span class="w">  </span><span class="nx">measures</span><span class="o">:</span><span class="w"> </span><span class="p">{</span>
+<span class="w">    </span><span class="nx">count</span><span class="o">:</span><span class="w"> </span><span class="p">{</span><span class="w"> </span><span class="nx">type</span><span class="o">:</span><span class="w"> </span><span class="sb">`count`</span><span class="w"> </span><span class="p">},</span>
+<span class="w">    </span><span class="nx">avgClose</span><span class="o">:</span><span class="w"> </span><span class="p">{</span><span class="w"> </span><span class="nx">sql</span><span class="o">:</span><span class="w"> </span><span class="sb">`close_price`</span><span class="p">,</span><span class="w"> </span><span class="nx">type</span><span class="o">:</span><span class="w"> </span><span class="sb">`avg`</span><span class="p">,</span><span class="w"> </span><span class="nx">title</span><span class="o">:</span><span class="w"> </span><span class="sb">`평균 종가`</span><span class="w"> </span><span class="p">},</span>
+<span class="w">  </span><span class="p">},</span>
+<span class="w">  </span><span class="nx">dimensions</span><span class="o">:</span><span class="w"> </span><span class="p">{</span>
+<span class="w">    </span><span class="nx">ticker</span><span class="o">:</span><span class="w"> </span><span class="p">{</span><span class="w"> </span><span class="nx">sql</span><span class="o">:</span><span class="w"> </span><span class="sb">`ticker`</span><span class="p">,</span><span class="w"> </span><span class="nx">type</span><span class="o">:</span><span class="w"> </span><span class="sb">`string`</span><span class="p">,</span><span class="w"> </span><span class="nx">title</span><span class="o">:</span><span class="w"> </span><span class="sb">`종목코드`</span><span class="w"> </span><span class="p">},</span>
+<span class="w">    </span><span class="nx">tradeDate</span><span class="o">:</span><span class="w"> </span><span class="p">{</span><span class="w"> </span><span class="nx">sql</span><span class="o">:</span><span class="w"> </span><span class="sb">`trade_date`</span><span class="p">,</span><span class="w"> </span><span class="nx">type</span><span class="o">:</span><span class="w"> </span><span class="sb">`time`</span><span class="p">,</span><span class="w"> </span><span class="nx">title</span><span class="o">:</span><span class="w"> </span><span class="sb">`거래일`</span><span class="w"> </span><span class="p">},</span>
+<span class="w">  </span><span class="p">},</span>
+<span class="p">});</span>
+</code></pre></div>
+
+<p><strong>YAML 방식:</strong></p>
+<div class="codehilite"><pre><span></span><code><span class="nt">cubes</span><span class="p">:</span>
+<span class="w">  </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="nt">name</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">StockPrice</span>
+<span class="w">    </span><span class="nt">sql</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;SELECT</span><span class="nv"> </span><span class="s">*</span><span class="nv"> </span><span class="s">FROM</span><span class="nv"> </span><span class="s">stock_price_1d&quot;</span>
+<span class="w">    </span><span class="nt">measures</span><span class="p">:</span>
+<span class="w">      </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="nt">name</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">avgClose</span>
+<span class="w">        </span><span class="nt">sql</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">close_price</span>
+<span class="w">        </span><span class="nt">type</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">avg</span>
+<span class="w">    </span><span class="nt">dimensions</span><span class="p">:</span>
+<span class="w">      </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="nt">name</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">ticker</span>
+<span class="w">        </span><span class="nt">sql</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">ticker</span>
+<span class="w">        </span><span class="nt">type</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">string</span>
+</code></pre></div>
+
+<p>JavaScript는 동적 로직에 유리하고, YAML은 가독성이 높다.</p>
+<h3 id="3-2-measures">3-2. Measures (측정값)</h3>
+<table>
+<thead>
+<tr>
+<th>타입</th>
+<th>SQL 대응</th>
+<th>타입</th>
+<th>SQL 대응</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>count</code></td>
+<td><code>COUNT(*)</code></td>
+<td><code>countDistinct</code></td>
+<td><code>COUNT(DISTINCT)</code></td>
+</tr>
+<tr>
+<td><code>sum</code></td>
+<td><code>SUM()</code></td>
+<td><code>countDistinctApprox</code></td>
+<td>DB별 HLL</td>
+</tr>
+<tr>
+<td><code>avg</code></td>
+<td><code>AVG()</code></td>
+<td><code>runningTotal</code></td>
+<td>window function</td>
+</tr>
+<tr>
+<td><code>min</code> / <code>max</code></td>
+<td><code>MIN()</code> / <code>MAX()</code></td>
+<td></td>
+<td></td>
+</tr>
+</tbody>
+</table>
+<p><strong>계산된 Measure</strong> -- 다른 measure를 참조:</p>
+<div class="codehilite"><pre><span></span><code><span class="nx">measures</span><span class="o">:</span><span class="w"> </span><span class="p">{</span>
+<span class="w">  </span><span class="nx">totalAssets</span><span class="o">:</span><span class="w"> </span><span class="p">{</span><span class="w"> </span><span class="nx">sql</span><span class="o">:</span><span class="w"> </span><span class="sb">`total_assets`</span><span class="p">,</span><span class="w"> </span><span class="nx">type</span><span class="o">:</span><span class="w"> </span><span class="sb">`sum`</span><span class="w"> </span><span class="p">},</span>
+<span class="w">  </span><span class="nx">totalLiabilities</span><span class="o">:</span><span class="w"> </span><span class="p">{</span><span class="w"> </span><span class="nx">sql</span><span class="o">:</span><span class="w"> </span><span class="sb">`total_liabilities`</span><span class="p">,</span><span class="w"> </span><span class="nx">type</span><span class="o">:</span><span class="w"> </span><span class="sb">`sum`</span><span class="w"> </span><span class="p">},</span>
+<span class="w">  </span><span class="nx">debtRatio</span><span class="o">:</span><span class="w"> </span><span class="p">{</span>
+<span class="w">    </span><span class="nx">sql</span><span class="o">:</span><span class="w"> </span><span class="sb">`</span><span class="si">${</span><span class="nx">totalLiabilities</span><span class="si">}</span><span class="sb"> / NULLIF(</span><span class="si">${</span><span class="nx">totalAssets</span><span class="si">}</span><span class="sb">, 0)`</span><span class="p">,</span>
+<span class="w">    </span><span class="nx">type</span><span class="o">:</span><span class="w"> </span><span class="sb">`number`</span><span class="p">,</span>
+<span class="w">    </span><span class="nx">title</span><span class="o">:</span><span class="w"> </span><span class="sb">`부채비율`</span><span class="p">,</span>
+<span class="w">  </span><span class="p">},</span>
+<span class="p">},</span>
+</code></pre></div>
+
+<p><strong>필터된 Measure</strong> -- 조건부 집계:</p>
+<div class="codehilite"><pre><span></span><code><span class="nx">measures</span><span class="o">:</span><span class="w"> </span><span class="p">{</span>
+<span class="w">  </span><span class="nx">kospiCount</span><span class="o">:</span><span class="w"> </span><span class="p">{</span>
+<span class="w">    </span><span class="nx">sql</span><span class="o">:</span><span class="w"> </span><span class="sb">`ticker`</span><span class="p">,</span><span class="w"> </span><span class="nx">type</span><span class="o">:</span><span class="w"> </span><span class="sb">`count`</span><span class="p">,</span><span class="w"> </span><span class="nx">title</span><span class="o">:</span><span class="w"> </span><span class="sb">`KOSPI 종목 수`</span><span class="p">,</span>
+<span class="w">    </span><span class="nx">filters</span><span class="o">:</span><span class="w"> </span><span class="p">[{</span><span class="w"> </span><span class="nx">sql</span><span class="o">:</span><span class="w"> </span><span class="sb">`</span><span class="si">${</span><span class="nx">CUBE</span><span class="si">}</span><span class="sb">.market = &#39;KOSPI&#39;`</span><span class="w"> </span><span class="p">}],</span>
+<span class="w">  </span><span class="p">},</span>
+<span class="p">},</span>
+</code></pre></div>
+
+<h3 id="3-3-dimensions">3-3. Dimensions (차원)</h3>
+<table>
+<thead>
+<tr>
+<th>타입</th>
+<th>예시</th>
+<th>타입</th>
+<th>예시</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>string</code></td>
+<td>종목명, 시장구분</td>
+<td><code>boolean</code></td>
+<td>거래정지 여부</td>
+</tr>
+<tr>
+<td><code>number</code></td>
+<td>PER, PBR</td>
+<td><code>geo</code></td>
+<td>위도/경도</td>
+</tr>
+<tr>
+<td><code>time</code></td>
+<td>거래일, 공시일</td>
+<td></td>
+<td></td>
+</tr>
+</tbody>
+</table>
+<div class="codehilite"><pre><span></span><code><span class="nx">cube</span><span class="p">(</span><span class="sb">`StockInfo`</span><span class="p">,</span><span class="w"> </span><span class="p">{</span>
+<span class="w">  </span><span class="nx">sql</span><span class="o">:</span><span class="w"> </span><span class="sb">`SELECT * FROM stock_info`</span><span class="p">,</span>
+<span class="w">  </span><span class="nx">dimensions</span><span class="o">:</span><span class="w"> </span><span class="p">{</span>
+<span class="w">    </span><span class="nx">ticker</span><span class="o">:</span><span class="w"> </span><span class="p">{</span><span class="w"> </span><span class="nx">sql</span><span class="o">:</span><span class="w"> </span><span class="sb">`ticker`</span><span class="p">,</span><span class="w"> </span><span class="nx">type</span><span class="o">:</span><span class="w"> </span><span class="sb">`string`</span><span class="p">,</span><span class="w"> </span><span class="nx">primaryKey</span><span class="o">:</span><span class="w"> </span><span class="kc">true</span><span class="w"> </span><span class="p">},</span>
+<span class="w">    </span><span class="nx">companyName</span><span class="o">:</span><span class="w"> </span><span class="p">{</span><span class="w"> </span><span class="nx">sql</span><span class="o">:</span><span class="w"> </span><span class="sb">`company_name`</span><span class="p">,</span><span class="w"> </span><span class="nx">type</span><span class="o">:</span><span class="w"> </span><span class="sb">`string`</span><span class="p">,</span><span class="w"> </span><span class="nx">title</span><span class="o">:</span><span class="w"> </span><span class="sb">`회사명`</span><span class="w"> </span><span class="p">},</span>
+<span class="w">    </span><span class="nx">market</span><span class="o">:</span><span class="w"> </span><span class="p">{</span><span class="w"> </span><span class="nx">sql</span><span class="o">:</span><span class="w"> </span><span class="sb">`market`</span><span class="p">,</span><span class="w"> </span><span class="nx">type</span><span class="o">:</span><span class="w"> </span><span class="sb">`string`</span><span class="p">,</span><span class="w"> </span><span class="nx">title</span><span class="o">:</span><span class="w"> </span><span class="sb">`시장구분`</span><span class="w"> </span><span class="p">},</span>
+<span class="w">    </span><span class="nx">listedDate</span><span class="o">:</span><span class="w"> </span><span class="p">{</span><span class="w"> </span><span class="nx">sql</span><span class="o">:</span><span class="w"> </span><span class="sb">`listed_date`</span><span class="p">,</span><span class="w"> </span><span class="nx">type</span><span class="o">:</span><span class="w"> </span><span class="sb">`time`</span><span class="p">,</span><span class="w"> </span><span class="nx">title</span><span class="o">:</span><span class="w"> </span><span class="sb">`상장일`</span><span class="w"> </span><span class="p">},</span>
+<span class="w">    </span><span class="c1">// 계산된 dimension</span>
+<span class="w">    </span><span class="nx">marketCapBillion</span><span class="o">:</span><span class="w"> </span><span class="p">{</span><span class="w"> </span><span class="nx">sql</span><span class="o">:</span><span class="w"> </span><span class="sb">`market_cap / 100000000`</span><span class="p">,</span><span class="w"> </span><span class="nx">type</span><span class="o">:</span><span class="w"> </span><span class="sb">`number`</span><span class="p">,</span><span class="w"> </span><span class="nx">title</span><span class="o">:</span><span class="w"> </span><span class="sb">`시가총액(억)`</span><span class="w"> </span><span class="p">},</span>
+<span class="w">  </span><span class="p">},</span>
+<span class="p">});</span>
+</code></pre></div>
+
+<p><strong>서브쿼리 Dimension</strong> -- 다른 큐브의 measure를 dimension으로 참조:</p>
+<div class="codehilite"><pre><span></span><code><span class="nx">dimensions</span><span class="o">:</span><span class="w"> </span><span class="p">{</span>
+<span class="w">  </span><span class="nx">latestClose</span><span class="o">:</span><span class="w"> </span><span class="p">{</span>
+<span class="w">    </span><span class="nx">sql</span><span class="o">:</span><span class="w"> </span><span class="sb">`</span><span class="si">${</span><span class="nx">StockPrice</span><span class="p">.</span><span class="nx">avgClose</span><span class="si">}</span><span class="sb">`</span><span class="p">,</span><span class="w"> </span><span class="nx">type</span><span class="o">:</span><span class="w"> </span><span class="sb">`number`</span><span class="p">,</span><span class="w"> </span><span class="nx">subQuery</span><span class="o">:</span><span class="w"> </span><span class="kc">true</span><span class="p">,</span><span class="w"> </span><span class="nx">title</span><span class="o">:</span><span class="w"> </span><span class="sb">`최근 종가`</span><span class="p">,</span>
+<span class="w">  </span><span class="p">},</span>
+<span class="p">},</span>
+</code></pre></div>
+
+<h3 id="3-4-joins">3-4. Joins (조인)</h3>
+<table>
+<thead>
+<tr>
+<th>타입</th>
+<th>관계</th>
+<th>설명</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>belongsTo</code></td>
+<td>N:1</td>
+<td>fan-out 없음 (가장 안전)</td>
+</tr>
+<tr>
+<td><code>hasMany</code></td>
+<td>1:N</td>
+<td>fan-out 주의</td>
+</tr>
+<tr>
+<td><code>hasOne</code></td>
+<td>1:1</td>
+<td>LEFT JOIN</td>
+</tr>
+</tbody>
+</table>
+<div class="codehilite"><pre><span></span><code><span class="nx">cube</span><span class="p">(</span><span class="sb">`StockPrice`</span><span class="p">,</span><span class="w"> </span><span class="p">{</span>
+<span class="w">  </span><span class="nx">sql</span><span class="o">:</span><span class="w"> </span><span class="sb">`SELECT * FROM stock_price_1d`</span><span class="p">,</span>
+<span class="w">  </span><span class="nx">joins</span><span class="o">:</span><span class="w"> </span><span class="p">{</span>
+<span class="w">    </span><span class="nx">StockInfo</span><span class="o">:</span><span class="w"> </span><span class="p">{</span>
+<span class="w">      </span><span class="nx">relationship</span><span class="o">:</span><span class="w"> </span><span class="sb">`belongsTo`</span><span class="p">,</span>
+<span class="w">      </span><span class="nx">sql</span><span class="o">:</span><span class="w"> </span><span class="sb">`</span><span class="si">${</span><span class="nx">CUBE</span><span class="si">}</span><span class="sb">.ticker = </span><span class="si">${</span><span class="nx">StockInfo</span><span class="si">}</span><span class="sb">.ticker`</span><span class="p">,</span>
+<span class="w">    </span><span class="p">},</span>
+<span class="w">  </span><span class="p">},</span>
+<span class="w">  </span><span class="c1">// ...measures, dimensions...</span>
+<span class="p">});</span>
+
+<span class="nx">cube</span><span class="p">(</span><span class="sb">`ConsensusEstimates`</span><span class="p">,</span><span class="w"> </span><span class="p">{</span>
+<span class="w">  </span><span class="nx">sql</span><span class="o">:</span><span class="w"> </span><span class="sb">`SELECT * FROM consensus_estimates`</span><span class="p">,</span>
+<span class="w">  </span><span class="nx">joins</span><span class="o">:</span><span class="w"> </span><span class="p">{</span>
+<span class="w">    </span><span class="nx">StockInfo</span><span class="o">:</span><span class="w"> </span><span class="p">{</span>
+<span class="w">      </span><span class="nx">relationship</span><span class="o">:</span><span class="w"> </span><span class="sb">`belongsTo`</span><span class="p">,</span>
+<span class="w">      </span><span class="nx">sql</span><span class="o">:</span><span class="w"> </span><span class="sb">`</span><span class="si">${</span><span class="nx">CUBE</span><span class="si">}</span><span class="sb">.stock_code = </span><span class="si">${</span><span class="nx">StockInfo</span><span class="si">}</span><span class="sb">.ticker`</span><span class="p">,</span>
+<span class="w">    </span><span class="p">},</span>
+<span class="w">  </span><span class="p">},</span>
+<span class="w">  </span><span class="nx">measures</span><span class="o">:</span><span class="w"> </span><span class="p">{</span>
+<span class="w">    </span><span class="nx">avgTargetPrice</span><span class="o">:</span><span class="w"> </span><span class="p">{</span><span class="w"> </span><span class="nx">sql</span><span class="o">:</span><span class="w"> </span><span class="sb">`target_price`</span><span class="p">,</span><span class="w"> </span><span class="nx">type</span><span class="o">:</span><span class="w"> </span><span class="sb">`avg`</span><span class="p">,</span><span class="w"> </span><span class="nx">title</span><span class="o">:</span><span class="w"> </span><span class="sb">`평균 목표주가`</span><span class="w"> </span><span class="p">},</span>
+<span class="w">    </span><span class="nx">analystCount</span><span class="o">:</span><span class="w"> </span><span class="p">{</span><span class="w"> </span><span class="nx">sql</span><span class="o">:</span><span class="w"> </span><span class="sb">`analyst_count`</span><span class="p">,</span><span class="w"> </span><span class="nx">type</span><span class="o">:</span><span class="w"> </span><span class="sb">`max`</span><span class="p">,</span><span class="w"> </span><span class="nx">title</span><span class="o">:</span><span class="w"> </span><span class="sb">`추정 기관수`</span><span class="w"> </span><span class="p">},</span>
+<span class="w">  </span><span class="p">},</span>
+<span class="w">  </span><span class="nx">dimensions</span><span class="o">:</span><span class="w"> </span><span class="p">{</span>
+<span class="w">    </span><span class="nx">stockCode</span><span class="o">:</span><span class="w"> </span><span class="p">{</span><span class="w"> </span><span class="nx">sql</span><span class="o">:</span><span class="w"> </span><span class="sb">`stock_code`</span><span class="p">,</span><span class="w"> </span><span class="nx">type</span><span class="o">:</span><span class="w"> </span><span class="sb">`string`</span><span class="w"> </span><span class="p">},</span>
+<span class="w">    </span><span class="nx">estimateDate</span><span class="o">:</span><span class="w"> </span><span class="p">{</span><span class="w"> </span><span class="nx">sql</span><span class="o">:</span><span class="w"> </span><span class="sb">`estimate_date`</span><span class="p">,</span><span class="w"> </span><span class="nx">type</span><span class="o">:</span><span class="w"> </span><span class="sb">`time`</span><span class="w"> </span><span class="p">},</span>
+<span class="w">  </span><span class="p">},</span>
+<span class="p">});</span>
+</code></pre></div>
+
+<h3 id="3-5-pre-aggregations">3-5. Pre-aggregations (사전 집계)</h3>
+<p>자주 사용되는 쿼리 패턴을 미리 집계하여 Cube Store에 저장한다.</p>
+<div class="codehilite"><pre><span></span><code><span class="nx">preAggregations</span><span class="o">:</span><span class="w"> </span><span class="p">{</span>
+<span class="w">  </span><span class="nx">dailySummary</span><span class="o">:</span><span class="w"> </span><span class="p">{</span>
+<span class="w">    </span><span class="nx">type</span><span class="o">:</span><span class="w"> </span><span class="sb">`rollup`</span><span class="p">,</span>
+<span class="w">    </span><span class="nx">measures</span><span class="o">:</span><span class="w"> </span><span class="p">[</span><span class="nx">avgClose</span><span class="p">,</span><span class="w"> </span><span class="nx">avgVolume</span><span class="p">],</span>
+<span class="w">    </span><span class="nx">dimensions</span><span class="o">:</span><span class="w"> </span><span class="p">[</span><span class="nx">ticker</span><span class="p">],</span>
+<span class="w">    </span><span class="nx">timeDimension</span><span class="o">:</span><span class="w"> </span><span class="nx">tradeDate</span><span class="p">,</span>
+<span class="w">    </span><span class="nx">granularity</span><span class="o">:</span><span class="w"> </span><span class="sb">`day`</span><span class="p">,</span>
+<span class="w">    </span><span class="nx">partitionGranularity</span><span class="o">:</span><span class="w"> </span><span class="sb">`month`</span><span class="p">,</span>
+<span class="w">    </span><span class="nx">refreshKey</span><span class="o">:</span><span class="w"> </span><span class="p">{</span>
+<span class="w">      </span><span class="nx">every</span><span class="o">:</span><span class="w"> </span><span class="sb">`1 hour`</span><span class="p">,</span>
+<span class="w">      </span><span class="nx">sql</span><span class="o">:</span><span class="w"> </span><span class="sb">`SELECT MAX(trade_date) FROM stock_price_1d`</span><span class="p">,</span>
+<span class="w">    </span><span class="p">},</span>
+<span class="w">    </span><span class="nx">buildRangeStart</span><span class="o">:</span><span class="w"> </span><span class="p">{</span><span class="w"> </span><span class="nx">sql</span><span class="o">:</span><span class="w"> </span><span class="sb">`SELECT DATE &#39;2020-01-01&#39;`</span><span class="w"> </span><span class="p">},</span>
+<span class="w">    </span><span class="nx">buildRangeEnd</span><span class="o">:</span><span class="w"> </span><span class="p">{</span><span class="w"> </span><span class="nx">sql</span><span class="o">:</span><span class="w"> </span><span class="sb">`SELECT CURRENT_DATE`</span><span class="w"> </span><span class="p">},</span>
+<span class="w">  </span><span class="p">},</span>
+<span class="p">},</span>
+</code></pre></div>
+
+<p><strong>타입</strong>: <code>rollup</code>(기본), <code>rollupJoin</code>(크로스 큐브), <code>rollupLambda</code>(배치+실시간 결합), <code>originalSql</code>(원본 캐싱).
+<strong>갱신</strong>: 주기 기반(<code>every: '1 hour'</code>), SQL 기반(<code>sql: 'SELECT MAX(updated_at)...'</code>), 또는 결합.</p>
+<h3 id="3-6-segments">3-6. Segments (세그먼트)</h3>
+<p>재사용 가능한 필터 조건이다.</p>
+<div class="codehilite"><pre><span></span><code><span class="nx">segments</span><span class="o">:</span><span class="w"> </span><span class="p">{</span>
+<span class="w">  </span><span class="nx">kospiOnly</span><span class="o">:</span><span class="w"> </span><span class="p">{</span><span class="w"> </span><span class="nx">sql</span><span class="o">:</span><span class="w"> </span><span class="sb">`</span><span class="si">${</span><span class="nx">CUBE</span><span class="si">}</span><span class="sb">.market = &#39;KOSPI&#39;`</span><span class="p">,</span><span class="w"> </span><span class="nx">title</span><span class="o">:</span><span class="w"> </span><span class="sb">`KOSPI 종목`</span><span class="w"> </span><span class="p">},</span>
+<span class="w">  </span><span class="nx">largeCap</span><span class="o">:</span><span class="w"> </span><span class="p">{</span><span class="w"> </span><span class="nx">sql</span><span class="o">:</span><span class="w"> </span><span class="sb">`</span><span class="si">${</span><span class="nx">CUBE</span><span class="si">}</span><span class="sb">.market_cap &gt;= 10000000000000`</span><span class="p">,</span><span class="w"> </span><span class="nx">title</span><span class="o">:</span><span class="w"> </span><span class="sb">`대형주`</span><span class="w"> </span><span class="p">},</span>
+<span class="p">},</span>
+</code></pre></div>
+
+<p>API 호출 시: <code>"segments": ["StockInfo.kospiOnly", "StockInfo.largeCap"]</code></p>
+<hr />
+<h2 id="4">4. 데이터 소스 연결</h2>
+<h3 id="4-1-db">4-1. 지원 DB 목록</h3>
+<table>
+<thead>
+<tr>
+<th>카테고리</th>
+<th>DB</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><strong>관계형</strong></td>
+<td>PostgreSQL, MySQL, MS SQL, Oracle, MariaDB, SQLite</td>
+</tr>
+<tr>
+<td><strong>클라우드 DW</strong></td>
+<td>BigQuery, Snowflake, Redshift, Athena, Databricks</td>
+</tr>
+<tr>
+<td><strong>분석 엔진</strong></td>
+<td>ClickHouse, Druid, Trino/Presto, DuckDB</td>
+</tr>
+</tbody>
+</table>
+<h3 id="4-2-oracle">4-2. Oracle 연결 설정</h3>
+<p>Oracle은 community-supported 드라이버를 사용한다. Oracle 19c는 node-oracledb 6.x가 공식 지원한다.</p>
+<div class="codehilite"><pre><span></span><code><span class="nv">CUBEJS_DB_TYPE</span><span class="o">=</span>oracle
+<span class="nv">CUBEJS_DB_HOST</span><span class="o">=</span>oracle-host.example.com
+<span class="nv">CUBEJS_DB_PORT</span><span class="o">=</span><span class="m">1521</span>
+<span class="nv">CUBEJS_DB_NAME</span><span class="o">=</span>ORCL
+<span class="nv">CUBEJS_DB_USER</span><span class="o">=</span>cube_reader
+<span class="nv">CUBEJS_DB_PASS</span><span class="o">=</span>&lt;비밀값&gt;
+<span class="nv">LD_LIBRARY_PATH</span><span class="o">=</span>/opt/oracle/instantclient_19_20
+</code></pre></div>
+
+<p><code>package.json</code>에 <code>"oracledb": "^6.3.0"</code> 추가 필요. Instant Client 19.x 설치 필수.</p>
+<h3 id="4-3-postgresql">4-3. PostgreSQL 연결 설정</h3>
+<div class="codehilite"><pre><span></span><code><span class="nv">CUBEJS_DB_TYPE</span><span class="o">=</span>postgres
+<span class="nv">CUBEJS_DB_HOST</span><span class="o">=</span>bip-postgres
+<span class="nv">CUBEJS_DB_PORT</span><span class="o">=</span><span class="m">5432</span>
+<span class="nv">CUBEJS_DB_NAME</span><span class="o">=</span>stockdb
+<span class="nv">CUBEJS_DB_USER</span><span class="o">=</span>cube_reader
+<span class="nv">CUBEJS_DB_PASS</span><span class="o">=</span>&lt;비밀값&gt;
+<span class="c1"># SSL: CUBEJS_DB_SSL=true</span>
+</code></pre></div>
+
+<h3 id="4-4-db">4-4. 기타 DB</h3>
+<div class="codehilite"><pre><span></span><code><span class="c1"># BigQuery</span>
+<span class="nv">CUBEJS_DB_TYPE</span><span class="o">=</span>bigquery
+<span class="nv">CUBEJS_DB_BQ_PROJECT_ID</span><span class="o">=</span>my-project
+<span class="nv">CUBEJS_DB_BQ_KEY_FILE</span><span class="o">=</span>/path/to/keyfile.json
+
+<span class="c1"># Snowflake</span>
+<span class="nv">CUBEJS_DB_TYPE</span><span class="o">=</span>snowflake
+<span class="nv">CUBEJS_DB_SNOWFLAKE_ACCOUNT</span><span class="o">=</span>abc12345.us-east-1
+<span class="nv">CUBEJS_DB_SNOWFLAKE_WAREHOUSE</span><span class="o">=</span>COMPUTE_WH
+</code></pre></div>
+
+<hr />
+<h2 id="5-api">5. API</h2>
+<h3 id="5-1-rest-api">5-1. REST API</h3>
+<h4 id="post-cubejs-apiv1load">쿼리 실행: <code>POST /cubejs-api/v1/load</code></h4>
+<div class="codehilite"><pre><span></span><code>curl<span class="w"> </span>-X<span class="w"> </span>POST<span class="w"> </span>http://localhost:4000/cubejs-api/v1/load<span class="w"> </span><span class="se">\</span>
+<span class="w">  </span>-H<span class="w"> </span><span class="s2">&quot;Content-Type: application/json&quot;</span><span class="w"> </span><span class="se">\</span>
+<span class="w">  </span>-H<span class="w"> </span><span class="s2">&quot;Authorization: Bearer &lt;API_TOKEN&gt;&quot;</span><span class="w"> </span><span class="se">\</span>
+<span class="w">  </span>-d<span class="w"> </span><span class="s1">&#39;{</span>
+<span class="s1">    &quot;query&quot;: {</span>
+<span class="s1">      &quot;measures&quot;: [&quot;StockPrice.avgClose&quot;],</span>
+<span class="s1">      &quot;dimensions&quot;: [&quot;StockPrice.ticker&quot;, &quot;StockInfo.companyName&quot;],</span>
+<span class="s1">      &quot;timeDimensions&quot;: [{</span>
+<span class="s1">        &quot;dimension&quot;: &quot;StockPrice.tradeDate&quot;,</span>
+<span class="s1">        &quot;dateRange&quot;: [&quot;2026-01-01&quot;, &quot;2026-03-31&quot;],</span>
+<span class="s1">        &quot;granularity&quot;: &quot;month&quot;</span>
+<span class="s1">      }],</span>
+<span class="s1">      &quot;filters&quot;: [{</span>
+<span class="s1">        &quot;member&quot;: &quot;StockInfo.market&quot;,</span>
+<span class="s1">        &quot;operator&quot;: &quot;equals&quot;,</span>
+<span class="s1">        &quot;values&quot;: [&quot;KOSPI&quot;]</span>
+<span class="s1">      }],</span>
+<span class="s1">      &quot;order&quot;: { &quot;StockPrice.avgClose&quot;: &quot;desc&quot; },</span>
+<span class="s1">      &quot;limit&quot;: 10</span>
+<span class="s1">    }</span>
+<span class="s1">  }&#39;</span>
+</code></pre></div>
+
+<p><strong>응답:</strong></p>
+<div class="codehilite"><pre><span></span><code><span class="p">{</span>
+<span class="w">  </span><span class="nt">&quot;data&quot;</span><span class="p">:</span><span class="w"> </span><span class="p">[</span>
+<span class="w">    </span><span class="p">{</span>
+<span class="w">      </span><span class="nt">&quot;StockPrice.ticker&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;005930&quot;</span><span class="p">,</span>
+<span class="w">      </span><span class="nt">&quot;StockInfo.companyName&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;삼성전자&quot;</span><span class="p">,</span>
+<span class="w">      </span><span class="nt">&quot;StockPrice.avgClose&quot;</span><span class="p">:</span><span class="w"> </span><span class="mi">72500</span><span class="p">,</span>
+<span class="w">      </span><span class="nt">&quot;StockPrice.tradeDate.month&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;2026-01-01T00:00:00.000&quot;</span>
+<span class="w">    </span><span class="p">}</span>
+<span class="w">  </span><span class="p">],</span>
+<span class="w">  </span><span class="nt">&quot;lastRefreshTime&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;2026-04-18T06:30:00.000Z&quot;</span><span class="p">,</span>
+<span class="w">  </span><span class="nt">&quot;annotation&quot;</span><span class="p">:</span><span class="w"> </span><span class="p">{</span>
+<span class="w">    </span><span class="nt">&quot;measures&quot;</span><span class="p">:</span><span class="w"> </span><span class="p">{</span>
+<span class="w">      </span><span class="nt">&quot;StockPrice.avgClose&quot;</span><span class="p">:</span><span class="w"> </span><span class="p">{</span><span class="w"> </span><span class="nt">&quot;title&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;평균 종가&quot;</span><span class="p">,</span><span class="w"> </span><span class="nt">&quot;type&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;number&quot;</span><span class="w"> </span><span class="p">}</span>
+<span class="w">    </span><span class="p">}</span>
+<span class="w">  </span><span class="p">}</span>
+<span class="p">}</span>
+</code></pre></div>
+
+<h4 id="_4">쿼리 필드</h4>
+<table>
+<thead>
+<tr>
+<th>필드</th>
+<th>설명</th>
+<th>필드</th>
+<th>설명</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>measures</code></td>
+<td>집계 측정값</td>
+<td><code>order</code></td>
+<td>정렬 (<code>asc</code>/<code>desc</code>)</td>
+</tr>
+<tr>
+<td><code>dimensions</code></td>
+<td>그룹화 차원</td>
+<td><code>limit</code> / <code>offset</code></td>
+<td>페이지네이션</td>
+</tr>
+<tr>
+<td><code>filters</code></td>
+<td>필터 조건</td>
+<td><code>segments</code></td>
+<td>세그먼트</td>
+</tr>
+<tr>
+<td><code>timeDimensions</code></td>
+<td>시간 차원</td>
+<td></td>
+<td></td>
+</tr>
+</tbody>
+</table>
+<p><strong>필터 연산자</strong>: <code>equals</code>, <code>notEquals</code>, <code>contains</code>, <code>notContains</code>, <code>gt</code>, <code>gte</code>, <code>lt</code>, <code>lte</code>, <code>set</code>, <code>notSet</code>, <code>inDateRange</code>, <code>beforeDate</code>, <code>afterDate</code></p>
+<p><strong>메타데이터</strong>: <code>GET /cubejs-api/v1/meta</code> -- 모든 큐브의 measures/dimensions/segments 반환. NL2SQL 에이전트 활용.</p>
+<h3 id="5-2-graphql-api">5-2. GraphQL API</h3>
+<p>데이터 모델로부터 스키마를 자동 생성한다.</p>
+<div class="codehilite"><pre><span></span><code><span class="k">query</span><span class="w"> </span><span class="p">{</span>
+<span class="w">  </span><span class="n">cube</span><span class="w"> </span><span class="p">{</span>
+<span class="w">    </span><span class="n">stockPrice</span><span class="p">(</span>
+<span class="w">      </span><span class="n">where</span><span class="p">:</span><span class="w"> </span><span class="p">{</span><span class="w"> </span><span class="n">StockInfo</span><span class="p">:</span><span class="w"> </span><span class="p">{</span><span class="w"> </span><span class="n">market</span><span class="p">:</span><span class="w"> </span><span class="p">{</span><span class="w"> </span><span class="n">equals</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;KOSPI&quot;</span><span class="w"> </span><span class="p">}</span><span class="w"> </span><span class="p">}</span><span class="w"> </span><span class="p">}</span>
+<span class="w">      </span><span class="n">orderBy</span><span class="p">:</span><span class="w"> </span><span class="p">{</span><span class="w"> </span><span class="n">avgClose</span><span class="p">:</span><span class="w"> </span><span class="no">desc</span><span class="w"> </span><span class="p">}</span>
+<span class="w">      </span><span class="n">limit</span><span class="p">:</span><span class="w"> </span><span class="mi">5</span>
+<span class="w">    </span><span class="p">)</span><span class="w"> </span><span class="p">{</span>
+<span class="w">      </span><span class="n">ticker</span>
+<span class="w">      </span><span class="n">avgClose</span>
+<span class="w">      </span><span class="n">StockInfo</span><span class="w"> </span><span class="p">{</span><span class="w"> </span><span class="n">companyName</span><span class="w"> </span><span class="p">}</span>
+<span class="w">    </span><span class="p">}</span>
+<span class="w">  </span><span class="p">}</span>
+<span class="p">}</span>
+</code></pre></div>
+
+<h3 id="5-3-sql-api-postgres">5-3. SQL API (Postgres 호환)</h3>
+<div class="codehilite"><pre><span></span><code><span class="c1"># 활성화: CUBEJS_PG_SQL_PORT=15432</span>
+psql<span class="w"> </span>-h<span class="w"> </span>localhost<span class="w"> </span>-p<span class="w"> </span><span class="m">15432</span><span class="w"> </span>-U<span class="w"> </span>cube
+</code></pre></div>
+
+<div class="codehilite"><pre><span></span><code><span class="k">SELECT</span><span class="w"> </span><span class="n">ticker</span><span class="p">,</span><span class="w"> </span><span class="k">AVG</span><span class="p">(</span><span class="n">close_price</span><span class="p">)</span><span class="w"> </span><span class="k">AS</span><span class="w"> </span><span class="n">avg_close</span>
+<span class="k">FROM</span><span class="w"> </span><span class="n">StockPrice</span>
+<span class="k">WHERE</span><span class="w"> </span><span class="ss">&quot;StockInfo.market&quot;</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s1">&#39;KOSPI&#39;</span>
+<span class="k">GROUP</span><span class="w"> </span><span class="k">BY</span><span class="w"> </span><span class="mi">1</span><span class="w"> </span><span class="k">ORDER</span><span class="w"> </span><span class="k">BY</span><span class="w"> </span><span class="n">avg_close</span><span class="w"> </span><span class="k">DESC</span><span class="w"> </span><span class="k">LIMIT</span><span class="w"> </span><span class="mi">10</span><span class="p">;</span>
+</code></pre></div>
+
+<p>BI 도구(Metabase, Tableau, DBeaver)에서 Postgres 커넥터로 직접 연결 가능.</p>
+<hr />
+<h2 id="6-docker">6. Docker 컨테이너 설치</h2>
+<h3 id="6-1-postgresql">6-1. 기본 설치 (PostgreSQL)</h3>
+<div class="codehilite"><pre><span></span><code><span class="nt">version</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;3.8&quot;</span>
+
+<span class="nt">services</span><span class="p">:</span>
+<span class="w">  </span><span class="nt">cube</span><span class="p">:</span>
+<span class="w">    </span><span class="nt">image</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">cubejs/cube:v0.36</span>
+<span class="w">    </span><span class="nt">container_name</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">bip-cube</span>
+<span class="w">    </span><span class="nt">ports</span><span class="p">:</span>
+<span class="w">      </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="s">&quot;4000:4000&quot;</span><span class="w">    </span><span class="c1"># REST/GraphQL + Playground</span>
+<span class="w">      </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="s">&quot;15432:15432&quot;</span><span class="w">  </span><span class="c1"># SQL API</span>
+<span class="w">    </span><span class="nt">environment</span><span class="p">:</span>
+<span class="w">      </span><span class="nt">CUBEJS_API_SECRET</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;${CUBEJS_API_SECRET}&quot;</span>
+<span class="w">      </span><span class="nt">CUBEJS_DEV_MODE</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;true&quot;</span>
+<span class="w">      </span><span class="nt">CUBEJS_DB_TYPE</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;postgres&quot;</span>
+<span class="w">      </span><span class="nt">CUBEJS_DB_HOST</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;bip-postgres&quot;</span>
+<span class="w">      </span><span class="nt">CUBEJS_DB_PORT</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;5432&quot;</span>
+<span class="w">      </span><span class="nt">CUBEJS_DB_NAME</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;stockdb&quot;</span>
+<span class="w">      </span><span class="nt">CUBEJS_DB_USER</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;${CUBEJS_DB_USER}&quot;</span>
+<span class="w">      </span><span class="nt">CUBEJS_DB_PASS</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;${CUBEJS_DB_PASS}&quot;</span>
+<span class="w">      </span><span class="nt">CUBEJS_PG_SQL_PORT</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;15432&quot;</span>
+<span class="w">      </span><span class="nt">CUBEJS_CUBESTORE_HOST</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;cubestore&quot;</span>
+<span class="w">      </span><span class="nt">CUBEJS_CACHE_AND_QUEUE_DRIVER</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;memory&quot;</span>
+<span class="w">    </span><span class="nt">volumes</span><span class="p">:</span>
+<span class="w">      </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">./cube/schema:/cube/conf/schema</span>
+<span class="w">      </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">./cube/cube.js:/cube/conf/cube.js</span>
+<span class="w">    </span><span class="nt">networks</span><span class="p">:</span>
+<span class="w">      </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">bip-network</span>
+<span class="w">    </span><span class="nt">restart</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">unless-stopped</span>
+<span class="w">    </span><span class="nt">healthcheck</span><span class="p">:</span>
+<span class="w">      </span><span class="nt">test</span><span class="p">:</span><span class="w"> </span><span class="p p-Indicator">[</span><span class="s">&quot;CMD&quot;</span><span class="p p-Indicator">,</span><span class="w"> </span><span class="s">&quot;curl&quot;</span><span class="p p-Indicator">,</span><span class="w"> </span><span class="s">&quot;-f&quot;</span><span class="p p-Indicator">,</span><span class="w"> </span><span class="s">&quot;http://localhost:4000/readyz&quot;</span><span class="p p-Indicator">]</span>
+<span class="w">      </span><span class="nt">interval</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">30s</span>
+<span class="w">      </span><span class="nt">timeout</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">10s</span>
+<span class="w">      </span><span class="nt">retries</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">3</span>
+
+<span class="w">  </span><span class="nt">cubestore</span><span class="p">:</span>
+<span class="w">    </span><span class="nt">image</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">cubejs/cubestore:v0.36</span>
+<span class="w">    </span><span class="nt">container_name</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">bip-cubestore</span>
+<span class="w">    </span><span class="nt">environment</span><span class="p">:</span>
+<span class="w">      </span><span class="nt">CUBESTORE_REMOTE_DIR</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;/cube/data&quot;</span>
+<span class="w">    </span><span class="nt">volumes</span><span class="p">:</span>
+<span class="w">      </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">cubestore_data:/cube/data</span>
+<span class="w">    </span><span class="nt">networks</span><span class="p">:</span>
+<span class="w">      </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">bip-network</span>
+<span class="w">    </span><span class="nt">restart</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">unless-stopped</span>
+
+<span class="nt">volumes</span><span class="p">:</span>
+<span class="w">  </span><span class="nt">cubestore_data</span><span class="p">:</span>
+
+<span class="nt">networks</span><span class="p">:</span>
+<span class="w">  </span><span class="nt">bip-network</span><span class="p">:</span>
+<span class="w">    </span><span class="nt">external</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">true</span>
+</code></pre></div>
+
+<p><code>.env</code> (비밀값은 플레이스홀더만):</p>
+<div class="codehilite"><pre><span></span><code><span class="nv">CUBEJS_API_SECRET</span><span class="o">=</span>&lt;플레이스홀더-32자-이상-랜덤-문자열&gt;
+<span class="nv">CUBEJS_DB_USER</span><span class="o">=</span>cube_reader
+<span class="nv">CUBEJS_DB_PASS</span><span class="o">=</span>&lt;플레이스홀더&gt;
+</code></pre></div>
+
+<h3 id="6-2-oracle-19c">6-2. Oracle 19c 연결 설치</h3>
+<p><strong>Dockerfile.oracle:</strong></p>
+<div class="codehilite"><pre><span></span><code><span class="k">FROM</span><span class="w"> </span><span class="s">cubejs/cube:v0.36</span>
+
+<span class="k">RUN</span><span class="w"> </span>apt-get<span class="w"> </span>update<span class="w"> </span><span class="o">&amp;&amp;</span><span class="w"> </span>apt-get<span class="w"> </span>install<span class="w"> </span>-y<span class="w"> </span>libaio1<span class="w"> </span>wget<span class="w"> </span>unzip<span class="w"> </span><span class="se">\</span>
+<span class="w">    </span><span class="o">&amp;&amp;</span><span class="w"> </span>rm<span class="w"> </span>-rf<span class="w"> </span>/var/lib/apt/lists/*
+
+<span class="k">RUN</span><span class="w"> </span>mkdir<span class="w"> </span>-p<span class="w"> </span>/opt/oracle<span class="w"> </span><span class="o">&amp;&amp;</span><span class="w"> </span><span class="nb">cd</span><span class="w"> </span>/opt/oracle<span class="w"> </span><span class="se">\</span>
+<span class="w">    </span><span class="o">&amp;&amp;</span><span class="w"> </span>wget<span class="w"> </span>https://download.oracle.com/otn_software/linux/instantclient/1920000/instantclient-basic-linux.x64-19.20.0.0.0dbru.zip<span class="w"> </span><span class="se">\</span>
+<span class="w">    </span><span class="o">&amp;&amp;</span><span class="w"> </span>unzip<span class="w"> </span>instantclient-basic-linux.x64-19.20.0.0.0dbru.zip<span class="w"> </span><span class="o">&amp;&amp;</span><span class="w"> </span>rm<span class="w"> </span>*.zip
+
+<span class="k">ENV</span><span class="w"> </span><span class="nv">LD_LIBRARY_PATH</span><span class="o">=</span>/opt/oracle/instantclient_19_20:<span class="nv">$LD_LIBRARY_PATH</span>
+<span class="k">RUN</span><span class="w"> </span>npm<span class="w"> </span>install<span class="w"> </span>oracledb@6.3.0
+</code></pre></div>
+
+<p><strong>docker-compose.oracle.yml:</strong></p>
+<div class="codehilite"><pre><span></span><code><span class="nt">version</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;3.8&quot;</span>
+
+<span class="nt">services</span><span class="p">:</span>
+<span class="w">  </span><span class="nt">cube-oracle</span><span class="p">:</span>
+<span class="w">    </span><span class="nt">build</span><span class="p">:</span>
+<span class="w">      </span><span class="nt">context</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">.</span>
+<span class="w">      </span><span class="nt">dockerfile</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">Dockerfile.oracle</span>
+<span class="w">    </span><span class="nt">container_name</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">bip-cube-oracle</span>
+<span class="w">    </span><span class="nt">ports</span><span class="p">:</span>
+<span class="w">      </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="s">&quot;4000:4000&quot;</span>
+<span class="w">      </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="s">&quot;15432:15432&quot;</span>
+<span class="w">    </span><span class="nt">environment</span><span class="p">:</span>
+<span class="w">      </span><span class="nt">CUBEJS_API_SECRET</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;${CUBEJS_API_SECRET}&quot;</span>
+<span class="w">      </span><span class="nt">CUBEJS_DEV_MODE</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;true&quot;</span>
+<span class="w">      </span><span class="nt">CUBEJS_DB_TYPE</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;oracle&quot;</span>
+<span class="w">      </span><span class="nt">CUBEJS_DB_HOST</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;${ORACLE_DB_HOST}&quot;</span>
+<span class="w">      </span><span class="nt">CUBEJS_DB_PORT</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;1521&quot;</span>
+<span class="w">      </span><span class="nt">CUBEJS_DB_NAME</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;${ORACLE_DB_SID}&quot;</span>
+<span class="w">      </span><span class="nt">CUBEJS_DB_USER</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;${ORACLE_DB_USER}&quot;</span>
+<span class="w">      </span><span class="nt">CUBEJS_DB_PASS</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;${ORACLE_DB_PASS}&quot;</span>
+<span class="w">      </span><span class="nt">CUBEJS_CUBESTORE_HOST</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;cubestore&quot;</span>
+<span class="w">      </span><span class="nt">CUBEJS_PG_SQL_PORT</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;15432&quot;</span>
+<span class="w">    </span><span class="nt">volumes</span><span class="p">:</span>
+<span class="w">      </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">./cube/schema:/cube/conf/schema</span>
+<span class="w">    </span><span class="nt">networks</span><span class="p">:</span>
+<span class="w">      </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">bip-network</span>
+<span class="w">    </span><span class="nt">depends_on</span><span class="p">:</span>
+<span class="w">      </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">cubestore</span>
+
+<span class="w">  </span><span class="nt">cubestore</span><span class="p">:</span>
+<span class="w">    </span><span class="nt">image</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">cubejs/cubestore:v0.36</span>
+<span class="w">    </span><span class="nt">container_name</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">bip-cubestore</span>
+<span class="w">    </span><span class="nt">environment</span><span class="p">:</span>
+<span class="w">      </span><span class="nt">CUBESTORE_REMOTE_DIR</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;/cube/data&quot;</span>
+<span class="w">    </span><span class="nt">volumes</span><span class="p">:</span>
+<span class="w">      </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">cubestore_data:/cube/data</span>
+<span class="w">    </span><span class="nt">networks</span><span class="p">:</span>
+<span class="w">      </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">bip-network</span>
+
+<span class="nt">volumes</span><span class="p">:</span>
+<span class="w">  </span><span class="nt">cubestore_data</span><span class="p">:</span>
+
+<span class="nt">networks</span><span class="p">:</span>
+<span class="w">  </span><span class="nt">bip-network</span><span class="p">:</span>
+<span class="w">    </span><span class="nt">external</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">true</span>
+</code></pre></div>
+
+<h3 id="6-3">6-3. 시작 및 확인</h3>
+<div class="codehilite"><pre><span></span><code><span class="c1"># 실행</span>
+docker<span class="w"> </span>compose<span class="w"> </span>-f<span class="w"> </span>docker-compose.cube.yml<span class="w"> </span>up<span class="w"> </span>-d<span class="w">    </span><span class="c1"># PostgreSQL</span>
+docker<span class="w"> </span>compose<span class="w"> </span>-f<span class="w"> </span>docker-compose.oracle.yml<span class="w"> </span>up<span class="w"> </span>-d<span class="w">   </span><span class="c1"># Oracle</span>
+
+<span class="c1"># 헬스체크</span>
+curl<span class="w"> </span>http://localhost:4000/readyz
+
+<span class="c1"># 메타데이터 확인</span>
+curl<span class="w"> </span>http://localhost:4000/cubejs-api/v1/meta<span class="w"> </span><span class="se">\</span>
+<span class="w">  </span>-H<span class="w"> </span><span class="s2">&quot;Authorization: Bearer &lt;API_TOKEN&gt;&quot;</span><span class="w"> </span><span class="p">|</span><span class="w"> </span>jq<span class="w"> </span><span class="s1">&#39;.cubes | length&#39;</span>
+
+<span class="c1"># Playground: 브라우저에서 http://localhost:4000 접속</span>
+<span class="c1"># (CUBEJS_DEV_MODE=true 일 때 활성화)</span>
+</code></pre></div>
+
+<div class="codehilite"><pre><span></span><code><span class="n">flowchart</span><span class="w"> </span><span class="n">LR</span>
+<span class="w">    </span><span class="n">DEV</span><span class="p">[</span><span class="n">개발자</span><span class="p">]</span><span class="w"> </span><span class="o">--&gt;|</span><span class="n">localhost</span><span class="o">:</span><span class="mi">4000</span><span class="o">|</span><span class="w"> </span><span class="n">PG</span><span class="p">[</span><span class="n">Playground</span><span class="p">]</span>
+<span class="w">    </span><span class="n">PG</span><span class="w"> </span><span class="o">--&gt;</span><span class="w"> </span><span class="n">BUILD</span><span class="p">[</span><span class="n">쿼리</span><span class="w"> </span><span class="n">빌더</span><span class="p">]</span>
+<span class="w">    </span><span class="n">PG</span><span class="w"> </span><span class="o">--&gt;</span><span class="w"> </span><span class="n">SCHEMA</span><span class="p">[</span><span class="n">스키마</span><span class="w"> </span><span class="n">탐색</span><span class="p">]</span>
+<span class="w">    </span><span class="n">BUILD</span><span class="w"> </span><span class="o">--&gt;</span><span class="w"> </span><span class="n">API</span><span class="p">[</span><span class="n">REST</span><span class="w"> </span><span class="n">API</span><span class="p">]</span><span class="w"> </span><span class="o">--&gt;</span><span class="w"> </span><span class="n">RESULT</span><span class="p">[</span><span class="n">결과</span><span class="w"> </span><span class="n">확인</span><span class="p">]</span>
+</code></pre></div>
+
+<hr />
+<h2 id="7">7. 시맨틱 모델 작성법</h2>
+<h3 id="7-1">7-1. 파일 구조</h3>
+<div class="codehilite"><pre><span></span><code>cube/
+  schema/
+    cubes/
+      StockInfo.js
+      StockPrice.js
+      FinancialStatements.js
+      ConsensusEstimates.js
+    views/
+      StockOverview.js         # 여러 큐브를 결합한 읽기 전용 뷰
+  cube.js                      # 커스텀 설정 (보안, 리프레시 등)
+</code></pre></div>
+
+<h3 id="7-2">7-2. 기본 큐브 작성 (매출 분석)</h3>
+<div class="codehilite"><pre><span></span><code><span class="nx">cube</span><span class="p">(</span><span class="sb">`FinancialStatements`</span><span class="p">,</span><span class="w"> </span><span class="p">{</span>
+<span class="w">  </span><span class="nx">sql</span><span class="o">:</span><span class="w"> </span><span class="sb">`SELECT * FROM financial_statements WHERE sj_div = &#39;IS&#39;`</span><span class="p">,</span>
+<span class="w">  </span><span class="nx">title</span><span class="o">:</span><span class="w"> </span><span class="sb">`손익계산서`</span><span class="p">,</span>
+
+<span class="w">  </span><span class="nx">measures</span><span class="o">:</span><span class="w"> </span><span class="p">{</span>
+<span class="w">    </span><span class="nx">totalRevenue</span><span class="o">:</span><span class="w"> </span><span class="p">{</span><span class="w"> </span><span class="nx">sql</span><span class="o">:</span><span class="w"> </span><span class="sb">`revenue`</span><span class="p">,</span><span class="w"> </span><span class="nx">type</span><span class="o">:</span><span class="w"> </span><span class="sb">`sum`</span><span class="p">,</span><span class="w"> </span><span class="nx">title</span><span class="o">:</span><span class="w"> </span><span class="sb">`매출액`</span><span class="w"> </span><span class="p">},</span>
+<span class="w">    </span><span class="nx">operatingProfit</span><span class="o">:</span><span class="w"> </span><span class="p">{</span><span class="w"> </span><span class="nx">sql</span><span class="o">:</span><span class="w"> </span><span class="sb">`operating_profit`</span><span class="p">,</span><span class="w"> </span><span class="nx">type</span><span class="o">:</span><span class="w"> </span><span class="sb">`sum`</span><span class="p">,</span><span class="w"> </span><span class="nx">title</span><span class="o">:</span><span class="w"> </span><span class="sb">`영업이익`</span><span class="w"> </span><span class="p">},</span>
+<span class="w">    </span><span class="nx">netIncome</span><span class="o">:</span><span class="w"> </span><span class="p">{</span><span class="w"> </span><span class="nx">sql</span><span class="o">:</span><span class="w"> </span><span class="sb">`net_income`</span><span class="p">,</span><span class="w"> </span><span class="nx">type</span><span class="o">:</span><span class="w"> </span><span class="sb">`sum`</span><span class="p">,</span><span class="w"> </span><span class="nx">title</span><span class="o">:</span><span class="w"> </span><span class="sb">`당기순이익`</span><span class="w"> </span><span class="p">},</span>
+<span class="w">    </span><span class="nx">operatingMargin</span><span class="o">:</span><span class="w"> </span><span class="p">{</span>
+<span class="w">      </span><span class="nx">sql</span><span class="o">:</span><span class="w"> </span><span class="sb">`</span><span class="si">${</span><span class="nx">operatingProfit</span><span class="si">}</span><span class="sb"> / NULLIF(</span><span class="si">${</span><span class="nx">totalRevenue</span><span class="si">}</span><span class="sb">, 0) * 100`</span><span class="p">,</span>
+<span class="w">      </span><span class="nx">type</span><span class="o">:</span><span class="w"> </span><span class="sb">`number`</span><span class="p">,</span>
+<span class="w">      </span><span class="nx">title</span><span class="o">:</span><span class="w"> </span><span class="sb">`영업이익률(%)`</span><span class="p">,</span>
+<span class="w">    </span><span class="p">},</span>
+<span class="w">  </span><span class="p">},</span>
+
+<span class="w">  </span><span class="nx">dimensions</span><span class="o">:</span><span class="w"> </span><span class="p">{</span>
+<span class="w">    </span><span class="nx">ticker</span><span class="o">:</span><span class="w"> </span><span class="p">{</span><span class="w"> </span><span class="nx">sql</span><span class="o">:</span><span class="w"> </span><span class="sb">`ticker`</span><span class="p">,</span><span class="w"> </span><span class="nx">type</span><span class="o">:</span><span class="w"> </span><span class="sb">`string`</span><span class="w"> </span><span class="p">},</span>
+<span class="w">    </span><span class="nx">fiscalYear</span><span class="o">:</span><span class="w"> </span><span class="p">{</span><span class="w"> </span><span class="nx">sql</span><span class="o">:</span><span class="w"> </span><span class="sb">`fiscal_year`</span><span class="p">,</span><span class="w"> </span><span class="nx">type</span><span class="o">:</span><span class="w"> </span><span class="sb">`string`</span><span class="p">,</span><span class="w"> </span><span class="nx">title</span><span class="o">:</span><span class="w"> </span><span class="sb">`회계연도`</span><span class="w"> </span><span class="p">},</span>
+<span class="w">    </span><span class="nx">filingDate</span><span class="o">:</span><span class="w"> </span><span class="p">{</span><span class="w"> </span><span class="nx">sql</span><span class="o">:</span><span class="w"> </span><span class="sb">`filing_date`</span><span class="p">,</span><span class="w"> </span><span class="nx">type</span><span class="o">:</span><span class="w"> </span><span class="sb">`time`</span><span class="p">,</span><span class="w"> </span><span class="nx">title</span><span class="o">:</span><span class="w"> </span><span class="sb">`공시일`</span><span class="w"> </span><span class="p">},</span>
+<span class="w">  </span><span class="p">},</span>
+<span class="p">});</span>
+</code></pre></div>
+
+<h3 id="7-3">7-3. 조인 정의</h3>
+<div class="codehilite"><pre><span></span><code><span class="c1">// View: 여러 큐브를 결합한 읽기 전용 인터페이스</span>
+<span class="nx">view</span><span class="p">(</span><span class="sb">`StockOverview`</span><span class="p">,</span><span class="w"> </span><span class="p">{</span>
+<span class="w">  </span><span class="nx">description</span><span class="o">:</span><span class="w"> </span><span class="sb">`종목 종합 뷰`</span><span class="p">,</span>
+<span class="w">  </span><span class="nx">includes</span><span class="o">:</span><span class="w"> </span><span class="p">[</span>
+<span class="w">    </span><span class="nx">StockInfo</span><span class="p">.</span><span class="nx">ticker</span><span class="p">,</span>
+<span class="w">    </span><span class="nx">StockInfo</span><span class="p">.</span><span class="nx">companyName</span><span class="p">,</span>
+<span class="w">    </span><span class="nx">StockInfo</span><span class="p">.</span><span class="nx">market</span><span class="p">,</span>
+<span class="w">    </span><span class="nx">StockPrice</span><span class="p">.</span><span class="nx">avgClose</span><span class="p">,</span>
+<span class="w">    </span><span class="nx">StockPrice</span><span class="p">.</span><span class="nx">avgVolume</span><span class="p">,</span>
+<span class="w">    </span><span class="nx">ConsensusEstimates</span><span class="p">.</span><span class="nx">avgTargetPrice</span><span class="p">,</span>
+<span class="w">  </span><span class="p">],</span>
+<span class="p">});</span>
+</code></pre></div>
+
+<h3 id="7-4-pre-aggregation">7-4. Pre-aggregation 설정</h3>
+<div class="codehilite"><pre><span></span><code><span class="nx">preAggregations</span><span class="o">:</span><span class="w"> </span><span class="p">{</span>
+<span class="w">  </span><span class="nx">dailyByTicker</span><span class="o">:</span><span class="w"> </span><span class="p">{</span>
+<span class="w">    </span><span class="nx">type</span><span class="o">:</span><span class="w"> </span><span class="sb">`rollup`</span><span class="p">,</span>
+<span class="w">    </span><span class="nx">measures</span><span class="o">:</span><span class="w"> </span><span class="p">[</span><span class="nx">avgClose</span><span class="p">,</span><span class="w"> </span><span class="nx">avgVolume</span><span class="p">,</span><span class="w"> </span><span class="nx">count</span><span class="p">],</span>
+<span class="w">    </span><span class="nx">dimensions</span><span class="o">:</span><span class="w"> </span><span class="p">[</span><span class="nx">ticker</span><span class="p">],</span>
+<span class="w">    </span><span class="nx">timeDimension</span><span class="o">:</span><span class="w"> </span><span class="nx">tradeDate</span><span class="p">,</span>
+<span class="w">    </span><span class="nx">granularity</span><span class="o">:</span><span class="w"> </span><span class="sb">`day`</span><span class="p">,</span>
+<span class="w">    </span><span class="nx">partitionGranularity</span><span class="o">:</span><span class="w"> </span><span class="sb">`month`</span><span class="p">,</span>
+<span class="w">    </span><span class="nx">refreshKey</span><span class="o">:</span><span class="w"> </span><span class="p">{</span><span class="w"> </span><span class="nx">every</span><span class="o">:</span><span class="w"> </span><span class="sb">`1 hour`</span><span class="w"> </span><span class="p">},</span>
+<span class="w">  </span><span class="p">},</span>
+<span class="p">},</span>
+</code></pre></div>
+
+<h3 id="7-5">7-5. 보안 컨텍스트 (멀티테넌시)</h3>
+<div class="codehilite"><pre><span></span><code><span class="c1">// cube.js</span>
+<span class="nx">module</span><span class="p">.</span><span class="nx">exports</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="p">{</span>
+<span class="w">  </span><span class="nx">contextToAppId</span><span class="o">:</span><span class="w"> </span><span class="p">({</span><span class="w"> </span><span class="nx">securityContext</span><span class="w"> </span><span class="p">})</span><span class="w"> </span><span class="p">=&gt;</span>
+<span class="w">    </span><span class="sb">`CUBEJS_APP_</span><span class="si">${</span><span class="nx">securityContext</span><span class="p">.</span><span class="nx">role</span><span class="si">}</span><span class="sb">`</span><span class="p">,</span>
+
+<span class="w">  </span><span class="nx">queryRewrite</span><span class="o">:</span><span class="w"> </span><span class="p">(</span><span class="nx">query</span><span class="p">,</span><span class="w"> </span><span class="p">{</span><span class="w"> </span><span class="nx">securityContext</span><span class="w"> </span><span class="p">})</span><span class="w"> </span><span class="p">=&gt;</span><span class="w"> </span><span class="p">{</span>
+<span class="w">    </span><span class="k">if</span><span class="w"> </span><span class="p">(</span><span class="nx">securityContext</span><span class="p">.</span><span class="nx">role</span><span class="w"> </span><span class="o">===</span><span class="w"> </span><span class="s1">&#39;analyst&#39;</span><span class="p">)</span><span class="w"> </span><span class="p">{</span>
+<span class="w">      </span><span class="nx">query</span><span class="p">.</span><span class="nx">filters</span><span class="p">.</span><span class="nx">push</span><span class="p">({</span>
+<span class="w">        </span><span class="nx">member</span><span class="o">:</span><span class="w"> </span><span class="s1">&#39;StockInfo.market&#39;</span><span class="p">,</span>
+<span class="w">        </span><span class="nx">operator</span><span class="o">:</span><span class="w"> </span><span class="s1">&#39;equals&#39;</span><span class="p">,</span>
+<span class="w">        </span><span class="nx">values</span><span class="o">:</span><span class="w"> </span><span class="nx">securityContext</span><span class="p">.</span><span class="nx">allowedMarkets</span><span class="p">,</span>
+<span class="w">      </span><span class="p">});</span>
+<span class="w">    </span><span class="p">}</span>
+<span class="w">    </span><span class="k">return</span><span class="w"> </span><span class="nx">query</span><span class="p">;</span>
+<span class="w">  </span><span class="p">},</span>
+
+<span class="w">  </span><span class="nx">scheduledRefreshContexts</span><span class="o">:</span><span class="w"> </span><span class="k">async</span><span class="w"> </span><span class="p">()</span><span class="w"> </span><span class="p">=&gt;</span><span class="w"> </span><span class="p">[</span>
+<span class="w">    </span><span class="p">{</span><span class="w"> </span><span class="nx">securityContext</span><span class="o">:</span><span class="w"> </span><span class="p">{</span><span class="w"> </span><span class="nx">role</span><span class="o">:</span><span class="w"> </span><span class="s1">&#39;admin&#39;</span><span class="w"> </span><span class="p">}</span><span class="w"> </span><span class="p">},</span>
+<span class="w">  </span><span class="p">],</span>
+<span class="p">};</span>
+</code></pre></div>
+
+<hr />
+<h2 id="8-cube-nl2sql">8. Cube와 NL2SQL 연동</h2>
+<h3 id="agent-cube-rest-api">Agent가 Cube REST API를 호출하는 패턴</h3>
+<div class="codehilite"><pre><span></span><code><span class="n">sequenceDiagram</span>
+<span class="w">    </span><span class="n">participant</span><span class="w"> </span><span class="n">U</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="err">사용자</span>
+<span class="w">    </span><span class="n">participant</span><span class="w"> </span><span class="n">A</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="n">AI</span><span class="w"> </span><span class="n">Agent</span>
+<span class="w">    </span><span class="n">participant</span><span class="w"> </span><span class="n">M</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="o">/</span><span class="n">v1</span><span class="o">/</span><span class="n">meta</span>
+<span class="w">    </span><span class="n">participant</span><span class="w"> </span><span class="n">L</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="o">/</span><span class="n">v1</span><span class="o">/</span><span class="nb">load</span>
+
+<span class="w">    </span><span class="n">U</span><span class="o">-&gt;&gt;</span><span class="n">A</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;삼성전자 최근 3개월 평균 종가는?&quot;</span>
+<span class="w">    </span><span class="n">A</span><span class="o">-&gt;&gt;</span><span class="n">M</span><span class="p">:</span><span class="w"> </span><span class="err">큐브</span><span class="o">/</span><span class="err">메트릭</span><span class="w"> </span><span class="err">메타데이터</span><span class="w"> </span><span class="err">조회</span>
+<span class="w">    </span><span class="n">M</span><span class="o">--&gt;&gt;</span><span class="n">A</span><span class="p">:</span><span class="w"> </span><span class="n">StockPrice</span><span class="o">.</span><span class="n">avgClose</span><span class="w"> </span><span class="err">등</span>
+<span class="w">    </span><span class="n">A</span><span class="o">-&gt;&gt;</span><span class="n">A</span><span class="p">:</span><span class="w"> </span><span class="err">자연어</span><span class="w"> </span><span class="err">→</span><span class="w"> </span><span class="n">Cube</span><span class="w"> </span><span class="err">쿼리</span><span class="w"> </span><span class="n">JSON</span><span class="w"> </span><span class="err">변환</span>
+<span class="w">    </span><span class="n">A</span><span class="o">-&gt;&gt;</span><span class="n">L</span><span class="p">:</span><span class="w"> </span><span class="n">POST</span><span class="w"> </span><span class="o">/</span><span class="nb">load</span><span class="w"> </span><span class="p">(</span><span class="err">쿼리</span><span class="w"> </span><span class="n">JSON</span><span class="p">)</span>
+<span class="w">    </span><span class="n">L</span><span class="o">--&gt;&gt;</span><span class="n">A</span><span class="p">:</span><span class="w"> </span><span class="err">데이터</span><span class="w"> </span><span class="err">결과</span>
+<span class="w">    </span><span class="n">A</span><span class="o">-&gt;&gt;</span><span class="n">U</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;삼성전자 최근 3개월 평균 종가는 72,500원입니다.&quot;</span>
+</code></pre></div>
+
+<h3 id="llm">메트릭 메타데이터를 LLM 프롬프트에 주입</h3>
+<div class="codehilite"><pre><span></span><code><span class="kn">import</span><span class="w"> </span><span class="nn">requests</span>
+
+<span class="n">meta</span> <span class="o">=</span> <span class="n">requests</span><span class="o">.</span><span class="n">get</span><span class="p">(</span>
+    <span class="s2">&quot;http://localhost:4000/cubejs-api/v1/meta&quot;</span><span class="p">,</span>
+    <span class="n">headers</span><span class="o">=</span><span class="p">{</span><span class="s2">&quot;Authorization&quot;</span><span class="p">:</span> <span class="sa">f</span><span class="s2">&quot;Bearer </span><span class="si">{</span><span class="n">API_TOKEN</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">}</span>
+<span class="p">)</span><span class="o">.</span><span class="n">json</span><span class="p">()</span>
+
+<span class="k">def</span><span class="w"> </span><span class="nf">build_metric_context</span><span class="p">(</span><span class="n">meta</span><span class="p">):</span>
+    <span class="n">lines</span> <span class="o">=</span> <span class="p">[]</span>
+    <span class="k">for</span> <span class="n">cube</span> <span class="ow">in</span> <span class="n">meta</span><span class="p">[</span><span class="s2">&quot;cubes&quot;</span><span class="p">]:</span>
+        <span class="n">lines</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;## </span><span class="si">{</span><span class="n">cube</span><span class="p">[</span><span class="s1">&#39;name&#39;</span><span class="p">]</span><span class="si">}</span><span class="s2"> (</span><span class="si">{</span><span class="n">cube</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s1">&#39;title&#39;</span><span class="p">,</span><span class="w"> </span><span class="s1">&#39;&#39;</span><span class="p">)</span><span class="si">}</span><span class="s2">)&quot;</span><span class="p">)</span>
+        <span class="k">for</span> <span class="n">m</span> <span class="ow">in</span> <span class="n">cube</span><span class="p">[</span><span class="s2">&quot;measures&quot;</span><span class="p">]:</span>
+            <span class="n">lines</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;  Measure: </span><span class="si">{</span><span class="n">m</span><span class="p">[</span><span class="s1">&#39;name&#39;</span><span class="p">]</span><span class="si">}</span><span class="s2"> - </span><span class="si">{</span><span class="n">m</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s1">&#39;title&#39;</span><span class="p">,</span><span class="w"> </span><span class="s1">&#39;&#39;</span><span class="p">)</span><span class="si">}</span><span class="s2"> (</span><span class="si">{</span><span class="n">m</span><span class="p">[</span><span class="s1">&#39;type&#39;</span><span class="p">]</span><span class="si">}</span><span class="s2">)&quot;</span><span class="p">)</span>
+        <span class="k">for</span> <span class="n">d</span> <span class="ow">in</span> <span class="n">cube</span><span class="p">[</span><span class="s2">&quot;dimensions&quot;</span><span class="p">]:</span>
+            <span class="n">lines</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;  Dim: </span><span class="si">{</span><span class="n">d</span><span class="p">[</span><span class="s1">&#39;name&#39;</span><span class="p">]</span><span class="si">}</span><span class="s2"> - </span><span class="si">{</span><span class="n">d</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s1">&#39;title&#39;</span><span class="p">,</span><span class="w"> </span><span class="s1">&#39;&#39;</span><span class="p">)</span><span class="si">}</span><span class="s2"> (</span><span class="si">{</span><span class="n">d</span><span class="p">[</span><span class="s1">&#39;type&#39;</span><span class="p">]</span><span class="si">}</span><span class="s2">)&quot;</span><span class="p">)</span>
+    <span class="k">return</span> <span class="s2">&quot;</span><span class="se">\n</span><span class="s2">&quot;</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="n">lines</span><span class="p">)</span>
+
+<span class="n">system_prompt</span> <span class="o">=</span> <span class="sa">f</span><span class="s2">&quot;&quot;&quot;주식 데이터 분석 에이전트입니다.</span>
+<span class="s2">자연어 질문을 Cube.js 쿼리 JSON으로 변환하세요.</span>
+
+<span class="s2">사용 가능한 메트릭:</span>
+<span class="si">{</span><span class="n">build_metric_context</span><span class="p">(</span><span class="n">meta</span><span class="p">)</span><span class="si">}</span>
+<span class="s2">&quot;&quot;&quot;</span>
+</code></pre></div>
+
+<p>Agent는 LLM이 생성한 Cube 쿼리 JSON으로 <code>/v1/load</code>를 호출하고, 결과를 다시 LLM에 전달하여 자연어 답변을 생성한다.</p>
+<hr />
+<h2 id="9-bip">9. BIP 경험과의 매핑</h2>
+<h3 id="wrenai-mdl-vs-cube-data-model">WrenAI MDL vs Cube Data Model</h3>
+<table>
+<thead>
+<tr>
+<th>항목</th>
+<th>WrenAI MDL</th>
+<th>Cube.js</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><strong>정의 언어</strong></td>
+<td>JSON/YAML (MDL)</td>
+<td>JavaScript / YAML</td>
+</tr>
+<tr>
+<td><strong>모델 단위</strong></td>
+<td>Model</td>
+<td>Cube</td>
+</tr>
+<tr>
+<td><strong>측정값</strong></td>
+<td>Metric (calculated field)</td>
+<td>Measure</td>
+</tr>
+<tr>
+<td><strong>조인</strong></td>
+<td>Relationship</td>
+<td>Join (belongsTo/hasMany/hasOne)</td>
+</tr>
+<tr>
+<td><strong>캐싱</strong></td>
+<td>없음 (DB 직접 쿼리)</td>
+<td>Pre-aggregation + Cube Store</td>
+</tr>
+<tr>
+<td><strong>SQL 생성</strong></td>
+<td>LLM이 SQL 직접 생성</td>
+<td>Cube가 최적화된 SQL 생성</td>
+</tr>
+<tr>
+<td><strong>보안</strong></td>
+<td>Thread 레벨</td>
+<td>queryRewrite + JWT</td>
+</tr>
+</tbody>
+</table>
+<h3 id="_5">전환 매핑</h3>
+<table>
+<thead>
+<tr>
+<th>WrenAI</th>
+<th>Cube 환경 대응</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>SQL Pairs (41개)</td>
+<td>Few-shot Examples (자연어 → Cube 쿼리 JSON)</td>
+</tr>
+<tr>
+<td>Instructions (전역 규칙)</td>
+<td>Agent System Prompt</td>
+</tr>
+<tr>
+<td>MDL Model</td>
+<td><code>/cubejs-api/v1/meta</code>에서 자동 추출</td>
+</tr>
+<tr>
+<td>Deploy (동기화)</td>
+<td><code>cube/schema/</code> 파일 저장 (hot-reload)</td>
+</tr>
+<tr>
+<td>Gold View</td>
+<td>Cube View (<code>view()</code> 정의)</td>
+</tr>
+</tbody>
+</table>
+<p><strong>SQL Pairs 전환 예시:</strong></p>
+<div class="codehilite"><pre><span></span><code><span class="gh">#</span> WrenAI
+Q: &quot;삼성전자 PER은?&quot;  →  SQL: SELECT per FROM v_stock_valuation WHERE ticker=&#39;005930.KS&#39;
+
+<span class="gh">#</span> Cube Agent
+Q: &quot;삼성전자 PER은?&quot;  →  {&quot;measures&quot;:[&quot;StockValuation.per&quot;],&quot;filters&quot;:[{&quot;member&quot;:&quot;StockInfo.ticker&quot;,&quot;operator&quot;:&quot;equals&quot;,&quot;values&quot;:[&quot;005930&quot;]}]}
+</code></pre></div>
+
+<hr />
+<h2 id="10">10. 주의사항 및 한계</h2>
+<table>
+<thead>
+<tr>
+<th>항목</th>
+<th>설명</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><strong>Oracle 드라이버</strong></td>
+<td>Community-supported. 버그 수정이 느릴 수 있음. Instant Client 필수 (이미지 ~200MB 추가)</td>
+</tr>
+<tr>
+<td><strong>Pre-agg 스토리지</strong></td>
+<td>데이터 양에 비례하여 디스크 증가. 운영 환경 최소 50GB 권장. <code>partitionGranularity</code> 적절히 설정</td>
+</tr>
+<tr>
+<td><strong>실시간 충돌</strong></td>
+<td>캐싱은 배치 분석에 최적화. 장중 실시간 시세는 <code>refreshKey.every: '10 second'</code>(DB 부하 증가) 또는 Cube 우회 직접 조회</td>
+</tr>
+<tr>
+<td><strong>메모리</strong></td>
+<td>기본 1GB 힙. 복잡한 스키마는 <code>NODE_OPTIONS=--max-old-space-size=4096</code></td>
+</tr>
+<tr>
+<td><strong>동시 쿼리</strong></td>
+<td><code>CUBEJS_CONCURRENCY</code> 환경변수로 큐 크기 조정</td>
+</tr>
+<tr>
+<td><strong>스키마 변경</strong></td>
+<td>개발 모드: hot-reload. 운영: 컨테이너 재시작 필요</td>
+</tr>
+<tr>
+<td><strong>보안</strong></td>
+<td><code>CUBEJS_DEV_MODE=true</code>는 운영에서 반드시 비활성화 (Playground 노출)</td>
+</tr>
+</tbody>
+</table>
+<hr />
+<h2 id="11">11. 참고</h2>
+<table>
+<thead>
+<tr>
+<th>리소스</th>
+<th>URL</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>공식 문서</td>
+<td><a href="https://cube.dev/docs">https://cube.dev/docs</a></td>
+</tr>
+<tr>
+<td>GitHub</td>
+<td><a href="https://github.com/cube-js/cube">https://github.com/cube-js/cube</a></td>
+</tr>
+<tr>
+<td>데이터 모델 레퍼런스</td>
+<td><a href="https://cube.dev/docs/reference/data-model">https://cube.dev/docs/reference/data-model</a></td>
+</tr>
+<tr>
+<td>REST API 레퍼런스</td>
+<td><a href="https://cube.dev/docs/reference/rest-api">https://cube.dev/docs/reference/rest-api</a></td>
+</tr>
+<tr>
+<td>Pre-aggregation 가이드</td>
+<td><a href="https://cube.dev/docs/product/caching/using-pre-aggregations">https://cube.dev/docs/product/caching/using-pre-aggregations</a></td>
+</tr>
+<tr>
+<td>Docker 배포</td>
+<td><a href="https://cube.dev/docs/product/deployment/core">https://cube.dev/docs/product/deployment/core</a></td>
+</tr>
+<tr>
+<td>Oracle 드라이버</td>
+<td><a href="https://cube.dev/docs/product/configuration/data-sources/oracle">https://cube.dev/docs/product/configuration/data-sources/oracle</a></td>
+</tr>
+</tbody>
+</table>
+<blockquote>
+<p><strong>BIP 프로젝트 관련 문서:</strong> <code>docs/guide_wrenai.md</code>, <code>docs/nl2sql_project_plan.md</code>, <code>docs/wrenai_technical_guide.md</code>, <code>docs/data_architecture_review.md</code></p>
+</blockquote>
+<footer style="margin-top:3rem; padding-top:1rem; border-top:1px solid #e5e7eb; color:#6b7280; font-size:0.85rem;">
+<p>Generated: 2026-04-18 | BIP-Pipeline Documentation</p>
+</footer>
+</body>
+</html>
