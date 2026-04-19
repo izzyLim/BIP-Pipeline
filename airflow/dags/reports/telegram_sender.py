@@ -15,10 +15,11 @@ TELEGRAM_API = f"https://api.telegram.org/bot{BOT_TOKEN}"
 
 
 def _send(text: str, chat_id: str) -> bool:
-    """단일 대상 발송"""
+    """단일 대상 발송 (Markdown 실패 시 plain text fallback)"""
     if not BOT_TOKEN or not chat_id:
         return False
     try:
+        # 1차: Markdown 시도
         resp = httpx.post(
             f"{TELEGRAM_API}/sendMessage",
             json={
@@ -31,9 +32,25 @@ def _send(text: str, chat_id: str) -> bool:
         data = resp.json()
         if data.get("ok"):
             return True
-        else:
-            print(f"⚠️ 텔레그램 발송 실패 [{chat_id}]: {data.get('description')}")
+
+        # Markdown 파싱 실패 시 plain text fallback
+        if "can't parse entities" in data.get("description", ""):
+            print(f"⚠️ Markdown 파싱 실패, plain text로 재시도 [{chat_id}]")
+            # bold(*) 제거
+            plain = text.replace("*", "").replace("_", "")
+            resp2 = httpx.post(
+                f"{TELEGRAM_API}/sendMessage",
+                json={"chat_id": chat_id, "text": plain},
+                timeout=15,
+            )
+            data2 = resp2.json()
+            if data2.get("ok"):
+                return True
+            print(f"⚠️ plain text도 발송 실패 [{chat_id}]: {data2.get('description')}")
             return False
+
+        print(f"⚠️ 텔레그램 발송 실패 [{chat_id}]: {data.get('description')}")
+        return False
     except Exception as e:
         print(f"⚠️ 텔레그램 발송 오류 [{chat_id}]: {e}")
         return False
