@@ -657,7 +657,7 @@ graph TD
     </ul>
   </div>
   <div class="card card-accent">
-    <h3>recommendation_performance (신규)</h3>
+    <h3>recommendation_performance (요약, 종목당 1행)</h3>
     <ul>
       <li>D+1/D+5/D+20 수익률 rolling 업데이트</li>
       <li><strong>진입가:</strong> D+1 시가</li>
@@ -665,6 +665,14 @@ graph TD
       <li><strong>목표/손절:</strong> 장중 고가/저가</li>
       <li><strong>동시 터치:</strong> 손절 우선 (보수적)</li>
       <li><strong>거래정지:</strong> 30일+ 데이터 없으면 expired</li>
+    </ul>
+
+    <h3>recommendation_daily_tracking (상세, 종목당 최대 20행)</h3>
+    <ul>
+      <li>추천 후 D+1~D+20 매일 OHLCV + 수익률 기록</li>
+      <li><strong>cumulative_high/low:</strong> D+1부터 당일까지 누적 고가/저가</li>
+      <li><strong>target_hit/stop_hit:</strong> 해당일 기준 도달 여부</li>
+      <li>일별 수익률 곡선, 최적 매도 시점, 보유 기간 최적화 분석용</li>
     </ul>
   </div>
 </div>
@@ -705,6 +713,9 @@ graph TD
     <li><span class="badge badge-done">DONE</span> 주간 리뷰 DAG (등급/프리셋별 집계)</li>
     <li><span class="badge badge-done">DONE</span> 등급순 정렬 + 메시지 중복 제거</li>
     <li><span class="badge badge-done">DONE</span> Markdown fallback + 추천 없음 메시지</li>
+    <li><span class="badge badge-done">DONE</span> recommendation_daily_tracking 테이블 (D+1~D+20 매일 OHLCV+수익률)</li>
+    <li><span class="badge badge-done">DONE</span> 일봉 OHLC 0값 필터링 (insert_to_postgres)</li>
+    <li><span class="badge badge-done">DONE</span> bull_memo/bear_memo/manager_summary/confidence DB 저장</li>
   </ul>
 </div>
 
@@ -715,6 +726,14 @@ graph TD
     <li><span class="badge badge-todo">TODO</span> 성과 기반 가중치 캘리브레이션</li>
     <li><span class="badge badge-todo">TODO</span> BM25 Memory</li>
     <li><span class="badge badge-todo">TODO</span> 미국 주식 확장</li>
+  </ul>
+</div>
+
+<div class="card card-yellow">
+  <h3>스코어링/분석 개선</h3>
+  <ul>
+    <li><span class="badge badge-todo">TODO</span> 스코어링 기준 재조정 (45점 이상 종목이 너무 적음)</li>
+    <li><span class="badge badge-todo">TODO</span> 뉴스 감성 스코어 추가 (Phase 1 새 카테고리)</li>
   </ul>
 </div>
 
@@ -744,7 +763,7 @@ graph TD
 </div>
 
 <div class="updated">
-  마지막 업데이트: 2026-04-19 | v5.0 | Phase 1+2+백테스팅 운영 중 (DAG 3개 활성, Manager Sonnet, 10종목)
+  마지막 업데이트: 2026-04-21 | v5.1 | Phase 1+2+백테스팅 운영 중 (DAG 3개 + daily_tracking 추가)
 </div>
 
 </body>

@@ -88,7 +88,7 @@ def insert_to_postgres(df: pd.DataFrame, table_name: str, conn, batch_size: int 
             r.open, r.high, r.low, r.close, r.volume
         )
         for r in df.itertuples()
-        if pd.notna(r.timestamp) and pd.notna(r.close)
+        if pd.notna(r.timestamp) and pd.notna(r.close) and r.open > 0 and r.high > 0 and r.low > 0
     ]
     if not values:
         logger.info(f"No valid rows to insert into {table_name}")

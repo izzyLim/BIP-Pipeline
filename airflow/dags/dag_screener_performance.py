@@ -64,7 +64,7 @@ def update_performance(**context):
 
             # 추천일 이후 거래일 데이터 조회
             prices = conn.execute(text("""
-                SELECT trade_date, open, high, low, close,
+                SELECT trade_date, open, high, low, close, volume,
                        ROW_NUMBER() OVER (ORDER BY trade_date) as day_n
                 FROM analytics_stock_daily
                 WHERE ticker = :ticker
@@ -114,9 +114,11 @@ def update_performance(**context):
 
             for p in prices:
                 day_n = p.day_n
+                p_open = float(p.open) if p.open and p.open > 0 else None
                 high = float(p.high) if p.high and p.high > 0 else None
                 low = float(p.low) if p.low and p.low > 0 else None
                 close = float(p.close) if p.close and p.close > 0 else None
+                p_volume = int(p.volume) if hasattr(p, 'volume') and p.volume else None
 
                 # NULL 데이터는 집계에서 제외
                 if high is not None:
@@ -125,12 +127,54 @@ def update_performance(**context):
                     running_low = min(running_low, low)
 
                 # 목표 도달 판정 (장중 고가 기준)
+                day_target_hit = False
                 if target_hit_day is None and target_price > 0 and high is not None and high >= target_price:
                     target_hit_day = day_n
+                    day_target_hit = True
 
                 # 손절 히트 판정 (장중 저가 기준)
+                day_stop_hit = False
                 if stop_hit_day is None and stop_loss > 0 and low is not None and low <= stop_loss:
                     stop_hit_day = day_n
+                    day_stop_hit = True
+
+                # 일별 수익률 (D+1 시가 기준)
+                day_return = round((close - d1_open) / d1_open * 100, 3) if close else None
+                cum_low = running_low if running_low != float('inf') else None
+
+                # 일별 기록 INSERT
+                conn.execute(text("""
+                    INSERT INTO recommendation_daily_tracking (
+                        run_date, ticker, recommendation_type, trade_date, day_n,
+                        open, high, low, close, volume,
+                        return_pct, cumulative_high, cumulative_low,
+                        target_hit, stop_hit
+                    ) VALUES (
+                        :run_date, :ticker, :rec_type, :trade_date, :day_n,
+                        :open, :high, :low, :close, :volume,
+                        :return_pct, :cum_high, :cum_low,
+                        :target_hit, :stop_hit
+                    )
+                    ON CONFLICT (run_date, ticker, recommendation_type, day_n) DO UPDATE SET
+                        open = EXCLUDED.open, high = EXCLUDED.high,
+                        low = EXCLUDED.low, close = EXCLUDED.close,
+                        volume = EXCLUDED.volume,
+                        return_pct = EXCLUDED.return_pct,
+                        cumulative_high = EXCLUDED.cumulative_high,
+                        cumulative_low = EXCLUDED.cumulative_low,
+                        target_hit = EXCLUDED.target_hit,
+                        stop_hit = EXCLUDED.stop_hit
+                """), {
+                    "run_date": run_date, "ticker": ticker, "rec_type": rec_type,
+                    "trade_date": p.trade_date, "day_n": day_n,
+                    "open": p_open, "high": high, "low": low, "close": close,
+                    "volume": p_volume,
+                    "return_pct": day_return,
+                    "cum_high": running_high if running_high > 0 else None,
+                    "cum_low": cum_low,
+                    "target_hit": day_target_hit or (target_hit_day is not None and target_hit_day < day_n),
+                    "stop_hit": day_stop_hit or (stop_hit_day is not None and stop_hit_day < day_n),
+                })
 
                 if day_n == 5:
                     d5_close = close
