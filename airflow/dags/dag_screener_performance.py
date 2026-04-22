@@ -34,7 +34,7 @@ def update_performance(**context):
     engine = create_engine(database_url)
 
     with engine.begin() as conn:
-        # 미종료 추천 조회
+        # D+60 미달 추천 조회 (closed여도 daily_tracking은 D+60까지 계속)
         rows = conn.execute(text("""
             SELECT r.run_date, r.ticker, r.recommendation_type,
                    r.target_price_short, r.stop_loss, r.close_at_rec,
@@ -43,7 +43,7 @@ def update_performance(**context):
             FROM stock_recommendations r
             JOIN recommendation_performance p
                 USING (run_date, ticker, recommendation_type)
-            WHERE p.status != 'closed'
+            WHERE p.status NOT IN ('expired', 'tracking_done')
               AND r.run_date < CURRENT_DATE
             ORDER BY r.run_date
         """)).fetchall()
@@ -70,7 +70,7 @@ def update_performance(**context):
                 WHERE ticker = :ticker
                   AND trade_date > :run_date
                 ORDER BY trade_date
-                LIMIT 20
+                LIMIT 60
             """), {"ticker": ticker, "run_date": run_date}).fetchall()
 
             # 추천 후 30 거래일 이상 데이터 없으면 expired 처리
@@ -104,6 +104,10 @@ def update_performance(**context):
             d20_trade_date = None
             d20_high = None
             d20_low = None
+            d60_close = None
+            d60_trade_date = None
+            d60_high = None
+            d60_low = None
 
             running_high = 0
             running_low = float('inf')
@@ -126,15 +130,18 @@ def update_performance(**context):
                 if low is not None:
                     running_low = min(running_low, low)
 
-                # 목표 도달 판정 (장중 고가 기준)
+                # 목표 도달 판정 (장중 고가 기준, 5% 버퍼)
+                # 목표가 +5% 초과 시 확정 (목표 근처 횡보는 미판정)
+                BUFFER_PCT = 0.05
                 day_target_hit = False
-                if target_hit_day is None and target_price > 0 and high is not None and high >= target_price:
+                if target_hit_day is None and target_price > 0 and high is not None and high >= target_price * (1 + BUFFER_PCT):
                     target_hit_day = day_n
                     day_target_hit = True
 
-                # 손절 히트 판정 (장중 저가 기준)
+                # 손절 히트 판정 (장중 저가 기준, 5% 버퍼)
+                # 손절가 -5% 이탈 시 확정
                 day_stop_hit = False
-                if stop_hit_day is None and stop_loss > 0 and low is not None and low <= stop_loss:
+                if stop_hit_day is None and stop_loss > 0 and low is not None and low <= stop_loss * (1 - BUFFER_PCT):
                     stop_hit_day = day_n
                     day_stop_hit = True
 
@@ -188,6 +195,12 @@ def update_performance(**context):
                     d20_high = running_high
                     d20_low = running_low
 
+                if day_n == 60:
+                    d60_close = close
+                    d60_trade_date = p.trade_date
+                    d60_high = running_high
+                    d60_low = running_low
+
             # running_low가 초기값(inf)이면 None 처리
             if running_low == float('inf'):
                 running_low = None
@@ -200,6 +213,7 @@ def update_performance(**context):
             d1_return = round((d1_close - d1_open) / d1_open * 100, 3) if d1_close else None
             d5_return = round((d5_close - d1_open) / d1_open * 100, 3) if d5_close else None
             d20_return = round((d20_close - d1_open) / d1_open * 100, 3) if d20_close else None
+            d60_return = round((d60_close - d1_open) / d1_open * 100, 3) if d60_close else None
 
             # 시나리오 판정
             target_hit = target_hit_day is not None
@@ -216,9 +230,15 @@ def update_performance(**context):
                 scenario = "neither"
 
             # 상태 결정
+            # closed: 목표/손절 히트로 성과 확정 (daily_tracking은 계속)
+            # tracking_done: D+60 도달, 모든 추적 완료
             num_days = len(prices)
-            if num_days >= 20:
+            if num_days >= 60:
+                status = "tracking_done"
+            elif target_hit or stop_hit:
                 status = "closed"
+            elif num_days >= 20:
+                status = "pending_d60"
             elif num_days >= 5:
                 status = "pending_d20"
             elif num_days >= 1:
@@ -243,6 +263,11 @@ def update_performance(**context):
                     d1_return_pct = :d1_return,
                     d5_return_pct = :d5_return,
                     d20_return_pct = :d20_return,
+                    d60_close = :d60_close,
+                    d60_trade_date = :d60_trade_date,
+                    d60_high = :d60_high,
+                    d60_low = :d60_low,
+                    d60_return_pct = :d60_return,
                     target_hit = :target_hit,
                     target_hit_day = :target_hit_day,
                     stop_hit = :stop_hit,
@@ -271,6 +296,11 @@ def update_performance(**context):
                 "d1_return": d1_return,
                 "d5_return": d5_return,
                 "d20_return": d20_return,
+                "d60_close": d60_close,
+                "d60_trade_date": d60_trade_date,
+                "d60_high": d60_high,
+                "d60_low": d60_low,
+                "d60_return": d60_return,
                 "target_hit": target_hit,
                 "target_hit_day": target_hit_day,
                 "stop_hit": stop_hit,

@@ -44,12 +44,12 @@ def generate_weekly_review(**context):
         summary = conn.execute(text("""
             SELECT
                 COUNT(*) AS total,
-                COUNT(*) FILTER (WHERE p.status = 'closed') AS closed,
+                COUNT(*) FILTER (WHERE p.status IN ('closed', 'tracking_done')) AS closed,
                 ROUND(AVG(p.d5_return_pct)::numeric, 2) AS avg_d5,
                 ROUND(AVG(p.d20_return_pct)::numeric, 2) AS avg_d20,
-                ROUND(100.0 * COUNT(*) FILTER (WHERE p.target_hit) / NULLIF(COUNT(*) FILTER (WHERE p.status = 'closed'), 0), 1) AS target_rate,
-                ROUND(100.0 * COUNT(*) FILTER (WHERE p.stop_hit) / NULLIF(COUNT(*) FILTER (WHERE p.status = 'closed'), 0), 1) AS stop_rate,
-                ROUND(100.0 * COUNT(*) FILTER (WHERE p.scenario_result = 'target_first') / NULLIF(COUNT(*) FILTER (WHERE p.status = 'closed'), 0), 1) AS win_rate
+                ROUND(100.0 * COUNT(*) FILTER (WHERE p.target_hit) / NULLIF(COUNT(*) FILTER (WHERE p.status IN ('closed', 'tracking_done')), 0), 1) AS target_rate,
+                ROUND(100.0 * COUNT(*) FILTER (WHERE p.stop_hit) / NULLIF(COUNT(*) FILTER (WHERE p.status IN ('closed', 'tracking_done')), 0), 1) AS stop_rate,
+                ROUND(100.0 * COUNT(*) FILTER (WHERE p.scenario_result = 'target_first') / NULLIF(COUNT(*) FILTER (WHERE p.status IN ('closed', 'tracking_done')), 0), 1) AS win_rate
             FROM recommendation_performance p
             JOIN stock_recommendations r USING (run_date, ticker, recommendation_type)
         """)).fetchone()
@@ -63,7 +63,7 @@ def generate_weekly_review(**context):
                    ROUND(100.0 * COUNT(*) FILTER (WHERE p.scenario_result = 'target_first') / NULLIF(COUNT(*), 0), 1) AS win_rate
             FROM recommendation_performance p
             JOIN stock_recommendations r USING (run_date, ticker, recommendation_type)
-            WHERE p.status = 'closed'
+            WHERE p.status IN ('closed', 'tracking_done')
             GROUP BY r.grade
             ORDER BY CASE r.grade
                 WHEN 'Buy' THEN 1 WHEN 'Overweight' THEN 2
@@ -79,7 +79,7 @@ def generate_weekly_review(**context):
             FROM recommendation_performance p
             JOIN stock_recommendations r USING (run_date, ticker, recommendation_type),
                  UNNEST(r.preset_tags) AS preset
-            WHERE p.status = 'closed'
+            WHERE p.status IN ('closed', 'tracking_done')
             GROUP BY preset
             ORDER BY win_rate DESC NULLS LAST
         """)).fetchall()
