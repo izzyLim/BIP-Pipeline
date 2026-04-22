@@ -55,30 +55,47 @@ WebFetch로 해당 도구/기술의 공식 문서를 조사한다:
 - 비교표: 유사 도구와 비교 (해당 시)
 - BIP 경험 매핑: 기존 프로젝트와의 연관성 (해당 시)
 
-**문서 헤더 템플릿:**
+**문서 헤더 템플릿 (간결하게):**
 ```markdown
 # <도구명> 개념 및 사용 가이드
 
 > **공식 문서:** <URL>
-> **GitHub:** <URL>
-> **라이선스:** <라이선스>
-> **작성일:** <날짜>
 ```
+
+**문서 맨 아래 — 변경 이력 (필수):**
+```markdown
+---
+
+## 변경 이력
+
+| 날짜 | 내용 |
+|------|------|
+| YYYY-MM-DD | 초안 작성 |
+```
+
+**주의:**
+- 헤더에 작성일/대상/목적 등 불필요한 메타데이터를 넣지 않는다
+- 날짜는 변경 이력 테이블에서만 관리한다
 
 ### Step 4: HTML 변환
 
-Python markdown 라이브러리로 HTML 변환:
+**반드시 `scripts/md_to_html.py`를 사용한다.** 직접 HTML을 생성하지 않는다.
 
-```python
-import markdown
-# fenced_code, tables, codehilite, toc 확장 사용
-# Mermaid 코드 블록 → <div class="mermaid"> 변환
-# 표준 CSS 스타일 적용 (Pretendard 폰트, 다크/라이트 테이블, 코드 하이라이트)
+```bash
+python3 scripts/md_to_html.py docs/guide_<주제>.md docs/html/guide_<주제>.html
 ```
 
-생성 위치:
-- `docs/html/guide_<주제>.html` (BIP-Pipeline repo)
-- `/Users/yeji/Projects/docs/guide_<주제>.html` (Docs repo에 복사)
+이 스크립트는 다음을 자동 처리:
+- 사이드바 목차 (TOC) 자동 생성
+- 다크/라이트 테마 전환 버튼
+- Mermaid 다이어그램 렌더링 (codehilite 충돌 방지, subgraph 자동 색상 분배)
+- 스크롤 위치 하이라이트
+- 반응형 모바일 대응
+
+생성 후 Docs repo에 복사:
+```bash
+cp docs/html/guide_<주제>.html /Users/yeji/Projects/docs/
+```
 
 ### Step 5: index.html 업데이트
 
