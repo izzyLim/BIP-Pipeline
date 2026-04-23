@@ -1,40 +1,337 @@
 <!DOCTYPE html>
-<html lang="ko">
+<html lang="ko" data-theme="dark">
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>NL2SQL 사내 적용 구현 계획 v2</title>
 <script src="https://cdn.jsdelivr.net/npm/mermaid@11/dist/mermaid.min.js"></script>
-<script>mermaid.initialize({startOnLoad:true, theme:'default', securityLevel:'loose'});</script>
 <style>
-  body { font-family: 'Pretendard', -apple-system, sans-serif; line-height: 1.7; color: #1a1a1a; max-width: 960px; margin: 0 auto; padding: 2rem 1.5rem; }
-  h1 { font-size: 2rem; margin: 2.5rem 0 1rem; padding-bottom: 0.5rem; border-bottom: 3px solid #2563eb; }
-  h2 { font-size: 1.5rem; margin: 2rem 0 0.8rem; padding-bottom: 0.3rem; border-bottom: 1px solid #e5e7eb; color: #2563eb; }
-  h3 { font-size: 1.2rem; margin: 1.5rem 0 0.5rem; }
-  h4 { font-size: 1.05rem; margin: 1.2rem 0 0.4rem; }
-  table { width: 100%; border-collapse: collapse; margin: 1rem 0; font-size: 0.9rem; }
-  th, td { border: 1px solid #e5e7eb; padding: 0.5rem 0.75rem; }
-  th { background: #f8fafc; font-weight: 600; }
-  tr:nth-child(even) { background: #fafafa; }
-  code { background: #f3f4f6; padding: 0.15rem 0.4rem; border-radius: 3px; font-size: 0.85em; }
-  pre { background: #1e293b; color: #e2e8f0; padding: 1rem; border-radius: 8px; overflow-x: auto; margin: 1rem 0; }
-  pre code { background: none; color: inherit; padding: 0; }
-  blockquote { border-left: 4px solid #3b82f6; padding: 0.5rem 1rem; margin: 1rem 0; background: #eff6ff; }
-  .mermaid { margin: 1.5rem 0; text-align: center; }
-  strong { color: #1e40af; }
-  a { color: #2563eb; }
+  /* ── 테마 변수 ── */
+  :root[data-theme="dark"] {
+    --bg: #0d1117;
+    --bg-sidebar: #161b22;
+    --fg: #e6edf3;
+    --fg-muted: #8b949e;
+    --border: #30363d;
+    --accent: #58a6ff;
+    --accent-hover: #79c0ff;
+    --code-bg: #1e293b;
+    --code-fg: #e2e8f0;
+    --table-header: #161b22;
+    --table-even: #0d1117;
+    --table-odd: #161b22;
+    --blockquote-bg: #161b22;
+    --blockquote-border: #3b82f6;
+    --link: #58a6ff;
+    --strong: #79c0ff;
+    --card-bg: #21262d;
+  }
+  :root[data-theme="light"] {
+    --bg: #ffffff;
+    --bg-sidebar: #f6f8fa;
+    --fg: #1f2937;
+    --fg-muted: #6b7280;
+    --border: #e5e7eb;
+    --accent: #2563eb;
+    --accent-hover: #1d4ed8;
+    --code-bg: #f3f4f6;
+    --code-fg: #1e293b;
+    --table-header: #f8fafc;
+    --table-even: #ffffff;
+    --table-odd: #f9fafb;
+    --blockquote-bg: #eff6ff;
+    --blockquote-border: #3b82f6;
+    --link: #2563eb;
+    --strong: #1e40af;
+    --card-bg: #f3f4f6;
+  }
+
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+
+  body {
+    font-family: 'Pretendard', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+    background: var(--bg);
+    color: var(--fg);
+    line-height: 1.75;
+    display: flex;
+    min-height: 100vh;
+  }
+
+  /* ── 사이드바 ── */
+  .sidebar {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 280px;
+    height: 100vh;
+    background: var(--bg-sidebar);
+    border-right: 1px solid var(--border);
+    overflow-y: auto;
+    padding: 20px 0;
+    z-index: 100;
+    transition: transform 0.3s ease;
+  }
+
+  .sidebar-header {
+    padding: 0 20px 16px;
+    border-bottom: 1px solid var(--border);
+    margin-bottom: 12px;
+  }
+
+  .sidebar-title {
+    font-size: 0.95rem;
+    font-weight: 700;
+    color: var(--fg);
+    line-height: 1.3;
+  }
+
+  .sidebar-controls {
+    display: flex;
+    gap: 8px;
+    margin-top: 12px;
+  }
+
+  .theme-btn {
+    background: var(--card-bg);
+    border: 1px solid var(--border);
+    color: var(--fg-muted);
+    padding: 4px 10px;
+    border-radius: 6px;
+    font-size: 0.7rem;
+    cursor: pointer;
+    transition: all 0.2s;
+  }
+  .theme-btn:hover {
+    border-color: var(--accent);
+    color: var(--accent);
+  }
+  .theme-btn.active {
+    background: var(--accent);
+    color: #fff;
+    border-color: var(--accent);
+  }
+
+  .back-link {
+    display: block;
+    margin-top: 10px;
+    font-size: 0.75rem;
+    color: var(--fg-muted);
+    text-decoration: none;
+  }
+  .back-link:hover {
+    color: var(--accent);
+  }
+
+  /* ── TOC ── */
+  .toc {
+    padding: 0 12px;
+  }
+  .toc ul {
+    list-style: none;
+    padding: 0;
+  }
+  .toc li {
+    margin: 0;
+  }
+  .toc a {
+    display: block;
+    padding: 4px 8px;
+    color: var(--fg-muted);
+    text-decoration: none;
+    font-size: 0.78rem;
+    border-radius: 4px;
+    border-left: 2px solid transparent;
+    transition: all 0.15s;
+    line-height: 1.4;
+  }
+  .toc a:hover {
+    color: var(--accent);
+    background: var(--card-bg);
+    border-left-color: var(--accent);
+  }
+  .toc a.active {
+    color: var(--accent);
+    border-left-color: var(--accent);
+    font-weight: 600;
+  }
+  .toc-h3 a { padding-left: 20px; font-size: 0.75rem; }
+  .toc-h4 a { padding-left: 32px; font-size: 0.72rem; }
+
+  /* ── 본문 ── */
+  .content {
+    margin-left: 280px;
+    flex: 1;
+    max-width: 860px;
+    padding: 40px 48px 80px;
+  }
+
+  /* ── 모바일 ── */
+  .menu-toggle {
+    display: none;
+    position: fixed;
+    top: 12px;
+    left: 12px;
+    z-index: 200;
+    background: var(--bg-sidebar);
+    border: 1px solid var(--border);
+    color: var(--fg);
+    padding: 8px 12px;
+    border-radius: 6px;
+    cursor: pointer;
+    font-size: 1.1rem;
+  }
+
+  @media (max-width: 900px) {
+    .sidebar {
+      transform: translateX(-100%);
+    }
+    .sidebar.open {
+      transform: translateX(0);
+    }
+    .content {
+      margin-left: 0;
+      padding: 60px 20px 60px;
+    }
+    .menu-toggle {
+      display: block;
+    }
+  }
+
+  /* ── 타이포그래피 ── */
+  h1 { font-size: 1.9rem; margin: 2rem 0 1rem; padding-bottom: 0.5rem; border-bottom: 2px solid var(--accent); }
+  h2 { font-size: 1.45rem; margin: 2.5rem 0 0.8rem; padding-bottom: 0.3rem; border-bottom: 1px solid var(--border); color: var(--accent); }
+  h3 { font-size: 1.15rem; margin: 1.8rem 0 0.5rem; }
+  h4 { font-size: 1rem; margin: 1.3rem 0 0.4rem; color: var(--fg-muted); }
+  p { margin: 0.6rem 0; }
+  hr { border: none; border-top: 1px solid var(--border); margin: 2rem 0; }
+  strong { color: var(--strong); }
+  a { color: var(--link); text-decoration: none; }
+  a:hover { text-decoration: underline; }
+  ul, ol { margin: 0.5rem 0 0.5rem 1.5rem; }
+  li { margin: 0.25rem 0; }
+
+  /* ── 테이블 ── */
+  table { width: 100%; border-collapse: collapse; margin: 1rem 0; font-size: 0.85rem; }
+  th, td { border: 1px solid var(--border); padding: 0.5rem 0.75rem; text-align: left; }
+  th { background: var(--table-header); font-weight: 600; }
+  tr:nth-child(even) { background: var(--table-even); }
+  tr:nth-child(odd) { background: var(--table-odd); }
+
+  /* ── 코드 ── */
+  code {
+    background: var(--code-bg);
+    color: var(--code-fg);
+    padding: 0.15rem 0.4rem;
+    border-radius: 4px;
+    font-size: 0.82em;
+    font-family: 'JetBrains Mono', 'Fira Code', 'Cascadia Code', monospace;
+  }
+  pre {
+    background: var(--code-bg);
+    color: var(--code-fg);
+    padding: 1rem 1.2rem;
+    border-radius: 8px;
+    overflow-x: auto;
+    margin: 1rem 0;
+    border: 1px solid var(--border);
+  }
+  pre code {
+    background: none;
+    padding: 0;
+    font-size: 0.82rem;
+    line-height: 1.5;
+  }
+
+  /* ── 인용 ── */
+  blockquote {
+    border-left: 4px solid var(--blockquote-border);
+    padding: 0.6rem 1rem;
+    margin: 1rem 0;
+    background: var(--blockquote-bg);
+    border-radius: 0 6px 6px 0;
+  }
+  blockquote p { margin: 0.3rem 0; }
+
+  /* ── Mermaid ── */
+  .mermaid {
+    margin: 1.5rem 0;
+    text-align: center;
+    background: var(--card-bg);
+    padding: 1rem;
+    border-radius: 8px;
+    border: 1px solid var(--border);
+  }
+  .mermaid svg { max-width: 100%; }
+
+  /* ── Footer ── */
+  footer {
+    margin-top: 3rem;
+    padding-top: 1rem;
+    border-top: 1px solid var(--border);
+    color: var(--fg-muted);
+    font-size: 0.8rem;
+  }
 </style>
 </head>
 <body>
-<h1 id="nl2sql-v2">NL2SQL 사내 적용 구현 계획 v2</h1>
+
+<button class="menu-toggle" onclick="document.querySelector('.sidebar').classList.toggle('open')">☰</button>
+
+<aside class="sidebar">
+  <div class="sidebar-header">
+    <div class="sidebar-title">NL2SQL 사내 적용 구현 계획 v2</div>
+    <div class="sidebar-controls">
+      <button class="theme-btn" onclick="setTheme('dark')" id="btn-dark">🌙 Dark</button>
+      <button class="theme-btn" onclick="setTheme('light')" id="btn-light">☀️ Light</button>
+    </div>
+    <a class="back-link" href="index.html">← 문서 목록으로</a>
+  </div>
+  <nav class="toc">
+<ul>
+<li class="toc-h2"><a href="#1-배경">1. 배경</a></li>
+  <li class="toc-h3"><a href="#1-1-bip-pipeline에서-검증한-것">1-1. BIP-Pipeline에서 검증한 것</a></li>
+  <li class="toc-h3"><a href="#1-2-사내-적용-시-발생한-문제">1-2. 사내 적용 시 발생한 문제</a></li>
+  <li class="toc-h3"><a href="#1-3-전환-결정">1-3. 전환 결정</a></li>
+<li class="toc-h2"><a href="#2-아키텍처-전환-근거">2. 아키텍처 전환 근거</a></li>
+  <li class="toc-h3"><a href="#2-1-wrenai-역할-분해--대체-매핑">2-1. WrenAI 역할 분해 → 대체 매핑</a></li>
+  <li class="toc-h3"><a href="#2-2-대안-비교-후-선정">2-2. 대안 비교 후 선정</a></li>
+  <li class="toc-h3"><a href="#2-3-oracle-19c-호환성-검증">2-3. Oracle 19c 호환성 검증</a></li>
+<li class="toc-h2"><a href="#3-목표-아키텍처">3. 목표 아키텍처</a></li>
+  <li class="toc-h3"><a href="#3-1-전체-구조">3-1. 전체 구조</a></li>
+  <li class="toc-h3"><a href="#3-2-컴포넌트별-역할">3-2. 컴포넌트별 역할</a></li>
+  <li class="toc-h3"><a href="#3-3-데이터-흐름">3-3. 데이터 흐름</a></li>
+  <li class="toc-h3"><a href="#3-4-bip-경험-이식-매핑">3-4. BIP 경험 이식 매핑</a></li>
+<li class="toc-h2"><a href="#4-구현-계획">4. 구현 계획</a></li>
+  <li class="toc-h3"><a href="#4-1-phase-로드맵">4-1. Phase 로드맵</a></li>
+  <li class="toc-h3"><a href="#4-2-phase-1-기반-구축-2주">4-2. Phase 1: 기반 구축 (2주)</a></li>
+    <li class="toc-h4"><a href="#oracle-gold-view-설계">Oracle Gold View 설계</a></li>
+    <li class="toc-h4"><a href="#cube-설치--oracle-연결">Cube 설치 + Oracle 연결</a></li>
+    <li class="toc-h4"><a href="#cube-시맨틱-모델-정의">Cube 시맨틱 모델 정의</a></li>
+  <li class="toc-h3"><a href="#4-3-phase-2-agent-구축-2주">4-3. Phase 2: Agent 구축 (2주)</a></li>
+    <li class="toc-h4"><a href="#langgraph-agent-설계">LangGraph Agent 설계</a></li>
+    <li class="toc-h4"><a href="#cube-api-tool-예시">Cube API Tool 예시</a></li>
+  <li class="toc-h3"><a href="#4-4-phase-3-튜닝--검증-2주">4-4. Phase 3: 튜닝 &amp; 검증 (2주)</a></li>
+  <li class="toc-h3"><a href="#4-5-phase-4-확장-이후">4-5. Phase 4: 확장 (이후)</a></li>
+<li class="toc-h2"><a href="#5-보안-아키텍처">5. 보안 아키텍처</a></li>
+<li class="toc-h2"><a href="#6-wrenai-경험에서-배운-교훈">6. WrenAI 경험에서 배운 교훈</a></li>
+<li class="toc-h2"><a href="#7-리스크-및-대응">7. 리스크 및 대응</a></li>
+<li class="toc-h2"><a href="#8-성공-기준">8. 성공 기준</a></li>
+<li class="toc-h2"><a href="#9-기술-스택-요약">9. 기술 스택 요약</a></li>
+<li class="toc-h2"><a href="#10-참고-문서">10. 참고 문서</a></li>
+<li class="toc-h2"><a href="#변경-이력">변경 이력</a></li>
+</ul>
+</nav>
+</aside>
+
+<main class="content">
+<h1 id="nl2sql-사내-적용-구현-계획-v2">NL2SQL 사내 적용 구현 계획 v2</h1>
 <blockquote>
 <p><strong>WrenAI → OpenMetadata + Cube + LLM Agent 전환</strong></p>
-<p><strong>작성일:</strong> 2026-04-18
-<strong>배경:</strong> BIP-Pipeline(사외 PostgreSQL)에서 WrenAI 기반 NL2SQL 검증 완료 후, 사내 Oracle 19c 환경 적용 시 WrenAI 호환성 문제 발생으로 아키텍처 전환</p>
+<p>BIP-Pipeline(사외 PostgreSQL)에서 WrenAI 기반 NL2SQL 검증 완료 후, 사내 Oracle 19c 환경 적용 시 WrenAI 호환성 문제 발생으로 아키텍처 전환</p>
 </blockquote>
 <hr />
-<h2 id="1">1. 배경</h2>
-<h3 id="1-1-bip-pipeline">1-1. BIP-Pipeline에서 검증한 것</h3>
+<h2 id="1-배경">1. 배경</h2>
+<h3 id="1-1-bip-pipeline에서-검증한-것">1-1. BIP-Pipeline에서 검증한 것</h3>
 <p>BIP-Pipeline(사외 프로젝트)에서 WrenAI 기반 NL2SQL 시스템을 구축하고 다음을 검증:</p>
 <table>
 <thead>
@@ -74,7 +371,7 @@
 </tr>
 </tbody>
 </table>
-<h3 id="1-2">1-2. 사내 적용 시 발생한 문제</h3>
+<h3 id="1-2-사내-적용-시-발생한-문제">1-2. 사내 적용 시 발생한 문제</h3>
 <p>사내 DB는 <strong>Oracle 19c</strong>. WrenAI를 Docker Compose로 띄워 Oracle 연결 테스트 시:</p>
 <div class="codehilite"><pre><span></span><code>IBIS_SERVER_ERROR
 ORA-00942: table or view does not exist
@@ -86,25 +383,28 @@ ORA-00942: table or view does not exist
 <li><strong>WrenAI OSS 문서상 Oracle 23ai 이상만 공식 지원</strong></li>
 <li>Oracle 19c에서는 내부 메타데이터 조회 로직이 호환되지 않음</li>
 </ul>
-<h3 id="1-3">1-3. 전환 결정</h3>
+<h3 id="1-3-전환-결정">1-3. 전환 결정</h3>
 <p>WrenAI가 했던 역할을 분리하여 <strong>Oracle 19c 호환 가능한 조합</strong>으로 재구성:</p>
-<div class="codehilite"><pre><span></span><code><span class="nf">graph</span><span class="w"> </span><span class="n">LR</span>
-<span class="w">    </span><span class="n">subgraph</span><span class="w"> </span><span class="kr">Before</span><span class="p">[</span><span class="s">&quot;기존 (WrenAI 올인원)&quot;</span><span class="p">]</span>
-<span class="w">        </span><span class="n">W</span><span class="p">[</span><span class="n">WrenAI</span><span class="o">&lt;</span><span class="n">br</span><span class="o">/&gt;</span><span class="err">데이터</span><span class="w"> </span><span class="err">연결</span><span class="w"> </span><span class="o">+</span><span class="w"> </span><span class="err">시맨틱</span><span class="w"> </span><span class="o">+</span><span class="w"> </span><span class="kr">SQL</span><span class="w"> </span><span class="err">생성</span><span class="w"> </span><span class="o">+</span><span class="w"> </span><span class="n">Chat</span><span class="p">]</span>
-<span class="w">    </span><span class="kd">end</span>
+<div class="mermaid">
+graph LR
+    subgraph Before["기존 (WrenAI 올인원)"]
+        W[WrenAI<br/>데이터 연결 + 시맨틱 + SQL 생성 + Chat]
+    end
 
-<span class="w">    </span><span class="n">subgraph</span><span class="w"> </span><span class="n">After</span><span class="p">[</span><span class="s">&quot;전환 (역할 분리)&quot;</span><span class="p">]</span>
-<span class="w">        </span><span class="n">C</span><span class="p">[</span><span class="n">Cube</span><span class="p">.</span><span class="n">js</span><span class="o">&lt;</span><span class="n">br</span><span class="o">/&gt;</span><span class="err">데이터</span><span class="w"> </span><span class="err">연결</span><span class="w"> </span><span class="o">+</span><span class="w"> </span><span class="err">시맨틱</span><span class="p">]</span>
-<span class="w">        </span><span class="n">A</span><span class="p">[</span><span class="n">LangGraph</span><span class="w"> </span><span class="n">Agent</span><span class="o">&lt;</span><span class="n">br</span><span class="o">/&gt;</span><span class="kr">SQL</span><span class="w"> </span><span class="err">생성</span><span class="w"> </span><span class="o">+</span><span class="w"> </span><span class="n">Chat</span><span class="p">]</span>
-<span class="w">        </span><span class="n">O</span><span class="p">[</span><span class="n">OpenMetadata</span><span class="o">&lt;</span><span class="n">br</span><span class="o">/&gt;</span><span class="err">메타</span><span class="w"> </span><span class="err">허브</span><span class="p">]</span>
-<span class="w">    </span><span class="kd">end</span>
+    subgraph After["전환 (역할 분리)"]
+        C[Cube.js<br/>데이터 연결 + 시맨틱]
+        A[LangGraph Agent<br/>SQL 생성 + Chat]
+        O[OpenMetadata<br/>메타 허브]
+    end
 
-<span class="w">    </span><span class="kr">Before</span><span class="w"> </span><span class="o">--&gt;|</span><span class="s">&quot;Oracle 19c 비호환&quot;</span><span class="o">|</span><span class="w"> </span><span class="n">After</span>
-</code></pre></div>
+    Before -->|"Oracle 19c 비호환"| After
+    style Before fill:#4f8fea22,stroke:#4f8fea,stroke-width:2px,color:#e6edf3
+    style After fill:#6c5ce722,stroke:#6c5ce7,stroke-width:2px,color:#e6edf3
+</div>
 
 <hr />
-<h2 id="2">2. 아키텍처 전환 근거</h2>
-<h3 id="2-1-wrenai">2-1. WrenAI 역할 분해 → 대체 매핑</h3>
+<h2 id="2-아키텍처-전환-근거">2. 아키텍처 전환 근거</h2>
+<h3 id="2-1-wrenai-역할-분해--대체-매핑">2-1. WrenAI 역할 분해 → 대체 매핑</h3>
 <table>
 <thead>
 <tr>
@@ -151,7 +451,7 @@ ORA-00942: table or view does not exist
 </tr>
 </tbody>
 </table>
-<h3 id="2-2">2-2. 대안 비교 후 선정</h3>
+<h3 id="2-2-대안-비교-후-선정">2-2. 대안 비교 후 선정</h3>
 <table>
 <thead>
 <tr>
@@ -198,7 +498,7 @@ ORA-00942: table or view does not exist
 </tr>
 </tbody>
 </table>
-<h3 id="2-3-oracle-19c">2-3. Oracle 19c 호환성 검증</h3>
+<h3 id="2-3-oracle-19c-호환성-검증">2-3. Oracle 19c 호환성 검증</h3>
 <div class="codehilite"><pre><span></span><code>Cube Oracle Driver
   └→ node-oracledb ^6.2.0
        └→ 공식 테스트 대상: Oracle 23, 21, 19, 12, 11.2
@@ -211,32 +511,33 @@ OpenMetadata Oracle Connector
 <p><strong>WrenAI 실패 원인:</strong> ibis-server의 Oracle 처리 로직이 23ai 전용 (<code>get_db_version</code> 등)
 <strong>Cube가 되는 이유:</strong> node-oracledb가 Oracle 19c를 직접 지원, Cube는 이 드라이버를 그대로 사용</p>
 <hr />
-<h2 id="3">3. 목표 아키텍처</h2>
-<h3 id="3-1">3-1. 전체 구조</h3>
-<div class="codehilite"><pre><span></span><code><span class="n">graph</span><span class="w"> </span><span class="n">TB</span>
-<span class="w">    </span><span class="n">USER</span><span class="p">[</span><span class="n">사용자</span><span class="w"> </span><span class="n">질문</span><span class="p">]</span>
-<span class="w">    </span><span class="n">USER</span><span class="w"> </span><span class="o">--&gt;</span><span class="w"> </span><span class="n">API</span><span class="p">[</span><span class="n">FastAPI</span><span class="o">&lt;</span><span class="n">br</span><span class="o">/&gt;</span><span class="n">Chat</span><span class="w"> </span><span class="o">/</span><span class="w"> </span><span class="n">REST</span><span class="w"> </span><span class="n">API</span><span class="p">]</span>
-<span class="w">    </span><span class="n">API</span><span class="w"> </span><span class="o">--&gt;</span><span class="w"> </span><span class="n">AGENT</span><span class="p">[</span><span class="n">LangGraph</span><span class="w"> </span><span class="n">Agent</span><span class="o">&lt;</span><span class="n">br</span><span class="o">/&gt;</span><span class="n">오케스트레이션</span><span class="p">]</span>
+<h2 id="3-목표-아키텍처">3. 목표 아키텍처</h2>
+<h3 id="3-1-전체-구조">3-1. 전체 구조</h3>
+<div class="mermaid">
+graph TB
+    USER[사용자 질문]
+    USER --> API[FastAPI<br/>Chat / REST API]
+    API --> AGENT[LangGraph Agent<br/>오케스트레이션]
 
-<span class="w">    </span><span class="n">AGENT</span><span class="w"> </span><span class="o">--&gt;</span><span class="w"> </span><span class="n">IC</span><span class="p">{</span><span class="n">Intent</span><span class="w"> </span><span class="n">판단</span><span class="p">}</span>
-<span class="w">    </span><span class="n">IC</span><span class="w"> </span><span class="o">--&gt;|</span><span class="n">정형</span><span class="w"> </span><span class="n">KPI</span><span class="o">|</span><span class="w"> </span><span class="n">CUBE_T</span><span class="p">[</span><span class="n">Cube</span><span class="w"> </span><span class="n">API</span><span class="w"> </span><span class="n">Tool</span><span class="p">]</span>
-<span class="w">    </span><span class="n">IC</span><span class="w"> </span><span class="o">--&gt;|</span><span class="n">메타</span><span class="o">/</span><span class="n">용어</span><span class="o">|</span><span class="w"> </span><span class="n">OM_T</span><span class="p">[</span><span class="n">OM</span><span class="w"> </span><span class="n">API</span><span class="w"> </span><span class="n">Tool</span><span class="p">]</span>
-<span class="w">    </span><span class="n">IC</span><span class="w"> </span><span class="o">--&gt;|</span><span class="n">비정형</span><span class="w"> </span><span class="n">검색</span><span class="o">|</span><span class="w"> </span><span class="n">RAG_T</span><span class="p">[</span><span class="n">RAG</span><span class="w"> </span><span class="n">Tool</span><span class="p">]</span>
-<span class="w">    </span><span class="n">IC</span><span class="w"> </span><span class="o">--&gt;|</span><span class="n">외부</span><span class="w"> </span><span class="n">시스템</span><span class="o">|</span><span class="w"> </span><span class="n">MCP_T</span><span class="p">[</span><span class="n">MCP</span><span class="w"> </span><span class="n">Tools</span><span class="p">]</span>
+    AGENT --> IC{Intent 판단}
+    IC -->|정형 KPI| CUBE_T[Cube API Tool]
+    IC -->|메타/용어| OM_T[OM API Tool]
+    IC -->|비정형 검색| RAG_T[RAG Tool]
+    IC -->|외부 시스템| MCP_T[MCP Tools]
 
-<span class="w">    </span><span class="n">CUBE_T</span><span class="w"> </span><span class="o">--&gt;</span><span class="w"> </span><span class="n">CUBE</span><span class="p">[</span><span class="n">Cube</span><span class="p">.</span><span class="n">js</span><span class="o">&lt;</span><span class="n">br</span><span class="o">/&gt;</span><span class="n">Semantic</span><span class="w"> </span><span class="n">Layer</span><span class="o">&lt;</span><span class="n">br</span><span class="o">/&gt;:</span><span class="mi">4000</span><span class="p">]</span>
-<span class="w">    </span><span class="n">OM_T</span><span class="w"> </span><span class="o">--&gt;</span><span class="w"> </span><span class="n">OM</span><span class="p">[</span><span class="n">OpenMetadata</span><span class="o">&lt;</span><span class="n">br</span><span class="o">/&gt;</span><span class="n">메타</span><span class="w"> </span><span class="n">허브</span><span class="o">&lt;</span><span class="n">br</span><span class="o">/&gt;:</span><span class="mi">8585</span><span class="p">]</span>
-<span class="w">    </span><span class="n">RAG_T</span><span class="w"> </span><span class="o">--&gt;</span><span class="w"> </span><span class="n">VDB</span><span class="p">[(</span><span class="n">Vector</span><span class="w"> </span><span class="n">DB</span><span class="p">)]</span>
+    CUBE_T --> CUBE[Cube.js<br/>Semantic Layer<br/>:4000]
+    OM_T --> OM[OpenMetadata<br/>메타 허브<br/>:8585]
+    RAG_T --> VDB[(Vector DB)]
 
-<span class="w">    </span><span class="n">CUBE</span><span class="w"> </span><span class="o">--&gt;</span><span class="w"> </span><span class="n">ORA</span><span class="p">[(</span><span class="n">Oracle</span><span class="w"> </span><span class="mi">19</span><span class="n">c</span><span class="o">&lt;</span><span class="n">br</span><span class="o">/&gt;</span><span class="n">사내</span><span class="w"> </span><span class="n">DB</span><span class="p">)]</span>
-<span class="w">    </span><span class="n">OM</span><span class="w"> </span><span class="o">--&gt;</span><span class="w"> </span><span class="n">ORA</span>
+    CUBE --> ORA[(Oracle 19c<br/>사내 DB)]
+    OM --> ORA
 
-<span class="w">    </span><span class="n">AGENT</span><span class="w"> </span><span class="o">--&gt;</span><span class="w"> </span><span class="n">SYNTH</span><span class="p">[</span><span class="n">Result</span><span class="w"> </span><span class="n">Synthesizer</span><span class="p">]</span>
-<span class="w">    </span><span class="n">SYNTH</span><span class="w"> </span><span class="o">--&gt;</span><span class="w"> </span><span class="n">ANSWER</span><span class="p">[</span><span class="n">자연어</span><span class="w"> </span><span class="n">답변</span><span class="p">]</span>
-<span class="w">    </span><span class="n">ANSWER</span><span class="w"> </span><span class="o">--&gt;</span><span class="w"> </span><span class="n">USER</span>
-</code></pre></div>
+    AGENT --> SYNTH[Result Synthesizer]
+    SYNTH --> ANSWER[자연어 답변]
+    ANSWER --> USER
+</div>
 
-<h3 id="3-2">3-2. 컴포넌트별 역할</h3>
+<h3 id="3-2-컴포넌트별-역할">3-2. 컴포넌트별 역할</h3>
 <table>
 <thead>
 <tr>
@@ -283,27 +584,28 @@ OpenMetadata Oracle Connector
 </tr>
 </tbody>
 </table>
-<h3 id="3-3">3-3. 데이터 흐름</h3>
-<div class="codehilite"><pre><span></span><code><span class="n">sequenceDiagram</span>
-<span class="w">    </span><span class="n">participant</span><span class="w"> </span><span class="n">U</span><span class="w"> </span><span class="kr">as</span><span class="w"> </span><span class="err">사용자</span>
-<span class="w">    </span><span class="n">participant</span><span class="w"> </span><span class="n">A</span><span class="w"> </span><span class="kr">as</span><span class="w"> </span><span class="n">Agent</span>
-<span class="w">    </span><span class="n">participant</span><span class="w"> </span><span class="n">C</span><span class="w"> </span><span class="kr">as</span><span class="w"> </span><span class="n">Cube</span><span class="w"> </span><span class="n">API</span>
-<span class="w">    </span><span class="n">participant</span><span class="w"> </span><span class="n">O</span><span class="w"> </span><span class="kr">as</span><span class="w"> </span><span class="n">OM</span><span class="w"> </span><span class="n">API</span>
-<span class="w">    </span><span class="n">participant</span><span class="w"> </span><span class="n">DB</span><span class="w"> </span><span class="kr">as</span><span class="w"> </span><span class="n">Oracle</span><span class="w"> </span><span class="mi">19</span><span class="n">c</span>
+<h3 id="3-3-데이터-흐름">3-3. 데이터 흐름</h3>
+<div class="mermaid">
+sequenceDiagram
+    participant U as 사용자
+    participant A as Agent
+    participant C as Cube API
+    participant O as OM API
+    participant DB as Oracle 19c
 
-<span class="w">    </span><span class="n">U</span><span class="o">-&gt;&gt;</span><span class="n">A</span><span class="o">:</span><span class="w"> </span><span class="s">&quot;이번 분기 매출 상위 5개 팀&quot;</span>
-<span class="w">    </span><span class="n">A</span><span class="o">-&gt;&gt;</span><span class="n">A</span><span class="o">:</span><span class="w"> </span><span class="n">Intent</span><span class="w"> </span><span class="n">Classification</span><span class="w"> </span><span class="p">(</span><span class="err">정형</span><span class="w"> </span><span class="n">KPI</span><span class="p">)</span>
-<span class="w">    </span><span class="n">A</span><span class="o">-&gt;&gt;</span><span class="n">O</span><span class="o">:</span><span class="w"> </span><span class="err">메타데이터</span><span class="w"> </span><span class="err">조회</span><span class="w"> </span><span class="p">(</span><span class="err">매출</span><span class="w"> </span><span class="err">정의</span><span class="p">,</span><span class="w"> </span><span class="err">관련</span><span class="w"> </span><span class="err">테이블</span><span class="p">)</span>
-<span class="w">    </span><span class="n">O</span><span class="o">--&gt;&gt;</span><span class="n">A</span><span class="o">:</span><span class="w"> </span><span class="n">glossary</span><span class="o">:</span><span class="w"> </span><span class="err">매출</span><span class="o">=</span><span class="n">revenue</span><span class="p">,</span><span class="w"> </span><span class="err">테이블</span><span class="o">:</span><span class="w"> </span><span class="n">monthly_kpi</span>
-<span class="w">    </span><span class="n">A</span><span class="o">-&gt;&gt;</span><span class="n">C</span><span class="o">:</span><span class="w"> </span><span class="n">REST</span><span class="w"> </span><span class="n">API</span><span class="w"> </span><span class="err">호출</span><span class="w"> </span><span class="p">(</span><span class="n">measures</span><span class="o">:</span><span class="w"> </span><span class="n">totalRevenue</span><span class="p">,</span><span class="w"> </span><span class="n">dimensions</span><span class="o">:</span><span class="w"> </span><span class="n">deptName</span><span class="p">)</span>
-<span class="w">    </span><span class="n">C</span><span class="o">-&gt;&gt;</span><span class="n">DB</span><span class="o">:</span><span class="w"> </span><span class="kr">SQL</span><span class="w"> </span><span class="err">실행</span>
-<span class="w">    </span><span class="n">DB</span><span class="o">--&gt;&gt;</span><span class="n">C</span><span class="o">:</span><span class="w"> </span><span class="err">결과</span><span class="w"> </span><span class="err">데이터</span>
-<span class="w">    </span><span class="n">C</span><span class="o">--&gt;&gt;</span><span class="n">A</span><span class="o">:</span><span class="w"> </span><span class="n">JSON</span><span class="w"> </span><span class="err">응답</span>
-<span class="w">    </span><span class="n">A</span><span class="o">-&gt;&gt;</span><span class="n">A</span><span class="o">:</span><span class="w"> </span><span class="n">Result</span><span class="w"> </span><span class="n">Synthesizer</span><span class="w"> </span><span class="p">(</span><span class="err">자연어</span><span class="w"> </span><span class="err">변환</span><span class="p">)</span>
-<span class="w">    </span><span class="n">A</span><span class="o">--&gt;&gt;</span><span class="n">U</span><span class="o">:</span><span class="w"> </span><span class="s">&quot;이번 분기 매출 상위 5개 팀은 영업1팀(3.85억), ...&quot;</span>
-</code></pre></div>
+    U->>A: "이번 분기 매출 상위 5개 팀"
+    A->>A: Intent Classification (정형 KPI)
+    A->>O: 메타데이터 조회 (매출 정의, 관련 테이블)
+    O-->>A: glossary: 매출=revenue, 테이블: monthly_kpi
+    A->>C: REST API 호출 (measures: totalRevenue, dimensions: deptName)
+    C->>DB: SQL 실행
+    DB-->>C: 결과 데이터
+    C-->>A: JSON 응답
+    A->>A: Result Synthesizer (자연어 변환)
+    A-->>U: "이번 분기 매출 상위 5개 팀은 영업1팀(3.85억), ..."
+</div>
 
-<h3 id="3-4-bip">3-4. BIP 경험 이식 매핑</h3>
+<h3 id="3-4-bip-경험-이식-매핑">3-4. BIP 경험 이식 매핑</h3>
 <table>
 <thead>
 <tr>
@@ -355,9 +657,10 @@ OpenMetadata Oracle Connector
 </tbody>
 </table>
 <hr />
-<h2 id="4">4. 구현 계획</h2>
-<h3 id="4-1-phase">4-1. Phase 로드맵</h3>
-<div class="codehilite"><pre><span></span><code>gantt
+<h2 id="4-구현-계획">4. 구현 계획</h2>
+<h3 id="4-1-phase-로드맵">4-1. Phase 로드맵</h3>
+<div class="mermaid">
+gantt
     title 사내 NL2SQL 구현 로드맵
     dateFormat YYYY-MM-DD
     axisFormat %m/%d
@@ -381,10 +684,10 @@ OpenMetadata Oracle Connector
     section Phase 4 확장
     비정형 RAG 추가                :p4a, after p3b, 7d
     MCP Tools 연동                 :p4b, after p4a, 5d
-</code></pre></div>
+</div>
 
-<h3 id="4-2-phase-1-2">4-2. Phase 1: 기반 구축 (2주)</h3>
-<h4 id="oracle-gold-view">Oracle Gold View 설계</h4>
+<h3 id="4-2-phase-1-기반-구축-2주">4-2. Phase 1: 기반 구축 (2주)</h3>
+<h4 id="oracle-gold-view-설계">Oracle Gold View 설계</h4>
 <p>BIP 경험 기반으로 Oracle View 생성:</p>
 <div class="codehilite"><pre><span></span><code><span class="c1">-- 매출 요약 Gold View (BIP의 analytics_stock_daily에 대응)</span>
 <span class="k">CREATE</span><span class="w"> </span><span class="k">OR</span><span class="w"> </span><span class="k">REPLACE</span><span class="w"> </span><span class="k">VIEW</span><span class="w"> </span><span class="n">v_sales_summary</span><span class="w"> </span><span class="k">AS</span>
@@ -408,7 +711,7 @@ OpenMetadata Oracle Connector
 <span class="k">JOIN</span><span class="w"> </span><span class="n">departments</span><span class="w"> </span><span class="n">d</span><span class="w"> </span><span class="k">ON</span><span class="w"> </span><span class="n">s</span><span class="p">.</span><span class="n">dept_id</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">d</span><span class="p">.</span><span class="n">dept_id</span><span class="p">;</span>
 </code></pre></div>
 
-<h4 id="cube-oracle">Cube 설치 + Oracle 연결</h4>
+<h4 id="cube-설치--oracle-연결">Cube 설치 + Oracle 연결</h4>
 <div class="codehilite"><pre><span></span><code><span class="c1"># docker-compose.yml</span>
 <span class="nt">services</span><span class="p">:</span>
 <span class="w">  </span><span class="nt">cube</span><span class="p">:</span>
@@ -428,7 +731,7 @@ OpenMetadata Oracle Connector
 <span class="w">      </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">./model:/cube/conf/model</span>
 </code></pre></div>
 
-<h4 id="cube">Cube 시맨틱 모델 정의</h4>
+<h4 id="cube-시맨틱-모델-정의">Cube 시맨틱 모델 정의</h4>
 <div class="codehilite"><pre><span></span><code><span class="c1">// model/sales.js</span>
 <span class="nx">cube</span><span class="p">(</span><span class="s1">&#39;SalesSummary&#39;</span><span class="p">,</span><span class="w"> </span><span class="p">{</span>
 <span class="w">  </span><span class="nx">sql</span><span class="o">:</span><span class="w"> </span><span class="sb">`SELECT * FROM v_sales_summary`</span><span class="p">,</span>
@@ -449,27 +752,28 @@ OpenMetadata Oracle Connector
 <span class="p">});</span>
 </code></pre></div>
 
-<h3 id="4-3-phase-2-agent-2">4-3. Phase 2: Agent 구축 (2주)</h3>
-<h4 id="langgraph-agent">LangGraph Agent 설계</h4>
-<div class="codehilite"><pre><span></span><code><span class="n">graph</span><span class="w"> </span><span class="n">TB</span>
-<span class="w">    </span><span class="n">Q</span><span class="p">[</span><span class="n">사용자</span><span class="w"> </span><span class="n">질문</span><span class="p">]</span><span class="w"> </span><span class="o">--&gt;</span><span class="w"> </span><span class="n">IC</span><span class="p">[</span><span class="n">Intent</span><span class="w"> </span><span class="n">Classifier</span><span class="p">]</span>
-<span class="w">    </span><span class="n">IC</span><span class="w"> </span><span class="o">--&gt;</span><span class="w"> </span><span class="n">QP</span><span class="p">[</span><span class="n">Query</span><span class="w"> </span><span class="n">Planner</span><span class="p">]</span>
-<span class="w">    </span><span class="n">QP</span><span class="w"> </span><span class="o">--&gt;</span><span class="w"> </span><span class="n">ER</span><span class="p">[</span><span class="n">Entity</span><span class="w"> </span><span class="n">Resolver</span><span class="p">]</span>
+<h3 id="4-3-phase-2-agent-구축-2주">4-3. Phase 2: Agent 구축 (2주)</h3>
+<h4 id="langgraph-agent-설계">LangGraph Agent 설계</h4>
+<div class="mermaid">
+graph TB
+    Q[사용자 질문] --> IC[Intent Classifier]
+    IC --> QP[Query Planner]
+    QP --> ER[Entity Resolver]
 
-<span class="w">    </span><span class="n">ER</span><span class="w"> </span><span class="o">--&gt;</span><span class="w"> </span><span class="n">TOOLS</span><span class="p">{</span><span class="n">Tool</span><span class="w"> </span><span class="n">선택</span><span class="p">}</span>
-<span class="w">    </span><span class="n">TOOLS</span><span class="w"> </span><span class="o">--&gt;|</span><span class="n">정형</span><span class="w"> </span><span class="n">KPI</span><span class="o">|</span><span class="w"> </span><span class="n">CT</span><span class="p">[</span><span class="n">Cube</span><span class="w"> </span><span class="n">API</span><span class="w"> </span><span class="n">Tool</span><span class="p">]</span>
-<span class="w">    </span><span class="n">TOOLS</span><span class="w"> </span><span class="o">--&gt;|</span><span class="n">메타</span><span class="o">/</span><span class="n">용어</span><span class="o">|</span><span class="w"> </span><span class="n">OT</span><span class="p">[</span><span class="n">OM</span><span class="w"> </span><span class="n">API</span><span class="w"> </span><span class="n">Tool</span><span class="p">]</span>
-<span class="w">    </span><span class="n">TOOLS</span><span class="w"> </span><span class="o">--&gt;|</span><span class="n">비정형</span><span class="o">|</span><span class="w"> </span><span class="n">RT</span><span class="p">[</span><span class="n">RAG</span><span class="w"> </span><span class="n">Tool</span><span class="p">]</span>
+    ER --> TOOLS{Tool 선택}
+    TOOLS -->|정형 KPI| CT[Cube API Tool]
+    TOOLS -->|메타/용어| OT[OM API Tool]
+    TOOLS -->|비정형| RT[RAG Tool]
 
-<span class="w">    </span><span class="n">CT</span><span class="w"> </span><span class="o">--&gt;</span><span class="w"> </span><span class="n">EX</span><span class="p">[</span><span class="n">Executor</span><span class="p">]</span>
-<span class="w">    </span><span class="n">OT</span><span class="w"> </span><span class="o">--&gt;</span><span class="w"> </span><span class="n">EX</span>
-<span class="w">    </span><span class="n">RT</span><span class="w"> </span><span class="o">--&gt;</span><span class="w"> </span><span class="n">EX</span>
+    CT --> EX[Executor]
+    OT --> EX
+    RT --> EX
 
-<span class="w">    </span><span class="n">EX</span><span class="w"> </span><span class="o">--&gt;</span><span class="w"> </span><span class="n">RS</span><span class="p">[</span><span class="n">Result</span><span class="w"> </span><span class="n">Synthesizer</span><span class="p">]</span>
-<span class="w">    </span><span class="n">RS</span><span class="w"> </span><span class="o">--&gt;</span><span class="w"> </span><span class="n">ANS</span><span class="p">[</span><span class="n">자연어</span><span class="w"> </span><span class="n">답변</span><span class="p">]</span>
-</code></pre></div>
+    EX --> RS[Result Synthesizer]
+    RS --> ANS[자연어 답변]
+</div>
 
-<h4 id="cube-api-tool">Cube API Tool 예시</h4>
+<h4 id="cube-api-tool-예시">Cube API Tool 예시</h4>
 <div class="codehilite"><pre><span></span><code><span class="c1"># Agent가 호출하는 Cube API Tool</span>
 <span class="kn">import</span><span class="w"> </span><span class="nn">requests</span>
 
@@ -489,7 +793,7 @@ OpenMetadata Oracle Connector
     <span class="k">return</span> <span class="n">response</span><span class="o">.</span><span class="n">json</span><span class="p">()[</span><span class="s2">&quot;data&quot;</span><span class="p">]</span>
 </code></pre></div>
 
-<h3 id="4-4-phase-3-2">4-4. Phase 3: 튜닝 &amp; 검증 (2주)</h3>
+<h3 id="4-4-phase-3-튜닝--검증-2주">4-4. Phase 3: 튜닝 &amp; 검증 (2주)</h3>
 <p>BIP에서 검증된 테스트-개선 사이클 적용:</p>
 <div class="codehilite"><pre><span></span><code><span class="mf">1.</span><span class="w"> </span><span class="n">업무</span><span class="w"> </span><span class="n">질문</span><span class="w"> </span><span class="mf">50</span><span class="n">개</span><span class="w"> </span><span class="n">수집</span><span class="w"> </span><span class="p">(</span><span class="n">현업</span><span class="w"> </span><span class="n">인터뷰</span><span class="p">)</span>
 <span class="mf">2.</span><span class="w"> </span><span class="n">Agent로</span><span class="w"> </span><span class="n">질문</span><span class="w"> </span><span class="err">→</span><span class="w"> </span><span class="n">결과</span><span class="w"> </span><span class="n">검증</span>
@@ -497,14 +801,14 @@ OpenMetadata Oracle Connector
 <span class="mf">4.</span><span class="w"> </span><span class="mf">3</span><span class="o">-</span><span class="mf">5</span><span class="n">회</span><span class="w"> </span><span class="n">반복하여</span><span class="w"> </span><span class="mf">80</span><span class="o">-</span><span class="mf">90</span><span class="err">%</span><span class="w"> </span><span class="n">정확도</span><span class="w"> </span><span class="n">달성</span>
 </code></pre></div>
 
-<h3 id="4-5-phase-4">4-5. Phase 4: 확장 (이후)</h3>
+<h3 id="4-5-phase-4-확장-이후">4-5. Phase 4: 확장 (이후)</h3>
 <ul>
 <li>비정형 RAG (문서/보고서/회의록)</li>
 <li>MCP Tools (외부 시스템 API)</li>
 <li>Knowledge Graph (향후)</li>
 </ul>
 <hr />
-<h2 id="5">5. 보안 아키텍처</h2>
+<h2 id="5-보안-아키텍처">5. 보안 아키텍처</h2>
 <p>BIP 4-layer 패턴을 Oracle 환경에 적용:</p>
 <table>
 <thead>
@@ -546,7 +850,7 @@ OpenMetadata Oracle Connector
 </code></pre></div>
 
 <hr />
-<h2 id="6-wrenai">6. WrenAI 경험에서 배운 교훈</h2>
+<h2 id="6-wrenai-경험에서-배운-교훈">6. WrenAI 경험에서 배운 교훈</h2>
 <p>BIP에서 겪은 문제와 새 아키텍처에서의 해결:</p>
 <table>
 <thead>
@@ -600,7 +904,7 @@ OpenMetadata Oracle Connector
 </tbody>
 </table>
 <hr />
-<h2 id="7">7. 리스크 및 대응</h2>
+<h2 id="7-리스크-및-대응">7. 리스크 및 대응</h2>
 <table>
 <thead>
 <tr>
@@ -638,7 +942,7 @@ OpenMetadata Oracle Connector
 </tbody>
 </table>
 <hr />
-<h2 id="8">8. 성공 기준</h2>
+<h2 id="8-성공-기준">8. 성공 기준</h2>
 <table>
 <thead>
 <tr>
@@ -674,46 +978,51 @@ OpenMetadata Oracle Connector
 </tbody>
 </table>
 <hr />
-<h2 id="9">9. 기술 스택 요약</h2>
-<div class="codehilite"><pre><span></span><code><span class="n">graph</span><span class="w"> </span><span class="n">TB</span>
-<span class="w">    </span><span class="n">subgraph</span><span class="w"> </span><span class="n">Infra</span><span class="p">[</span><span class="s">&quot;인프라&quot;</span><span class="p">]</span>
-<span class="w">        </span><span class="n">ORA</span><span class="p">[(</span><span class="n">Oracle</span><span class="w"> </span><span class="mi">19</span><span class="n">c</span><span class="p">)]</span>
-<span class="w">        </span><span class="n">PG</span><span class="p">[(</span><span class="n">PostgreSQL</span><span class="o">&lt;</span><span class="n">br</span><span class="o">/&gt;</span><span class="n">OM</span><span class="w"> </span><span class="n">저장소</span><span class="p">)]</span>
-<span class="w">        </span><span class="n">ES</span><span class="p">[(</span><span class="n">Elasticsearch</span><span class="o">&lt;</span><span class="n">br</span><span class="o">/&gt;</span><span class="n">OM</span><span class="w"> </span><span class="n">검색</span><span class="p">)]</span>
-<span class="w">    </span><span class="n">end</span>
+<h2 id="9-기술-스택-요약">9. 기술 스택 요약</h2>
+<div class="mermaid">
+graph TB
+    subgraph Infra["인프라"]
+        ORA[(Oracle 19c)]
+        PG[(PostgreSQL<br/>OM 저장소)]
+        ES[(Elasticsearch<br/>OM 검색)]
+    end
 
-<span class="w">    </span><span class="n">subgraph</span><span class="w"> </span><span class="n">Platform</span><span class="p">[</span><span class="s">&quot;플랫폼&quot;</span><span class="p">]</span>
-<span class="w">        </span><span class="n">OM</span><span class="p">[</span><span class="n">OpenMetadata</span><span class="o">&lt;</span><span class="n">br</span><span class="o">/&gt;</span><span class="n">메타</span><span class="w"> </span><span class="n">허브</span><span class="p">]</span>
-<span class="w">        </span><span class="n">CUBE</span><span class="p">[</span><span class="n">Cube</span><span class="p">.</span><span class="n">js</span><span class="o">&lt;</span><span class="n">br</span><span class="o">/&gt;</span><span class="n">Semantic</span><span class="w"> </span><span class="n">Layer</span><span class="p">]</span>
-<span class="w">    </span><span class="n">end</span>
+    subgraph Platform["플랫폼"]
+        OM[OpenMetadata<br/>메타 허브]
+        CUBE[Cube.js<br/>Semantic Layer]
+    end
 
-<span class="w">    </span><span class="n">subgraph</span><span class="w"> </span><span class="n">AI</span><span class="p">[</span><span class="s">&quot;AI/Agent&quot;</span><span class="p">]</span>
-<span class="w">        </span><span class="n">LG</span><span class="p">[</span><span class="n">LangGraph</span><span class="o">&lt;</span><span class="n">br</span><span class="o">/&gt;</span><span class="n">Agent</span><span class="p">]</span>
-<span class="w">        </span><span class="n">LLM</span><span class="p">[</span><span class="n">GPT</span><span class="mf">-4.1</span><span class="o">-</span><span class="n">mini</span><span class="o">&lt;</span><span class="n">br</span><span class="o">/&gt;</span><span class="n">또는</span><span class="w"> </span><span class="n">사내</span><span class="w"> </span><span class="n">LLM</span><span class="p">]</span>
-<span class="w">        </span><span class="n">VDB</span><span class="p">[(</span><span class="n">Vector</span><span class="w"> </span><span class="n">DB</span><span class="o">&lt;</span><span class="n">br</span><span class="o">/&gt;</span><span class="n">RAG</span><span class="p">)]</span>
-<span class="w">    </span><span class="n">end</span>
+    subgraph AI["AI/Agent"]
+        LG[LangGraph<br/>Agent]
+        LLM[GPT-4.1-mini<br/>또는 사내 LLM]
+        VDB[(Vector DB<br/>RAG)]
+    end
 
-<span class="w">    </span><span class="n">subgraph</span><span class="w"> </span><span class="n">Interface</span><span class="p">[</span><span class="s">&quot;인터페이스&quot;</span><span class="p">]</span>
-<span class="w">        </span><span class="n">API</span><span class="p">[</span><span class="n">FastAPI</span><span class="p">]</span>
-<span class="w">        </span><span class="n">CHAT</span><span class="p">[</span><span class="n">Chat</span><span class="w"> </span><span class="n">UI</span><span class="p">]</span>
-<span class="w">    </span><span class="n">end</span>
+    subgraph Interface["인터페이스"]
+        API[FastAPI]
+        CHAT[Chat UI]
+    end
 
-<span class="w">    </span><span class="n">ORA</span><span class="w"> </span><span class="o">--&gt;</span><span class="w"> </span><span class="n">CUBE</span>
-<span class="w">    </span><span class="n">ORA</span><span class="w"> </span><span class="o">--&gt;</span><span class="w"> </span><span class="n">OM</span>
-<span class="w">    </span><span class="n">PG</span><span class="w"> </span><span class="o">--&gt;</span><span class="w"> </span><span class="n">OM</span>
-<span class="w">    </span><span class="n">ES</span><span class="w"> </span><span class="o">--&gt;</span><span class="w"> </span><span class="n">OM</span>
+    ORA --> CUBE
+    ORA --> OM
+    PG --> OM
+    ES --> OM
 
-<span class="w">    </span><span class="n">CUBE</span><span class="w"> </span><span class="o">--&gt;</span><span class="w"> </span><span class="n">LG</span>
-<span class="w">    </span><span class="n">OM</span><span class="w"> </span><span class="o">--&gt;</span><span class="w"> </span><span class="n">LG</span>
-<span class="w">    </span><span class="n">VDB</span><span class="w"> </span><span class="o">--&gt;</span><span class="w"> </span><span class="n">LG</span>
-<span class="w">    </span><span class="n">LLM</span><span class="w"> </span><span class="o">--&gt;</span><span class="w"> </span><span class="n">LG</span>
+    CUBE --> LG
+    OM --> LG
+    VDB --> LG
+    LLM --> LG
 
-<span class="w">    </span><span class="n">LG</span><span class="w"> </span><span class="o">--&gt;</span><span class="w"> </span><span class="n">API</span>
-<span class="w">    </span><span class="n">API</span><span class="w"> </span><span class="o">--&gt;</span><span class="w"> </span><span class="n">CHAT</span>
-</code></pre></div>
+    LG --> API
+    API --> CHAT
+    style Infra fill:#4f8fea22,stroke:#4f8fea,stroke-width:2px,color:#e6edf3
+    style Platform fill:#6c5ce722,stroke:#6c5ce7,stroke-width:2px,color:#e6edf3
+    style AI fill:#00b89422,stroke:#00b894,stroke-width:2px,color:#e6edf3
+    style Interface fill:#e1705522,stroke:#e17055,stroke-width:2px,color:#e6edf3
+</div>
 
 <hr />
-<h2 id="10">10. 참고 문서</h2>
+<h2 id="10-참고-문서">10. 참고 문서</h2>
 <table>
 <thead>
 <tr>
@@ -758,8 +1067,157 @@ OpenMetadata Oracle Connector
 </table>
 <hr />
 <p><em>이 문서는 BIP-Pipeline의 WrenAI 경험을 기반으로 사내 Oracle 19c 환경에 맞는 NL2SQL 아키텍처를 재설계한 것입니다.</em></p>
-<footer style="margin-top:3rem; padding-top:1rem; border-top:1px solid #e5e7eb; color:#6b7280; font-size:0.85rem;">
-<p>Generated: 2026-04-18 | BIP-Pipeline Documentation</p>
-</footer>
+<hr />
+<h2 id="변경-이력">변경 이력</h2>
+<table>
+<thead>
+<tr>
+<th>날짜</th>
+<th>내용</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>2026-04-18</td>
+<td>초안 작성</td>
+</tr>
+<tr>
+<td>2026-04-22</td>
+<td>문서 헤더 정리</td>
+</tr>
+</tbody>
+</table>
+</main>
+
+<script>
+  // 테마 전환
+  function setTheme(theme) {
+    document.documentElement.setAttribute('data-theme', theme);
+    localStorage.setItem('doc-theme', theme);
+    document.getElementById('btn-dark').classList.toggle('active', theme === 'dark');
+    document.getElementById('btn-light').classList.toggle('active', theme === 'light');
+    // Mermaid 재렌더링
+    if (typeof mermaid !== 'undefined') {
+      mermaid.initialize({ startOnLoad: false, theme: 'base', securityLevel: 'loose', themeVariables: getMermaidTheme(theme) });
+      document.querySelectorAll('.mermaid').forEach(el => {
+        el.removeAttribute('data-processed');
+        el.innerHTML = el.textContent;
+      });
+      mermaid.run();
+    }
+  }
+
+  // 저장된 테마 로드
+  const savedTheme = localStorage.getItem('doc-theme') || 'dark';
+  setTheme(savedTheme);
+
+  // Mermaid 초기화
+  function getMermaidTheme(theme) {
+    const dark = {
+      primaryColor: '#3d7be0',
+      primaryTextColor: '#ffffff',
+      primaryBorderColor: '#5a9cf0',
+      secondaryColor: '#7c5cbf',
+      secondaryTextColor: '#ffffff',
+      secondaryBorderColor: '#a29bfe',
+      tertiaryColor: '#00997a',
+      tertiaryTextColor: '#ffffff',
+      tertiaryBorderColor: '#55efc4',
+      noteTextColor: '#f0f0f0',
+      noteBkgColor: '#2d3436',
+      noteBorderColor: '#636e72',
+      lineColor: '#8b949e',
+      textColor: '#e6edf3',
+      mainBkg: '#1e3050',
+      nodeBorder: '#5a9cf0',
+      clusterBkg: '#1a1e2e',
+      clusterBorder: '#4a5568',
+      titleColor: '#79c0ff',
+      edgeLabelBackground: '#21262d',
+      actorBkg: '#3d7be0',
+      actorTextColor: '#ffffff',
+      actorBorder: '#5a9cf0',
+      signalColor: '#8b949e',
+      labelBoxBkgColor: '#21262d',
+      labelBoxBorderColor: '#4a5568',
+      labelTextColor: '#e6edf3',
+      loopTextColor: '#e6edf3',
+      activationBorderColor: '#5a9cf0',
+      activationBkgColor: '#1e3050',
+      sequenceNumberColor: '#ffffff',
+      pie1: '#4f8fea', pie2: '#6c5ce7', pie3: '#00b894', pie4: '#e17055',
+      pie5: '#fdcb6e', pie6: '#00cec9', pie7: '#e84393', pie8: '#0984e3'
+    };
+    const light = {
+      primaryColor: '#4f8fea',
+      primaryTextColor: '#1a1a2e',
+      primaryBorderColor: '#3a7bd5',
+      secondaryColor: '#a29bfe',
+      secondaryTextColor: '#1a1a2e',
+      secondaryBorderColor: '#6c5ce7',
+      tertiaryColor: '#55efc4',
+      tertiaryTextColor: '#1a1a2e',
+      tertiaryBorderColor: '#00b894',
+      noteTextColor: '#2d3436',
+      noteBkgColor: '#ffeaa7',
+      noteBorderColor: '#fdcb6e',
+      lineColor: '#636e72',
+      textColor: '#2d3436',
+      mainBkg: '#dfe6e9',
+      nodeBorder: '#3a7bd5',
+      clusterBkg: '#f0f3f5',
+      clusterBorder: '#b2bec3',
+      titleColor: '#2d3436',
+      edgeLabelBackground: '#ffffff',
+      actorBkg: '#4f8fea',
+      actorTextColor: '#ffffff',
+      actorBorder: '#3a7bd5',
+      signalColor: '#636e72',
+      labelBoxBkgColor: '#ffffff',
+      labelBoxBorderColor: '#b2bec3',
+      labelTextColor: '#2d3436',
+      loopTextColor: '#2d3436',
+      activationBorderColor: '#3a7bd5',
+      activationBkgColor: '#dfe6e9',
+      sequenceNumberColor: '#ffffff',
+      pie1: '#4f8fea', pie2: '#6c5ce7', pie3: '#00b894', pie4: '#e17055',
+      pie5: '#fdcb6e', pie6: '#00cec9', pie7: '#e84393', pie8: '#0984e3'
+    };
+    return theme === 'dark' ? dark : light;
+  }
+
+  mermaid.initialize({ startOnLoad: true, theme: 'base', securityLevel: 'loose', themeVariables: getMermaidTheme(savedTheme) });
+
+  // TOC 현재 위치 하이라이트
+  const tocLinks = document.querySelectorAll('.toc a');
+  const headings = [];
+  tocLinks.forEach(link => {
+    const id = link.getAttribute('href').slice(1);
+    const el = document.getElementById(id);
+    if (el) headings.push({ el, link });
+  });
+
+  function updateActiveToc() {
+    let current = null;
+    for (const h of headings) {
+      if (h.el.getBoundingClientRect().top <= 100) current = h;
+    }
+    tocLinks.forEach(l => l.classList.remove('active'));
+    if (current) current.link.classList.add('active');
+  }
+
+  window.addEventListener('scroll', updateActiveToc, { passive: true });
+  updateActiveToc();
+
+  // 모바일: 링크 클릭 시 사이드바 닫기
+  tocLinks.forEach(link => {
+    link.addEventListener('click', () => {
+      if (window.innerWidth <= 900) {
+        document.querySelector('.sidebar').classList.remove('open');
+      }
+    });
+  });
+</script>
+
 </body>
 </html>

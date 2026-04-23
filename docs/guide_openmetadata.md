@@ -1,9 +1,6 @@
 # OpenMetadata 기능 및 사용 가이드
 
-> **공식 문서 기반** — https://docs.open-metadata.org
-> **작성일:** 2026-04-13
-> **대상:** BIP-Pipeline 팀원, 데이터 엔지니어, 분석가
-> **목적:** OpenMetadata의 전체 기능을 이해하고 프로젝트에서 효과적으로 활용하기 위한 참조 문서
+> **공식 문서:** https://docs.open-metadata.org
 
 ---
 
@@ -1112,3 +1109,12 @@ OM → Wren AI 동기화 체인:
 - OpenMetadata: v1.x (Docker Compose 배포)
 - Python SDK: `openmetadata-ingestion` (pip)
 - BIP-Pipeline OM 구성: 39 테이블, 77 용어, 14 apiEndpoint, 43 DAG
+
+---
+
+## 변경 이력
+
+| 날짜 | 내용 |
+|------|------|
+| 2026-04-13 | 초안 작성 |
+| 2026-04-22 | 문서 헤더 정리 (작성일/대상 제거) |

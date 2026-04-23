@@ -798,3 +798,11 @@ graph LR
 - Cosmos (Airflow + dbt): <https://github.com/astronomer/astronomer-cosmos>
 - dbt 패키지 허브: <https://hub.getdbt.com>
 - Cube.js 공식: <https://cube.dev/docs>
+
+---
+
+## 변경 이력
+
+| 날짜 | 내용 |
+|------|------|
+| 2026-04-18 | 초안 작성 |

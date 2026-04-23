@@ -1,7 +1,5 @@
 # Cube.js 개념 및 사용 가이드
 
-> 작성일: 2026-04-18 | 대상: BIP-Pipeline 데이터 엔지니어 / 백엔드 개발자
-
 ---
 
 ## 1. 개요
@@ -798,3 +796,12 @@ Q: "삼성전자 PER은?"  →  {"measures":["StockValuation.per"],"filters":[{"
 | Oracle 드라이버 | <https://cube.dev/docs/product/configuration/data-sources/oracle> |
 
 > **BIP 프로젝트 관련 문서:** `docs/guide_wrenai.md`, `docs/nl2sql_project_plan.md`, `docs/wrenai_technical_guide.md`, `docs/data_architecture_review.md`
+
+---
+
+## 변경 이력
+
+| 날짜 | 내용 |
+|------|------|
+| 2026-04-18 | 초안 작성 |
+| 2026-04-22 | 문서 헤더 정리 (작성일/대상 제거) |

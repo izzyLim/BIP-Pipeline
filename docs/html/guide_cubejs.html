@@ -1,42 +1,349 @@
 <!DOCTYPE html>
-<html lang="ko">
+<html lang="ko" data-theme="dark">
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Cube.js 개념 및 사용 가이드</title>
 <script src="https://cdn.jsdelivr.net/npm/mermaid@11/dist/mermaid.min.js"></script>
-<script>mermaid.initialize({startOnLoad:true, theme:'default', securityLevel:'loose'});</script>
 <style>
-  body { font-family: 'Pretendard', -apple-system, sans-serif; line-height: 1.7; color: #1a1a1a; max-width: 960px; margin: 0 auto; padding: 2rem 1.5rem; }
-  h1 { font-size: 2rem; margin: 2.5rem 0 1rem; padding-bottom: 0.5rem; border-bottom: 3px solid #2563eb; }
-  h2 { font-size: 1.5rem; margin: 2rem 0 0.8rem; padding-bottom: 0.3rem; border-bottom: 1px solid #e5e7eb; color: #2563eb; }
-  h3 { font-size: 1.2rem; margin: 1.5rem 0 0.5rem; }
-  h4 { font-size: 1.05rem; margin: 1.2rem 0 0.4rem; }
-  table { width: 100%; border-collapse: collapse; margin: 1rem 0; font-size: 0.9rem; }
-  th, td { border: 1px solid #e5e7eb; padding: 0.5rem 0.75rem; }
-  th { background: #f8fafc; font-weight: 600; }
-  tr:nth-child(even) { background: #fafafa; }
-  code { background: #f3f4f6; padding: 0.15rem 0.4rem; border-radius: 3px; font-size: 0.85em; }
-  pre { background: #1e293b; color: #e2e8f0; padding: 1rem; border-radius: 8px; overflow-x: auto; margin: 1rem 0; }
-  pre code { background: none; color: inherit; padding: 0; }
-  blockquote { border-left: 4px solid #3b82f6; padding: 0.5rem 1rem; margin: 1rem 0; background: #eff6ff; }
-  .mermaid { margin: 1.5rem 0; text-align: center; }
-  strong { color: #1e40af; }
-  a { color: #2563eb; }
+  /* ── 테마 변수 ── */
+  :root[data-theme="dark"] {
+    --bg: #0d1117;
+    --bg-sidebar: #161b22;
+    --fg: #e6edf3;
+    --fg-muted: #8b949e;
+    --border: #30363d;
+    --accent: #58a6ff;
+    --accent-hover: #79c0ff;
+    --code-bg: #1e293b;
+    --code-fg: #e2e8f0;
+    --table-header: #161b22;
+    --table-even: #0d1117;
+    --table-odd: #161b22;
+    --blockquote-bg: #161b22;
+    --blockquote-border: #3b82f6;
+    --link: #58a6ff;
+    --strong: #79c0ff;
+    --card-bg: #21262d;
+  }
+  :root[data-theme="light"] {
+    --bg: #ffffff;
+    --bg-sidebar: #f6f8fa;
+    --fg: #1f2937;
+    --fg-muted: #6b7280;
+    --border: #e5e7eb;
+    --accent: #2563eb;
+    --accent-hover: #1d4ed8;
+    --code-bg: #f3f4f6;
+    --code-fg: #1e293b;
+    --table-header: #f8fafc;
+    --table-even: #ffffff;
+    --table-odd: #f9fafb;
+    --blockquote-bg: #eff6ff;
+    --blockquote-border: #3b82f6;
+    --link: #2563eb;
+    --strong: #1e40af;
+    --card-bg: #f3f4f6;
+  }
+
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+
+  body {
+    font-family: 'Pretendard', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+    background: var(--bg);
+    color: var(--fg);
+    line-height: 1.75;
+    display: flex;
+    min-height: 100vh;
+  }
+
+  /* ── 사이드바 ── */
+  .sidebar {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 280px;
+    height: 100vh;
+    background: var(--bg-sidebar);
+    border-right: 1px solid var(--border);
+    overflow-y: auto;
+    padding: 20px 0;
+    z-index: 100;
+    transition: transform 0.3s ease;
+  }
+
+  .sidebar-header {
+    padding: 0 20px 16px;
+    border-bottom: 1px solid var(--border);
+    margin-bottom: 12px;
+  }
+
+  .sidebar-title {
+    font-size: 0.95rem;
+    font-weight: 700;
+    color: var(--fg);
+    line-height: 1.3;
+  }
+
+  .sidebar-controls {
+    display: flex;
+    gap: 8px;
+    margin-top: 12px;
+  }
+
+  .theme-btn {
+    background: var(--card-bg);
+    border: 1px solid var(--border);
+    color: var(--fg-muted);
+    padding: 4px 10px;
+    border-radius: 6px;
+    font-size: 0.7rem;
+    cursor: pointer;
+    transition: all 0.2s;
+  }
+  .theme-btn:hover {
+    border-color: var(--accent);
+    color: var(--accent);
+  }
+  .theme-btn.active {
+    background: var(--accent);
+    color: #fff;
+    border-color: var(--accent);
+  }
+
+  .back-link {
+    display: block;
+    margin-top: 10px;
+    font-size: 0.75rem;
+    color: var(--fg-muted);
+    text-decoration: none;
+  }
+  .back-link:hover {
+    color: var(--accent);
+  }
+
+  /* ── TOC ── */
+  .toc {
+    padding: 0 12px;
+  }
+  .toc ul {
+    list-style: none;
+    padding: 0;
+  }
+  .toc li {
+    margin: 0;
+  }
+  .toc a {
+    display: block;
+    padding: 4px 8px;
+    color: var(--fg-muted);
+    text-decoration: none;
+    font-size: 0.78rem;
+    border-radius: 4px;
+    border-left: 2px solid transparent;
+    transition: all 0.15s;
+    line-height: 1.4;
+  }
+  .toc a:hover {
+    color: var(--accent);
+    background: var(--card-bg);
+    border-left-color: var(--accent);
+  }
+  .toc a.active {
+    color: var(--accent);
+    border-left-color: var(--accent);
+    font-weight: 600;
+  }
+  .toc-h3 a { padding-left: 20px; font-size: 0.75rem; }
+  .toc-h4 a { padding-left: 32px; font-size: 0.72rem; }
+
+  /* ── 본문 ── */
+  .content {
+    margin-left: 280px;
+    flex: 1;
+    max-width: 860px;
+    padding: 40px 48px 80px;
+  }
+
+  /* ── 모바일 ── */
+  .menu-toggle {
+    display: none;
+    position: fixed;
+    top: 12px;
+    left: 12px;
+    z-index: 200;
+    background: var(--bg-sidebar);
+    border: 1px solid var(--border);
+    color: var(--fg);
+    padding: 8px 12px;
+    border-radius: 6px;
+    cursor: pointer;
+    font-size: 1.1rem;
+  }
+
+  @media (max-width: 900px) {
+    .sidebar {
+      transform: translateX(-100%);
+    }
+    .sidebar.open {
+      transform: translateX(0);
+    }
+    .content {
+      margin-left: 0;
+      padding: 60px 20px 60px;
+    }
+    .menu-toggle {
+      display: block;
+    }
+  }
+
+  /* ── 타이포그래피 ── */
+  h1 { font-size: 1.9rem; margin: 2rem 0 1rem; padding-bottom: 0.5rem; border-bottom: 2px solid var(--accent); }
+  h2 { font-size: 1.45rem; margin: 2.5rem 0 0.8rem; padding-bottom: 0.3rem; border-bottom: 1px solid var(--border); color: var(--accent); }
+  h3 { font-size: 1.15rem; margin: 1.8rem 0 0.5rem; }
+  h4 { font-size: 1rem; margin: 1.3rem 0 0.4rem; color: var(--fg-muted); }
+  p { margin: 0.6rem 0; }
+  hr { border: none; border-top: 1px solid var(--border); margin: 2rem 0; }
+  strong { color: var(--strong); }
+  a { color: var(--link); text-decoration: none; }
+  a:hover { text-decoration: underline; }
+  ul, ol { margin: 0.5rem 0 0.5rem 1.5rem; }
+  li { margin: 0.25rem 0; }
+
+  /* ── 테이블 ── */
+  table { width: 100%; border-collapse: collapse; margin: 1rem 0; font-size: 0.85rem; }
+  th, td { border: 1px solid var(--border); padding: 0.5rem 0.75rem; text-align: left; }
+  th { background: var(--table-header); font-weight: 600; }
+  tr:nth-child(even) { background: var(--table-even); }
+  tr:nth-child(odd) { background: var(--table-odd); }
+
+  /* ── 코드 ── */
+  code {
+    background: var(--code-bg);
+    color: var(--code-fg);
+    padding: 0.15rem 0.4rem;
+    border-radius: 4px;
+    font-size: 0.82em;
+    font-family: 'JetBrains Mono', 'Fira Code', 'Cascadia Code', monospace;
+  }
+  pre {
+    background: var(--code-bg);
+    color: var(--code-fg);
+    padding: 1rem 1.2rem;
+    border-radius: 8px;
+    overflow-x: auto;
+    margin: 1rem 0;
+    border: 1px solid var(--border);
+  }
+  pre code {
+    background: none;
+    padding: 0;
+    font-size: 0.82rem;
+    line-height: 1.5;
+  }
+
+  /* ── 인용 ── */
+  blockquote {
+    border-left: 4px solid var(--blockquote-border);
+    padding: 0.6rem 1rem;
+    margin: 1rem 0;
+    background: var(--blockquote-bg);
+    border-radius: 0 6px 6px 0;
+  }
+  blockquote p { margin: 0.3rem 0; }
+
+  /* ── Mermaid ── */
+  .mermaid {
+    margin: 1.5rem 0;
+    text-align: center;
+    background: var(--card-bg);
+    padding: 1rem;
+    border-radius: 8px;
+    border: 1px solid var(--border);
+  }
+  .mermaid svg { max-width: 100%; }
+
+  /* ── Footer ── */
+  footer {
+    margin-top: 3rem;
+    padding-top: 1rem;
+    border-top: 1px solid var(--border);
+    color: var(--fg-muted);
+    font-size: 0.8rem;
+  }
 </style>
 </head>
 <body>
-<h1 id="cubejs">Cube.js 개념 및 사용 가이드</h1>
-<blockquote>
-<p>작성일: 2026-04-18 | 대상: BIP-Pipeline 데이터 엔지니어 / 백엔드 개발자</p>
-</blockquote>
+
+<button class="menu-toggle" onclick="document.querySelector('.sidebar').classList.toggle('open')">☰</button>
+
+<aside class="sidebar">
+  <div class="sidebar-header">
+    <div class="sidebar-title">Cube.js 개념 및 사용 가이드</div>
+    <div class="sidebar-controls">
+      <button class="theme-btn" onclick="setTheme('dark')" id="btn-dark">🌙 Dark</button>
+      <button class="theme-btn" onclick="setTheme('light')" id="btn-light">☀️ Light</button>
+    </div>
+    <a class="back-link" href="index.html">← 문서 목록으로</a>
+  </div>
+  <nav class="toc">
+<ul>
+<li class="toc-h2"><a href="#1-개요">1. 개요</a></li>
+  <li class="toc-h3"><a href="#cubejs란-무엇인가">Cube.js란 무엇인가</a></li>
+  <li class="toc-h3"><a href="#핵심-가치">핵심 가치</a></li>
+  <li class="toc-h3"><a href="#라이선스">라이선스</a></li>
+<li class="toc-h2"><a href="#2-아키텍처">2. 아키텍처</a></li>
+  <li class="toc-h3"><a href="#주요-컴포넌트">주요 컴포넌트</a></li>
+<li class="toc-h2"><a href="#3-핵심-개념">3. 핵심 개념</a></li>
+  <li class="toc-h3"><a href="#3-1-data-model-큐브-정의">3-1. Data Model (큐브 정의)</a></li>
+  <li class="toc-h3"><a href="#3-2-measures-측정값">3-2. Measures (측정값)</a></li>
+  <li class="toc-h3"><a href="#3-3-dimensions-차원">3-3. Dimensions (차원)</a></li>
+  <li class="toc-h3"><a href="#3-4-joins-조인">3-4. Joins (조인)</a></li>
+  <li class="toc-h3"><a href="#3-5-pre-aggregations-사전-집계">3-5. Pre-aggregations (사전 집계)</a></li>
+  <li class="toc-h3"><a href="#3-6-segments-세그먼트">3-6. Segments (세그먼트)</a></li>
+<li class="toc-h2"><a href="#4-데이터-소스-연결">4. 데이터 소스 연결</a></li>
+  <li class="toc-h3"><a href="#4-1-지원-db-목록">4-1. 지원 DB 목록</a></li>
+  <li class="toc-h3"><a href="#4-2-oracle-연결-설정">4-2. Oracle 연결 설정</a></li>
+  <li class="toc-h3"><a href="#4-3-postgresql-연결-설정">4-3. PostgreSQL 연결 설정</a></li>
+  <li class="toc-h3"><a href="#4-4-기타-db">4-4. 기타 DB</a></li>
+<li class="toc-h2"><a href="#5-api">5. API</a></li>
+  <li class="toc-h3"><a href="#5-1-rest-api">5-1. REST API</a></li>
+    <li class="toc-h4"><a href="#쿼리-실행-post-cubejs-apiv1load">쿼리 실행: POST /cubejs-api/v1/load</a></li>
+    <li class="toc-h4"><a href="#쿼리-필드">쿼리 필드</a></li>
+  <li class="toc-h3"><a href="#5-2-graphql-api">5-2. GraphQL API</a></li>
+  <li class="toc-h3"><a href="#5-3-sql-api-postgres-호환">5-3. SQL API (Postgres 호환)</a></li>
+<li class="toc-h2"><a href="#6-docker-컨테이너-설치">6. Docker 컨테이너 설치</a></li>
+  <li class="toc-h3"><a href="#6-1-기본-설치-postgresql">6-1. 기본 설치 (PostgreSQL)</a></li>
+  <li class="toc-h3"><a href="#6-2-oracle-19c-연결-설치">6-2. Oracle 19c 연결 설치</a></li>
+  <li class="toc-h3"><a href="#6-3-시작-및-확인">6-3. 시작 및 확인</a></li>
+<li class="toc-h2"><a href="#7-시맨틱-모델-작성법">7. 시맨틱 모델 작성법</a></li>
+  <li class="toc-h3"><a href="#7-1-파일-구조">7-1. 파일 구조</a></li>
+  <li class="toc-h3"><a href="#7-2-기본-큐브-작성-매출-분석">7-2. 기본 큐브 작성 (매출 분석)</a></li>
+  <li class="toc-h3"><a href="#7-3-조인-정의">7-3. 조인 정의</a></li>
+  <li class="toc-h3"><a href="#7-4-pre-aggregation-설정">7-4. Pre-aggregation 설정</a></li>
+  <li class="toc-h3"><a href="#7-5-보안-컨텍스트-멀티테넌시">7-5. 보안 컨텍스트 (멀티테넌시)</a></li>
+<li class="toc-h2"><a href="#8-cube와-nl2sql-연동">8. Cube와 NL2SQL 연동</a></li>
+  <li class="toc-h3"><a href="#agent가-cube-rest-api를-호출하는-패턴">Agent가 Cube REST API를 호출하는 패턴</a></li>
+  <li class="toc-h3"><a href="#메트릭-메타데이터를-llm-프롬프트에-주입">메트릭 메타데이터를 LLM 프롬프트에 주입</a></li>
+<li class="toc-h2"><a href="#9-bip-경험과의-매핑">9. BIP 경험과의 매핑</a></li>
+  <li class="toc-h3"><a href="#wrenai-mdl-vs-cube-data-model">WrenAI MDL vs Cube Data Model</a></li>
+  <li class="toc-h3"><a href="#전환-매핑">전환 매핑</a></li>
+<li class="toc-h2"><a href="#10-주의사항-및-한계">10. 주의사항 및 한계</a></li>
+<li class="toc-h2"><a href="#11-참고">11. 참고</a></li>
+<li class="toc-h2"><a href="#변경-이력">변경 이력</a></li>
+</ul>
+</nav>
+</aside>
+
+<main class="content">
+<h1 id="cubejs-개념-및-사용-가이드">Cube.js 개념 및 사용 가이드</h1>
 <hr />
-<h2 id="1">1. 개요</h2>
-<h3 id="cubejs_1">Cube.js란 무엇인가</h3>
+<h2 id="1-개요">1. 개요</h2>
+<h3 id="cubejs란-무엇인가">Cube.js란 무엇인가</h3>
 <p>Cube.js는 <strong>Headless BI</strong> 플랫폼이자 <strong>시맨틱 레이어(Semantic Layer)</strong> 엔진이다.
 데이터 웨어하우스 위에 비즈니스 메트릭(Measure)과 차원(Dimension)을 코드로 정의하고,
 REST / GraphQL / SQL API를 통해 모든 애플리케이션에 일관된 데이터를 제공한다.</p>
-<h3 id="_1">핵심 가치</h3>
+<h3 id="핵심-가치">핵심 가치</h3>
 <table>
 <thead>
 <tr>
@@ -63,61 +370,66 @@ REST / GraphQL / SQL API를 통해 모든 애플리케이션에 일관된 데이
 </tr>
 </tbody>
 </table>
-<h3 id="_2">라이선스</h3>
+<h3 id="라이선스">라이선스</h3>
 <ul>
 <li><strong>Cube Core</strong>: MIT 라이선스 (오픈소스)</li>
 <li><strong>Cube Cloud</strong>: 매니지드 서비스 (유료). 모니터링, 자동 스케일링, 팀 협업 기능 추가</li>
 </ul>
 <hr />
-<h2 id="2">2. 아키텍처</h2>
-<div class="codehilite"><pre><span></span><code><span class="n">graph</span><span class="w"> </span><span class="n">TB</span>
-<span class="w">    </span><span class="n">subgraph</span><span class="w"> </span><span class="n">Clients</span><span class="p">[</span><span class="s">&quot;클라이언트&quot;</span><span class="p">]</span>
-<span class="w">        </span><span class="n">APP</span><span class="p">[</span><span class="n">웹</span><span class="o">/</span><span class="n">모바일</span><span class="w"> </span><span class="n">앱</span><span class="p">]</span>
-<span class="w">        </span><span class="n">BI</span><span class="p">[</span><span class="n">BI</span><span class="w"> </span><span class="n">도구</span><span class="p">]</span>
-<span class="w">        </span><span class="n">AGENT</span><span class="p">[</span><span class="n">AI</span><span class="w"> </span><span class="n">Agent</span><span class="w"> </span><span class="o">/</span><span class="w"> </span><span class="n">NL2SQL</span><span class="p">]</span>
-<span class="w">    </span><span class="n">end</span>
-<span class="w">    </span><span class="n">subgraph</span><span class="w"> </span><span class="n">CubeServer</span><span class="p">[</span><span class="s">&quot;Cube Server&quot;</span><span class="p">]</span>
-<span class="w">        </span><span class="n">API</span><span class="p">[</span><span class="n">API</span><span class="w"> </span><span class="n">Layer</span><span class="o">&lt;</span><span class="n">br</span><span class="o">/&gt;</span><span class="n">REST</span><span class="w"> </span><span class="err">·</span><span class="w"> </span><span class="n">GraphQL</span><span class="w"> </span><span class="err">·</span><span class="w"> </span><span class="n">SQL</span><span class="p">]</span>
-<span class="w">        </span><span class="n">COMPILER</span><span class="p">[</span><span class="n">Query</span><span class="w"> </span><span class="n">Compiler</span><span class="p">]</span>
-<span class="w">        </span><span class="n">ORCHESTRATOR</span><span class="p">[</span><span class="n">Query</span><span class="w"> </span><span class="n">Orchestrator</span><span class="p">]</span>
-<span class="w">        </span><span class="n">CACHE</span><span class="p">[</span><span class="n">캐시</span><span class="w"> </span><span class="n">레이어</span><span class="p">]</span>
-<span class="w">        </span><span class="n">STORE</span><span class="p">[</span><span class="n">Cube</span><span class="w"> </span><span class="n">Store</span><span class="o">&lt;</span><span class="n">br</span><span class="o">/&gt;</span><span class="n">Pre</span><span class="o">-</span><span class="n">aggregation</span><span class="w"> </span><span class="n">엔진</span><span class="p">]</span>
-<span class="w">    </span><span class="n">end</span>
-<span class="w">    </span><span class="n">subgraph</span><span class="w"> </span><span class="n">DataSources</span><span class="p">[</span><span class="s">&quot;데이터 소스&quot;</span><span class="p">]</span>
-<span class="w">        </span><span class="n">PG</span><span class="p">[(</span><span class="n">PostgreSQL</span><span class="p">)]</span>
-<span class="w">        </span><span class="n">ORACLE</span><span class="p">[(</span><span class="n">Oracle</span><span class="w"> </span><span class="mi">19</span><span class="n">c</span><span class="p">)]</span>
-<span class="w">        </span><span class="n">BQ</span><span class="p">[(</span><span class="n">BigQuery</span><span class="p">)]</span>
-<span class="w">    </span><span class="n">end</span>
-<span class="w">    </span><span class="n">APP</span><span class="w"> </span><span class="o">--&gt;</span><span class="w"> </span><span class="n">API</span>
-<span class="w">    </span><span class="n">BI</span><span class="w"> </span><span class="o">--&gt;</span><span class="w"> </span><span class="n">API</span>
-<span class="w">    </span><span class="n">AGENT</span><span class="w"> </span><span class="o">--&gt;</span><span class="w"> </span><span class="n">API</span>
-<span class="w">    </span><span class="n">API</span><span class="w"> </span><span class="o">--&gt;</span><span class="w"> </span><span class="n">COMPILER</span><span class="w"> </span><span class="o">--&gt;</span><span class="w"> </span><span class="n">ORCHESTRATOR</span><span class="w"> </span><span class="o">--&gt;</span><span class="w"> </span><span class="n">CACHE</span>
-<span class="w">    </span><span class="n">CACHE</span><span class="w"> </span><span class="o">--&gt;|</span><span class="n">cache</span><span class="w"> </span><span class="n">miss</span><span class="o">|</span><span class="w"> </span><span class="n">STORE</span>
-<span class="w">    </span><span class="n">CACHE</span><span class="w"> </span><span class="o">--&gt;|</span><span class="n">cache</span><span class="w"> </span><span class="n">miss</span><span class="o">|</span><span class="w"> </span><span class="n">PG</span>
-<span class="w">    </span><span class="n">STORE</span><span class="w"> </span><span class="o">--&gt;</span><span class="w"> </span><span class="n">PG</span>
-<span class="w">    </span><span class="n">STORE</span><span class="w"> </span><span class="o">--&gt;</span><span class="w"> </span><span class="n">ORACLE</span>
-<span class="w">    </span><span class="n">STORE</span><span class="w"> </span><span class="o">--&gt;</span><span class="w"> </span><span class="n">BQ</span>
-</code></pre></div>
+<h2 id="2-아키텍처">2. 아키텍처</h2>
+<div class="mermaid">
+graph TB
+    subgraph Clients["클라이언트"]
+        APP[웹/모바일 앱]
+        BI[BI 도구]
+        AGENT[AI Agent / NL2SQL]
+    end
+    subgraph CubeServer["Cube Server"]
+        API[API Layer<br/>REST · GraphQL · SQL]
+        COMPILER[Query Compiler]
+        ORCHESTRATOR[Query Orchestrator]
+        CACHE[캐시 레이어]
+        STORE[Cube Store<br/>Pre-aggregation 엔진]
+    end
+    subgraph DataSources["데이터 소스"]
+        PG[(PostgreSQL)]
+        ORACLE[(Oracle 19c)]
+        BQ[(BigQuery)]
+    end
+    APP --> API
+    BI --> API
+    AGENT --> API
+    API --> COMPILER --> ORCHESTRATOR --> CACHE
+    CACHE -->|cache miss| STORE
+    CACHE -->|cache miss| PG
+    STORE --> PG
+    STORE --> ORACLE
+    STORE --> BQ
+    style Clients fill:#4f8fea22,stroke:#4f8fea,stroke-width:2px,color:#e6edf3
+    style CubeServer fill:#6c5ce722,stroke:#6c5ce7,stroke-width:2px,color:#e6edf3
+    style DataSources fill:#00b89422,stroke:#00b894,stroke-width:2px,color:#e6edf3
+</div>
 
-<h3 id="_3">주요 컴포넌트</h3>
+<h3 id="주요-컴포넌트">주요 컴포넌트</h3>
 <ul>
 <li><strong>Cube Store</strong>: Rust로 작성된 고성능 분석 엔진. Pre-aggregation 결과를 Parquet으로 저장하여 원본 DB 부하 최소화</li>
 <li><strong>API Layer</strong>: REST(4000), GraphQL(4000), SQL API(15432, Postgres 호환)</li>
 <li><strong>캐싱</strong>: In-memory(TTL 6시간) + Pre-aggregation(Cube Store 물리 저장) + Refresh Key(변경 감지)</li>
 </ul>
-<div class="codehilite"><pre><span></span><code><span class="n">flowchart</span><span class="w"> </span><span class="n">LR</span>
-<span class="w">    </span><span class="n">REQ</span><span class="p">[</span><span class="n">쿼리</span><span class="w"> </span><span class="n">요청</span><span class="p">]</span><span class="w"> </span><span class="o">--&gt;</span><span class="w"> </span><span class="n">CHECK</span><span class="p">{</span><span class="n">캐시</span><span class="w"> </span><span class="n">확인</span><span class="p">}</span>
-<span class="w">    </span><span class="n">CHECK</span><span class="w"> </span><span class="o">--&gt;|</span><span class="n">Hit</span><span class="o">|</span><span class="w"> </span><span class="n">RET</span><span class="p">[</span><span class="n">서브초</span><span class="w"> </span><span class="n">반환</span><span class="p">]</span>
-<span class="w">    </span><span class="n">CHECK</span><span class="w"> </span><span class="o">--&gt;|</span><span class="n">Miss</span><span class="o">|</span><span class="w"> </span><span class="n">PA</span><span class="p">{</span><span class="n">Pre</span><span class="o">-</span><span class="n">agg</span><span class="o">?</span><span class="p">}</span>
-<span class="w">    </span><span class="n">PA</span><span class="w"> </span><span class="o">--&gt;|</span><span class="n">Yes</span><span class="o">|</span><span class="w"> </span><span class="n">CS</span><span class="p">[</span><span class="n">Cube</span><span class="w"> </span><span class="n">Store</span><span class="p">]</span>
-<span class="w">    </span><span class="n">PA</span><span class="w"> </span><span class="o">--&gt;|</span><span class="n">No</span><span class="o">|</span><span class="w"> </span><span class="n">DB</span><span class="p">[</span><span class="n">원본</span><span class="w"> </span><span class="n">DB</span><span class="p">]</span>
-<span class="w">    </span><span class="n">CS</span><span class="w"> </span><span class="o">--&gt;</span><span class="w"> </span><span class="n">RET</span>
-<span class="w">    </span><span class="n">DB</span><span class="w"> </span><span class="o">--&gt;</span><span class="w"> </span><span class="n">RET</span>
-</code></pre></div>
+<div class="mermaid">
+flowchart LR
+    REQ[쿼리 요청] --> CHECK{캐시 확인}
+    CHECK -->|Hit| RET[서브초 반환]
+    CHECK -->|Miss| PA{Pre-agg?}
+    PA -->|Yes| CS[Cube Store]
+    PA -->|No| DB[원본 DB]
+    CS --> RET
+    DB --> RET
+</div>
 
 <hr />
-<h2 id="3">3. 핵심 개념</h2>
-<h3 id="3-1-data-model">3-1. Data Model (큐브 정의)</h3>
+<h2 id="3-핵심-개념">3. 핵심 개념</h2>
+<h3 id="3-1-data-model-큐브-정의">3-1. Data Model (큐브 정의)</h3>
 <p>큐브(Cube)는 시맨틱 레이어의 기본 단위로, 하나의 테이블을 감싸고 measures/dimensions/joins를 선언한다.</p>
 <p><strong>JavaScript 방식:</strong></p>
 <div class="codehilite"><pre><span></span><code><span class="nx">cube</span><span class="p">(</span><span class="sb">`StockPrice`</span><span class="p">,</span><span class="w"> </span><span class="p">{</span>
@@ -149,7 +461,7 @@ REST / GraphQL / SQL API를 통해 모든 애플리케이션에 일관된 데이
 </code></pre></div>
 
 <p>JavaScript는 동적 로직에 유리하고, YAML은 가독성이 높다.</p>
-<h3 id="3-2-measures">3-2. Measures (측정값)</h3>
+<h3 id="3-2-measures-측정값">3-2. Measures (측정값)</h3>
 <table>
 <thead>
 <tr>
@@ -207,7 +519,7 @@ REST / GraphQL / SQL API를 통해 모든 애플리케이션에 일관된 데이
 <span class="p">},</span>
 </code></pre></div>
 
-<h3 id="3-3-dimensions">3-3. Dimensions (차원)</h3>
+<h3 id="3-3-dimensions-차원">3-3. Dimensions (차원)</h3>
 <table>
 <thead>
 <tr>
@@ -259,7 +571,7 @@ REST / GraphQL / SQL API를 통해 모든 애플리케이션에 일관된 데이
 <span class="p">},</span>
 </code></pre></div>
 
-<h3 id="3-4-joins">3-4. Joins (조인)</h3>
+<h3 id="3-4-joins-조인">3-4. Joins (조인)</h3>
 <table>
 <thead>
 <tr>
@@ -316,7 +628,7 @@ REST / GraphQL / SQL API를 통해 모든 애플리케이션에 일관된 데이
 <span class="p">});</span>
 </code></pre></div>
 
-<h3 id="3-5-pre-aggregations">3-5. Pre-aggregations (사전 집계)</h3>
+<h3 id="3-5-pre-aggregations-사전-집계">3-5. Pre-aggregations (사전 집계)</h3>
 <p>자주 사용되는 쿼리 패턴을 미리 집계하여 Cube Store에 저장한다.</p>
 <div class="codehilite"><pre><span></span><code><span class="nx">preAggregations</span><span class="o">:</span><span class="w"> </span><span class="p">{</span>
 <span class="w">  </span><span class="nx">dailySummary</span><span class="o">:</span><span class="w"> </span><span class="p">{</span>
@@ -338,7 +650,7 @@ REST / GraphQL / SQL API를 통해 모든 애플리케이션에 일관된 데이
 
 <p><strong>타입</strong>: <code>rollup</code>(기본), <code>rollupJoin</code>(크로스 큐브), <code>rollupLambda</code>(배치+실시간 결합), <code>originalSql</code>(원본 캐싱).
 <strong>갱신</strong>: 주기 기반(<code>every: '1 hour'</code>), SQL 기반(<code>sql: 'SELECT MAX(updated_at)...'</code>), 또는 결합.</p>
-<h3 id="3-6-segments">3-6. Segments (세그먼트)</h3>
+<h3 id="3-6-segments-세그먼트">3-6. Segments (세그먼트)</h3>
 <p>재사용 가능한 필터 조건이다.</p>
 <div class="codehilite"><pre><span></span><code><span class="nx">segments</span><span class="o">:</span><span class="w"> </span><span class="p">{</span>
 <span class="w">  </span><span class="nx">kospiOnly</span><span class="o">:</span><span class="w"> </span><span class="p">{</span><span class="w"> </span><span class="nx">sql</span><span class="o">:</span><span class="w"> </span><span class="sb">`</span><span class="si">${</span><span class="nx">CUBE</span><span class="si">}</span><span class="sb">.market = &#39;KOSPI&#39;`</span><span class="p">,</span><span class="w"> </span><span class="nx">title</span><span class="o">:</span><span class="w"> </span><span class="sb">`KOSPI 종목`</span><span class="w"> </span><span class="p">},</span>
@@ -348,8 +660,8 @@ REST / GraphQL / SQL API를 통해 모든 애플리케이션에 일관된 데이
 
 <p>API 호출 시: <code>"segments": ["StockInfo.kospiOnly", "StockInfo.largeCap"]</code></p>
 <hr />
-<h2 id="4">4. 데이터 소스 연결</h2>
-<h3 id="4-1-db">4-1. 지원 DB 목록</h3>
+<h2 id="4-데이터-소스-연결">4. 데이터 소스 연결</h2>
+<h3 id="4-1-지원-db-목록">4-1. 지원 DB 목록</h3>
 <table>
 <thead>
 <tr>
@@ -372,7 +684,7 @@ REST / GraphQL / SQL API를 통해 모든 애플리케이션에 일관된 데이
 </tr>
 </tbody>
 </table>
-<h3 id="4-2-oracle">4-2. Oracle 연결 설정</h3>
+<h3 id="4-2-oracle-연결-설정">4-2. Oracle 연결 설정</h3>
 <p>Oracle은 community-supported 드라이버를 사용한다. Oracle 19c는 node-oracledb 6.x가 공식 지원한다.</p>
 <div class="codehilite"><pre><span></span><code><span class="nv">CUBEJS_DB_TYPE</span><span class="o">=</span>oracle
 <span class="nv">CUBEJS_DB_HOST</span><span class="o">=</span>oracle-host.example.com
@@ -384,7 +696,7 @@ REST / GraphQL / SQL API를 통해 모든 애플리케이션에 일관된 데이
 </code></pre></div>
 
 <p><code>package.json</code>에 <code>"oracledb": "^6.3.0"</code> 추가 필요. Instant Client 19.x 설치 필수.</p>
-<h3 id="4-3-postgresql">4-3. PostgreSQL 연결 설정</h3>
+<h3 id="4-3-postgresql-연결-설정">4-3. PostgreSQL 연결 설정</h3>
 <div class="codehilite"><pre><span></span><code><span class="nv">CUBEJS_DB_TYPE</span><span class="o">=</span>postgres
 <span class="nv">CUBEJS_DB_HOST</span><span class="o">=</span>bip-postgres
 <span class="nv">CUBEJS_DB_PORT</span><span class="o">=</span><span class="m">5432</span>
@@ -394,7 +706,7 @@ REST / GraphQL / SQL API를 통해 모든 애플리케이션에 일관된 데이
 <span class="c1"># SSL: CUBEJS_DB_SSL=true</span>
 </code></pre></div>
 
-<h3 id="4-4-db">4-4. 기타 DB</h3>
+<h3 id="4-4-기타-db">4-4. 기타 DB</h3>
 <div class="codehilite"><pre><span></span><code><span class="c1"># BigQuery</span>
 <span class="nv">CUBEJS_DB_TYPE</span><span class="o">=</span>bigquery
 <span class="nv">CUBEJS_DB_BQ_PROJECT_ID</span><span class="o">=</span>my-project
@@ -409,7 +721,7 @@ REST / GraphQL / SQL API를 통해 모든 애플리케이션에 일관된 데이
 <hr />
 <h2 id="5-api">5. API</h2>
 <h3 id="5-1-rest-api">5-1. REST API</h3>
-<h4 id="post-cubejs-apiv1load">쿼리 실행: <code>POST /cubejs-api/v1/load</code></h4>
+<h4 id="쿼리-실행-post-cubejs-apiv1load">쿼리 실행: <code>POST /cubejs-api/v1/load</code></h4>
 <div class="codehilite"><pre><span></span><code>curl<span class="w"> </span>-X<span class="w"> </span>POST<span class="w"> </span>http://localhost:4000/cubejs-api/v1/load<span class="w"> </span><span class="se">\</span>
 <span class="w">  </span>-H<span class="w"> </span><span class="s2">&quot;Content-Type: application/json&quot;</span><span class="w"> </span><span class="se">\</span>
 <span class="w">  </span>-H<span class="w"> </span><span class="s2">&quot;Authorization: Bearer &lt;API_TOKEN&gt;&quot;</span><span class="w"> </span><span class="se">\</span>
@@ -452,7 +764,7 @@ REST / GraphQL / SQL API를 통해 모든 애플리케이션에 일관된 데이
 <span class="p">}</span>
 </code></pre></div>
 
-<h4 id="_4">쿼리 필드</h4>
+<h4 id="쿼리-필드">쿼리 필드</h4>
 <table>
 <thead>
 <tr>
@@ -508,7 +820,7 @@ REST / GraphQL / SQL API를 통해 모든 애플리케이션에 일관된 데이
 <span class="p">}</span>
 </code></pre></div>
 
-<h3 id="5-3-sql-api-postgres">5-3. SQL API (Postgres 호환)</h3>
+<h3 id="5-3-sql-api-postgres-호환">5-3. SQL API (Postgres 호환)</h3>
 <div class="codehilite"><pre><span></span><code><span class="c1"># 활성화: CUBEJS_PG_SQL_PORT=15432</span>
 psql<span class="w"> </span>-h<span class="w"> </span>localhost<span class="w"> </span>-p<span class="w"> </span><span class="m">15432</span><span class="w"> </span>-U<span class="w"> </span>cube
 </code></pre></div>
@@ -521,8 +833,8 @@ psql<span class="w"> </span>-h<span class="w"> </span>localhost<span class="w"> 
 
 <p>BI 도구(Metabase, Tableau, DBeaver)에서 Postgres 커넥터로 직접 연결 가능.</p>
 <hr />
-<h2 id="6-docker">6. Docker 컨테이너 설치</h2>
-<h3 id="6-1-postgresql">6-1. 기본 설치 (PostgreSQL)</h3>
+<h2 id="6-docker-컨테이너-설치">6. Docker 컨테이너 설치</h2>
+<h3 id="6-1-기본-설치-postgresql">6-1. 기본 설치 (PostgreSQL)</h3>
 <div class="codehilite"><pre><span></span><code><span class="nt">version</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;3.8&quot;</span>
 
 <span class="nt">services</span><span class="p">:</span>
@@ -581,7 +893,7 @@ psql<span class="w"> </span>-h<span class="w"> </span>localhost<span class="w"> 
 <span class="nv">CUBEJS_DB_PASS</span><span class="o">=</span>&lt;플레이스홀더&gt;
 </code></pre></div>
 
-<h3 id="6-2-oracle-19c">6-2. Oracle 19c 연결 설치</h3>
+<h3 id="6-2-oracle-19c-연결-설치">6-2. Oracle 19c 연결 설치</h3>
 <p><strong>Dockerfile.oracle:</strong></p>
 <div class="codehilite"><pre><span></span><code><span class="k">FROM</span><span class="w"> </span><span class="s">cubejs/cube:v0.36</span>
 
@@ -644,7 +956,7 @@ psql<span class="w"> </span>-h<span class="w"> </span>localhost<span class="w"> 
 <span class="w">    </span><span class="nt">external</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">true</span>
 </code></pre></div>
 
-<h3 id="6-3">6-3. 시작 및 확인</h3>
+<h3 id="6-3-시작-및-확인">6-3. 시작 및 확인</h3>
 <div class="codehilite"><pre><span></span><code><span class="c1"># 실행</span>
 docker<span class="w"> </span>compose<span class="w"> </span>-f<span class="w"> </span>docker-compose.cube.yml<span class="w"> </span>up<span class="w"> </span>-d<span class="w">    </span><span class="c1"># PostgreSQL</span>
 docker<span class="w"> </span>compose<span class="w"> </span>-f<span class="w"> </span>docker-compose.oracle.yml<span class="w"> </span>up<span class="w"> </span>-d<span class="w">   </span><span class="c1"># Oracle</span>
@@ -660,16 +972,17 @@ curl<span class="w"> </span>http://localhost:4000/cubejs-api/v1/meta<span class=
 <span class="c1"># (CUBEJS_DEV_MODE=true 일 때 활성화)</span>
 </code></pre></div>
 
-<div class="codehilite"><pre><span></span><code><span class="n">flowchart</span><span class="w"> </span><span class="n">LR</span>
-<span class="w">    </span><span class="n">DEV</span><span class="p">[</span><span class="n">개발자</span><span class="p">]</span><span class="w"> </span><span class="o">--&gt;|</span><span class="n">localhost</span><span class="o">:</span><span class="mi">4000</span><span class="o">|</span><span class="w"> </span><span class="n">PG</span><span class="p">[</span><span class="n">Playground</span><span class="p">]</span>
-<span class="w">    </span><span class="n">PG</span><span class="w"> </span><span class="o">--&gt;</span><span class="w"> </span><span class="n">BUILD</span><span class="p">[</span><span class="n">쿼리</span><span class="w"> </span><span class="n">빌더</span><span class="p">]</span>
-<span class="w">    </span><span class="n">PG</span><span class="w"> </span><span class="o">--&gt;</span><span class="w"> </span><span class="n">SCHEMA</span><span class="p">[</span><span class="n">스키마</span><span class="w"> </span><span class="n">탐색</span><span class="p">]</span>
-<span class="w">    </span><span class="n">BUILD</span><span class="w"> </span><span class="o">--&gt;</span><span class="w"> </span><span class="n">API</span><span class="p">[</span><span class="n">REST</span><span class="w"> </span><span class="n">API</span><span class="p">]</span><span class="w"> </span><span class="o">--&gt;</span><span class="w"> </span><span class="n">RESULT</span><span class="p">[</span><span class="n">결과</span><span class="w"> </span><span class="n">확인</span><span class="p">]</span>
-</code></pre></div>
+<div class="mermaid">
+flowchart LR
+    DEV[개발자] -->|localhost:4000| PG[Playground]
+    PG --> BUILD[쿼리 빌더]
+    PG --> SCHEMA[스키마 탐색]
+    BUILD --> API[REST API] --> RESULT[결과 확인]
+</div>
 
 <hr />
-<h2 id="7">7. 시맨틱 모델 작성법</h2>
-<h3 id="7-1">7-1. 파일 구조</h3>
+<h2 id="7-시맨틱-모델-작성법">7. 시맨틱 모델 작성법</h2>
+<h3 id="7-1-파일-구조">7-1. 파일 구조</h3>
 <div class="codehilite"><pre><span></span><code>cube/
   schema/
     cubes/
@@ -682,7 +995,7 @@ curl<span class="w"> </span>http://localhost:4000/cubejs-api/v1/meta<span class=
   cube.js                      # 커스텀 설정 (보안, 리프레시 등)
 </code></pre></div>
 
-<h3 id="7-2">7-2. 기본 큐브 작성 (매출 분석)</h3>
+<h3 id="7-2-기본-큐브-작성-매출-분석">7-2. 기본 큐브 작성 (매출 분석)</h3>
 <div class="codehilite"><pre><span></span><code><span class="nx">cube</span><span class="p">(</span><span class="sb">`FinancialStatements`</span><span class="p">,</span><span class="w"> </span><span class="p">{</span>
 <span class="w">  </span><span class="nx">sql</span><span class="o">:</span><span class="w"> </span><span class="sb">`SELECT * FROM financial_statements WHERE sj_div = &#39;IS&#39;`</span><span class="p">,</span>
 <span class="w">  </span><span class="nx">title</span><span class="o">:</span><span class="w"> </span><span class="sb">`손익계산서`</span><span class="p">,</span>
@@ -706,7 +1019,7 @@ curl<span class="w"> </span>http://localhost:4000/cubejs-api/v1/meta<span class=
 <span class="p">});</span>
 </code></pre></div>
 
-<h3 id="7-3">7-3. 조인 정의</h3>
+<h3 id="7-3-조인-정의">7-3. 조인 정의</h3>
 <div class="codehilite"><pre><span></span><code><span class="c1">// View: 여러 큐브를 결합한 읽기 전용 인터페이스</span>
 <span class="nx">view</span><span class="p">(</span><span class="sb">`StockOverview`</span><span class="p">,</span><span class="w"> </span><span class="p">{</span>
 <span class="w">  </span><span class="nx">description</span><span class="o">:</span><span class="w"> </span><span class="sb">`종목 종합 뷰`</span><span class="p">,</span>
@@ -721,7 +1034,7 @@ curl<span class="w"> </span>http://localhost:4000/cubejs-api/v1/meta<span class=
 <span class="p">});</span>
 </code></pre></div>
 
-<h3 id="7-4-pre-aggregation">7-4. Pre-aggregation 설정</h3>
+<h3 id="7-4-pre-aggregation-설정">7-4. Pre-aggregation 설정</h3>
 <div class="codehilite"><pre><span></span><code><span class="nx">preAggregations</span><span class="o">:</span><span class="w"> </span><span class="p">{</span>
 <span class="w">  </span><span class="nx">dailyByTicker</span><span class="o">:</span><span class="w"> </span><span class="p">{</span>
 <span class="w">    </span><span class="nx">type</span><span class="o">:</span><span class="w"> </span><span class="sb">`rollup`</span><span class="p">,</span>
@@ -735,7 +1048,7 @@ curl<span class="w"> </span>http://localhost:4000/cubejs-api/v1/meta<span class=
 <span class="p">},</span>
 </code></pre></div>
 
-<h3 id="7-5">7-5. 보안 컨텍스트 (멀티테넌시)</h3>
+<h3 id="7-5-보안-컨텍스트-멀티테넌시">7-5. 보안 컨텍스트 (멀티테넌시)</h3>
 <div class="codehilite"><pre><span></span><code><span class="c1">// cube.js</span>
 <span class="nx">module</span><span class="p">.</span><span class="nx">exports</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="p">{</span>
 <span class="w">  </span><span class="nx">contextToAppId</span><span class="o">:</span><span class="w"> </span><span class="p">({</span><span class="w"> </span><span class="nx">securityContext</span><span class="w"> </span><span class="p">})</span><span class="w"> </span><span class="p">=&gt;</span>
@@ -759,24 +1072,25 @@ curl<span class="w"> </span>http://localhost:4000/cubejs-api/v1/meta<span class=
 </code></pre></div>
 
 <hr />
-<h2 id="8-cube-nl2sql">8. Cube와 NL2SQL 연동</h2>
-<h3 id="agent-cube-rest-api">Agent가 Cube REST API를 호출하는 패턴</h3>
-<div class="codehilite"><pre><span></span><code><span class="n">sequenceDiagram</span>
-<span class="w">    </span><span class="n">participant</span><span class="w"> </span><span class="n">U</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="err">사용자</span>
-<span class="w">    </span><span class="n">participant</span><span class="w"> </span><span class="n">A</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="n">AI</span><span class="w"> </span><span class="n">Agent</span>
-<span class="w">    </span><span class="n">participant</span><span class="w"> </span><span class="n">M</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="o">/</span><span class="n">v1</span><span class="o">/</span><span class="n">meta</span>
-<span class="w">    </span><span class="n">participant</span><span class="w"> </span><span class="n">L</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="o">/</span><span class="n">v1</span><span class="o">/</span><span class="nb">load</span>
+<h2 id="8-cube와-nl2sql-연동">8. Cube와 NL2SQL 연동</h2>
+<h3 id="agent가-cube-rest-api를-호출하는-패턴">Agent가 Cube REST API를 호출하는 패턴</h3>
+<div class="mermaid">
+sequenceDiagram
+    participant U as 사용자
+    participant A as AI Agent
+    participant M as /v1/meta
+    participant L as /v1/load
 
-<span class="w">    </span><span class="n">U</span><span class="o">-&gt;&gt;</span><span class="n">A</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;삼성전자 최근 3개월 평균 종가는?&quot;</span>
-<span class="w">    </span><span class="n">A</span><span class="o">-&gt;&gt;</span><span class="n">M</span><span class="p">:</span><span class="w"> </span><span class="err">큐브</span><span class="o">/</span><span class="err">메트릭</span><span class="w"> </span><span class="err">메타데이터</span><span class="w"> </span><span class="err">조회</span>
-<span class="w">    </span><span class="n">M</span><span class="o">--&gt;&gt;</span><span class="n">A</span><span class="p">:</span><span class="w"> </span><span class="n">StockPrice</span><span class="o">.</span><span class="n">avgClose</span><span class="w"> </span><span class="err">등</span>
-<span class="w">    </span><span class="n">A</span><span class="o">-&gt;&gt;</span><span class="n">A</span><span class="p">:</span><span class="w"> </span><span class="err">자연어</span><span class="w"> </span><span class="err">→</span><span class="w"> </span><span class="n">Cube</span><span class="w"> </span><span class="err">쿼리</span><span class="w"> </span><span class="n">JSON</span><span class="w"> </span><span class="err">변환</span>
-<span class="w">    </span><span class="n">A</span><span class="o">-&gt;&gt;</span><span class="n">L</span><span class="p">:</span><span class="w"> </span><span class="n">POST</span><span class="w"> </span><span class="o">/</span><span class="nb">load</span><span class="w"> </span><span class="p">(</span><span class="err">쿼리</span><span class="w"> </span><span class="n">JSON</span><span class="p">)</span>
-<span class="w">    </span><span class="n">L</span><span class="o">--&gt;&gt;</span><span class="n">A</span><span class="p">:</span><span class="w"> </span><span class="err">데이터</span><span class="w"> </span><span class="err">결과</span>
-<span class="w">    </span><span class="n">A</span><span class="o">-&gt;&gt;</span><span class="n">U</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;삼성전자 최근 3개월 평균 종가는 72,500원입니다.&quot;</span>
-</code></pre></div>
+    U->>A: "삼성전자 최근 3개월 평균 종가는?"
+    A->>M: 큐브/메트릭 메타데이터 조회
+    M-->>A: StockPrice.avgClose 등
+    A->>A: 자연어 → Cube 쿼리 JSON 변환
+    A->>L: POST /load (쿼리 JSON)
+    L-->>A: 데이터 결과
+    A->>U: "삼성전자 최근 3개월 평균 종가는 72,500원입니다."
+</div>
 
-<h3 id="llm">메트릭 메타데이터를 LLM 프롬프트에 주입</h3>
+<h3 id="메트릭-메타데이터를-llm-프롬프트에-주입">메트릭 메타데이터를 LLM 프롬프트에 주입</h3>
 <div class="codehilite"><pre><span></span><code><span class="kn">import</span><span class="w"> </span><span class="nn">requests</span>
 
 <span class="n">meta</span> <span class="o">=</span> <span class="n">requests</span><span class="o">.</span><span class="n">get</span><span class="p">(</span>
@@ -804,7 +1118,7 @@ curl<span class="w"> </span>http://localhost:4000/cubejs-api/v1/meta<span class=
 
 <p>Agent는 LLM이 생성한 Cube 쿼리 JSON으로 <code>/v1/load</code>를 호출하고, 결과를 다시 LLM에 전달하여 자연어 답변을 생성한다.</p>
 <hr />
-<h2 id="9-bip">9. BIP 경험과의 매핑</h2>
+<h2 id="9-bip-경험과의-매핑">9. BIP 경험과의 매핑</h2>
 <h3 id="wrenai-mdl-vs-cube-data-model">WrenAI MDL vs Cube Data Model</h3>
 <table>
 <thead>
@@ -852,7 +1166,7 @@ curl<span class="w"> </span>http://localhost:4000/cubejs-api/v1/meta<span class=
 </tr>
 </tbody>
 </table>
-<h3 id="_5">전환 매핑</h3>
+<h3 id="전환-매핑">전환 매핑</h3>
 <table>
 <thead>
 <tr>
@@ -892,7 +1206,7 @@ Q: &quot;삼성전자 PER은?&quot;  →  {&quot;measures&quot;:[&quot;StockValu
 </code></pre></div>
 
 <hr />
-<h2 id="10">10. 주의사항 및 한계</h2>
+<h2 id="10-주의사항-및-한계">10. 주의사항 및 한계</h2>
 <table>
 <thead>
 <tr>
@@ -932,7 +1246,7 @@ Q: &quot;삼성전자 PER은?&quot;  →  {&quot;measures&quot;:[&quot;StockValu
 </tbody>
 </table>
 <hr />
-<h2 id="11">11. 참고</h2>
+<h2 id="11-참고">11. 참고</h2>
 <table>
 <thead>
 <tr>
@@ -974,8 +1288,157 @@ Q: &quot;삼성전자 PER은?&quot;  →  {&quot;measures&quot;:[&quot;StockValu
 <blockquote>
 <p><strong>BIP 프로젝트 관련 문서:</strong> <code>docs/guide_wrenai.md</code>, <code>docs/nl2sql_project_plan.md</code>, <code>docs/wrenai_technical_guide.md</code>, <code>docs/data_architecture_review.md</code></p>
 </blockquote>
-<footer style="margin-top:3rem; padding-top:1rem; border-top:1px solid #e5e7eb; color:#6b7280; font-size:0.85rem;">
-<p>Generated: 2026-04-18 | BIP-Pipeline Documentation</p>
-</footer>
+<hr />
+<h2 id="변경-이력">변경 이력</h2>
+<table>
+<thead>
+<tr>
+<th>날짜</th>
+<th>내용</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>2026-04-18</td>
+<td>초안 작성</td>
+</tr>
+<tr>
+<td>2026-04-22</td>
+<td>문서 헤더 정리 (작성일/대상 제거)</td>
+</tr>
+</tbody>
+</table>
+</main>
+
+<script>
+  // 테마 전환
+  function setTheme(theme) {
+    document.documentElement.setAttribute('data-theme', theme);
+    localStorage.setItem('doc-theme', theme);
+    document.getElementById('btn-dark').classList.toggle('active', theme === 'dark');
+    document.getElementById('btn-light').classList.toggle('active', theme === 'light');
+    // Mermaid 재렌더링
+    if (typeof mermaid !== 'undefined') {
+      mermaid.initialize({ startOnLoad: false, theme: 'base', securityLevel: 'loose', themeVariables: getMermaidTheme(theme) });
+      document.querySelectorAll('.mermaid').forEach(el => {
+        el.removeAttribute('data-processed');
+        el.innerHTML = el.textContent;
+      });
+      mermaid.run();
+    }
+  }
+
+  // 저장된 테마 로드
+  const savedTheme = localStorage.getItem('doc-theme') || 'dark';
+  setTheme(savedTheme);
+
+  // Mermaid 초기화
+  function getMermaidTheme(theme) {
+    const dark = {
+      primaryColor: '#3d7be0',
+      primaryTextColor: '#ffffff',
+      primaryBorderColor: '#5a9cf0',
+      secondaryColor: '#7c5cbf',
+      secondaryTextColor: '#ffffff',
+      secondaryBorderColor: '#a29bfe',
+      tertiaryColor: '#00997a',
+      tertiaryTextColor: '#ffffff',
+      tertiaryBorderColor: '#55efc4',
+      noteTextColor: '#f0f0f0',
+      noteBkgColor: '#2d3436',
+      noteBorderColor: '#636e72',
+      lineColor: '#8b949e',
+      textColor: '#e6edf3',
+      mainBkg: '#1e3050',
+      nodeBorder: '#5a9cf0',
+      clusterBkg: '#1a1e2e',
+      clusterBorder: '#4a5568',
+      titleColor: '#79c0ff',
+      edgeLabelBackground: '#21262d',
+      actorBkg: '#3d7be0',
+      actorTextColor: '#ffffff',
+      actorBorder: '#5a9cf0',
+      signalColor: '#8b949e',
+      labelBoxBkgColor: '#21262d',
+      labelBoxBorderColor: '#4a5568',
+      labelTextColor: '#e6edf3',
+      loopTextColor: '#e6edf3',
+      activationBorderColor: '#5a9cf0',
+      activationBkgColor: '#1e3050',
+      sequenceNumberColor: '#ffffff',
+      pie1: '#4f8fea', pie2: '#6c5ce7', pie3: '#00b894', pie4: '#e17055',
+      pie5: '#fdcb6e', pie6: '#00cec9', pie7: '#e84393', pie8: '#0984e3'
+    };
+    const light = {
+      primaryColor: '#4f8fea',
+      primaryTextColor: '#1a1a2e',
+      primaryBorderColor: '#3a7bd5',
+      secondaryColor: '#a29bfe',
+      secondaryTextColor: '#1a1a2e',
+      secondaryBorderColor: '#6c5ce7',
+      tertiaryColor: '#55efc4',
+      tertiaryTextColor: '#1a1a2e',
+      tertiaryBorderColor: '#00b894',
+      noteTextColor: '#2d3436',
+      noteBkgColor: '#ffeaa7',
+      noteBorderColor: '#fdcb6e',
+      lineColor: '#636e72',
+      textColor: '#2d3436',
+      mainBkg: '#dfe6e9',
+      nodeBorder: '#3a7bd5',
+      clusterBkg: '#f0f3f5',
+      clusterBorder: '#b2bec3',
+      titleColor: '#2d3436',
+      edgeLabelBackground: '#ffffff',
+      actorBkg: '#4f8fea',
+      actorTextColor: '#ffffff',
+      actorBorder: '#3a7bd5',
+      signalColor: '#636e72',
+      labelBoxBkgColor: '#ffffff',
+      labelBoxBorderColor: '#b2bec3',
+      labelTextColor: '#2d3436',
+      loopTextColor: '#2d3436',
+      activationBorderColor: '#3a7bd5',
+      activationBkgColor: '#dfe6e9',
+      sequenceNumberColor: '#ffffff',
+      pie1: '#4f8fea', pie2: '#6c5ce7', pie3: '#00b894', pie4: '#e17055',
+      pie5: '#fdcb6e', pie6: '#00cec9', pie7: '#e84393', pie8: '#0984e3'
+    };
+    return theme === 'dark' ? dark : light;
+  }
+
+  mermaid.initialize({ startOnLoad: true, theme: 'base', securityLevel: 'loose', themeVariables: getMermaidTheme(savedTheme) });
+
+  // TOC 현재 위치 하이라이트
+  const tocLinks = document.querySelectorAll('.toc a');
+  const headings = [];
+  tocLinks.forEach(link => {
+    const id = link.getAttribute('href').slice(1);
+    const el = document.getElementById(id);
+    if (el) headings.push({ el, link });
+  });
+
+  function updateActiveToc() {
+    let current = null;
+    for (const h of headings) {
+      if (h.el.getBoundingClientRect().top <= 100) current = h;
+    }
+    tocLinks.forEach(l => l.classList.remove('active'));
+    if (current) current.link.classList.add('active');
+  }
+
+  window.addEventListener('scroll', updateActiveToc, { passive: true });
+  updateActiveToc();
+
+  // 모바일: 링크 클릭 시 사이드바 닫기
+  tocLinks.forEach(link => {
+    link.addEventListener('click', () => {
+      if (window.innerWidth <= 900) {
+        document.querySelector('.sidebar').classList.remove('open');
+      }
+    });
+  });
+</script>
+
 </body>
 </html>

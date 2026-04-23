@@ -1,9 +1,6 @@
 # Wren AI 기능 및 사용 가이드
 
-> **공식 문서 기반:** https://docs.getwren.ai
-> **BIP-Pipeline 실전 경험 포함**
-> **최종 갱신:** 2026-04-13
-> **Wren AI 버전:** Engine 0.22.0 / AI Service 0.29.0 / UI 0.32.2
+> **공식 문서:** https://docs.getwren.ai
 
 ---
 
@@ -1043,3 +1040,12 @@ flowchart TB
 - `docs/wrenai_test_report.md` -- NL2SQL 품질 테스트 리포트 (평가 프레임워크 포함)
 - `docs/nl2sql_project_plan.md` -- NL2SQL 설계 계획 (보안 원칙 포함)
 - `docs/data_architecture_review.md` -- 전체 아키텍처 리뷰
+
+---
+
+## 변경 이력
+
+| 날짜 | 내용 |
+|------|------|
+| 2026-04-13 | 초안 작성 |
+| 2026-04-22 | 문서 헤더 정리 |

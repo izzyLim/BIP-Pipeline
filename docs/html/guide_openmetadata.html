@@ -1,54 +1,386 @@
 <!DOCTYPE html>
-<html lang="ko">
+<html lang="ko" data-theme="dark">
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>OpenMetadata 기능 및 사용 가이드</title>
 <script src="https://cdn.jsdelivr.net/npm/mermaid@11/dist/mermaid.min.js"></script>
-<script>mermaid.initialize({startOnLoad:true, theme:'default', securityLevel:'loose'});</script>
 <style>
-  :root { --bg: #ffffff; --fg: #1a1a1a; --accent: #2563eb; --border: #e5e7eb; --code-bg: #f3f4f6; --bq-border: #3b82f6; --header-bg: #f8fafc; }
+  /* ── 테마 변수 ── */
+  :root[data-theme="dark"] {
+    --bg: #0d1117;
+    --bg-sidebar: #161b22;
+    --fg: #e6edf3;
+    --fg-muted: #8b949e;
+    --border: #30363d;
+    --accent: #58a6ff;
+    --accent-hover: #79c0ff;
+    --code-bg: #1e293b;
+    --code-fg: #e2e8f0;
+    --table-header: #161b22;
+    --table-even: #0d1117;
+    --table-odd: #161b22;
+    --blockquote-bg: #161b22;
+    --blockquote-border: #3b82f6;
+    --link: #58a6ff;
+    --strong: #79c0ff;
+    --card-bg: #21262d;
+  }
+  :root[data-theme="light"] {
+    --bg: #ffffff;
+    --bg-sidebar: #f6f8fa;
+    --fg: #1f2937;
+    --fg-muted: #6b7280;
+    --border: #e5e7eb;
+    --accent: #2563eb;
+    --accent-hover: #1d4ed8;
+    --code-bg: #f3f4f6;
+    --code-fg: #1e293b;
+    --table-header: #f8fafc;
+    --table-even: #ffffff;
+    --table-odd: #f9fafb;
+    --blockquote-bg: #eff6ff;
+    --blockquote-border: #3b82f6;
+    --link: #2563eb;
+    --strong: #1e40af;
+    --card-bg: #f3f4f6;
+  }
+
   * { box-sizing: border-box; margin: 0; padding: 0; }
-  body { font-family: 'Pretendard', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; line-height: 1.7; color: var(--fg); max-width: 960px; margin: 0 auto; padding: 2rem 1.5rem; background: var(--bg); }
-  h1 { font-size: 2rem; margin: 2.5rem 0 1rem; padding-bottom: 0.5rem; border-bottom: 3px solid var(--accent); }
-  h2 { font-size: 1.5rem; margin: 2rem 0 0.8rem; padding-bottom: 0.3rem; border-bottom: 1px solid var(--border); color: var(--accent); }
-  h3 { font-size: 1.2rem; margin: 1.5rem 0 0.5rem; }
-  h4 { font-size: 1.05rem; margin: 1.2rem 0 0.4rem; }
-  p { margin: 0.5rem 0; }
+
+  body {
+    font-family: 'Pretendard', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+    background: var(--bg);
+    color: var(--fg);
+    line-height: 1.75;
+    display: flex;
+    min-height: 100vh;
+  }
+
+  /* ── 사이드바 ── */
+  .sidebar {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 280px;
+    height: 100vh;
+    background: var(--bg-sidebar);
+    border-right: 1px solid var(--border);
+    overflow-y: auto;
+    padding: 20px 0;
+    z-index: 100;
+    transition: transform 0.3s ease;
+  }
+
+  .sidebar-header {
+    padding: 0 20px 16px;
+    border-bottom: 1px solid var(--border);
+    margin-bottom: 12px;
+  }
+
+  .sidebar-title {
+    font-size: 0.95rem;
+    font-weight: 700;
+    color: var(--fg);
+    line-height: 1.3;
+  }
+
+  .sidebar-controls {
+    display: flex;
+    gap: 8px;
+    margin-top: 12px;
+  }
+
+  .theme-btn {
+    background: var(--card-bg);
+    border: 1px solid var(--border);
+    color: var(--fg-muted);
+    padding: 4px 10px;
+    border-radius: 6px;
+    font-size: 0.7rem;
+    cursor: pointer;
+    transition: all 0.2s;
+  }
+  .theme-btn:hover {
+    border-color: var(--accent);
+    color: var(--accent);
+  }
+  .theme-btn.active {
+    background: var(--accent);
+    color: #fff;
+    border-color: var(--accent);
+  }
+
+  .back-link {
+    display: block;
+    margin-top: 10px;
+    font-size: 0.75rem;
+    color: var(--fg-muted);
+    text-decoration: none;
+  }
+  .back-link:hover {
+    color: var(--accent);
+  }
+
+  /* ── TOC ── */
+  .toc {
+    padding: 0 12px;
+  }
+  .toc ul {
+    list-style: none;
+    padding: 0;
+  }
+  .toc li {
+    margin: 0;
+  }
+  .toc a {
+    display: block;
+    padding: 4px 8px;
+    color: var(--fg-muted);
+    text-decoration: none;
+    font-size: 0.78rem;
+    border-radius: 4px;
+    border-left: 2px solid transparent;
+    transition: all 0.15s;
+    line-height: 1.4;
+  }
+  .toc a:hover {
+    color: var(--accent);
+    background: var(--card-bg);
+    border-left-color: var(--accent);
+  }
+  .toc a.active {
+    color: var(--accent);
+    border-left-color: var(--accent);
+    font-weight: 600;
+  }
+  .toc-h3 a { padding-left: 20px; font-size: 0.75rem; }
+  .toc-h4 a { padding-left: 32px; font-size: 0.72rem; }
+
+  /* ── 본문 ── */
+  .content {
+    margin-left: 280px;
+    flex: 1;
+    max-width: 860px;
+    padding: 40px 48px 80px;
+  }
+
+  /* ── 모바일 ── */
+  .menu-toggle {
+    display: none;
+    position: fixed;
+    top: 12px;
+    left: 12px;
+    z-index: 200;
+    background: var(--bg-sidebar);
+    border: 1px solid var(--border);
+    color: var(--fg);
+    padding: 8px 12px;
+    border-radius: 6px;
+    cursor: pointer;
+    font-size: 1.1rem;
+  }
+
+  @media (max-width: 900px) {
+    .sidebar {
+      transform: translateX(-100%);
+    }
+    .sidebar.open {
+      transform: translateX(0);
+    }
+    .content {
+      margin-left: 0;
+      padding: 60px 20px 60px;
+    }
+    .menu-toggle {
+      display: block;
+    }
+  }
+
+  /* ── 타이포그래피 ── */
+  h1 { font-size: 1.9rem; margin: 2rem 0 1rem; padding-bottom: 0.5rem; border-bottom: 2px solid var(--accent); }
+  h2 { font-size: 1.45rem; margin: 2.5rem 0 0.8rem; padding-bottom: 0.3rem; border-bottom: 1px solid var(--border); color: var(--accent); }
+  h3 { font-size: 1.15rem; margin: 1.8rem 0 0.5rem; }
+  h4 { font-size: 1rem; margin: 1.3rem 0 0.4rem; color: var(--fg-muted); }
+  p { margin: 0.6rem 0; }
   hr { border: none; border-top: 1px solid var(--border); margin: 2rem 0; }
-  table { width: 100%; border-collapse: collapse; margin: 1rem 0; font-size: 0.9rem; }
-  th, td { border: 1px solid var(--border); padding: 0.5rem 0.75rem; }
-  th { background: var(--header-bg); font-weight: 600; }
-  tr:nth-child(even) { background: #fafafa; }
-  code { background: var(--code-bg); padding: 0.15rem 0.4rem; border-radius: 3px; font-size: 0.85em; font-family: 'JetBrains Mono', 'Fira Code', monospace; }
-  pre { background: #1e293b; color: #e2e8f0; padding: 1rem; border-radius: 8px; overflow-x: auto; margin: 1rem 0; }
-  pre code { background: none; color: inherit; padding: 0; font-size: 0.85rem; }
-  blockquote { border-left: 4px solid var(--bq-border); padding: 0.5rem 1rem; margin: 1rem 0; background: #eff6ff; border-radius: 0 4px 4px 0; }
-  blockquote p { margin: 0.3rem 0; }
-  ul, ol { margin: 0.5rem 0 0.5rem 1.5rem; }
-  li { margin: 0.2rem 0; }
-  strong { color: #1e40af; }
-  a { color: var(--accent); text-decoration: none; }
+  strong { color: var(--strong); }
+  a { color: var(--link); text-decoration: none; }
   a:hover { text-decoration: underline; }
-  .mermaid { margin: 1.5rem 0; text-align: center; }
+  ul, ol { margin: 0.5rem 0 0.5rem 1.5rem; }
+  li { margin: 0.25rem 0; }
+
+  /* ── 테이블 ── */
+  table { width: 100%; border-collapse: collapse; margin: 1rem 0; font-size: 0.85rem; }
+  th, td { border: 1px solid var(--border); padding: 0.5rem 0.75rem; text-align: left; }
+  th { background: var(--table-header); font-weight: 600; }
+  tr:nth-child(even) { background: var(--table-even); }
+  tr:nth-child(odd) { background: var(--table-odd); }
+
+  /* ── 코드 ── */
+  code {
+    background: var(--code-bg);
+    color: var(--code-fg);
+    padding: 0.15rem 0.4rem;
+    border-radius: 4px;
+    font-size: 0.82em;
+    font-family: 'JetBrains Mono', 'Fira Code', 'Cascadia Code', monospace;
+  }
+  pre {
+    background: var(--code-bg);
+    color: var(--code-fg);
+    padding: 1rem 1.2rem;
+    border-radius: 8px;
+    overflow-x: auto;
+    margin: 1rem 0;
+    border: 1px solid var(--border);
+  }
+  pre code {
+    background: none;
+    padding: 0;
+    font-size: 0.82rem;
+    line-height: 1.5;
+  }
+
+  /* ── 인용 ── */
+  blockquote {
+    border-left: 4px solid var(--blockquote-border);
+    padding: 0.6rem 1rem;
+    margin: 1rem 0;
+    background: var(--blockquote-bg);
+    border-radius: 0 6px 6px 0;
+  }
+  blockquote p { margin: 0.3rem 0; }
+
+  /* ── Mermaid ── */
+  .mermaid {
+    margin: 1.5rem 0;
+    text-align: center;
+    background: var(--card-bg);
+    padding: 1rem;
+    border-radius: 8px;
+    border: 1px solid var(--border);
+  }
   .mermaid svg { max-width: 100%; }
-  @media (max-width: 768px) {
-    body { padding: 1rem; }
-    table { font-size: 0.8rem; }
-    th, td { padding: 0.3rem 0.5rem; }
+
+  /* ── Footer ── */
+  footer {
+    margin-top: 3rem;
+    padding-top: 1rem;
+    border-top: 1px solid var(--border);
+    color: var(--fg-muted);
+    font-size: 0.8rem;
   }
 </style>
 </head>
 <body>
-<h1>OpenMetadata 기능 및 사용 가이드</h1>
+
+<button class="menu-toggle" onclick="document.querySelector('.sidebar').classList.toggle('open')">☰</button>
+
+<aside class="sidebar">
+  <div class="sidebar-header">
+    <div class="sidebar-title">OpenMetadata 기능 및 사용 가이드</div>
+    <div class="sidebar-controls">
+      <button class="theme-btn" onclick="setTheme('dark')" id="btn-dark">🌙 Dark</button>
+      <button class="theme-btn" onclick="setTheme('light')" id="btn-light">☀️ Light</button>
+    </div>
+    <a class="back-link" href="index.html">← 문서 목록으로</a>
+  </div>
+  <nav class="toc">
+<ul>
+<li class="toc-h2"><a href="#목차">목차</a></li>
+<li class="toc-h2"><a href="#1-개요">1. 개요</a></li>
+  <li class="toc-h3"><a href="#openmetadata란-무엇인가">OpenMetadata란 무엇인가</a></li>
+  <li class="toc-h3"><a href="#핵심-가치-중앙화된-메타데이터-ssot">핵심 가치: 중앙화된 메타데이터 SSOT</a></li>
+  <li class="toc-h3"><a href="#오픈소스-apache-20">오픈소스 (Apache 2.0)</a></li>
+<li class="toc-h2"><a href="#2-아키텍처">2. 아키텍처</a></li>
+  <li class="toc-h3"><a href="#전체-구조">전체 구조</a></li>
+  <li class="toc-h3"><a href="#주요-구성-요소">주요 구성 요소</a></li>
+  <li class="toc-h3"><a href="#api-중심-설계-흐름">API 중심 설계 흐름</a></li>
+<li class="toc-h2"><a href="#3-핵심-기능">3. 핵심 기능</a></li>
+  <li class="toc-h3"><a href="#3-1-데이터-발견-data-discovery">3-1. 데이터 발견 (Data Discovery)</a></li>
+    <li class="toc-h4"><a href="#무엇인가">무엇인가</a></li>
+    <li class="toc-h4"><a href="#왜-필요한가">왜 필요한가</a></li>
+    <li class="toc-h4"><a href="#사용-방법">사용 방법</a></li>
+  <li class="toc-h3"><a href="#3-2-데이터-계보-data-lineage">3-2. 데이터 계보 (Data Lineage)</a></li>
+    <li class="toc-h4"><a href="#무엇인가_1">무엇인가</a></li>
+    <li class="toc-h4"><a href="#왜-필요한가_1">왜 필요한가</a></li>
+    <li class="toc-h4"><a href="#사용-방법_1">사용 방법</a></li>
+  <li class="toc-h3"><a href="#3-3-데이터-거버넌스">3-3. 데이터 거버넌스</a></li>
+    <li class="toc-h4"><a href="#3-3-1-용어집-glossary">3-3-1. 용어집 (Glossary)</a></li>
+    <li class="toc-h4"><a href="#3-3-2-분류-classification--태그-tags">3-3-2. 분류 (Classification) &amp; 태그 (Tags)</a></li>
+    <li class="toc-h4"><a href="#3-3-3-도메인--데이터-제품-domains--data-products">3-3-3. 도메인 &amp; 데이터 제품 (Domains &amp; Data Products)</a></li>
+  <li class="toc-h3"><a href="#3-4-데이터-품질--관찰성">3-4. 데이터 품질 &amp; 관찰성</a></li>
+    <li class="toc-h4"><a href="#무엇인가_5">무엇인가</a></li>
+    <li class="toc-h4"><a href="#왜-필요한가_5">왜 필요한가</a></li>
+    <li class="toc-h4"><a href="#사용-방법_5">사용 방법</a></li>
+  <li class="toc-h3"><a href="#3-5-데이터-협업">3-5. 데이터 협업</a></li>
+    <li class="toc-h4"><a href="#무엇인가_6">무엇인가</a></li>
+    <li class="toc-h4"><a href="#왜-필요한가_6">왜 필요한가</a></li>
+    <li class="toc-h4"><a href="#사용-방법_6">사용 방법</a></li>
+  <li class="toc-h3"><a href="#3-6-데이터-인사이트">3-6. 데이터 인사이트</a></li>
+    <li class="toc-h4"><a href="#무엇인가_7">무엇인가</a></li>
+    <li class="toc-h4"><a href="#왜-필요한가_7">왜 필요한가</a></li>
+    <li class="toc-h4"><a href="#사용-방법_7">사용 방법</a></li>
+<li class="toc-h2"><a href="#4-커넥터-생태계">4. 커넥터 생태계</a></li>
+  <li class="toc-h3"><a href="#4-1-데이터베이스">4-1. 데이터베이스</a></li>
+  <li class="toc-h3"><a href="#4-2-대시보드">4-2. 대시보드</a></li>
+  <li class="toc-h3"><a href="#4-3-파이프라인">4-3. 파이프라인</a></li>
+  <li class="toc-h3"><a href="#4-4-메시징">4-4. 메시징</a></li>
+  <li class="toc-h3"><a href="#4-5-ml-모델">4-5. ML 모델</a></li>
+  <li class="toc-h3"><a href="#4-6-스토리지">4-6. 스토리지</a></li>
+  <li class="toc-h3"><a href="#4-7-메타데이터-마이그레이션">4-7. 메타데이터 마이그레이션</a></li>
+<li class="toc-h2"><a href="#5-관리-기능">5. 관리 기능</a></li>
+  <li class="toc-h3"><a href="#5-1-팀--사용자">5-1. 팀 &amp; 사용자</a></li>
+    <li class="toc-h4"><a href="#무엇인가_8">무엇인가</a></li>
+    <li class="toc-h4"><a href="#왜-필요한가_8">왜 필요한가</a></li>
+    <li class="toc-h4"><a href="#사용-방법_8">사용 방법</a></li>
+  <li class="toc-h3"><a href="#5-2-역할--정책-rbac">5-2. 역할 &amp; 정책 (RBAC)</a></li>
+    <li class="toc-h4"><a href="#무엇인가_9">무엇인가</a></li>
+    <li class="toc-h4"><a href="#왜-필요한가_9">왜 필요한가</a></li>
+    <li class="toc-h4"><a href="#사용-방법_9">사용 방법</a></li>
+  <li class="toc-h3"><a href="#5-3-봇--api">5-3. 봇 &amp; API</a></li>
+    <li class="toc-h4"><a href="#무엇인가_10">무엇인가</a></li>
+    <li class="toc-h4"><a href="#왜-필요한가_10">왜 필요한가</a></li>
+    <li class="toc-h4"><a href="#사용-방법_10">사용 방법</a></li>
+  <li class="toc-h3"><a href="#5-4-알림-설정">5-4. 알림 설정</a></li>
+    <li class="toc-h4"><a href="#무엇인가_11">무엇인가</a></li>
+    <li class="toc-h4"><a href="#왜-필요한가_11">왜 필요한가</a></li>
+    <li class="toc-h4"><a href="#사용-방법_11">사용 방법</a></li>
+<li class="toc-h2"><a href="#6-배포-옵션">6. 배포 옵션</a></li>
+  <li class="toc-h3"><a href="#docker-compose-개발poc">Docker Compose (개발/PoC)</a></li>
+  <li class="toc-h3"><a href="#kubernetes-프로덕션">Kubernetes (프로덕션)</a></li>
+  <li class="toc-h3"><a href="#collate-관리형-saas">Collate (관리형 SaaS)</a></li>
+<li class="toc-h2"><a href="#7-api">7. API</a></li>
+  <li class="toc-h3"><a href="#rest-api-엔드포인트-개요">REST API 엔드포인트 개요</a></li>
+  <li class="toc-h3"><a href="#인증-방식">인증 방식</a></li>
+  <li class="toc-h3"><a href="#python-sdk-사용법">Python SDK 사용법</a></li>
+<li class="toc-h2"><a href="#8-bip-pipeline에서의-활용-현황">8. BIP-Pipeline에서의 활용 현황</a></li>
+  <li class="toc-h3"><a href="#인프라-구성">인프라 구성</a></li>
+  <li class="toc-h3"><a href="#등록된-자산-규모">등록된 자산 규모</a></li>
+  <li class="toc-h3"><a href="#메타데이터-동기화-흐름">메타데이터 동기화 흐름</a></li>
+  <li class="toc-h3"><a href="#전체-lineage-체계">전체 Lineage 체계</a></li>
+  <li class="toc-h3"><a href="#커넥터-설정-파일">커넥터 설정 파일</a></li>
+  <li class="toc-h3"><a href="#프로파일러-보안-설정">프로파일러 보안 설정</a></li>
+  <li class="toc-h3"><a href="#자동화-스크립트">자동화 스크립트</a></li>
+  <li class="toc-h3"><a href="#태그-분류-체계">태그 분류 체계</a></li>
+  <li class="toc-h3"><a href="#nl2sql-연계">NL2SQL 연계</a></li>
+<li class="toc-h2"><a href="#9-참고">9. 참고</a></li>
+  <li class="toc-h3"><a href="#공식-자료">공식 자료</a></li>
+  <li class="toc-h3"><a href="#bip-pipeline-내부-문서">BIP-Pipeline 내부 문서</a></li>
+  <li class="toc-h3"><a href="#버전-정보">버전 정보</a></li>
+<li class="toc-h2"><a href="#변경-이력">변경 이력</a></li>
+</ul>
+</nav>
+</aside>
+
+<main class="content">
+<h1 id="openmetadata-기능-및-사용-가이드">OpenMetadata 기능 및 사용 가이드</h1>
 <blockquote>
-<p><strong>공식 문서 기반</strong> — https://docs.open-metadata.org</p>
-<p><strong>작성일:</strong> 2026-04-13</p>
-<p><strong>대상:</strong> BIP-Pipeline 팀원, 데이터 엔지니어, 분석가</p>
-<p><strong>목적:</strong> OpenMetadata의 전체 기능을 이해하고 프로젝트에서 효과적으로 활용하기 위한 참조 문서</p>
+<p><strong>공식 문서:</strong> https://docs.open-metadata.org</p>
 </blockquote>
-<hr/>
-<h2>목차</h2>
+<hr />
+<h2 id="목차">목차</h2>
 <ol>
 <li><a href="#1-개요">개요</a></li>
 <li><a href="#2-아키텍처">아키텍처</a></li>
@@ -59,23 +391,23 @@
 <li><a href="#7-api">API</a></li>
 <li><a href="#8-bip-pipeline에서의-활용-현황">BIP-Pipeline에서의 활용 현황</a></li>
 <li><a href="#9-참고">참고</a></li>
-</ul>
-<hr/>
-<h2>1. 개요</h2>
-<h3>OpenMetadata란 무엇인가</h3>
+</ol>
+<hr />
+<h2 id="1-개요">1. 개요</h2>
+<h3 id="openmetadata란-무엇인가">OpenMetadata란 무엇인가</h3>
 <p>OpenMetadata는 데이터 조직을 위한 <strong>통합 메타데이터 플랫폼</strong>이다. 데이터 발견(Discovery), 계보(Lineage), 거버넌스(Governance), 품질(Quality), 협업(Collaboration)을 하나의 플랫폼에서 관리할 수 있도록 설계되었다.</p>
-<h3>핵심 가치: 중앙화된 메타데이터 SSOT</h3>
+<h3 id="핵심-가치-중앙화된-메타데이터-ssot">핵심 가치: 중앙화된 메타데이터 SSOT</h3>
 <p>모든 데이터 자산의 메타데이터를 <strong>단일 진실 원천(Single Source of Truth)</strong>으로 관리한다. 테이블 설명, 컬럼 정의, 태그, 용어집, 계보 정보가 하나의 카탈로그에 통합되어 있으므로, 여러 도구와 팀 간의 메타데이터 불일치 문제를 해소한다.</p>
 <ul>
 <li>데이터베이스, 대시보드, 파이프라인, ML 모델 등 <strong>이기종 자산</strong>을 통합 관리</li>
 <li>API 중심 설계로 <strong>프로그래밍 방식 자동화</strong> 가능</li>
 <li>협업 기능으로 <strong>데이터 문화 형성</strong> 지원</li>
 </ul>
-<h3>오픈소스 (Apache 2.0)</h3>
+<h3 id="오픈소스-apache-20">오픈소스 (Apache 2.0)</h3>
 <p>Apache 2.0 라이선스로 배포되며, 커뮤니티 주도로 개발된다. 상용 관리형 서비스(Collate)도 제공되지만 핵심 기능은 모두 오픈소스에 포함되어 있다. GitHub에서 18,000+ 스타를 보유하며, 활발한 Slack 커뮤니티가 운영 중이다.</p>
-<hr/>
-<h2>2. 아키텍처</h2>
-<h3>전체 구조</h3>
+<hr />
+<h2 id="2-아키텍처">2. 아키텍처</h2>
+<h3 id="전체-구조">전체 구조</h3>
 <p>OpenMetadata는 <strong>API 중심(API-first)</strong> 아키텍처를 채택한다. JSON Schema로 엔티티 모델을 정의하고, 이를 기반으로 REST API를 자동 생성하며, UI는 해당 API를 소비하는 클라이언트이다.</p>
 <div class="mermaid">
 graph TB
@@ -129,85 +461,151 @@ graph TB
     style Storage fill:#e8f5e9
     style Ingestion fill:#fff3e0
     style External fill:#fce4ec
+    style Clients fill:#4f8fea22,stroke:#4f8fea,stroke-width:2px,color:#e6edf3
+    style Server fill:#6c5ce722,stroke:#6c5ce7,stroke-width:2px,color:#e6edf3
+    style Storage fill:#00b89422,stroke:#00b894,stroke-width:2px,color:#e6edf3
+    style Ingestion fill:#e1705522,stroke:#e17055,stroke-width:2px,color:#e6edf3
+    style External fill:#fdcb6e22,stroke:#fdcb6e,stroke-width:2px,color:#e6edf3
 </div>
-<h3>주요 구성 요소</h3>
-<table>
-<thead><tr><th style="text-align:left">구성 요소</th><th style="text-align:left">역할</th><th style="text-align:left">기술 스택</th></tr></thead>
-<tbody>
-<tr><td style="text-align:left"><strong>Server</strong></td><td style="text-align:left">REST API 제공, 비즈니스 로직</td><td style="text-align:left">Java (Dropwizard)</td></tr>
-<tr><td style="text-align:left"><strong>UI</strong></td><td style="text-align:left">웹 기반 사용자 인터페이스</td><td style="text-align:left">React, TypeScript</td></tr>
-<tr><td style="text-align:left"><strong>Database</strong></td><td style="text-align:left">메타데이터 영구 저장</td><td style="text-align:left">MySQL 또는 PostgreSQL</td></tr>
-<tr><td style="text-align:left"><strong>Elasticsearch</strong></td><td style="text-align:left">전문 검색, 필터링</td><td style="text-align:left">Elasticsearch 7.x / 8.x</td></tr>
-<tr><td style="text-align:left"><strong>Ingestion Framework</strong></td><td style="text-align:left">메타데이터 수집 파이프라인</td><td style="text-align:left">Python (openmetadata-ingestion)</td></tr>
-</tbody></table>
 
-<h3>API 중심 설계 흐름</h3>
-<pre><code>JSON Schema (엔티티 정의)
+<h3 id="주요-구성-요소">주요 구성 요소</h3>
+<table>
+<thead>
+<tr>
+<th>구성 요소</th>
+<th>역할</th>
+<th>기술 스택</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><strong>Server</strong></td>
+<td>REST API 제공, 비즈니스 로직</td>
+<td>Java (Dropwizard)</td>
+</tr>
+<tr>
+<td><strong>UI</strong></td>
+<td>웹 기반 사용자 인터페이스</td>
+<td>React, TypeScript</td>
+</tr>
+<tr>
+<td><strong>Database</strong></td>
+<td>메타데이터 영구 저장</td>
+<td>MySQL 또는 PostgreSQL</td>
+</tr>
+<tr>
+<td><strong>Elasticsearch</strong></td>
+<td>전문 검색, 필터링</td>
+<td>Elasticsearch 7.x / 8.x</td>
+</tr>
+<tr>
+<td><strong>Ingestion Framework</strong></td>
+<td>메타데이터 수집 파이프라인</td>
+<td>Python (openmetadata-ingestion)</td>
+</tr>
+</tbody>
+</table>
+<h3 id="api-중심-설계-흐름">API 중심 설계 흐름</h3>
+<div class="codehilite"><pre><span></span><code>JSON Schema (엔티티 정의)
     ↓
 REST API (자동 생성, Swagger 문서)
     ↓
 Web UI (API 소비, 시각화)
     ↓
-Python SDK (프로그래밍 자동화)</code></pre>
+Python SDK (프로그래밍 자동화)
+</code></pre></div>
+
 <p>이 설계 덕분에 UI에서 할 수 있는 <strong>모든 작업을 API/SDK로도 동일하게</strong> 수행할 수 있다. 자동화 스크립트, CI/CD 파이프라인, 외부 도구 연동이 자연스럽게 가능하다.</p>
-<hr/>
-<h2>3. 핵심 기능</h2>
-<h3>3-1. 데이터 발견 (Data Discovery)</h3>
-<h4>무엇인가</h4>
+<hr />
+<h2 id="3-핵심-기능">3. 핵심 기능</h2>
+<h3 id="3-1-데이터-발견-data-discovery">3-1. 데이터 발견 (Data Discovery)</h3>
+<h4 id="무엇인가">무엇인가</h4>
 <p>조직 내의 모든 데이터 자산을 <strong>검색하고 탐색</strong>할 수 있는 기능이다. 데이터 카탈로그의 가장 기본적이고 핵심적인 가치이다.</p>
-<h4>왜 필요한가</h4>
+<h4 id="왜-필요한가">왜 필요한가</h4>
 <ul>
 <li>데이터 사일로 해소: 여러 시스템에 흩어진 데이터를 한곳에서 검색</li>
 <li>중복 작업 방지: 이미 존재하는 데이터셋을 모르고 새로 만드는 것을 방지</li>
 <li>데이터 이해도 향상: 스키마, 설명, 태그, 소유자 정보를 통해 데이터의 의미를 빠르게 파악</li>
 </ul>
-<h4>사용 방법</h4>
-<p><strong>통합 검색</strong></p>
-<ul>
-<li>키워드 검색: 테이블명, 컬럼명, 설명 텍스트를 대상으로 전문 검색</li>
-<li>고급 검색: 필터(소유자, 태그, 도메인, 서비스, Tier 등)를 조합한 세밀한 검색</li>
-<li>Elasticsearch 기반으로 빠른 응답 제공</li>
-</ul>
+<h4 id="사용-방법">사용 방법</h4>
+<p><strong>통합 검색</strong>
+- 키워드 검색: 테이블명, 컬럼명, 설명 텍스트를 대상으로 전문 검색
+- 고급 검색: 필터(소유자, 태그, 도메인, 서비스, Tier 등)를 조합한 세밀한 검색
+- Elasticsearch 기반으로 빠른 응답 제공</p>
 <p><strong>자산 유형</strong></p>
 <p>OpenMetadata가 관리하는 데이터 자산 유형은 다음과 같다:</p>
 <table>
-<thead><tr><th style="text-align:left">자산 유형</th><th style="text-align:left">설명</th><th style="text-align:left">예시</th></tr></thead>
+<thead>
+<tr>
+<th>자산 유형</th>
+<th>설명</th>
+<th>예시</th>
+</tr>
+</thead>
 <tbody>
-<tr><td style="text-align:left">테이블 (Table)</td><td style="text-align:left">데이터베이스 테이블/뷰</td><td style="text-align:left"><code>stock_price_1d</code>, <code>analytics_valuation</code></td></tr>
-<tr><td style="text-align:left">토픽 (Topic)</td><td style="text-align:left">메시징 토픽</td><td style="text-align:left">Kafka 토픽</td></tr>
-<tr><td style="text-align:left">대시보드 (Dashboard)</td><td style="text-align:left">BI 대시보드</td><td style="text-align:left">Grafana, Superset 패널</td></tr>
-<tr><td style="text-align:left">파이프라인 (Pipeline)</td><td style="text-align:left">ETL/오케스트레이션</td><td style="text-align:left">Airflow DAG</td></tr>
-<tr><td style="text-align:left">ML 모델 (ML Model)</td><td style="text-align:left">머신러닝 모델</td><td style="text-align:left">MLflow 등록 모델</td></tr>
-<tr><td style="text-align:left">컨테이너 (Container)</td><td style="text-align:left">오브젝트 스토리지</td><td style="text-align:left">S3 버킷, GCS 버킷</td></tr>
-<tr><td style="text-align:left">검색 인덱스 (Search Index)</td><td style="text-align:left">검색 엔진 인덱스</td><td style="text-align:left">Elasticsearch 인덱스</td></tr>
-<tr><td style="text-align:left">API 엔드포인트 (API Endpoint)</td><td style="text-align:left">REST API</td><td style="text-align:left">외부 데이터 소스 API</td></tr>
-</tbody></table>
-
-<p><strong>데이터 미리보기</strong></p>
-<ul>
-<li>샘플 데이터 조회 (관리자 설정에 따라 활성화/비활성화 가능)</li>
-<li>컬럼별 통계 (null 비율, 고유값 수, 최대/최소/평균 등)</li>
-</ul>
-<p><strong>상세 정보</strong></p>
-<ul>
-<li>스키마: 컬럼명, 타입, 설명, 태그, 용어집 매핑</li>
-<li>프로파일: 행 수, 컬럼 통계, 분포 히스토그램</li>
-<li>계보: 데이터의 출처와 소비처</li>
-<li>쿼리 이력: 해당 테이블에 대해 실행된 쿼리 패턴</li>
-<li>사용 빈도: 조회 횟수, 최근 접근 사용자</li>
-</ul>
-<hr/>
-<h3>3-2. 데이터 계보 (Data Lineage)</h3>
-<h4>무엇인가</h4>
+<tr>
+<td>테이블 (Table)</td>
+<td>데이터베이스 테이블/뷰</td>
+<td><code>stock_price_1d</code>, <code>analytics_valuation</code></td>
+</tr>
+<tr>
+<td>토픽 (Topic)</td>
+<td>메시징 토픽</td>
+<td>Kafka 토픽</td>
+</tr>
+<tr>
+<td>대시보드 (Dashboard)</td>
+<td>BI 대시보드</td>
+<td>Grafana, Superset 패널</td>
+</tr>
+<tr>
+<td>파이프라인 (Pipeline)</td>
+<td>ETL/오케스트레이션</td>
+<td>Airflow DAG</td>
+</tr>
+<tr>
+<td>ML 모델 (ML Model)</td>
+<td>머신러닝 모델</td>
+<td>MLflow 등록 모델</td>
+</tr>
+<tr>
+<td>컨테이너 (Container)</td>
+<td>오브젝트 스토리지</td>
+<td>S3 버킷, GCS 버킷</td>
+</tr>
+<tr>
+<td>검색 인덱스 (Search Index)</td>
+<td>검색 엔진 인덱스</td>
+<td>Elasticsearch 인덱스</td>
+</tr>
+<tr>
+<td>API 엔드포인트 (API Endpoint)</td>
+<td>REST API</td>
+<td>외부 데이터 소스 API</td>
+</tr>
+</tbody>
+</table>
+<p><strong>데이터 미리보기</strong>
+- 샘플 데이터 조회 (관리자 설정에 따라 활성화/비활성화 가능)
+- 컬럼별 통계 (null 비율, 고유값 수, 최대/최소/평균 등)</p>
+<p><strong>상세 정보</strong>
+- 스키마: 컬럼명, 타입, 설명, 태그, 용어집 매핑
+- 프로파일: 행 수, 컬럼 통계, 분포 히스토그램
+- 계보: 데이터의 출처와 소비처
+- 쿼리 이력: 해당 테이블에 대해 실행된 쿼리 패턴
+- 사용 빈도: 조회 횟수, 최근 접근 사용자</p>
+<hr />
+<h3 id="3-2-데이터-계보-data-lineage">3-2. 데이터 계보 (Data Lineage)</h3>
+<h4 id="무엇인가_1">무엇인가</h4>
 <p>데이터가 <strong>어디에서 왔고(source), 어떻게 변환되었으며(transformation), 어디로 흘러가는지(sink)</strong>를 추적하는 기능이다.</p>
-<h4>왜 필요한가</h4>
+<h4 id="왜-필요한가_1">왜 필요한가</h4>
 <ul>
 <li><strong>영향 분석(Impact Analysis)</strong>: 소스 테이블 변경 시 어떤 하류(downstream) 자산이 영향 받는지 파악</li>
 <li><strong>근본 원인 추적(Root Cause Analysis)</strong>: 데이터 품질 문제가 어느 단계에서 발생했는지 역추적</li>
 <li><strong>규정 준수(Compliance)</strong>: 데이터의 전체 이동 경로를 감사 목적으로 기록</li>
 <li><strong>NL2SQL 맥락 제공</strong>: 테이블 간의 관계를 LLM이 이해하도록 계보 정보를 활용</li>
 </ul>
-<h4>사용 방법</h4>
+<h4 id="사용-방법_1">사용 방법</h4>
 <div class="mermaid">
 graph LR
     subgraph "외부 소스"
@@ -241,58 +639,53 @@ graph LR
 
     style T3 fill:#c8e6c9
 </div>
-<p><strong>자동 계보 수집</strong></p>
-<ul>
-<li>커넥터가 데이터베이스 쿼리 로그, Airflow DAG 정의 등을 분석하여 자동으로 계보를 생성</li>
-<li>Airflow 커넥터: DAG에서 참조하는 테이블 관계를 자동 추출</li>
-<li>데이터베이스 커넥터: 뷰 정의의 SQL을 파싱하여 계보 생성</li>
-</ul>
-<p><strong>컬럼 레벨 계보</strong></p>
-<ul>
-<li>테이블 간 계보뿐 아니라 <strong>개별 컬럼 간의 매핑</strong>까지 추적</li>
-<li>특정 컬럼이 어떤 소스 컬럼에서 파생되었는지 확인 가능</li>
-<li>예: <code>analytics_stock_daily.close_price</code> ← <code>stock_price_1d.close</code></li>
-</ul>
-<p><strong>수동 계보 추가</strong></p>
-<ul>
-<li>UI에서 드래그 앤 드롭으로 계보 엣지 추가</li>
-<li>자동 수집이 놓치는 복잡한 변환 로직에 유용</li>
-</ul>
-<p><strong>Python SDK를 통한 프로그래밍 방식</strong></p>
-<pre><code class="language-python">from metadata.ingestion.lineage.sql_lineage import search_table_entities
-from metadata.ingestion.ometa.ometa_api import OpenMetadata
 
-# lineage 엣지 추가 예시
-metadata.add_lineage(
-    AddLineageRequest(
-        edge=EntitiesEdge(
-            fromEntity=source_ref,
-            toEntity=target_ref,
-            lineageDetails=LineageDetails(
-                pipeline=pipeline_ref,
-                description=&quot;DAG에서 자동 등록&quot;
-            )
-        )
-    )
-)</code></pre>
-<p><strong>시각화</strong></p>
-<ul>
-<li>그래프 뷰: 노드(엔티티)와 엣지(관계)로 구성된 인터랙티브 그래프</li>
-<li>업스트림/다운스트림 탐색: 특정 자산에서 상류/하류를 단계적으로 펼쳐 확인</li>
-<li>필터링: 특정 서비스, 데이터베이스, 스키마 기준으로 계보 범위 제한</li>
-</ul>
-<hr/>
-<h3>3-3. 데이터 거버넌스</h3>
-<h4>3-3-1. 용어집 (Glossary)</h4>
-<h5>무엇인가</h5>
-<p>비즈니스 용어를 <strong>표준화하여 정의하고, 데이터 자산과 연결</strong>하는 기능이다. &quot;PER&quot;, &quot;ROE&quot;, &quot;골든크로스&quot; 같은 비즈니스 용어가 실제 어떤 테이블의 어떤 컬럼에 대응하는지를 명시적으로 관리한다.</p>
-<h5>왜 필요한가</h5>
+<p><strong>자동 계보 수집</strong>
+- 커넥터가 데이터베이스 쿼리 로그, Airflow DAG 정의 등을 분석하여 자동으로 계보를 생성
+- Airflow 커넥터: DAG에서 참조하는 테이블 관계를 자동 추출
+- 데이터베이스 커넥터: 뷰 정의의 SQL을 파싱하여 계보 생성</p>
+<p><strong>컬럼 레벨 계보</strong>
+- 테이블 간 계보뿐 아니라 <strong>개별 컬럼 간의 매핑</strong>까지 추적
+- 특정 컬럼이 어떤 소스 컬럼에서 파생되었는지 확인 가능
+- 예: <code>analytics_stock_daily.close_price</code> ← <code>stock_price_1d.close</code></p>
+<p><strong>수동 계보 추가</strong>
+- UI에서 드래그 앤 드롭으로 계보 엣지 추가
+- 자동 수집이 놓치는 복잡한 변환 로직에 유용</p>
+<p><strong>Python SDK를 통한 프로그래밍 방식</strong></p>
+<div class="codehilite"><pre><span></span><code><span class="kn">from</span><span class="w"> </span><span class="nn">metadata.ingestion.lineage.sql_lineage</span><span class="w"> </span><span class="kn">import</span> <span class="n">search_table_entities</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">metadata.ingestion.ometa.ometa_api</span><span class="w"> </span><span class="kn">import</span> <span class="n">OpenMetadata</span>
+
+<span class="c1"># lineage 엣지 추가 예시</span>
+<span class="n">metadata</span><span class="o">.</span><span class="n">add_lineage</span><span class="p">(</span>
+    <span class="n">AddLineageRequest</span><span class="p">(</span>
+        <span class="n">edge</span><span class="o">=</span><span class="n">EntitiesEdge</span><span class="p">(</span>
+            <span class="n">fromEntity</span><span class="o">=</span><span class="n">source_ref</span><span class="p">,</span>
+            <span class="n">toEntity</span><span class="o">=</span><span class="n">target_ref</span><span class="p">,</span>
+            <span class="n">lineageDetails</span><span class="o">=</span><span class="n">LineageDetails</span><span class="p">(</span>
+                <span class="n">pipeline</span><span class="o">=</span><span class="n">pipeline_ref</span><span class="p">,</span>
+                <span class="n">description</span><span class="o">=</span><span class="s2">&quot;DAG에서 자동 등록&quot;</span>
+            <span class="p">)</span>
+        <span class="p">)</span>
+    <span class="p">)</span>
+<span class="p">)</span>
+</code></pre></div>
+
+<p><strong>시각화</strong>
+- 그래프 뷰: 노드(엔티티)와 엣지(관계)로 구성된 인터랙티브 그래프
+- 업스트림/다운스트림 탐색: 특정 자산에서 상류/하류를 단계적으로 펼쳐 확인
+- 필터링: 특정 서비스, 데이터베이스, 스키마 기준으로 계보 범위 제한</p>
+<hr />
+<h3 id="3-3-데이터-거버넌스">3-3. 데이터 거버넌스</h3>
+<h4 id="3-3-1-용어집-glossary">3-3-1. 용어집 (Glossary)</h4>
+<h5 id="무엇인가_2">무엇인가</h5>
+<p>비즈니스 용어를 <strong>표준화하여 정의하고, 데이터 자산과 연결</strong>하는 기능이다. "PER", "ROE", "골든크로스" 같은 비즈니스 용어가 실제 어떤 테이블의 어떤 컬럼에 대응하는지를 명시적으로 관리한다.</p>
+<h5 id="왜-필요한가_2">왜 필요한가</h5>
 <ul>
 <li><strong>용어 표준화</strong>: 같은 개념을 팀마다 다른 이름으로 부르는 혼란 방지</li>
 <li><strong>NL2SQL 정확도 향상</strong>: 사용자가 비즈니스 용어로 질문할 때, 정확한 컬럼으로 매핑</li>
 <li><strong>신규 팀원 온보딩</strong>: 도메인 지식을 체계적으로 문서화</li>
 </ul>
-<h5>사용 방법</h5>
+<h5 id="사용-방법_2">사용 방법</h5>
 <div class="mermaid">
 graph TB
     G["Glossary<br/>투자 용어집"]
@@ -313,368 +706,592 @@ graph TB
     style T2 fill:#f3e5f5
     style T3 fill:#f3e5f5
 </div>
-<p><strong>계층 구조</strong></p>
-<ul>
-<li>Glossary (최상위): 도메인별 용어집 (예: 투자 용어집, 매크로 경제 용어집)</li>
-<li>Term (용어): 개별 비즈니스 용어</li>
-<li>Child Term (하위 용어): 용어 아래 세부 분류 가능</li>
-</ul>
-<p><strong>용어 속성</strong></p>
-<ul>
-<li>이름(Name): 영문 식별자 (<code>per</code>, <code>roe</code>)</li>
-<li>표시 이름(Display Name): 한글 표시명 (<code>주가수익비율</code>)</li>
-<li>설명(Description): 정의, 계산식, 단위 등 상세 설명</li>
-<li>동의어(Synonyms): 같은 개념의 다른 명칭 (<code>PER</code>, <code>P/E Ratio</code>)</li>
-<li>관련 용어(Related Terms): 연관 개념 링크</li>
-<li>태그(Tags): 분류용 태그</li>
-</ul>
-<p><strong>용어-자산 매핑</strong></p>
-<ul>
-<li>용어를 테이블 또는 컬럼에 직접 태깅</li>
-<li>NL2SQL에서 사용자 질문의 비즈니스 용어를 정확한 컬럼에 매핑하는 데 핵심적으로 활용</li>
-</ul>
-<p><strong>승인 워크플로우</strong></p>
-<ul>
-<li>Reviewer 지정: 용어 변경 시 리뷰어의 승인이 필요하도록 설정</li>
-<li>용어의 품질과 일관성을 조직적으로 관리</li>
-</ul>
-<p><strong>CSV 일괄 임포트/엑스포트</strong></p>
-<ul>
-<li>대량의 용어를 CSV 파일로 작성한 뒤 일괄 업로드</li>
-<li>기존 용어집을 CSV로 내보내 외부 도구에서 편집 후 재임포트</li>
-<li>용어 이름, 설명, 동의어, 관련 용어, 소유자 등의 컬럼 지원</li>
-</ul>
-<p><strong>스타일링</strong></p>
-<ul>
-<li>용어에 색상(Color)과 아이콘(Icon)을 지정하여 시각적 구분</li>
-<li>UI에서 용어가 태깅된 자산을 쉽게 식별</li>
-</ul>
-<p><strong>API 지원</strong></p>
-<ul>
-<li>REST API로 용어 CRUD, 용어-자산 매핑 자동화 가능</li>
-<li><code>scripts/om_build_glossary.py</code> 같은 스크립트로 프로그래밍 방식 일괄 등록</li>
-</ul>
-<hr/>
-<h4>3-3-2. 분류 (Classification) &amp; 태그 (Tags)</h4>
-<h5>무엇인가</h5>
+
+<p><strong>계층 구조</strong>
+- Glossary (최상위): 도메인별 용어집 (예: 투자 용어집, 매크로 경제 용어집)
+- Term (용어): 개별 비즈니스 용어
+- Child Term (하위 용어): 용어 아래 세부 분류 가능</p>
+<p><strong>용어 속성</strong>
+- 이름(Name): 영문 식별자 (<code>per</code>, <code>roe</code>)
+- 표시 이름(Display Name): 한글 표시명 (<code>주가수익비율</code>)
+- 설명(Description): 정의, 계산식, 단위 등 상세 설명
+- 동의어(Synonyms): 같은 개념의 다른 명칭 (<code>PER</code>, <code>P/E Ratio</code>)
+- 관련 용어(Related Terms): 연관 개념 링크
+- 태그(Tags): 분류용 태그</p>
+<p><strong>용어-자산 매핑</strong>
+- 용어를 테이블 또는 컬럼에 직접 태깅
+- NL2SQL에서 사용자 질문의 비즈니스 용어를 정확한 컬럼에 매핑하는 데 핵심적으로 활용</p>
+<p><strong>승인 워크플로우</strong>
+- Reviewer 지정: 용어 변경 시 리뷰어의 승인이 필요하도록 설정
+- 용어의 품질과 일관성을 조직적으로 관리</p>
+<p><strong>CSV 일괄 임포트/엑스포트</strong>
+- 대량의 용어를 CSV 파일로 작성한 뒤 일괄 업로드
+- 기존 용어집을 CSV로 내보내 외부 도구에서 편집 후 재임포트
+- 용어 이름, 설명, 동의어, 관련 용어, 소유자 등의 컬럼 지원</p>
+<p><strong>스타일링</strong>
+- 용어에 색상(Color)과 아이콘(Icon)을 지정하여 시각적 구분
+- UI에서 용어가 태깅된 자산을 쉽게 식별</p>
+<p><strong>API 지원</strong>
+- REST API로 용어 CRUD, 용어-자산 매핑 자동화 가능
+- <code>scripts/om_build_glossary.py</code> 같은 스크립트로 프로그래밍 방식 일괄 등록</p>
+<hr />
+<h4 id="3-3-2-분류-classification--태그-tags">3-3-2. 분류 (Classification) &amp; 태그 (Tags)</h4>
+<h5 id="무엇인가_3">무엇인가</h5>
 <p>데이터 자산에 <strong>분류(Classification)와 태그(Tag)</strong>를 부여하여 체계적으로 조직화하는 기능이다. 용어집이 비즈니스 의미를 정의한다면, 태그는 데이터의 <strong>속성과 특성</strong>을 분류한다.</p>
-<h5>왜 필요한가</h5>
+<h5 id="왜-필요한가_3">왜 필요한가</h5>
 <ul>
 <li><strong>데이터 분류 체계</strong>: 민감도(PII), 중요도(Tier), 레이어(Raw/Derived/Gold) 등으로 분류</li>
 <li><strong>검색 효율</strong>: 태그 기반 필터링으로 원하는 자산을 빠르게 찾기</li>
 <li><strong>접근 제어 기반</strong>: 태그를 RBAC 정책과 연동하여 세분화된 접근 제어</li>
 <li><strong>자동 거버넌스</strong>: Auto Classification으로 민감 데이터 자동 식별</li>
 </ul>
-<h5>사용 방법</h5>
+<h5 id="사용-방법_3">사용 방법</h5>
 <p><strong>시스템 분류 (Built-in)</strong></p>
 <table>
-<thead><tr><th style="text-align:left">분류</th><th style="text-align:left">태그 예시</th><th style="text-align:left">용도</th></tr></thead>
+<thead>
+<tr>
+<th>분류</th>
+<th>태그 예시</th>
+<th>용도</th>
+</tr>
+</thead>
 <tbody>
-<tr><td style="text-align:left">PII</td><td style="text-align:left"><code>PII.Sensitive</code>, <code>PII.NonSensitive</code></td><td style="text-align:left">개인정보 식별</td></tr>
-<tr><td style="text-align:left">Tier</td><td style="text-align:left"><code>Tier.Tier1</code>, <code>Tier.Tier2</code>, ...</td><td style="text-align:left">데이터 중요도 등급</td></tr>
-<tr><td style="text-align:left">PersonalData</td><td style="text-align:left"><code>PersonalData.Personal</code>, <code>PersonalData.SpecialCategory</code></td><td style="text-align:left">GDPR 대응</td></tr>
-</tbody></table>
-
-<p><strong>사용자 정의 분류 생성</strong></p>
-<ul>
-<li>UI 또는 API를 통해 커스텀 Classification 생성</li>
-<li>예: <code>DataLayer</code> (raw, derived, gold), <code>Domain</code> (market, financial, macro, news)</li>
-<li>각 Classification 아래에 하위 태그를 자유롭게 정의</li>
-</ul>
-<p><strong>자동 태깅 (Auto Classification)</strong></p>
-<ul>
-<li>프로파일러 실행 시 컬럼 이름, 데이터 패턴을 분석하여 PII 등을 자동 태깅</li>
-<li>이메일 패턴, 전화번호 패턴, 신용카드 번호 패턴 등 인식</li>
-<li>자동 분류 결과를 리뷰 후 확정하는 워크플로우 지원</li>
-</ul>
-<p><strong>태그를 통한 접근 제어</strong></p>
-<ul>
-<li>RBAC 정책에서 &quot;PII.Sensitive 태그가 붙은 자산은 Data Steward만 접근 가능&quot; 같은 규칙 설정</li>
-<li>태그 기반 정책은 자산이 추가될 때 자동 적용</li>
-</ul>
-<hr/>
-<h4>3-3-3. 도메인 &amp; 데이터 제품 (Domains &amp; Data Products)</h4>
-<h5>무엇인가</h5>
+<tr>
+<td>PII</td>
+<td><code>PII.Sensitive</code>, <code>PII.NonSensitive</code></td>
+<td>개인정보 식별</td>
+</tr>
+<tr>
+<td>Tier</td>
+<td><code>Tier.Tier1</code>, <code>Tier.Tier2</code>, ...</td>
+<td>데이터 중요도 등급</td>
+</tr>
+<tr>
+<td>PersonalData</td>
+<td><code>PersonalData.Personal</code>, <code>PersonalData.SpecialCategory</code></td>
+<td>GDPR 대응</td>
+</tr>
+</tbody>
+</table>
+<p><strong>사용자 정의 분류 생성</strong>
+- UI 또는 API를 통해 커스텀 Classification 생성
+- 예: <code>DataLayer</code> (raw, derived, gold), <code>Domain</code> (market, financial, macro, news)
+- 각 Classification 아래에 하위 태그를 자유롭게 정의</p>
+<p><strong>자동 태깅 (Auto Classification)</strong>
+- 프로파일러 실행 시 컬럼 이름, 데이터 패턴을 분석하여 PII 등을 자동 태깅
+- 이메일 패턴, 전화번호 패턴, 신용카드 번호 패턴 등 인식
+- 자동 분류 결과를 리뷰 후 확정하는 워크플로우 지원</p>
+<p><strong>태그를 통한 접근 제어</strong>
+- RBAC 정책에서 "PII.Sensitive 태그가 붙은 자산은 Data Steward만 접근 가능" 같은 규칙 설정
+- 태그 기반 정책은 자산이 추가될 때 자동 적용</p>
+<hr />
+<h4 id="3-3-3-도메인--데이터-제품-domains--data-products">3-3-3. 도메인 &amp; 데이터 제품 (Domains &amp; Data Products)</h4>
+<h5 id="무엇인가_4">무엇인가</h5>
 <p><strong>도메인(Domain)</strong>은 비즈니스 영역별로 데이터를 그룹화하는 최상위 조직 단위이다. <strong>데이터 제품(Data Product)</strong>은 도메인 내에서 소비자에게 제공되는 의미 있는 데이터 묶음이다.</p>
-<h5>왜 필요한가</h5>
+<h5 id="왜-필요한가_4">왜 필요한가</h5>
 <ul>
 <li><strong>데이터 메시(Data Mesh)</strong> 아키텍처 지원: 도메인 소유권 기반 분산 데이터 관리</li>
 <li><strong>데이터 발견성 향상</strong>: 도메인별로 자산을 탐색하여 관련 데이터를 빠르게 찾기</li>
 <li><strong>책임 명확화</strong>: 각 도메인에 소유자를 지정하여 데이터 품질 책임 부여</li>
 </ul>
-<h5>사용 방법</h5>
-<p><strong>도메인 기반 데이터 조직</strong></p>
-<ul>
-<li>도메인 생성: <code>Market</code>, <code>Financial</code>, <code>Macro</code>, <code>News</code> 등</li>
-<li>각 도메인에 관련 테이블, 파이프라인, 대시보드를 배정</li>
-<li>도메인 소유자(Domain Owner)를 지정하여 거버넌스 책임 할당</li>
-</ul>
-<p><strong>데이터 제품 정의</strong></p>
-<ul>
-<li>도메인 내에서 특정 소비자(팀, 서비스)를 위한 데이터 제품 정의</li>
-<li>데이터 제품에 포함되는 자산 목록, 품질 SLA, 접근 권한 설정</li>
-<li>예: &quot;투자 분석 데이터 제품&quot; = <code>analytics_stock_daily</code> + <code>analytics_valuation</code> + <code>consensus_estimates</code></li>
-</ul>
-<hr/>
-<h3>3-4. 데이터 품질 &amp; 관찰성</h3>
-<h4>무엇인가</h4>
+<h5 id="사용-방법_4">사용 방법</h5>
+<p><strong>도메인 기반 데이터 조직</strong>
+- 도메인 생성: <code>Market</code>, <code>Financial</code>, <code>Macro</code>, <code>News</code> 등
+- 각 도메인에 관련 테이블, 파이프라인, 대시보드를 배정
+- 도메인 소유자(Domain Owner)를 지정하여 거버넌스 책임 할당</p>
+<p><strong>데이터 제품 정의</strong>
+- 도메인 내에서 특정 소비자(팀, 서비스)를 위한 데이터 제품 정의
+- 데이터 제품에 포함되는 자산 목록, 품질 SLA, 접근 권한 설정
+- 예: "투자 분석 데이터 제품" = <code>analytics_stock_daily</code> + <code>analytics_valuation</code> + <code>consensus_estimates</code></p>
+<hr />
+<h3 id="3-4-데이터-품질--관찰성">3-4. 데이터 품질 &amp; 관찰성</h3>
+<h4 id="무엇인가_5">무엇인가</h4>
 <p>데이터의 <strong>정확성, 완전성, 적시성</strong>을 검증하고, 이상 징후를 <strong>자동 탐지</strong>하여 알림을 보내는 기능이다.</p>
-<h4>왜 필요한가</h4>
+<h4 id="왜-필요한가_5">왜 필요한가</h4>
 <ul>
 <li><strong>데이터 신뢰성 확보</strong>: 잘못된 데이터로 의사결정을 내리는 위험 방지</li>
 <li><strong>조기 이상 감지</strong>: 데이터 파이프라인 장애를 빠르게 발견</li>
 <li><strong>SLA 관리</strong>: 데이터 제품의 품질 기준 충족 여부를 모니터링</li>
 </ul>
-<h4>사용 방법</h4>
+<h4 id="사용-방법_5">사용 방법</h4>
 <p><strong>품질 테스트 유형 (No-code 테스트)</strong></p>
 <p>코드를 작성하지 않고 UI에서 테스트를 정의할 수 있다:</p>
 <table>
-<thead><tr><th style="text-align:left">테스트 유형</th><th style="text-align:left">설명</th><th style="text-align:left">예시</th></tr></thead>
+<thead>
+<tr>
+<th>테스트 유형</th>
+<th>설명</th>
+<th>예시</th>
+</tr>
+</thead>
 <tbody>
-<tr><td style="text-align:left">Column Values to Be Not Null</td><td style="text-align:left">특정 컬럼에 NULL이 없어야 함</td><td style="text-align:left"><code>stock_price_1d.close IS NOT NULL</code></td></tr>
-<tr><td style="text-align:left">Column Values to Be Unique</td><td style="text-align:left">특정 컬럼 값의 고유성 확인</td><td style="text-align:left"><code>stock_info.ticker</code></td></tr>
-<tr><td style="text-align:left">Column Values to Be Between</td><td style="text-align:left">값 범위 확인</td><td style="text-align:left"><code>stock_price_1d.volume &gt;= 0</code></td></tr>
-<tr><td style="text-align:left">Table Row Count to Be Between</td><td style="text-align:left">행 수 범위 확인</td><td style="text-align:left"><code>stock_info</code> 행 수가 2,000~10,000 사이</td></tr>
-<tr><td style="text-align:left">Column Value Length to Be Between</td><td style="text-align:left">문자열 길이 확인</td><td style="text-align:left"><code>ticker</code> 길이 5~10자</td></tr>
-<tr><td style="text-align:left">Table Custom SQL Query</td><td style="text-align:left">커스텀 SQL로 검증</td><td style="text-align:left">사용자 정의 비즈니스 규칙</td></tr>
-</tbody></table>
-
-<p><strong>프로파일러</strong></p>
-<ul>
-<li>테이블 수준: 행 수, 크기, 생성/수정일</li>
-<li>컬럼 수준: NULL 비율, 고유값 수, 최소/최대/평균/표준편차</li>
-<li>히스토그램: 값 분포 시각화</li>
-<li>시계열 추이: 프로파일 결과를 시간별로 추적하여 변화 감지</li>
-</ul>
-<p><strong>알림 설정</strong></p>
-<ul>
-<li>테스트 실패 시 Slack, Teams, Email, Webhook으로 알림 발송</li>
-<li>심각도(Severity) 기반 알림 라우팅</li>
-</ul>
-<p><strong>인시던트 관리</strong></p>
-<ul>
-<li>테스트 실패를 &quot;인시던트&quot;로 등록하고 담당자를 지정</li>
-<li>해결 과정을 문서화하고 추적</li>
-<li>해결 완료 시 인시던트를 종료하여 이력 관리</li>
-</ul>
-<p><strong>이상 탐지 (Anomaly Detection)</strong></p>
-<ul>
-<li>프로파일러가 수집한 시계열 통계를 기반으로 이상치를 자동 감지</li>
-<li>행 수의 급격한 변화, NULL 비율 급증 등을 자동 경고</li>
-<li>별도 설정 없이 프로파일러 실행만으로 동작</li>
-</ul>
-<hr/>
-<h3>3-5. 데이터 협업</h3>
-<h4>무엇인가</h4>
+<tr>
+<td>Column Values to Be Not Null</td>
+<td>특정 컬럼에 NULL이 없어야 함</td>
+<td><code>stock_price_1d.close IS NOT NULL</code></td>
+</tr>
+<tr>
+<td>Column Values to Be Unique</td>
+<td>특정 컬럼 값의 고유성 확인</td>
+<td><code>stock_info.ticker</code></td>
+</tr>
+<tr>
+<td>Column Values to Be Between</td>
+<td>값 범위 확인</td>
+<td><code>stock_price_1d.volume &gt;= 0</code></td>
+</tr>
+<tr>
+<td>Table Row Count to Be Between</td>
+<td>행 수 범위 확인</td>
+<td><code>stock_info</code> 행 수가 2,000~10,000 사이</td>
+</tr>
+<tr>
+<td>Column Value Length to Be Between</td>
+<td>문자열 길이 확인</td>
+<td><code>ticker</code> 길이 5~10자</td>
+</tr>
+<tr>
+<td>Table Custom SQL Query</td>
+<td>커스텀 SQL로 검증</td>
+<td>사용자 정의 비즈니스 규칙</td>
+</tr>
+</tbody>
+</table>
+<p><strong>프로파일러</strong>
+- 테이블 수준: 행 수, 크기, 생성/수정일
+- 컬럼 수준: NULL 비율, 고유값 수, 최소/최대/평균/표준편차
+- 히스토그램: 값 분포 시각화
+- 시계열 추이: 프로파일 결과를 시간별로 추적하여 변화 감지</p>
+<p><strong>알림 설정</strong>
+- 테스트 실패 시 Slack, Teams, Email, Webhook으로 알림 발송
+- 심각도(Severity) 기반 알림 라우팅</p>
+<p><strong>인시던트 관리</strong>
+- 테스트 실패를 "인시던트"로 등록하고 담당자를 지정
+- 해결 과정을 문서화하고 추적
+- 해결 완료 시 인시던트를 종료하여 이력 관리</p>
+<p><strong>이상 탐지 (Anomaly Detection)</strong>
+- 프로파일러가 수집한 시계열 통계를 기반으로 이상치를 자동 감지
+- 행 수의 급격한 변화, NULL 비율 급증 등을 자동 경고
+- 별도 설정 없이 프로파일러 실행만으로 동작</p>
+<hr />
+<h3 id="3-5-데이터-협업">3-5. 데이터 협업</h3>
+<h4 id="무엇인가_6">무엇인가</h4>
 <p>데이터 자산에 대해 팀원 간 <strong>소통하고, 작업을 요청하며, 변경 사항을 공유</strong>하는 기능이다.</p>
-<h4>왜 필요한가</h4>
+<h4 id="왜-필요한가_6">왜 필요한가</h4>
 <ul>
 <li><strong>컨텍스트 보존</strong>: 데이터에 대한 질문과 답변이 해당 자산에 직접 연결</li>
 <li><strong>작업 추적</strong>: 메타데이터 보강 요청을 체계적으로 관리</li>
 <li><strong>변경 인식</strong>: 데이터 자산의 변경 사항을 관심 있는 사용자에게 자동 통보</li>
 </ul>
-<h4>사용 방법</h4>
-<p><strong>대화 스레드 (Conversations)</strong></p>
-<ul>
-<li>테이블, 컬럼, 대시보드 등 모든 자산에 대화 스레드를 생성</li>
-<li><code>@mention</code>으로 특정 사용자를 태그하여 질문이나 논의</li>
-<li>Markdown 지원, 코드 블록 삽입 가능</li>
-</ul>
-<p><strong>작업 (Tasks)</strong></p>
-<ul>
-<li>설명 요청(Request Description): 빈 설명이 있는 자산에 설명 작성을 요청</li>
-<li>태그 요청(Request Tag): 태그 추가를 요청</li>
-<li>담당자 할당, 기한 설정, 상태(Open/Closed) 관리</li>
-<li>작업 목록을 대시보드에서 한눈에 확인</li>
-</ul>
-<p><strong>공지사항 (Announcements)</strong></p>
-<ul>
-<li>특정 자산에 시간 제한 공지 등록 (예: &quot;이 테이블은 4/15~4/20 마이그레이션 예정&quot;)</li>
-<li>해당 자산을 조회하는 사용자에게 공지가 표시됨</li>
-<li>시작일/종료일 지정으로 자동 노출/숨김</li>
-</ul>
-<p><strong>활동 피드 (Activity Feeds)</strong></p>
-<ul>
-<li>사용자가 팔로우한 자산의 모든 변경 사항을 타임라인으로 표시</li>
-<li>스키마 변경, 태그 추가, 설명 수정, 소유자 변경 등 기록</li>
-<li>개인화된 피드로 관심 영역의 변화만 추적</li>
-</ul>
-<p><strong>팔로우 &amp; 소유자 지정</strong></p>
-<ul>
-<li>자산 팔로우: 변경 알림을 수신</li>
-<li>소유자(Owner) 지정: 데이터 품질과 메타데이터의 책임자 명시</li>
-<li>팀(Team) 단위로도 소유권 설정 가능</li>
-</ul>
-<hr/>
-<h3>3-6. 데이터 인사이트</h3>
-<h4>무엇인가</h4>
+<h4 id="사용-방법_6">사용 방법</h4>
+<p><strong>대화 스레드 (Conversations)</strong>
+- 테이블, 컬럼, 대시보드 등 모든 자산에 대화 스레드를 생성
+- <code>@mention</code>으로 특정 사용자를 태그하여 질문이나 논의
+- Markdown 지원, 코드 블록 삽입 가능</p>
+<p><strong>작업 (Tasks)</strong>
+- 설명 요청(Request Description): 빈 설명이 있는 자산에 설명 작성을 요청
+- 태그 요청(Request Tag): 태그 추가를 요청
+- 담당자 할당, 기한 설정, 상태(Open/Closed) 관리
+- 작업 목록을 대시보드에서 한눈에 확인</p>
+<p><strong>공지사항 (Announcements)</strong>
+- 특정 자산에 시간 제한 공지 등록 (예: "이 테이블은 4/15~4/20 마이그레이션 예정")
+- 해당 자산을 조회하는 사용자에게 공지가 표시됨
+- 시작일/종료일 지정으로 자동 노출/숨김</p>
+<p><strong>활동 피드 (Activity Feeds)</strong>
+- 사용자가 팔로우한 자산의 모든 변경 사항을 타임라인으로 표시
+- 스키마 변경, 태그 추가, 설명 수정, 소유자 변경 등 기록
+- 개인화된 피드로 관심 영역의 변화만 추적</p>
+<p><strong>팔로우 &amp; 소유자 지정</strong>
+- 자산 팔로우: 변경 알림을 수신
+- 소유자(Owner) 지정: 데이터 품질과 메타데이터의 책임자 명시
+- 팀(Team) 단위로도 소유권 설정 가능</p>
+<hr />
+<h3 id="3-6-데이터-인사이트">3-6. 데이터 인사이트</h3>
+<h4 id="무엇인가_7">무엇인가</h4>
 <p>조직의 <strong>메타데이터 건강 상태와 데이터 활용도</strong>를 대시보드로 시각화하는 기능이다.</p>
-<h4>왜 필요한가</h4>
+<h4 id="왜-필요한가_7">왜 필요한가</h4>
 <ul>
 <li><strong>거버넌스 진행 상황 추적</strong>: 설명 커버리지, 태그 적용률 등의 KPI 모니터링</li>
 <li><strong>데이터 문화 측정</strong>: 팀별/사용자별 기여도와 활용 패턴 파악</li>
 <li><strong>개선 우선순위 도출</strong>: 메타데이터가 가장 부족한 영역 식별</li>
 </ul>
-<h4>사용 방법</h4>
-<p><strong>KPI 정의</strong></p>
-<ul>
-<li>설명 커버리지: 설명이 있는 테이블/컬럼 비율 목표 설정 (예: 95%)</li>
-<li>소유자 지정률: 소유자가 배정된 자산 비율</li>
-<li>태그 적용률: 태그가 하나 이상 있는 자산 비율</li>
-<li>기간별 목표 설정 및 달성률 추적</li>
-</ul>
-<p><strong>데이터 자산 통계</strong></p>
-<ul>
-<li>총 자산 수, 유형별 분포</li>
-<li>시간별 자산 증가 추이</li>
-<li>테이블별 크기, 행 수 변화</li>
-</ul>
-<p><strong>활용도 분석</strong></p>
-<ul>
-<li>가장 많이 조회된 테이블/대시보드</li>
-<li>활발하게 사용되는 자산 vs 미사용 자산 식별</li>
-<li>사용자별 활동 통계</li>
-</ul>
-<hr/>
-<h2>4. 커넥터 생태계</h2>
+<h4 id="사용-방법_7">사용 방법</h4>
+<p><strong>KPI 정의</strong>
+- 설명 커버리지: 설명이 있는 테이블/컬럼 비율 목표 설정 (예: 95%)
+- 소유자 지정률: 소유자가 배정된 자산 비율
+- 태그 적용률: 태그가 하나 이상 있는 자산 비율
+- 기간별 목표 설정 및 달성률 추적</p>
+<p><strong>데이터 자산 통계</strong>
+- 총 자산 수, 유형별 분포
+- 시간별 자산 증가 추이
+- 테이블별 크기, 행 수 변화</p>
+<p><strong>활용도 분석</strong>
+- 가장 많이 조회된 테이블/대시보드
+- 활발하게 사용되는 자산 vs 미사용 자산 식별
+- 사용자별 활동 통계</p>
+<hr />
+<h2 id="4-커넥터-생태계">4. 커넥터 생태계</h2>
 <p>OpenMetadata는 다양한 데이터 소스와 도구에 대한 커넥터를 제공한다. 커넥터는 <strong>메타데이터 수집(Ingestion)</strong>, <strong>프로파일링(Profiling)</strong>, <strong>계보 추출(Lineage)</strong>, <strong>품질 테스트(Quality)</strong> 워크플로우를 지원한다.</p>
-<h3>4-1. 데이터베이스</h3>
+<h3 id="4-1-데이터베이스">4-1. 데이터베이스</h3>
 <table>
-<thead><tr><th style="text-align:left">커넥터</th><th style="text-align:center">메타데이터</th><th style="text-align:center">프로파일러</th><th style="text-align:center">계보</th><th style="text-align:center">품질 테스트</th></tr></thead>
+<thead>
+<tr>
+<th>커넥터</th>
+<th style="text-align: center;">메타데이터</th>
+<th style="text-align: center;">프로파일러</th>
+<th style="text-align: center;">계보</th>
+<th style="text-align: center;">품질 테스트</th>
+</tr>
+</thead>
 <tbody>
-<tr><td style="text-align:left">PostgreSQL</td><td style="text-align:center">O</td><td style="text-align:center">O</td><td style="text-align:center">O</td><td style="text-align:center">O</td></tr>
-<tr><td style="text-align:left">MySQL</td><td style="text-align:center">O</td><td style="text-align:center">O</td><td style="text-align:center">O</td><td style="text-align:center">O</td></tr>
-<tr><td style="text-align:left">Snowflake</td><td style="text-align:center">O</td><td style="text-align:center">O</td><td style="text-align:center">O</td><td style="text-align:center">O</td></tr>
-<tr><td style="text-align:left">BigQuery</td><td style="text-align:center">O</td><td style="text-align:center">O</td><td style="text-align:center">O</td><td style="text-align:center">O</td></tr>
-<tr><td style="text-align:left">Redshift</td><td style="text-align:center">O</td><td style="text-align:center">O</td><td style="text-align:center">O</td><td style="text-align:center">O</td></tr>
-<tr><td style="text-align:left">Oracle</td><td style="text-align:center">O</td><td style="text-align:center">O</td><td style="text-align:center">O</td><td style="text-align:center">O</td></tr>
-<tr><td style="text-align:left">MSSQL</td><td style="text-align:center">O</td><td style="text-align:center">O</td><td style="text-align:center">O</td><td style="text-align:center">O</td></tr>
-<tr><td style="text-align:left">ClickHouse</td><td style="text-align:center">O</td><td style="text-align:center">O</td><td style="text-align:center">O</td><td style="text-align:center">O</td></tr>
-<tr><td style="text-align:left">Databricks</td><td style="text-align:center">O</td><td style="text-align:center">O</td><td style="text-align:center">O</td><td style="text-align:center">O</td></tr>
-<tr><td style="text-align:left">Trino / Presto</td><td style="text-align:center">O</td><td style="text-align:center">O</td><td style="text-align:center">O</td><td style="text-align:center">O</td></tr>
-<tr><td style="text-align:left">DynamoDB</td><td style="text-align:center">O</td><td style="text-align:center">-</td><td style="text-align:center">-</td><td style="text-align:center">-</td></tr>
-<tr><td style="text-align:left">MongoDB</td><td style="text-align:center">O</td><td style="text-align:center">-</td><td style="text-align:center">-</td><td style="text-align:center">-</td></tr>
-</tbody></table>
-
-<h3>4-2. 대시보드</h3>
+<tr>
+<td>PostgreSQL</td>
+<td style="text-align: center;">O</td>
+<td style="text-align: center;">O</td>
+<td style="text-align: center;">O</td>
+<td style="text-align: center;">O</td>
+</tr>
+<tr>
+<td>MySQL</td>
+<td style="text-align: center;">O</td>
+<td style="text-align: center;">O</td>
+<td style="text-align: center;">O</td>
+<td style="text-align: center;">O</td>
+</tr>
+<tr>
+<td>Snowflake</td>
+<td style="text-align: center;">O</td>
+<td style="text-align: center;">O</td>
+<td style="text-align: center;">O</td>
+<td style="text-align: center;">O</td>
+</tr>
+<tr>
+<td>BigQuery</td>
+<td style="text-align: center;">O</td>
+<td style="text-align: center;">O</td>
+<td style="text-align: center;">O</td>
+<td style="text-align: center;">O</td>
+</tr>
+<tr>
+<td>Redshift</td>
+<td style="text-align: center;">O</td>
+<td style="text-align: center;">O</td>
+<td style="text-align: center;">O</td>
+<td style="text-align: center;">O</td>
+</tr>
+<tr>
+<td>Oracle</td>
+<td style="text-align: center;">O</td>
+<td style="text-align: center;">O</td>
+<td style="text-align: center;">O</td>
+<td style="text-align: center;">O</td>
+</tr>
+<tr>
+<td>MSSQL</td>
+<td style="text-align: center;">O</td>
+<td style="text-align: center;">O</td>
+<td style="text-align: center;">O</td>
+<td style="text-align: center;">O</td>
+</tr>
+<tr>
+<td>ClickHouse</td>
+<td style="text-align: center;">O</td>
+<td style="text-align: center;">O</td>
+<td style="text-align: center;">O</td>
+<td style="text-align: center;">O</td>
+</tr>
+<tr>
+<td>Databricks</td>
+<td style="text-align: center;">O</td>
+<td style="text-align: center;">O</td>
+<td style="text-align: center;">O</td>
+<td style="text-align: center;">O</td>
+</tr>
+<tr>
+<td>Trino / Presto</td>
+<td style="text-align: center;">O</td>
+<td style="text-align: center;">O</td>
+<td style="text-align: center;">O</td>
+<td style="text-align: center;">O</td>
+</tr>
+<tr>
+<td>DynamoDB</td>
+<td style="text-align: center;">O</td>
+<td style="text-align: center;">-</td>
+<td style="text-align: center;">-</td>
+<td style="text-align: center;">-</td>
+</tr>
+<tr>
+<td>MongoDB</td>
+<td style="text-align: center;">O</td>
+<td style="text-align: center;">-</td>
+<td style="text-align: center;">-</td>
+<td style="text-align: center;">-</td>
+</tr>
+</tbody>
+</table>
+<h3 id="4-2-대시보드">4-2. 대시보드</h3>
 <table>
-<thead><tr><th style="text-align:left">커넥터</th><th style="text-align:center">메타데이터</th><th style="text-align:center">계보</th></tr></thead>
+<thead>
+<tr>
+<th>커넥터</th>
+<th style="text-align: center;">메타데이터</th>
+<th style="text-align: center;">계보</th>
+</tr>
+</thead>
 <tbody>
-<tr><td style="text-align:left">Tableau</td><td style="text-align:center">O</td><td style="text-align:center">O</td></tr>
-<tr><td style="text-align:left">Power BI</td><td style="text-align:center">O</td><td style="text-align:center">O</td></tr>
-<tr><td style="text-align:left">Looker</td><td style="text-align:center">O</td><td style="text-align:center">O</td></tr>
-<tr><td style="text-align:left">Superset</td><td style="text-align:center">O</td><td style="text-align:center">O</td></tr>
-<tr><td style="text-align:left">Metabase</td><td style="text-align:center">O</td><td style="text-align:center">O</td></tr>
-<tr><td style="text-align:left">Grafana</td><td style="text-align:center">O</td><td style="text-align:center">-</td></tr>
-<tr><td style="text-align:left">Redash</td><td style="text-align:center">O</td><td style="text-align:center">-</td></tr>
-<tr><td style="text-align:left">Mode</td><td style="text-align:center">O</td><td style="text-align:center">O</td></tr>
-</tbody></table>
-
-<h3>4-3. 파이프라인</h3>
+<tr>
+<td>Tableau</td>
+<td style="text-align: center;">O</td>
+<td style="text-align: center;">O</td>
+</tr>
+<tr>
+<td>Power BI</td>
+<td style="text-align: center;">O</td>
+<td style="text-align: center;">O</td>
+</tr>
+<tr>
+<td>Looker</td>
+<td style="text-align: center;">O</td>
+<td style="text-align: center;">O</td>
+</tr>
+<tr>
+<td>Superset</td>
+<td style="text-align: center;">O</td>
+<td style="text-align: center;">O</td>
+</tr>
+<tr>
+<td>Metabase</td>
+<td style="text-align: center;">O</td>
+<td style="text-align: center;">O</td>
+</tr>
+<tr>
+<td>Grafana</td>
+<td style="text-align: center;">O</td>
+<td style="text-align: center;">-</td>
+</tr>
+<tr>
+<td>Redash</td>
+<td style="text-align: center;">O</td>
+<td style="text-align: center;">-</td>
+</tr>
+<tr>
+<td>Mode</td>
+<td style="text-align: center;">O</td>
+<td style="text-align: center;">O</td>
+</tr>
+</tbody>
+</table>
+<h3 id="4-3-파이프라인">4-3. 파이프라인</h3>
 <table>
-<thead><tr><th style="text-align:left">커넥터</th><th style="text-align:center">메타데이터</th><th style="text-align:center">계보</th></tr></thead>
+<thead>
+<tr>
+<th>커넥터</th>
+<th style="text-align: center;">메타데이터</th>
+<th style="text-align: center;">계보</th>
+</tr>
+</thead>
 <tbody>
-<tr><td style="text-align:left">Airflow</td><td style="text-align:center">O</td><td style="text-align:center">O</td></tr>
-<tr><td style="text-align:left">dbt</td><td style="text-align:center">O</td><td style="text-align:center">O</td></tr>
-<tr><td style="text-align:left">Dagster</td><td style="text-align:center">O</td><td style="text-align:center">O</td></tr>
-<tr><td style="text-align:left">Databricks Pipeline</td><td style="text-align:center">O</td><td style="text-align:center">O</td></tr>
-<tr><td style="text-align:left">Fivetran</td><td style="text-align:center">O</td><td style="text-align:center">O</td></tr>
-<tr><td style="text-align:left">Airbyte</td><td style="text-align:center">O</td><td style="text-align:center">-</td></tr>
-<tr><td style="text-align:left">NiFi</td><td style="text-align:center">O</td><td style="text-align:center">-</td></tr>
-<tr><td style="text-align:left">Glue</td><td style="text-align:center">O</td><td style="text-align:center">O</td></tr>
-</tbody></table>
-
-<h3>4-4. 메시징</h3>
+<tr>
+<td>Airflow</td>
+<td style="text-align: center;">O</td>
+<td style="text-align: center;">O</td>
+</tr>
+<tr>
+<td>dbt</td>
+<td style="text-align: center;">O</td>
+<td style="text-align: center;">O</td>
+</tr>
+<tr>
+<td>Dagster</td>
+<td style="text-align: center;">O</td>
+<td style="text-align: center;">O</td>
+</tr>
+<tr>
+<td>Databricks Pipeline</td>
+<td style="text-align: center;">O</td>
+<td style="text-align: center;">O</td>
+</tr>
+<tr>
+<td>Fivetran</td>
+<td style="text-align: center;">O</td>
+<td style="text-align: center;">O</td>
+</tr>
+<tr>
+<td>Airbyte</td>
+<td style="text-align: center;">O</td>
+<td style="text-align: center;">-</td>
+</tr>
+<tr>
+<td>NiFi</td>
+<td style="text-align: center;">O</td>
+<td style="text-align: center;">-</td>
+</tr>
+<tr>
+<td>Glue</td>
+<td style="text-align: center;">O</td>
+<td style="text-align: center;">O</td>
+</tr>
+</tbody>
+</table>
+<h3 id="4-4-메시징">4-4. 메시징</h3>
 <table>
-<thead><tr><th style="text-align:left">커넥터</th><th style="text-align:center">메타데이터</th><th style="text-align:center">스키마</th></tr></thead>
+<thead>
+<tr>
+<th>커넥터</th>
+<th style="text-align: center;">메타데이터</th>
+<th style="text-align: center;">스키마</th>
+</tr>
+</thead>
 <tbody>
-<tr><td style="text-align:left">Kafka</td><td style="text-align:center">O</td><td style="text-align:center">O</td></tr>
-<tr><td style="text-align:left">Redpanda</td><td style="text-align:center">O</td><td style="text-align:center">O</td></tr>
-<tr><td style="text-align:left">Kinesis</td><td style="text-align:center">O</td><td style="text-align:center">-</td></tr>
-</tbody></table>
-
-<h3>4-5. ML 모델</h3>
+<tr>
+<td>Kafka</td>
+<td style="text-align: center;">O</td>
+<td style="text-align: center;">O</td>
+</tr>
+<tr>
+<td>Redpanda</td>
+<td style="text-align: center;">O</td>
+<td style="text-align: center;">O</td>
+</tr>
+<tr>
+<td>Kinesis</td>
+<td style="text-align: center;">O</td>
+<td style="text-align: center;">-</td>
+</tr>
+</tbody>
+</table>
+<h3 id="4-5-ml-모델">4-5. ML 모델</h3>
 <table>
-<thead><tr><th style="text-align:left">커넥터</th><th style="text-align:center">메타데이터</th></tr></thead>
+<thead>
+<tr>
+<th>커넥터</th>
+<th style="text-align: center;">메타데이터</th>
+</tr>
+</thead>
 <tbody>
-<tr><td style="text-align:left">MLflow</td><td style="text-align:center">O</td></tr>
-<tr><td style="text-align:left">SageMaker</td><td style="text-align:center">O</td></tr>
-</tbody></table>
-
-<h3>4-6. 스토리지</h3>
+<tr>
+<td>MLflow</td>
+<td style="text-align: center;">O</td>
+</tr>
+<tr>
+<td>SageMaker</td>
+<td style="text-align: center;">O</td>
+</tr>
+</tbody>
+</table>
+<h3 id="4-6-스토리지">4-6. 스토리지</h3>
 <table>
-<thead><tr><th style="text-align:left">커넥터</th><th style="text-align:center">메타데이터</th></tr></thead>
+<thead>
+<tr>
+<th>커넥터</th>
+<th style="text-align: center;">메타데이터</th>
+</tr>
+</thead>
 <tbody>
-<tr><td style="text-align:left">S3</td><td style="text-align:center">O</td></tr>
-<tr><td style="text-align:left">GCS</td><td style="text-align:center">O</td></tr>
-<tr><td style="text-align:left">ADLS</td><td style="text-align:center">O</td></tr>
-</tbody></table>
-
-<h3>4-7. 메타데이터 마이그레이션</h3>
+<tr>
+<td>S3</td>
+<td style="text-align: center;">O</td>
+</tr>
+<tr>
+<td>GCS</td>
+<td style="text-align: center;">O</td>
+</tr>
+<tr>
+<td>ADLS</td>
+<td style="text-align: center;">O</td>
+</tr>
+</tbody>
+</table>
+<h3 id="4-7-메타데이터-마이그레이션">4-7. 메타데이터 마이그레이션</h3>
 <p>기존 메타데이터 카탈로그에서 OpenMetadata로 마이그레이션하는 커넥터:</p>
 <table>
-<thead><tr><th style="text-align:left">커넥터</th><th style="text-align:left">설명</th></tr></thead>
+<thead>
+<tr>
+<th>커넥터</th>
+<th>설명</th>
+</tr>
+</thead>
 <tbody>
-<tr><td style="text-align:left">Alation</td><td style="text-align:left">Alation에서 테이블/컬럼 설명, 태그, 용어집 마이그레이션</td></tr>
-<tr><td style="text-align:left">Atlas</td><td style="text-align:left">Apache Atlas에서 메타데이터 마이그레이션</td></tr>
-<tr><td style="text-align:left">Amundsen</td><td style="text-align:left">Amundsen에서 메타데이터 마이그레이션</td></tr>
-</tbody></table>
-
-<hr/>
-<h2>5. 관리 기능</h2>
-<h3>5-1. 팀 &amp; 사용자</h3>
-<h4>무엇인가</h4>
+<tr>
+<td>Alation</td>
+<td>Alation에서 테이블/컬럼 설명, 태그, 용어집 마이그레이션</td>
+</tr>
+<tr>
+<td>Atlas</td>
+<td>Apache Atlas에서 메타데이터 마이그레이션</td>
+</tr>
+<tr>
+<td>Amundsen</td>
+<td>Amundsen에서 메타데이터 마이그레이션</td>
+</tr>
+</tbody>
+</table>
+<hr />
+<h2 id="5-관리-기능">5. 관리 기능</h2>
+<h3 id="5-1-팀--사용자">5-1. 팀 &amp; 사용자</h3>
+<h4 id="무엇인가_8">무엇인가</h4>
 <p>조직 구조를 반영한 <strong>계층적 팀 구조</strong>와 사용자 관리 기능이다.</p>
-<h4>왜 필요한가</h4>
+<h4 id="왜-필요한가_8">왜 필요한가</h4>
 <ul>
 <li><strong>소유권 관리</strong>: 데이터 자산의 책임 소재를 조직 구조에 맞게 설정</li>
 <li><strong>접근 제어</strong>: 팀/사용자 단위의 권한 관리</li>
 <li><strong>협업</strong>: 팀 단위의 알림, 작업 할당</li>
 </ul>
-<h4>사용 방법</h4>
-<p><strong>계층적 팀 구조</strong></p>
-<ul>
-<li>Organization (최상위) → Business Unit → Division → Department → Group</li>
-<li>각 수준에서 소유자 설정과 정책 적용 가능</li>
-<li>상위 팀의 정책이 하위 팀에 상속</li>
-</ul>
-<p><strong>사용자 관리</strong></p>
-<ul>
-<li>사용자 초대: 이메일 초대 또는 SSO 연동으로 자동 프로비저닝</li>
-<li>프로필: 이름, 이메일, 팀 소속, 역할</li>
-<li>관리자(Admin)가 팀 배정, 역할 변경 가능</li>
-</ul>
-<p><strong>소유권 (Ownership)</strong></p>
-<ul>
-<li>모든 데이터 자산에 소유자(사용자 또는 팀) 지정</li>
-<li>소유자는 해당 자산의 메타데이터 품질, 태그, 설명에 대한 1차 책임</li>
-<li>소유자 미지정 자산을 대시보드에서 식별하여 할당 독려</li>
-</ul>
-<hr/>
-<h3>5-2. 역할 &amp; 정책 (RBAC)</h3>
-<h4>무엇인가</h4>
+<h4 id="사용-방법_8">사용 방법</h4>
+<p><strong>계층적 팀 구조</strong>
+- Organization (최상위) → Business Unit → Division → Department → Group
+- 각 수준에서 소유자 설정과 정책 적용 가능
+- 상위 팀의 정책이 하위 팀에 상속</p>
+<p><strong>사용자 관리</strong>
+- 사용자 초대: 이메일 초대 또는 SSO 연동으로 자동 프로비저닝
+- 프로필: 이름, 이메일, 팀 소속, 역할
+- 관리자(Admin)가 팀 배정, 역할 변경 가능</p>
+<p><strong>소유권 (Ownership)</strong>
+- 모든 데이터 자산에 소유자(사용자 또는 팀) 지정
+- 소유자는 해당 자산의 메타데이터 품질, 태그, 설명에 대한 1차 책임
+- 소유자 미지정 자산을 대시보드에서 식별하여 할당 독려</p>
+<hr />
+<h3 id="5-2-역할--정책-rbac">5-2. 역할 &amp; 정책 (RBAC)</h3>
+<h4 id="무엇인가_9">무엇인가</h4>
 <p><strong>역할 기반 접근 제어(Role-Based Access Control)</strong>로, 사용자의 역할에 따라 데이터 자산과 기능에 대한 접근 권한을 세밀하게 제어한다.</p>
-<h4>왜 필요한가</h4>
+<h4 id="왜-필요한가_9">왜 필요한가</h4>
 <ul>
 <li><strong>최소 권한 원칙</strong>: 각 사용자에게 업무에 필요한 최소한의 권한만 부여</li>
 <li><strong>민감 데이터 보호</strong>: PII, 재무 데이터 등에 대한 접근을 역할별로 제한</li>
 <li><strong>감사 추적</strong>: 누가 어떤 권한으로 접근했는지 기록</li>
 </ul>
-<h4>사용 방법</h4>
+<h4 id="사용-방법_9">사용 방법</h4>
 <p><strong>기본 역할</strong></p>
 <table>
-<thead><tr><th style="text-align:left">역할</th><th style="text-align:left">권한</th><th style="text-align:left">대상 사용자</th></tr></thead>
+<thead>
+<tr>
+<th>역할</th>
+<th>권한</th>
+<th>대상 사용자</th>
+</tr>
+</thead>
 <tbody>
-<tr><td style="text-align:left">Admin</td><td style="text-align:left">모든 자산과 설정에 대한 전체 권한</td><td style="text-align:left">시스템 관리자</td></tr>
-<tr><td style="text-align:left">Data Steward</td><td style="text-align:left">메타데이터 편집, 용어집/태그 관리, 품질 테스트 설정</td><td style="text-align:left">데이터 거버넌스 담당자</td></tr>
-<tr><td style="text-align:left">Data Consumer</td><td style="text-align:left">읽기 전용, 대화/작업 참여</td><td style="text-align:left">일반 분석가, 개발자</td></tr>
-</tbody></table>
-
-<p><strong>커스텀 역할 생성</strong></p>
-<ul>
-<li>기본 역할 외에 조직에 맞는 커스텀 역할 정의 가능</li>
-<li>예: <code>NL2SQL Operator</code> — Gold 레이어 테이블만 조회 가능</li>
-</ul>
+<tr>
+<td>Admin</td>
+<td>모든 자산과 설정에 대한 전체 권한</td>
+<td>시스템 관리자</td>
+</tr>
+<tr>
+<td>Data Steward</td>
+<td>메타데이터 편집, 용어집/태그 관리, 품질 테스트 설정</td>
+<td>데이터 거버넌스 담당자</td>
+</tr>
+<tr>
+<td>Data Consumer</td>
+<td>읽기 전용, 대화/작업 참여</td>
+<td>일반 분석가, 개발자</td>
+</tr>
+</tbody>
+</table>
+<p><strong>커스텀 역할 생성</strong>
+- 기본 역할 외에 조직에 맞는 커스텀 역할 정의 가능
+- 예: <code>NL2SQL Operator</code> — Gold 레이어 테이블만 조회 가능</p>
 <p><strong>정책 (Policy) 기반 세분화된 접근 제어</strong></p>
 <div class="mermaid">
 graph TB
@@ -690,117 +1307,128 @@ graph TB
     style R fill:#bbdefb
     style P fill:#c8e6c9
 </div>
+
 <ul>
 <li>정책은 <strong>규칙(Rule)</strong>의 집합</li>
 <li>각 규칙: 리소스(table, topic, ...) + 동작(view, edit, delete, ...) + 조건(태그, 소유자, ...) + 효과(allow/deny)</li>
 <li>정책을 역할에 연결하여 적용</li>
 </ul>
-<p><strong>리소스 레벨 권한 설정</strong></p>
-<ul>
-<li>개별 테이블, 파이프라인, 대시보드 단위로 세밀한 권한 설정</li>
-<li>태그 기반 조건으로 동적 권한 부여 (예: <code>Tier.Tier1</code> 자산은 Admin만 수정 가능)</li>
-</ul>
-<hr/>
-<h3>5-3. 봇 &amp; API</h3>
-<h4>무엇인가</h4>
+<p><strong>리소스 레벨 권한 설정</strong>
+- 개별 테이블, 파이프라인, 대시보드 단위로 세밀한 권한 설정
+- 태그 기반 조건으로 동적 권한 부여 (예: <code>Tier.Tier1</code> 자산은 Admin만 수정 가능)</p>
+<hr />
+<h3 id="5-3-봇--api">5-3. 봇 &amp; API</h3>
+<h4 id="무엇인가_10">무엇인가</h4>
 <p><strong>서비스 계정(Bot)</strong>을 통해 자동화 스크립트, 외부 도구가 OpenMetadata API에 접근하도록 하는 기능이다.</p>
-<h4>왜 필요한가</h4>
+<h4 id="왜-필요한가_10">왜 필요한가</h4>
 <ul>
 <li><strong>자동화</strong>: CI/CD 파이프라인, DAG에서 메타데이터를 프로그래밍 방식으로 관리</li>
 <li><strong>외부 연동</strong>: Wren AI, dbt, 커스텀 도구 등과 메타데이터 동기화</li>
 <li><strong>보안</strong>: 사용자 계정이 아닌 전용 서비스 계정으로 API 접근</li>
 </ul>
-<h4>사용 방법</h4>
-<p><strong>서비스 계정 (Bot)</strong></p>
-<ul>
-<li><code>ingestion-bot</code>: 기본 제공되는 수집용 봇 (메타데이터 수집 워크플로우에 사용)</li>
-<li>커스텀 봇 생성 가능: 특정 용도에 맞는 최소 권한 봇</li>
-<li>각 봇에 역할/정책 할당으로 접근 범위 제한</li>
-</ul>
-<p><strong>JWT 인증</strong></p>
-<ul>
-<li>봇 계정에 JWT 토큰을 발급하여 API 인증</li>
-<li>토큰은 <code>.env</code> 파일 또는 시크릿 관리 시스템에서 주입</li>
-<li>토큰 만료/갱신 관리</li>
-</ul>
-<p><strong>REST API (전체 CRUD)</strong></p>
-<ul>
-<li>모든 엔티티에 대한 CRUD 엔드포인트 제공</li>
-<li>Swagger UI로 API 문서 확인: <code>http://&lt;host&gt;:8585/swagger.html</code></li>
-</ul>
+<h4 id="사용-방법_10">사용 방법</h4>
+<p><strong>서비스 계정 (Bot)</strong>
+- <code>ingestion-bot</code>: 기본 제공되는 수집용 봇 (메타데이터 수집 워크플로우에 사용)
+- 커스텀 봇 생성 가능: 특정 용도에 맞는 최소 권한 봇
+- 각 봇에 역할/정책 할당으로 접근 범위 제한</p>
+<p><strong>JWT 인증</strong>
+- 봇 계정에 JWT 토큰을 발급하여 API 인증
+- 토큰은 <code>.env</code> 파일 또는 시크릿 관리 시스템에서 주입
+- 토큰 만료/갱신 관리</p>
+<p><strong>REST API (전체 CRUD)</strong>
+- 모든 엔티티에 대한 CRUD 엔드포인트 제공
+- Swagger UI로 API 문서 확인: <code>http://&lt;host&gt;:8585/swagger.html</code></p>
 <p><strong>Python SDK</strong></p>
-<pre><code class="language-python">from metadata.ingestion.ometa.ometa_api import OpenMetadata
-from metadata.generated.schema.entity.services.connections.metadata.openMetadataConnection import (
-    OpenMetadataConnection,
-)
+<div class="codehilite"><pre><span></span><code><span class="kn">from</span><span class="w"> </span><span class="nn">metadata.ingestion.ometa.ometa_api</span><span class="w"> </span><span class="kn">import</span> <span class="n">OpenMetadata</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">metadata.generated.schema.entity.services.connections.metadata.openMetadataConnection</span><span class="w"> </span><span class="kn">import</span> <span class="p">(</span>
+    <span class="n">OpenMetadataConnection</span><span class="p">,</span>
+<span class="p">)</span>
 
-server_config = OpenMetadataConnection(
-    hostPort=&quot;http://localhost:8585/api&quot;,
-    authProvider=&quot;openmetadata&quot;,
-    securityConfig={&quot;jwtToken&quot;: &quot;&lt;bot-jwt-token&gt;&quot;},
-)
-metadata = OpenMetadata(server_config)
+<span class="n">server_config</span> <span class="o">=</span> <span class="n">OpenMetadataConnection</span><span class="p">(</span>
+    <span class="n">hostPort</span><span class="o">=</span><span class="s2">&quot;http://localhost:8585/api&quot;</span><span class="p">,</span>
+    <span class="n">authProvider</span><span class="o">=</span><span class="s2">&quot;openmetadata&quot;</span><span class="p">,</span>
+    <span class="n">securityConfig</span><span class="o">=</span><span class="p">{</span><span class="s2">&quot;jwtToken&quot;</span><span class="p">:</span> <span class="s2">&quot;&lt;bot-jwt-token&gt;&quot;</span><span class="p">},</span>
+<span class="p">)</span>
+<span class="n">metadata</span> <span class="o">=</span> <span class="n">OpenMetadata</span><span class="p">(</span><span class="n">server_config</span><span class="p">)</span>
 
-# 테이블 조회
-table = metadata.get_by_name(entity=Table, fqn=&quot;bip-postgres.stockdb.public.stock_info&quot;)
+<span class="c1"># 테이블 조회</span>
+<span class="n">table</span> <span class="o">=</span> <span class="n">metadata</span><span class="o">.</span><span class="n">get_by_name</span><span class="p">(</span><span class="n">entity</span><span class="o">=</span><span class="n">Table</span><span class="p">,</span> <span class="n">fqn</span><span class="o">=</span><span class="s2">&quot;bip-postgres.stockdb.public.stock_info&quot;</span><span class="p">)</span>
 
-# 설명 업데이트
-metadata.patch_description(entity=Table, source=table, description=&quot;종목 마스터 테이블&quot;)</code></pre>
-<hr/>
-<h3>5-4. 알림 설정</h3>
-<h4>무엇인가</h4>
+<span class="c1"># 설명 업데이트</span>
+<span class="n">metadata</span><span class="o">.</span><span class="n">patch_description</span><span class="p">(</span><span class="n">entity</span><span class="o">=</span><span class="n">Table</span><span class="p">,</span> <span class="n">source</span><span class="o">=</span><span class="n">table</span><span class="p">,</span> <span class="n">description</span><span class="o">=</span><span class="s2">&quot;종목 마스터 테이블&quot;</span><span class="p">)</span>
+</code></pre></div>
+
+<hr />
+<h3 id="5-4-알림-설정">5-4. 알림 설정</h3>
+<h4 id="무엇인가_11">무엇인가</h4>
 <p>데이터 자산의 <strong>변경 이벤트를 감지하여 외부 채널로 알림</strong>을 보내는 기능이다.</p>
-<h4>왜 필요한가</h4>
+<h4 id="왜-필요한가_11">왜 필요한가</h4>
 <ul>
 <li><strong>변경 인식</strong>: 스키마 변경, 소유자 변경, 품질 테스트 실패 등을 즉시 인지</li>
 <li><strong>사고 대응 시간 단축</strong>: 데이터 품질 이슈 발생 시 빠른 알림으로 MTTR 감소</li>
 <li><strong>거버넌스 자동화</strong>: 특정 이벤트 발생 시 자동으로 관련자에게 통지</li>
 </ul>
-<h4>사용 방법</h4>
+<h4 id="사용-방법_11">사용 방법</h4>
 <p><strong>연동 채널</strong></p>
 <table>
-<thead><tr><th style="text-align:left">채널</th><th style="text-align:left">설정 방법</th></tr></thead>
+<thead>
+<tr>
+<th>채널</th>
+<th>설정 방법</th>
+</tr>
+</thead>
 <tbody>
-<tr><td style="text-align:left">Slack</td><td style="text-align:left">Webhook URL 등록, 채널 지정</td></tr>
-<tr><td style="text-align:left">MS Teams</td><td style="text-align:left">Webhook URL 등록</td></tr>
-<tr><td style="text-align:left">Email</td><td style="text-align:left">SMTP 설정</td></tr>
-<tr><td style="text-align:left">Webhook</td><td style="text-align:left">커스텀 HTTP 엔드포인트</td></tr>
-<tr><td style="text-align:left">Google Chat</td><td style="text-align:left">Webhook URL 등록</td></tr>
-</tbody></table>
-
+<tr>
+<td>Slack</td>
+<td>Webhook URL 등록, 채널 지정</td>
+</tr>
+<tr>
+<td>MS Teams</td>
+<td>Webhook URL 등록</td>
+</tr>
+<tr>
+<td>Email</td>
+<td>SMTP 설정</td>
+</tr>
+<tr>
+<td>Webhook</td>
+<td>커스텀 HTTP 엔드포인트</td>
+</tr>
+<tr>
+<td>Google Chat</td>
+<td>Webhook URL 등록</td>
+</tr>
+</tbody>
+</table>
 <p><strong>이벤트 기반 알림</strong></p>
-<p>감지 가능한 이벤트 유형:</p>
-<ul>
-<li>스키마 변경 (컬럼 추가/삭제/타입 변경)</li>
-<li>소유자 변경</li>
-<li>태그/용어 변경</li>
-<li>품질 테스트 실패</li>
-<li>파이프라인 상태 변경</li>
-<li>대화/작업 멘션</li>
-</ul>
-<p>필터 설정:</p>
-<ul>
-<li>특정 서비스, 테이블, 파이프라인에 대해서만 알림</li>
-<li>이벤트 유형별 필터링</li>
-<li>소유자/팀 기반 알림 라우팅</li>
-</ul>
-<hr/>
-<h2>6. 배포 옵션</h2>
-<h3>Docker Compose (개발/PoC)</h3>
+<p>감지 가능한 이벤트 유형:
+- 스키마 변경 (컬럼 추가/삭제/타입 변경)
+- 소유자 변경
+- 태그/용어 변경
+- 품질 테스트 실패
+- 파이프라인 상태 변경
+- 대화/작업 멘션</p>
+<p>필터 설정:
+- 특정 서비스, 테이블, 파이프라인에 대해서만 알림
+- 이벤트 유형별 필터링
+- 소유자/팀 기반 알림 라우팅</p>
+<hr />
+<h2 id="6-배포-옵션">6. 배포 옵션</h2>
+<h3 id="docker-compose-개발poc">Docker Compose (개발/PoC)</h3>
 <p><strong>용도</strong>: 로컬 개발, 기능 평가, PoC</p>
-<pre><code class="language-bash"># 최신 버전 실행
-python -m pip install openmetadata-ingestion[docker]
-metadata docker --start</code></pre>
-<p>구성 요소:</p>
-<ul>
-<li>openmetadata-server: API 서버 (8585 포트)</li>
-<li>openmetadata-ingestion: 수집 프레임워크</li>
-<li>mysql / postgresql: 메타데이터 저장소</li>
-<li>elasticsearch: 검색 엔진</li>
-</ul>
-<p>장점: 빠른 시작, 단일 명령으로 전체 스택 실행</p>
-<p>단점: 고가용성/확장성 미지원, 프로덕션 비권장</p>
-<h3>Kubernetes (프로덕션)</h3>
+<div class="codehilite"><pre><span></span><code><span class="c1"># 최신 버전 실행</span>
+python<span class="w"> </span>-m<span class="w"> </span>pip<span class="w"> </span>install<span class="w"> </span>openmetadata-ingestion<span class="o">[</span>docker<span class="o">]</span>
+metadata<span class="w"> </span>docker<span class="w"> </span>--start
+</code></pre></div>
+
+<p>구성 요소:
+- openmetadata-server: API 서버 (8585 포트)
+- openmetadata-ingestion: 수집 프레임워크
+- mysql / postgresql: 메타데이터 저장소
+- elasticsearch: 검색 엔진</p>
+<p>장점: 빠른 시작, 단일 명령으로 전체 스택 실행
+단점: 고가용성/확장성 미지원, 프로덕션 비권장</p>
+<h3 id="kubernetes-프로덕션">Kubernetes (프로덕션)</h3>
 <p><strong>용도</strong>: 프로덕션 환경, 고가용성 필요 시</p>
 <ul>
 <li>Helm Chart 제공: <code>open-metadata/openmetadata</code></li>
@@ -809,106 +1437,214 @@ metadata docker --start</code></pre>
 <li>수평 확장, 롤링 업데이트 지원</li>
 <li>Airflow 연동 옵션: 내장 Airflow 또는 외부 Airflow 사용</li>
 </ul>
-<h3>Collate (관리형 SaaS)</h3>
+<h3 id="collate-관리형-saas">Collate (관리형 SaaS)</h3>
 <p><strong>용도</strong>: 운영 부담 최소화, 엔터프라이즈 기능 필요 시</p>
 <ul>
 <li>OpenMetadata 팀이 운영하는 관리형 서비스</li>
 <li>자동 업그레이드, 백업, 모니터링 포함</li>
 <li>추가 엔터프라이즈 기능: SSO, 세분화된 RBAC, 감사 로그 강화</li>
 </ul>
-<hr/>
-<h2>7. API</h2>
-<h3>REST API 엔드포인트 개요</h3>
+<hr />
+<h2 id="7-api">7. API</h2>
+<h3 id="rest-api-엔드포인트-개요">REST API 엔드포인트 개요</h3>
 <p>OpenMetadata는 모든 엔티티에 대해 일관된 REST API를 제공한다.</p>
 <table>
-<thead><tr><th style="text-align:left">엔드포인트</th><th style="text-align:left">설명</th></tr></thead>
+<thead>
+<tr>
+<th>엔드포인트</th>
+<th>설명</th>
+</tr>
+</thead>
 <tbody>
-<tr><td style="text-align:left"><code>GET /api/v1/tables</code></td><td style="text-align:left">테이블 목록 조회</td></tr>
-<tr><td style="text-align:left"><code>GET /api/v1/tables/name/{fqn}</code></td><td style="text-align:left">FQN으로 테이블 조회</td></tr>
-<tr><td style="text-align:left"><code>PATCH /api/v1/tables/{id}</code></td><td style="text-align:left">테이블 메타데이터 수정 (JSON Patch)</td></tr>
-<tr><td style="text-align:left"><code>PUT /api/v1/tags</code></td><td style="text-align:left">태그 생성/수정</td></tr>
-<tr><td style="text-align:left"><code>GET /api/v1/glossaries</code></td><td style="text-align:left">용어집 목록 조회</td></tr>
-<tr><td style="text-align:left"><code>PUT /api/v1/glossaryTerms</code></td><td style="text-align:left">용어 생성/수정</td></tr>
-<tr><td style="text-align:left"><code>PUT /api/v1/lineage</code></td><td style="text-align:left">계보 엣지 추가</td></tr>
-<tr><td style="text-align:left"><code>GET /api/v1/lineage/{entity}/{fqn}</code></td><td style="text-align:left">계보 조회</td></tr>
-<tr><td style="text-align:left"><code>GET /api/v1/services/databaseServices</code></td><td style="text-align:left">데이터베이스 서비스 목록</td></tr>
-<tr><td style="text-align:left"><code>GET /api/v1/search/query</code></td><td style="text-align:left">통합 검색</td></tr>
-<tr><td style="text-align:left"><code>GET /api/v1/feed</code></td><td style="text-align:left">활동 피드 조회</td></tr>
-<tr><td style="text-align:left"><code>PUT /api/v1/dataQuality/testCases</code></td><td style="text-align:left">품질 테스트 케이스 생성</td></tr>
-</tbody></table>
-
-<h3>인증 방식</h3>
+<tr>
+<td><code>GET /api/v1/tables</code></td>
+<td>테이블 목록 조회</td>
+</tr>
+<tr>
+<td><code>GET /api/v1/tables/name/{fqn}</code></td>
+<td>FQN으로 테이블 조회</td>
+</tr>
+<tr>
+<td><code>PATCH /api/v1/tables/{id}</code></td>
+<td>테이블 메타데이터 수정 (JSON Patch)</td>
+</tr>
+<tr>
+<td><code>PUT /api/v1/tags</code></td>
+<td>태그 생성/수정</td>
+</tr>
+<tr>
+<td><code>GET /api/v1/glossaries</code></td>
+<td>용어집 목록 조회</td>
+</tr>
+<tr>
+<td><code>PUT /api/v1/glossaryTerms</code></td>
+<td>용어 생성/수정</td>
+</tr>
+<tr>
+<td><code>PUT /api/v1/lineage</code></td>
+<td>계보 엣지 추가</td>
+</tr>
+<tr>
+<td><code>GET /api/v1/lineage/{entity}/{fqn}</code></td>
+<td>계보 조회</td>
+</tr>
+<tr>
+<td><code>GET /api/v1/services/databaseServices</code></td>
+<td>데이터베이스 서비스 목록</td>
+</tr>
+<tr>
+<td><code>GET /api/v1/search/query</code></td>
+<td>통합 검색</td>
+</tr>
+<tr>
+<td><code>GET /api/v1/feed</code></td>
+<td>활동 피드 조회</td>
+</tr>
+<tr>
+<td><code>PUT /api/v1/dataQuality/testCases</code></td>
+<td>품질 테스트 케이스 생성</td>
+</tr>
+</tbody>
+</table>
+<h3 id="인증-방식">인증 방식</h3>
 <table>
-<thead><tr><th style="text-align:left">방식</th><th style="text-align:left">설명</th><th style="text-align:left">용도</th></tr></thead>
+<thead>
+<tr>
+<th>방식</th>
+<th>설명</th>
+<th>용도</th>
+</tr>
+</thead>
 <tbody>
-<tr><td style="text-align:left">JWT</td><td style="text-align:left">봇 계정에 JWT 토큰 발급</td><td style="text-align:left">자동화 스크립트, 수집 워크플로우</td></tr>
-<tr><td style="text-align:left">SSO</td><td style="text-align:left">Google, Azure AD, Okta, Auth0 등</td><td style="text-align:left">사용자 로그인</td></tr>
-<tr><td style="text-align:left">Basic Auth</td><td style="text-align:left">사용자명/비밀번호</td><td style="text-align:left">개발 환경 (비권장)</td></tr>
-</tbody></table>
-
-<h3>Python SDK 사용법</h3>
+<tr>
+<td>JWT</td>
+<td>봇 계정에 JWT 토큰 발급</td>
+<td>자동화 스크립트, 수집 워크플로우</td>
+</tr>
+<tr>
+<td>SSO</td>
+<td>Google, Azure AD, Okta, Auth0 등</td>
+<td>사용자 로그인</td>
+</tr>
+<tr>
+<td>Basic Auth</td>
+<td>사용자명/비밀번호</td>
+<td>개발 환경 (비권장)</td>
+</tr>
+</tbody>
+</table>
+<h3 id="python-sdk-사용법">Python SDK 사용법</h3>
 <p><code>openmetadata-ingestion</code> 패키지는 REST API의 Python 래퍼를 제공한다.</p>
 <p><strong>설치</strong></p>
-<pre><code class="language-bash">pip install openmetadata-ingestion</code></pre>
+<div class="codehilite"><pre><span></span><code>pip<span class="w"> </span>install<span class="w"> </span>openmetadata-ingestion
+</code></pre></div>
+
 <p><strong>기본 사용법</strong></p>
-<pre><code class="language-python">from metadata.ingestion.ometa.ometa_api import OpenMetadata
-from metadata.generated.schema.entity.data.table import Table
-from metadata.generated.schema.type.tagLabel import TagLabel
+<div class="codehilite"><pre><span></span><code><span class="kn">from</span><span class="w"> </span><span class="nn">metadata.ingestion.ometa.ometa_api</span><span class="w"> </span><span class="kn">import</span> <span class="n">OpenMetadata</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">metadata.generated.schema.entity.data.table</span><span class="w"> </span><span class="kn">import</span> <span class="n">Table</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">metadata.generated.schema.type.tagLabel</span><span class="w"> </span><span class="kn">import</span> <span class="n">TagLabel</span>
 
-# 연결 설정
-metadata = OpenMetadata(server_config)
+<span class="c1"># 연결 설정</span>
+<span class="n">metadata</span> <span class="o">=</span> <span class="n">OpenMetadata</span><span class="p">(</span><span class="n">server_config</span><span class="p">)</span>
 
-# 테이블 조회
-table = metadata.get_by_name(entity=Table, fqn=&quot;bip-postgres.stockdb.public.stock_info&quot;)
+<span class="c1"># 테이블 조회</span>
+<span class="n">table</span> <span class="o">=</span> <span class="n">metadata</span><span class="o">.</span><span class="n">get_by_name</span><span class="p">(</span><span class="n">entity</span><span class="o">=</span><span class="n">Table</span><span class="p">,</span> <span class="n">fqn</span><span class="o">=</span><span class="s2">&quot;bip-postgres.stockdb.public.stock_info&quot;</span><span class="p">)</span>
 
-# 테이블 목록
-tables = metadata.list_entities(entity=Table, limit=100)
+<span class="c1"># 테이블 목록</span>
+<span class="n">tables</span> <span class="o">=</span> <span class="n">metadata</span><span class="o">.</span><span class="n">list_entities</span><span class="p">(</span><span class="n">entity</span><span class="o">=</span><span class="n">Table</span><span class="p">,</span> <span class="n">limit</span><span class="o">=</span><span class="mi">100</span><span class="p">)</span>
 
-# 태그 추가
-metadata.patch_tag(entity=Table, source=table, tag_label=TagLabel(
-    tagFQN=&quot;DataLayer.gold&quot;,
-    source=&quot;Classification&quot;,
-))
+<span class="c1"># 태그 추가</span>
+<span class="n">metadata</span><span class="o">.</span><span class="n">patch_tag</span><span class="p">(</span><span class="n">entity</span><span class="o">=</span><span class="n">Table</span><span class="p">,</span> <span class="n">source</span><span class="o">=</span><span class="n">table</span><span class="p">,</span> <span class="n">tag_label</span><span class="o">=</span><span class="n">TagLabel</span><span class="p">(</span>
+    <span class="n">tagFQN</span><span class="o">=</span><span class="s2">&quot;DataLayer.gold&quot;</span><span class="p">,</span>
+    <span class="n">source</span><span class="o">=</span><span class="s2">&quot;Classification&quot;</span><span class="p">,</span>
+<span class="p">))</span>
 
-# 계보 추가
-from metadata.generated.schema.api.lineage.addLineage import AddLineageRequest
-metadata.add_lineage(AddLineageRequest(edge=...))</code></pre>
+<span class="c1"># 계보 추가</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">metadata.generated.schema.api.lineage.addLineage</span><span class="w"> </span><span class="kn">import</span> <span class="n">AddLineageRequest</span>
+<span class="n">metadata</span><span class="o">.</span><span class="n">add_lineage</span><span class="p">(</span><span class="n">AddLineageRequest</span><span class="p">(</span><span class="n">edge</span><span class="o">=...</span><span class="p">))</span>
+</code></pre></div>
+
 <p><strong>수집 워크플로우 프로그래밍 실행</strong></p>
-<pre><code class="language-python">from metadata.workflow.metadata import MetadataWorkflow
+<div class="codehilite"><pre><span></span><code><span class="kn">from</span><span class="w"> </span><span class="nn">metadata.workflow.metadata</span><span class="w"> </span><span class="kn">import</span> <span class="n">MetadataWorkflow</span>
 
-config = {
-    &quot;source&quot;: {&quot;type&quot;: &quot;postgres&quot;, &quot;serviceName&quot;: &quot;bip-postgres&quot;, ...},
-    &quot;sink&quot;: {&quot;type&quot;: &quot;metadata-rest&quot;, &quot;config&quot;: {}},
-    &quot;workflowConfig&quot;: {&quot;openMetadataServerConfig&quot;: {...}},
-}
-workflow = MetadataWorkflow.create(config)
-workflow.execute()
-workflow.print_status()</code></pre>
-<hr/>
-<h2>8. BIP-Pipeline에서의 활용 현황</h2>
+<span class="n">config</span> <span class="o">=</span> <span class="p">{</span>
+    <span class="s2">&quot;source&quot;</span><span class="p">:</span> <span class="p">{</span><span class="s2">&quot;type&quot;</span><span class="p">:</span> <span class="s2">&quot;postgres&quot;</span><span class="p">,</span> <span class="s2">&quot;serviceName&quot;</span><span class="p">:</span> <span class="s2">&quot;bip-postgres&quot;</span><span class="p">,</span> <span class="o">...</span><span class="p">},</span>
+    <span class="s2">&quot;sink&quot;</span><span class="p">:</span> <span class="p">{</span><span class="s2">&quot;type&quot;</span><span class="p">:</span> <span class="s2">&quot;metadata-rest&quot;</span><span class="p">,</span> <span class="s2">&quot;config&quot;</span><span class="p">:</span> <span class="p">{}},</span>
+    <span class="s2">&quot;workflowConfig&quot;</span><span class="p">:</span> <span class="p">{</span><span class="s2">&quot;openMetadataServerConfig&quot;</span><span class="p">:</span> <span class="p">{</span><span class="o">...</span><span class="p">}},</span>
+<span class="p">}</span>
+<span class="n">workflow</span> <span class="o">=</span> <span class="n">MetadataWorkflow</span><span class="o">.</span><span class="n">create</span><span class="p">(</span><span class="n">config</span><span class="p">)</span>
+<span class="n">workflow</span><span class="o">.</span><span class="n">execute</span><span class="p">()</span>
+<span class="n">workflow</span><span class="o">.</span><span class="n">print_status</span><span class="p">()</span>
+</code></pre></div>
+
+<hr />
+<h2 id="8-bip-pipeline에서의-활용-현황">8. BIP-Pipeline에서의 활용 현황</h2>
 <p>BIP-Pipeline 프로젝트에서 OpenMetadata는 <strong>메타데이터의 단일 진실 원천(SSOT)</strong>으로 운용되고 있다. 메타데이터 편집은 OM에서만 수행하며, DB COMMENT와 Wren AI 모델은 파생본으로 자동 동기화된다.</p>
-<h3>인프라 구성</h3>
+<h3 id="인프라-구성">인프라 구성</h3>
 <table>
-<thead><tr><th style="text-align:left">항목</th><th style="text-align:left">값</th></tr></thead>
+<thead>
+<tr>
+<th>항목</th>
+<th>값</th>
+</tr>
+</thead>
 <tbody>
-<tr><td style="text-align:left">서버 주소</td><td style="text-align:left"><code>http://localhost:8585</code> (도커 네트워크: <code>http://openmetadata-server:8585</code>)</td></tr>
-<tr><td style="text-align:left">데이터베이스 서비스</td><td style="text-align:left"><code>bip-postgres</code> (PostgreSQL, <code>stockdb</code>)</td></tr>
-<tr><td style="text-align:left">파이프라인 서비스</td><td style="text-align:left"><code>bip-airflow</code> (Airflow)</td></tr>
-<tr><td style="text-align:left">인증</td><td style="text-align:left"><code>ingestion-bot</code> JWT 토큰 (<code>OM_BOT_TOKEN</code>)</td></tr>
-</tbody></table>
-
-<h3>등록된 자산 규모</h3>
+<tr>
+<td>서버 주소</td>
+<td><code>http://localhost:8585</code> (도커 네트워크: <code>http://openmetadata-server:8585</code>)</td>
+</tr>
+<tr>
+<td>데이터베이스 서비스</td>
+<td><code>bip-postgres</code> (PostgreSQL, <code>stockdb</code>)</td>
+</tr>
+<tr>
+<td>파이프라인 서비스</td>
+<td><code>bip-airflow</code> (Airflow)</td>
+</tr>
+<tr>
+<td>인증</td>
+<td><code>ingestion-bot</code> JWT 토큰 (<code>OM_BOT_TOKEN</code>)</td>
+</tr>
+</tbody>
+</table>
+<h3 id="등록된-자산-규모">등록된 자산 규모</h3>
 <table>
-<thead><tr><th style="text-align:left">자산 유형</th><th style="text-align:left">수량</th><th style="text-align:left">설명</th></tr></thead>
+<thead>
+<tr>
+<th>자산 유형</th>
+<th>수량</th>
+<th>설명</th>
+</tr>
+</thead>
 <tbody>
-<tr><td style="text-align:left">테이블</td><td style="text-align:left">39개</td><td style="text-align:left">Raw/Derived/Gold/Application 레이어</td></tr>
-<tr><td style="text-align:left">용어집 용어</td><td style="text-align:left">77개</td><td style="text-align:left">투자 용어, 매크로 경제 용어 등</td></tr>
-<tr><td style="text-align:left">API 엔드포인트</td><td style="text-align:left">14개</td><td style="text-align:left">외부 데이터 소스 (Naver, DART, Yahoo 등)</td></tr>
-<tr><td style="text-align:left">파이프라인 (DAG)</td><td style="text-align:left">43개</td><td style="text-align:left">Airflow DAG 전체 등록</td></tr>
-<tr><td style="text-align:left">태그 분류</td><td style="text-align:left">2개</td><td style="text-align:left"><code>DataLayer</code> (raw/derived/gold), <code>Domain</code> (market/financial 등)</td></tr>
-</tbody></table>
-
-<h3>메타데이터 동기화 흐름</h3>
+<tr>
+<td>테이블</td>
+<td>39개</td>
+<td>Raw/Derived/Gold/Application 레이어</td>
+</tr>
+<tr>
+<td>용어집 용어</td>
+<td>77개</td>
+<td>투자 용어, 매크로 경제 용어 등</td>
+</tr>
+<tr>
+<td>API 엔드포인트</td>
+<td>14개</td>
+<td>외부 데이터 소스 (Naver, DART, Yahoo 등)</td>
+</tr>
+<tr>
+<td>파이프라인 (DAG)</td>
+<td>43개</td>
+<td>Airflow DAG 전체 등록</td>
+</tr>
+<tr>
+<td>태그 분류</td>
+<td>2개</td>
+<td><code>DataLayer</code> (raw/derived/gold), <code>Domain</code> (market/financial 등)</td>
+</tr>
+</tbody>
+</table>
+<h3 id="메타데이터-동기화-흐름">메타데이터 동기화 흐름</h3>
 <div class="mermaid">
 graph LR
     OM["OpenMetadata<br/>(원천)"]
@@ -926,11 +1662,12 @@ graph LR
 
     style OM fill:#fff3e0,stroke:#e65100
 </div>
+
 <ul>
 <li><strong><code>om_sync_comments.py</code></strong>: OM의 테이블/컬럼 설명을 PostgreSQL의 <code>COMMENT ON</code> 구문으로 동기화</li>
 <li><strong><code>om_sync_wrenai.py</code></strong>: OM의 설명을 Wren AI의 모델 description에 반영하고 재배포(Deploy)</li>
 </ul>
-<h3>전체 Lineage 체계</h3>
+<h3 id="전체-lineage-체계">전체 Lineage 체계</h3>
 <p>외부 API에서 최종 소비자까지의 전체 데이터 계보가 OM에 등록되어 있다.</p>
 <div class="mermaid">
 graph LR
@@ -982,23 +1719,36 @@ graph LR
 
     style T5 fill:#c8e6c9
 </div>
-<p>리니지 등록 방식:</p>
-<ul>
-<li><strong>자동</strong>: Airflow 커넥터가 DAG 정의를 파싱하여 파이프라인-테이블 간 계보 생성</li>
-<li><strong>프로그래밍</strong>: <code>utils/lineage.py</code>의 <code>register_table_lineage_async()</code> 함수로 DAG 코드 내에서 계보 등록</li>
-<li><strong>외부 소스</strong>: <code>scripts/om_register_data_sources.py</code>로 apiEndpoint → DAG 계보 엣지 생성</li>
-</ul>
-<h3>커넥터 설정 파일</h3>
+
+<p>리니지 등록 방식:
+- <strong>자동</strong>: Airflow 커넥터가 DAG 정의를 파싱하여 파이프라인-테이블 간 계보 생성
+- <strong>프로그래밍</strong>: <code>utils/lineage.py</code>의 <code>register_table_lineage_async()</code> 함수로 DAG 코드 내에서 계보 등록
+- <strong>외부 소스</strong>: <code>scripts/om_register_data_sources.py</code>로 apiEndpoint → DAG 계보 엣지 생성</p>
+<h3 id="커넥터-설정-파일">커넥터 설정 파일</h3>
 <p>프로젝트의 OM 커넥터 설정은 <code>openmetadata/connectors/</code> 디렉토리에 관리된다:</p>
 <table>
-<thead><tr><th style="text-align:left">파일</th><th style="text-align:left">용도</th></tr></thead>
+<thead>
+<tr>
+<th>파일</th>
+<th>용도</th>
+</tr>
+</thead>
 <tbody>
-<tr><td style="text-align:left"><code>bip_postgres.yaml</code></td><td style="text-align:left">PostgreSQL 스키마 스캔 (테이블/컬럼 메타데이터 수집)</td></tr>
-<tr><td style="text-align:left"><code>bip_profiler.yaml</code></td><td style="text-align:left">프로파일러 (컬럼 통계 수집)</td></tr>
-<tr><td style="text-align:left"><code>bip_airflow.yaml</code></td><td style="text-align:left">Airflow DAG 메타데이터 및 계보 수집</td></tr>
-</tbody></table>
-
-<h3>프로파일러 보안 설정</h3>
+<tr>
+<td><code>bip_postgres.yaml</code></td>
+<td>PostgreSQL 스키마 스캔 (테이블/컬럼 메타데이터 수집)</td>
+</tr>
+<tr>
+<td><code>bip_profiler.yaml</code></td>
+<td>프로파일러 (컬럼 통계 수집)</td>
+</tr>
+<tr>
+<td><code>bip_airflow.yaml</code></td>
+<td>Airflow DAG 메타데이터 및 계보 수집</td>
+</tr>
+</tbody>
+</table>
+<h3 id="프로파일러-보안-설정">프로파일러 보안 설정</h3>
 <p>보안 거버넌스(<code>docs/security_governance.md</code>)에 따라 프로파일러는 엄격하게 설정되어 있다:</p>
 <ul>
 <li><strong><code>includeColumnSample: false</code></strong>: 실제 데이터 행(sample row)은 수집하지 않음</li>
@@ -1006,91 +1756,305 @@ graph LR
 <li><strong>통계만 수집</strong>: <code>computeMetrics</code>, <code>computeTableMetrics</code>, <code>computeColumnMetrics</code>만 활성화</li>
 <li><strong>민감 테이블 제외</strong>: <code>tableFilterPattern.excludes</code>에 민감 테이블 명시</li>
 </ul>
-<p>제외된 민감 테이블:</p>
-<ul>
-<li><code>portfolio</code>, <code>users</code>, <code>user_watchlist</code>, <code>holding</code>, <code>transaction</code>, <code>cash_transaction</code></li>
-<li><code>portfolio_snapshot</code> (파생이지만 사용자 재무 상태 노출)</li>
-<li><code>monitor_alerts</code></li>
-</ul>
-<p>민감 컬럼 패턴 제외:</p>
-<ul>
-<li><code><em>_secret</code>, <code></em>_key</code>, <code><em>_token</code>, <code></em>_password</code>, <code>email</code>, <code>phone</code>, <code>account_number</code></li>
-</ul>
-<h3>자동화 스크립트</h3>
+<p>제외된 민감 테이블:
+- <code>portfolio</code>, <code>users</code>, <code>user_watchlist</code>, <code>holding</code>, <code>transaction</code>, <code>cash_transaction</code>
+- <code>portfolio_snapshot</code> (파생이지만 사용자 재무 상태 노출)
+- <code>monitor_alerts</code></p>
+<p>민감 컬럼 패턴 제외:
+- <code>*_secret</code>, <code>*_key</code>, <code>*_token</code>, <code>*_password</code>, <code>email</code>, <code>phone</code>, <code>account_number</code></p>
+<h3 id="자동화-스크립트">자동화 스크립트</h3>
 <table>
-<thead><tr><th style="text-align:left">스크립트</th><th style="text-align:left">용도</th></tr></thead>
+<thead>
+<tr>
+<th>스크립트</th>
+<th>용도</th>
+</tr>
+</thead>
 <tbody>
-<tr><td style="text-align:left"><code>scripts/om_build_glossary.py</code></td><td style="text-align:left">용어집 일괄 생성/업데이트</td></tr>
-<tr><td style="text-align:left"><code>scripts/om_tag_tables.py</code></td><td style="text-align:left">테이블에 DataLayer/Domain 태그 일괄 적용</td></tr>
-<tr><td style="text-align:left"><code>scripts/om_link_columns.py</code></td><td style="text-align:left">용어집 용어를 컬럼에 매핑</td></tr>
-<tr><td style="text-align:left"><code>scripts/om_enrich_metadata.py</code></td><td style="text-align:left">컬럼 설명 일괄 보강</td></tr>
-<tr><td style="text-align:left"><code>scripts/om_register_data_sources.py</code></td><td style="text-align:left">외부 API 소스를 apiEndpoint로 등록 + 계보 연결</td></tr>
-<tr><td style="text-align:left"><code>scripts/om_sync_comments.py</code></td><td style="text-align:left">OM 설명 → PostgreSQL DB COMMENT 동기화</td></tr>
-<tr><td style="text-align:left"><code>scripts/om_sync_wrenai.py</code></td><td style="text-align:left">OM 설명 → Wren AI 모델 description 동기화</td></tr>
-</tbody></table>
-
-<h3>태그 분류 체계</h3>
-<p><strong>DataLayer 분류</strong></p>
-<ul>
-<li><code>DataLayer.raw</code>: 원천 데이터 (stock_info, stock_price_1d, financial_statements 등)</li>
-<li><code>DataLayer.derived</code>: 파생/계산 (stock_indicators, market_daily_summary 등)</li>
-<li><code>DataLayer.gold</code>: 서빙용 통합 (analytics_stock_daily, analytics_valuation 등)</li>
-<li><code>DataLayer.application</code>: 애플리케이션 (monitor_checklist, agent_audit_log 등)</li>
-</ul>
-<p><strong>Domain 분류</strong></p>
-<ul>
-<li><code>Domain.market</code>: 시장 데이터 (주가, 종목 정보)</li>
-<li><code>Domain.financial</code>: 재무 데이터 (재무제표, 밸류에이션)</li>
-<li><code>Domain.macro</code>: 거시경제 (금리, 환율, 지정학)</li>
-<li><code>Domain.news</code>: 뉴스 데이터</li>
-<li><code>Domain.portfolio</code>: 포트폴리오 (민감)</li>
-<li><code>Domain.product</code>: 제품 가격</li>
-<li><code>Domain.user</code>: 사용자 (민감)</li>
-</ul>
-<h3>NL2SQL 연계</h3>
+<tr>
+<td><code>scripts/om_build_glossary.py</code></td>
+<td>용어집 일괄 생성/업데이트</td>
+</tr>
+<tr>
+<td><code>scripts/om_tag_tables.py</code></td>
+<td>테이블에 DataLayer/Domain 태그 일괄 적용</td>
+</tr>
+<tr>
+<td><code>scripts/om_link_columns.py</code></td>
+<td>용어집 용어를 컬럼에 매핑</td>
+</tr>
+<tr>
+<td><code>scripts/om_enrich_metadata.py</code></td>
+<td>컬럼 설명 일괄 보강</td>
+</tr>
+<tr>
+<td><code>scripts/om_register_data_sources.py</code></td>
+<td>외부 API 소스를 apiEndpoint로 등록 + 계보 연결</td>
+</tr>
+<tr>
+<td><code>scripts/om_sync_comments.py</code></td>
+<td>OM 설명 → PostgreSQL DB COMMENT 동기화</td>
+</tr>
+<tr>
+<td><code>scripts/om_sync_wrenai.py</code></td>
+<td>OM 설명 → Wren AI 모델 description 동기화</td>
+</tr>
+</tbody>
+</table>
+<h3 id="태그-분류-체계">태그 분류 체계</h3>
+<p><strong>DataLayer 분류</strong>
+- <code>DataLayer.raw</code>: 원천 데이터 (stock_info, stock_price_1d, financial_statements 등)
+- <code>DataLayer.derived</code>: 파생/계산 (stock_indicators, market_daily_summary 등)
+- <code>DataLayer.gold</code>: 서빙용 통합 (analytics_stock_daily, analytics_valuation 등)
+- <code>DataLayer.application</code>: 애플리케이션 (monitor_checklist, agent_audit_log 등)</p>
+<p><strong>Domain 분류</strong>
+- <code>Domain.market</code>: 시장 데이터 (주가, 종목 정보)
+- <code>Domain.financial</code>: 재무 데이터 (재무제표, 밸류에이션)
+- <code>Domain.macro</code>: 거시경제 (금리, 환율, 지정학)
+- <code>Domain.news</code>: 뉴스 데이터
+- <code>Domain.portfolio</code>: 포트폴리오 (민감)
+- <code>Domain.product</code>: 제품 가격
+- <code>Domain.user</code>: 사용자 (민감)</p>
+<h3 id="nl2sql-연계">NL2SQL 연계</h3>
 <p>OM의 메타데이터 품질이 NL2SQL 정확도에 직접 영향을 미친다. 실제 테스트에서 Gold 컬럼 설명 커버리지를 31%에서 99%로 올린 결과, NL2SQL A등급이 58%에서 77%로 상승한 사례가 있다.</p>
-<p>OM → Wren AI 동기화 체인:</p>
-<ol>
-<li>OM에서 테이블/컬럼 설명 편집 (원천)</li>
-<li><code>10_sync_metadata_daily</code> DAG가 <code>om_sync_wrenai.py</code> 실행</li>
-<li>Wren AI 모델 description에 반영 + Qdrant 임베딩 재배포</li>
-<li>NL2SQL 질문 시 업데이트된 메타데이터 기반으로 SQL 생성</li>
-</ol>
-<hr/>
-<h2>9. 참고</h2>
-<h3>공식 자료</h3>
+<p>OM → Wren AI 동기화 체인:
+1. OM에서 테이블/컬럼 설명 편집 (원천)
+2. <code>10_sync_metadata_daily</code> DAG가 <code>om_sync_wrenai.py</code> 실행
+3. Wren AI 모델 description에 반영 + Qdrant 임베딩 재배포
+4. NL2SQL 질문 시 업데이트된 메타데이터 기반으로 SQL 생성</p>
+<hr />
+<h2 id="9-참고">9. 참고</h2>
+<h3 id="공식-자료">공식 자료</h3>
 <table>
-<thead><tr><th style="text-align:left">자료</th><th style="text-align:left">URL</th></tr></thead>
+<thead>
+<tr>
+<th>자료</th>
+<th>URL</th>
+</tr>
+</thead>
 <tbody>
-<tr><td style="text-align:left">공식 문서</td><td style="text-align:left">https://docs.open-metadata.org</td></tr>
-<tr><td style="text-align:left">GitHub</td><td style="text-align:left">https://github.com/open-metadata/OpenMetadata</td></tr>
-<tr><td style="text-align:left">Slack 커뮤니티</td><td style="text-align:left">https://slack.open-metadata.org</td></tr>
-<tr><td style="text-align:left">Swagger API 문서</td><td style="text-align:left"><code>http://&lt;host&gt;:8585/swagger.html</code></td></tr>
-<tr><td style="text-align:left">YouTube 채널</td><td style="text-align:left">https://www.youtube.com/@OpenMetadata</td></tr>
-<tr><td style="text-align:left">릴리즈 노트</td><td style="text-align:left">https://github.com/open-metadata/OpenMetadata/releases</td></tr>
-</tbody></table>
-
-<h3>BIP-Pipeline 내부 문서</h3>
+<tr>
+<td>공식 문서</td>
+<td>https://docs.open-metadata.org</td>
+</tr>
+<tr>
+<td>GitHub</td>
+<td>https://github.com/open-metadata/OpenMetadata</td>
+</tr>
+<tr>
+<td>Slack 커뮤니티</td>
+<td>https://slack.open-metadata.org</td>
+</tr>
+<tr>
+<td>Swagger API 문서</td>
+<td><code>http://&lt;host&gt;:8585/swagger.html</code></td>
+</tr>
+<tr>
+<td>YouTube 채널</td>
+<td>https://www.youtube.com/@OpenMetadata</td>
+</tr>
+<tr>
+<td>릴리즈 노트</td>
+<td>https://github.com/open-metadata/OpenMetadata/releases</td>
+</tr>
+</tbody>
+</table>
+<h3 id="bip-pipeline-내부-문서">BIP-Pipeline 내부 문서</h3>
 <table>
-<thead><tr><th style="text-align:left">문서</th><th style="text-align:left">설명</th></tr></thead>
+<thead>
+<tr>
+<th>문서</th>
+<th>설명</th>
+</tr>
+</thead>
 <tbody>
-<tr><td style="text-align:left"><code>docs/metadata_governance.md</code></td><td style="text-align:left">메타데이터 거버넌스 정책 (필수 준수)</td></tr>
-<tr><td style="text-align:left"><code>docs/security_governance.md</code></td><td style="text-align:left">보안 거버넌스 (프로파일러 설정, 민감 테이블 정책)</td></tr>
-<tr><td style="text-align:left"><code>docs/data_architecture_review.md</code></td><td style="text-align:left">전체 아키텍처, 테이블 카탈로그, Lineage 적용 범위</td></tr>
-<tr><td style="text-align:left"><code>docs/wrenai_technical_guide.md</code></td><td style="text-align:left">Wren AI와 OM 간 메타데이터 동기화 상세</td></tr>
-<tr><td style="text-align:left"><code>docs/nl2sql_project_plan.md</code></td><td style="text-align:left">NL2SQL 설계에서 OM 메타데이터 의존성</td></tr>
-<tr><td style="text-align:left"><code>openmetadata/connectors/</code></td><td style="text-align:left">OM 커넥터 설정 파일 (postgres, profiler, airflow)</td></tr>
-<tr><td style="text-align:left"><code>scripts/om_*.py</code></td><td style="text-align:left">OM 자동화 스크립트 모음</td></tr>
-</tbody></table>
-
-<h3>버전 정보</h3>
+<tr>
+<td><code>docs/metadata_governance.md</code></td>
+<td>메타데이터 거버넌스 정책 (필수 준수)</td>
+</tr>
+<tr>
+<td><code>docs/security_governance.md</code></td>
+<td>보안 거버넌스 (프로파일러 설정, 민감 테이블 정책)</td>
+</tr>
+<tr>
+<td><code>docs/data_architecture_review.md</code></td>
+<td>전체 아키텍처, 테이블 카탈로그, Lineage 적용 범위</td>
+</tr>
+<tr>
+<td><code>docs/wrenai_technical_guide.md</code></td>
+<td>Wren AI와 OM 간 메타데이터 동기화 상세</td>
+</tr>
+<tr>
+<td><code>docs/nl2sql_project_plan.md</code></td>
+<td>NL2SQL 설계에서 OM 메타데이터 의존성</td>
+</tr>
+<tr>
+<td><code>openmetadata/connectors/</code></td>
+<td>OM 커넥터 설정 파일 (postgres, profiler, airflow)</td>
+</tr>
+<tr>
+<td><code>scripts/om_*.py</code></td>
+<td>OM 자동화 스크립트 모음</td>
+</tr>
+</tbody>
+</table>
+<h3 id="버전-정보">버전 정보</h3>
 <ul>
 <li>OpenMetadata: v1.x (Docker Compose 배포)</li>
 <li>Python SDK: <code>openmetadata-ingestion</code> (pip)</li>
 <li>BIP-Pipeline OM 구성: 39 테이블, 77 용어, 14 apiEndpoint, 43 DAG</li>
 </ul>
-<footer style="margin-top:3rem; padding-top:1rem; border-top:1px solid var(--border); color:#6b7280; font-size:0.85rem;">
-  <p>Generated: 2026-04-12 | BIP-Pipeline NL2SQL Documentation</p>
-</footer>
+<hr />
+<h2 id="변경-이력">변경 이력</h2>
+<table>
+<thead>
+<tr>
+<th>날짜</th>
+<th>내용</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>2026-04-13</td>
+<td>초안 작성</td>
+</tr>
+<tr>
+<td>2026-04-22</td>
+<td>문서 헤더 정리 (작성일/대상 제거)</td>
+</tr>
+</tbody>
+</table>
+</main>
+
+<script>
+  // 테마 전환
+  function setTheme(theme) {
+    document.documentElement.setAttribute('data-theme', theme);
+    localStorage.setItem('doc-theme', theme);
+    document.getElementById('btn-dark').classList.toggle('active', theme === 'dark');
+    document.getElementById('btn-light').classList.toggle('active', theme === 'light');
+    // Mermaid 재렌더링
+    if (typeof mermaid !== 'undefined') {
+      mermaid.initialize({ startOnLoad: false, theme: 'base', securityLevel: 'loose', themeVariables: getMermaidTheme(theme) });
+      document.querySelectorAll('.mermaid').forEach(el => {
+        el.removeAttribute('data-processed');
+        el.innerHTML = el.textContent;
+      });
+      mermaid.run();
+    }
+  }
+
+  // 저장된 테마 로드
+  const savedTheme = localStorage.getItem('doc-theme') || 'dark';
+  setTheme(savedTheme);
+
+  // Mermaid 초기화
+  function getMermaidTheme(theme) {
+    const dark = {
+      primaryColor: '#3d7be0',
+      primaryTextColor: '#ffffff',
+      primaryBorderColor: '#5a9cf0',
+      secondaryColor: '#7c5cbf',
+      secondaryTextColor: '#ffffff',
+      secondaryBorderColor: '#a29bfe',
+      tertiaryColor: '#00997a',
+      tertiaryTextColor: '#ffffff',
+      tertiaryBorderColor: '#55efc4',
+      noteTextColor: '#f0f0f0',
+      noteBkgColor: '#2d3436',
+      noteBorderColor: '#636e72',
+      lineColor: '#8b949e',
+      textColor: '#e6edf3',
+      mainBkg: '#1e3050',
+      nodeBorder: '#5a9cf0',
+      clusterBkg: '#1a1e2e',
+      clusterBorder: '#4a5568',
+      titleColor: '#79c0ff',
+      edgeLabelBackground: '#21262d',
+      actorBkg: '#3d7be0',
+      actorTextColor: '#ffffff',
+      actorBorder: '#5a9cf0',
+      signalColor: '#8b949e',
+      labelBoxBkgColor: '#21262d',
+      labelBoxBorderColor: '#4a5568',
+      labelTextColor: '#e6edf3',
+      loopTextColor: '#e6edf3',
+      activationBorderColor: '#5a9cf0',
+      activationBkgColor: '#1e3050',
+      sequenceNumberColor: '#ffffff',
+      pie1: '#4f8fea', pie2: '#6c5ce7', pie3: '#00b894', pie4: '#e17055',
+      pie5: '#fdcb6e', pie6: '#00cec9', pie7: '#e84393', pie8: '#0984e3'
+    };
+    const light = {
+      primaryColor: '#4f8fea',
+      primaryTextColor: '#1a1a2e',
+      primaryBorderColor: '#3a7bd5',
+      secondaryColor: '#a29bfe',
+      secondaryTextColor: '#1a1a2e',
+      secondaryBorderColor: '#6c5ce7',
+      tertiaryColor: '#55efc4',
+      tertiaryTextColor: '#1a1a2e',
+      tertiaryBorderColor: '#00b894',
+      noteTextColor: '#2d3436',
+      noteBkgColor: '#ffeaa7',
+      noteBorderColor: '#fdcb6e',
+      lineColor: '#636e72',
+      textColor: '#2d3436',
+      mainBkg: '#dfe6e9',
+      nodeBorder: '#3a7bd5',
+      clusterBkg: '#f0f3f5',
+      clusterBorder: '#b2bec3',
+      titleColor: '#2d3436',
+      edgeLabelBackground: '#ffffff',
+      actorBkg: '#4f8fea',
+      actorTextColor: '#ffffff',
+      actorBorder: '#3a7bd5',
+      signalColor: '#636e72',
+      labelBoxBkgColor: '#ffffff',
+      labelBoxBorderColor: '#b2bec3',
+      labelTextColor: '#2d3436',
+      loopTextColor: '#2d3436',
+      activationBorderColor: '#3a7bd5',
+      activationBkgColor: '#dfe6e9',
+      sequenceNumberColor: '#ffffff',
+      pie1: '#4f8fea', pie2: '#6c5ce7', pie3: '#00b894', pie4: '#e17055',
+      pie5: '#fdcb6e', pie6: '#00cec9', pie7: '#e84393', pie8: '#0984e3'
+    };
+    return theme === 'dark' ? dark : light;
+  }
+
+  mermaid.initialize({ startOnLoad: true, theme: 'base', securityLevel: 'loose', themeVariables: getMermaidTheme(savedTheme) });
+
+  // TOC 현재 위치 하이라이트
+  const tocLinks = document.querySelectorAll('.toc a');
+  const headings = [];
+  tocLinks.forEach(link => {
+    const id = link.getAttribute('href').slice(1);
+    const el = document.getElementById(id);
+    if (el) headings.push({ el, link });
+  });
+
+  function updateActiveToc() {
+    let current = null;
+    for (const h of headings) {
+      if (h.el.getBoundingClientRect().top <= 100) current = h;
+    }
+    tocLinks.forEach(l => l.classList.remove('active'));
+    if (current) current.link.classList.add('active');
+  }
+
+  window.addEventListener('scroll', updateActiveToc, { passive: true });
+  updateActiveToc();
+
+  // 모바일: 링크 클릭 시 사이드바 닫기
+  tocLinks.forEach(link => {
+    link.addEventListener('click', () => {
+      if (window.innerWidth <= 900) {
+        document.querySelector('.sidebar').classList.remove('open');
+      }
+    });
+  });
+</script>
+
 </body>
 </html>
