@@ -1,35 +1,3 @@
-_NL2SQL_ & 데이터 레이어 개념 레퍼런스 벤더 중립 · 2026.04
-
-개요
-
-00목적 및 혼동 원인
-
-정식 정의
-
-01Semantic Layer 02Knowledge Graph 03Ontology 04Data Fabric 05Data Mesh
-
-관계 정리
-
-06세 개념 비교
-
-NL2SQL
-
-07NL2SQL 아키텍처 08벤치마크 현황 09NL2SQL 도구 비교
-
-시맨틱 레이어 도구
-
-10셀프호스팅 도구 11엔터프라이즈 사례
-
-전략 및 가이드
-
-12비정형 데이터 전략 13용어 사용 가이드
-
-참고 자료
-
-14공식 참고 문헌
-
-NL2SQL & Data Layer · Vendor-Neutral Reference
-
 # NL2SQL &  
 데이터 레이어  
 개념 레퍼런스

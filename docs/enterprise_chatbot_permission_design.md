@@ -1,31 +1,3 @@
-_Enterprise_ LLM Chatbot 권한 제어 설계안 Java + Python Hybrid · 2026.04
-
-개요
-
-00요구사항 & 과제 01핵심 설계 원칙 02전체 아키텍처
-
-권한 제어
-
-03JWT 전파 흐름 04레이어별 역할 05요청 처리 흐름
-
-도구별 권한
-
-06MCP Tools 07NL2SQL 08RAG
-
-구현 상세
-
-09Spring 쪽 구현 10Python 쪽 구현 11프로젝트 구조
-
-운영 & 보안
-
-12감사 & 모니터링 13정보 누출 방지 14실패 모드 대응
-
-실행 계획
-
-15단계별 로드맵 16런칭 체크리스트
-
-Enterprise Chatbot · Permission-Aware Architecture
-
 # 엔터프라이즈 LLM 챗봇  
 권한 제어 설계안
 

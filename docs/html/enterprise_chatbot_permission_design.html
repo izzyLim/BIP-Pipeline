@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>_Enterprise_ LLM Chatbot 권한 제어 설계안 Java + Python Hybrid · 2026.04</title>
+<title>엔터프라이즈 LLM 챗봇</title>
 <script src="https://cdn.jsdelivr.net/npm/mermaid@11/dist/mermaid.min.js"></script>
 <style>
   /* ── 테마 변수 ── */
@@ -279,7 +279,7 @@
 
 <aside class="sidebar">
   <div class="sidebar-header">
-    <div class="sidebar-title">_Enterprise_ LLM Chatbot 권한 제어 설계안 Java + Python Hybrid · 2026.04</div>
+    <div class="sidebar-title">엔터프라이즈 LLM 챗봇</div>
     <div class="sidebar-controls">
       <button class="theme-btn" onclick="setTheme('dark')" id="btn-dark">🌙 Dark</button>
       <button class="theme-btn" onclick="setTheme('light')" id="btn-light">☀️ Light</button>
@@ -305,20 +305,6 @@
 </aside>
 
 <main class="content">
-<p><em>Enterprise</em> LLM Chatbot 권한 제어 설계안 Java + Python Hybrid · 2026.04</p>
-<p>개요</p>
-<p>00요구사항 &amp; 과제 01핵심 설계 원칙 02전체 아키텍처</p>
-<p>권한 제어</p>
-<p>03JWT 전파 흐름 04레이어별 역할 05요청 처리 흐름</p>
-<p>도구별 권한</p>
-<p>06MCP Tools 07NL2SQL 08RAG</p>
-<p>구현 상세</p>
-<p>09Spring 쪽 구현 10Python 쪽 구현 11프로젝트 구조</p>
-<p>운영 &amp; 보안</p>
-<p>12감사 &amp; 모니터링 13정보 누출 방지 14실패 모드 대응</p>
-<p>실행 계획</p>
-<p>15단계별 로드맵 16런칭 체크리스트</p>
-<p>Enterprise Chatbot · Permission-Aware Architecture</p>
 <h1 id="엔터프라이즈-llm-챗봇">엔터프라이즈 LLM 챗봇</h1>
 <p>권한 제어 설계안</p>
 <p>기존 Java Spring 시스템의 권한 정책을 100% 재사용하면서 NL2SQL + RAG + MCP Tools + LangGraph 에이전트를 통합한 하이브리드 아키텍처. Python 사이드카가 에이전트 오케스트레이션을 담당하고, 권한 판단은 기존 Spring에만 존재합니다.</p>
