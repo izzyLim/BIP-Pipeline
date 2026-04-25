@@ -2,8 +2,7 @@
 
 > **WrenAI → OpenMetadata + Cube + LLM Agent 전환**
 >
-> **작성일:** 2026-04-18
-> **배경:** BIP-Pipeline(사외 PostgreSQL)에서 WrenAI 기반 NL2SQL 검증 완료 후, 사내 Oracle 19c 환경 적용 시 WrenAI 호환성 문제 발생으로 아키텍처 전환
+> BIP-Pipeline(사외 PostgreSQL)에서 WrenAI 기반 NL2SQL 검증 완료 후, 사내 Oracle 19c 환경 적용 시 WrenAI 호환성 문제 발생으로 아키텍처 전환
 
 ---
 
@@ -468,3 +467,12 @@ graph TB
 ---
 
 *이 문서는 BIP-Pipeline의 WrenAI 경험을 기반으로 사내 Oracle 19c 환경에 맞는 NL2SQL 아키텍처를 재설계한 것입니다.*
+
+---
+
+## 변경 이력
+
+| 날짜 | 내용 |
+|------|------|
+| 2026-04-18 | 초안 작성 |
+| 2026-04-22 | 문서 헤더 정리 |

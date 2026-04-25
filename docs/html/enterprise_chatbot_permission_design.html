@@ -1,0 +1,1363 @@
+<!DOCTYPE html>
+<html lang="ko" data-theme="dark">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>_Enterprise_ LLM Chatbot 권한 제어 설계안 Java + Python Hybrid · 2026.04</title>
+<script src="https://cdn.jsdelivr.net/npm/mermaid@11/dist/mermaid.min.js"></script>
+<style>
+  /* ── 테마 변수 ── */
+  :root[data-theme="dark"] {
+    --bg: #0d1117;
+    --bg-sidebar: #161b22;
+    --fg: #e6edf3;
+    --fg-muted: #8b949e;
+    --border: #30363d;
+    --accent: #58a6ff;
+    --accent-hover: #79c0ff;
+    --code-bg: #1e293b;
+    --code-fg: #e2e8f0;
+    --table-header: #161b22;
+    --table-even: #0d1117;
+    --table-odd: #161b22;
+    --blockquote-bg: #161b22;
+    --blockquote-border: #3b82f6;
+    --link: #58a6ff;
+    --strong: #79c0ff;
+    --card-bg: #21262d;
+  }
+  :root[data-theme="light"] {
+    --bg: #ffffff;
+    --bg-sidebar: #f6f8fa;
+    --fg: #1f2937;
+    --fg-muted: #6b7280;
+    --border: #e5e7eb;
+    --accent: #2563eb;
+    --accent-hover: #1d4ed8;
+    --code-bg: #f3f4f6;
+    --code-fg: #1e293b;
+    --table-header: #f8fafc;
+    --table-even: #ffffff;
+    --table-odd: #f9fafb;
+    --blockquote-bg: #eff6ff;
+    --blockquote-border: #3b82f6;
+    --link: #2563eb;
+    --strong: #1e40af;
+    --card-bg: #f3f4f6;
+  }
+
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+
+  body {
+    font-family: 'Pretendard', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+    background: var(--bg);
+    color: var(--fg);
+    line-height: 1.75;
+    display: flex;
+    min-height: 100vh;
+  }
+
+  /* ── 사이드바 ── */
+  .sidebar {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 280px;
+    height: 100vh;
+    background: var(--bg-sidebar);
+    border-right: 1px solid var(--border);
+    overflow-y: auto;
+    padding: 20px 0;
+    z-index: 100;
+    transition: transform 0.3s ease;
+  }
+
+  .sidebar-header {
+    padding: 0 20px 16px;
+    border-bottom: 1px solid var(--border);
+    margin-bottom: 12px;
+  }
+
+  .sidebar-title {
+    font-size: 0.95rem;
+    font-weight: 700;
+    color: var(--fg);
+    line-height: 1.3;
+  }
+
+  .sidebar-controls {
+    display: flex;
+    gap: 8px;
+    margin-top: 12px;
+  }
+
+  .theme-btn {
+    background: var(--card-bg);
+    border: 1px solid var(--border);
+    color: var(--fg-muted);
+    padding: 4px 10px;
+    border-radius: 6px;
+    font-size: 0.7rem;
+    cursor: pointer;
+    transition: all 0.2s;
+  }
+  .theme-btn:hover {
+    border-color: var(--accent);
+    color: var(--accent);
+  }
+  .theme-btn.active {
+    background: var(--accent);
+    color: #fff;
+    border-color: var(--accent);
+  }
+
+  .back-link {
+    display: block;
+    margin-top: 10px;
+    font-size: 0.75rem;
+    color: var(--fg-muted);
+    text-decoration: none;
+  }
+  .back-link:hover {
+    color: var(--accent);
+  }
+
+  /* ── TOC ── */
+  .toc {
+    padding: 0 12px;
+  }
+  .toc ul {
+    list-style: none;
+    padding: 0;
+  }
+  .toc li {
+    margin: 0;
+  }
+  .toc a {
+    display: block;
+    padding: 4px 8px;
+    color: var(--fg-muted);
+    text-decoration: none;
+    font-size: 0.78rem;
+    border-radius: 4px;
+    border-left: 2px solid transparent;
+    transition: all 0.15s;
+    line-height: 1.4;
+  }
+  .toc a:hover {
+    color: var(--accent);
+    background: var(--card-bg);
+    border-left-color: var(--accent);
+  }
+  .toc a.active {
+    color: var(--accent);
+    border-left-color: var(--accent);
+    font-weight: 600;
+  }
+  .toc-h3 a { padding-left: 20px; font-size: 0.75rem; }
+  .toc-h4 a { padding-left: 32px; font-size: 0.72rem; }
+
+  /* ── 본문 ── */
+  .content {
+    margin-left: 280px;
+    flex: 1;
+    max-width: 860px;
+    padding: 40px 48px 80px;
+  }
+
+  /* ── 모바일 ── */
+  .menu-toggle {
+    display: none;
+    position: fixed;
+    top: 12px;
+    left: 12px;
+    z-index: 200;
+    background: var(--bg-sidebar);
+    border: 1px solid var(--border);
+    color: var(--fg);
+    padding: 8px 12px;
+    border-radius: 6px;
+    cursor: pointer;
+    font-size: 1.1rem;
+  }
+
+  @media (max-width: 900px) {
+    .sidebar {
+      transform: translateX(-100%);
+    }
+    .sidebar.open {
+      transform: translateX(0);
+    }
+    .content {
+      margin-left: 0;
+      padding: 60px 20px 60px;
+    }
+    .menu-toggle {
+      display: block;
+    }
+  }
+
+  /* ── 타이포그래피 ── */
+  h1 { font-size: 1.9rem; margin: 2rem 0 1rem; padding-bottom: 0.5rem; border-bottom: 2px solid var(--accent); }
+  h2 { font-size: 1.45rem; margin: 2.5rem 0 0.8rem; padding-bottom: 0.3rem; border-bottom: 1px solid var(--border); color: var(--accent); }
+  h3 { font-size: 1.15rem; margin: 1.8rem 0 0.5rem; }
+  h4 { font-size: 1rem; margin: 1.3rem 0 0.4rem; color: var(--fg-muted); }
+  p { margin: 0.6rem 0; }
+  hr { border: none; border-top: 1px solid var(--border); margin: 2rem 0; }
+  strong { color: var(--strong); }
+  a { color: var(--link); text-decoration: none; }
+  a:hover { text-decoration: underline; }
+  ul, ol { margin: 0.5rem 0 0.5rem 1.5rem; }
+  li { margin: 0.25rem 0; }
+
+  /* ── 테이블 ── */
+  table { width: 100%; border-collapse: collapse; margin: 1rem 0; font-size: 0.85rem; }
+  th, td { border: 1px solid var(--border); padding: 0.5rem 0.75rem; text-align: left; }
+  th { background: var(--table-header); font-weight: 600; }
+  tr:nth-child(even) { background: var(--table-even); }
+  tr:nth-child(odd) { background: var(--table-odd); }
+
+  /* ── 코드 ── */
+  code {
+    background: var(--code-bg);
+    color: var(--code-fg);
+    padding: 0.15rem 0.4rem;
+    border-radius: 4px;
+    font-size: 0.82em;
+    font-family: 'JetBrains Mono', 'Fira Code', 'Cascadia Code', monospace;
+  }
+  pre {
+    background: var(--code-bg);
+    color: var(--code-fg);
+    padding: 1rem 1.2rem;
+    border-radius: 8px;
+    overflow-x: auto;
+    margin: 1rem 0;
+    border: 1px solid var(--border);
+  }
+  pre code {
+    background: none;
+    padding: 0;
+    font-size: 0.82rem;
+    line-height: 1.5;
+  }
+
+  /* ── 인용 ── */
+  blockquote {
+    border-left: 4px solid var(--blockquote-border);
+    padding: 0.6rem 1rem;
+    margin: 1rem 0;
+    background: var(--blockquote-bg);
+    border-radius: 0 6px 6px 0;
+  }
+  blockquote p { margin: 0.3rem 0; }
+
+  /* ── Mermaid ── */
+  .mermaid {
+    margin: 1.5rem 0;
+    text-align: center;
+    background: var(--card-bg);
+    padding: 1rem;
+    border-radius: 8px;
+    border: 1px solid var(--border);
+  }
+  .mermaid svg { max-width: 100%; }
+
+  /* ── Footer ── */
+  footer {
+    margin-top: 3rem;
+    padding-top: 1rem;
+    border-top: 1px solid var(--border);
+    color: var(--fg-muted);
+    font-size: 0.8rem;
+  }
+</style>
+</head>
+<body>
+
+<button class="menu-toggle" onclick="document.querySelector('.sidebar').classList.toggle('open')">☰</button>
+
+<aside class="sidebar">
+  <div class="sidebar-header">
+    <div class="sidebar-title">_Enterprise_ LLM Chatbot 권한 제어 설계안 Java + Python Hybrid · 2026.04</div>
+    <div class="sidebar-controls">
+      <button class="theme-btn" onclick="setTheme('dark')" id="btn-dark">🌙 Dark</button>
+      <button class="theme-btn" onclick="setTheme('light')" id="btn-light">☀️ Light</button>
+    </div>
+    <a class="back-link" href="index.html">← 문서 목록으로</a>
+  </div>
+  <nav class="toc">
+<ul>
+<li class="toc-h2"><a href="#해결할-문제">해결할 문제</a></li>
+<li class="toc-h2"><a href="#왜-하이브리드인가">왜 하이브리드인가?</a></li>
+  <li class="toc-h3"><a href="#spring-쪽-nl2sql-엔드포인트">Spring 쪽 NL2SQL 엔드포인트</a></li>
+  <li class="toc-h3"><a href="#spring-쪽-권한-기반-where-주입">Spring 쪽 권한 기반 WHERE 주입</a></li>
+  <li class="toc-h3"><a href="#python-쪽-nl2sql-도구">Python 쪽 NL2SQL 도구</a></li>
+<li class="toc-h2"><a href="#채팅-ui--프록시-컨트롤러">채팅 UI + 프록시 컨트롤러</a></li>
+  <li class="toc-h3"><a href="#채팅-페이지-thymeleaf-또는-기존-프론트">채팅 페이지 (Thymeleaf 또는 기존 프론트)</a></li>
+  <li class="toc-h3"><a href="#감사-로그-테이블-스키마">감사 로그 테이블 스키마</a></li>
+  <li class="toc-h3"><a href="#모니터링-지표">모니터링 지표</a></li>
+  <li class="toc-h3"><a href="#캐시-정책">캐시 정책</a></li>
+  <li class="toc-h3"><a href="#llm-guardrail">LLM Guardrail</a></li>
+<li class="toc-h2"><a href="#관련-문서">관련 문서</a></li>
+</ul>
+</nav>
+</aside>
+
+<main class="content">
+<p><em>Enterprise</em> LLM Chatbot 권한 제어 설계안 Java + Python Hybrid · 2026.04</p>
+<p>개요</p>
+<p>00요구사항 &amp; 과제 01핵심 설계 원칙 02전체 아키텍처</p>
+<p>권한 제어</p>
+<p>03JWT 전파 흐름 04레이어별 역할 05요청 처리 흐름</p>
+<p>도구별 권한</p>
+<p>06MCP Tools 07NL2SQL 08RAG</p>
+<p>구현 상세</p>
+<p>09Spring 쪽 구현 10Python 쪽 구현 11프로젝트 구조</p>
+<p>운영 &amp; 보안</p>
+<p>12감사 &amp; 모니터링 13정보 누출 방지 14실패 모드 대응</p>
+<p>실행 계획</p>
+<p>15단계별 로드맵 16런칭 체크리스트</p>
+<p>Enterprise Chatbot · Permission-Aware Architecture</p>
+<h1 id="엔터프라이즈-llm-챗봇">엔터프라이즈 LLM 챗봇</h1>
+<p>권한 제어 설계안</p>
+<p>기존 Java Spring 시스템의 권한 정책을 100% 재사용하면서 NL2SQL + RAG + MCP Tools + LangGraph 에이전트를 통합한 하이브리드 아키텍처. Python 사이드카가 에이전트 오케스트레이션을 담당하고, 권한 판단은 기존 Spring에만 존재합니다.</p>
+<p>Java Spring (기존) Python Sidecar JWT Propagation LangGraph Agent Zero Trust Principles</p>
+<h2 id="해결할-문제">해결할 문제</h2>
+<p>REQUIREMENT</p>
+<p>복잡한 질의 처리 역량</p>
+<ul>
+<li>자연어 → SQL (NL2SQL)</li>
+<li>문서 검색 (RAG)</li>
+<li>다양한 도구 호출 (MCP)</li>
+<li>멀티 스텝 추론 (LangGraph)</li>
+</ul>
+<p>CONSTRAINT</p>
+<p>권한 제약</p>
+<ul>
+<li>사용자별 접근 가능 데이터 상이</li>
+<li>기존 시스템 권한 정책 재사용</li>
+<li>권한 없는 데이터는 응답에 절대 포함 불가</li>
+<li>정보 누출·hallucination 방지</li>
+</ul>
+<p>STACK</p>
+<p>기존 시스템</p>
+<ul>
+<li>Java Spring Boot + Spring Security</li>
+<li>Oracle DB (애플리케이션 필터링)</li>
+<li>Elasticsearch</li>
+<li>사내 SSO + JWT 인증</li>
+</ul>
+<p>LLM</p>
+<p>사내 LLM API</p>
+<ul>
+<li>사내 LLM Gateway 경유</li>
+<li>서비스 계정 인증 (사용자와 별도)</li>
+<li>OpenAI 호환 또는 커스텀 스펙</li>
+<li>쿼터/감사 정책 적용</li>
+</ul>
+<p>01핵심 설계 원칙 (불변 조건)</p>
+<p>P-01</p>
+<p><strong>권한 판단은 기존 Spring에만 존재한다</strong> Python 사이드카는 권한을 해석·결정하지 않는다. JWT를 들고 Spring API에 물어본다.</p>
+<p>P-02</p>
+<p><strong>Python은 DB에 직접 접근하지 않는다</strong> 모든 데이터 조회는 기존 Spring REST API 또는 전용 NL2SQL 실행 API를 경유한다.</p>
+<p>P-03</p>
+<p><strong>사용자 JWT는 전체 레이어에 동일하게 전파된다</strong> Spring UI → Python LLM → MCP → Spring REST API까지 같은 토큰이 Authorization 헤더로 흐른다.</p>
+<p>P-04</p>
+<p><strong>LLM API 자격증명과 사용자 JWT는 완전히 분리된다</strong> 사내 LLM API 호출은 서비스 계정, 사용자 권한 제어는 JWT. 섞이지 않는다.</p>
+<p>P-05</p>
+<p><strong>Default Deny</strong> 권한 검증 실패·에러·타임아웃 시 데이터 반환 금지. 일반화된 메시지만 반환.</p>
+<p>P-06</p>
+<p><strong>권한 없는 데이터는 LLM 컨텍스트에 애초에 들어가지 않는다</strong> 후처리 마스킹이 아닌, 도구 응답 단계에서 차단. LLM이 보면 이미 늦다.</p>
+<p>P-07</p>
+<p><strong>모든 데이터 접근은 감사 기록된다</strong> 누가, 언제, 무엇을 조회했는지 추적 가능. Spring의 기존 감사 로그와 통합.</p>
+<p>P-08</p>
+<p><strong>에러 메시지도 권한에 따라 차등</strong> "X 테이블 접근 금지" 같은 메타 정보 노출 금지. "요청하신 정보 제공 불가"로 일반화.</p>
+<p>02전체 아키텍처</p>
+<p>하이브리드 아키텍처 전체 구성</p>
+<p>graph TD USER["사용자 (브라우저)"] SSO["기존 SSO / IdP"] subgraph Spring["기존 Java Spring 시스템"] UI["/chat 페이지\nThymeleaf or 기존 프론트"] PROXY["/api/chat 프록시\nChatController"] BIZ_API["기존 REST API\nCustomer/Order/...\n@PreAuthorize"] NL2SQL_API["/api/nl2sql/execute\nSQL 검증 + 권한 필터 + 실행"] RAG_API["/api/rag/verify\n문서 권한 검증"] SPRING_SEC["Spring Security\nJWT 검증 + 권한"] end subgraph Python["Python LLM 사이드카 (신규)"] GW["FastAPI Gateway\nJWT 검증"] AGENT["LangGraph Agent\nState: user_token"] MCP["MCP 도구들\n기존 API 래퍼"] end LLM_API["사내 LLM API\n서비스 계정 인증"] subgraph Data["데이터 레이어"] ORA["Oracle DB"] ES["Elasticsearch"] VEC["Vector DB\n권한 메타데이터"] end USER --&gt;|로그인| SSO SSO --&gt;|JWT| USER USER --&gt;|JWT| UI UI --&gt;|JWT| PROXY PROXY --&gt;|JWT| GW GW --&gt; AGENT AGENT --&gt; MCP AGENT --&gt;|서비스 계정| LLM_API MCP --&gt;|JWT| BIZ_API MCP --&gt;|JWT| NL2SQL_API MCP --&gt;|JWT| RAG_API BIZ_API --&gt; SPRING_SEC NL2SQL_API --&gt; SPRING_SEC RAG_API --&gt; SPRING_SEC BIZ_API --&gt; ORA BIZ_API --&gt; ES NL2SQL_API --&gt; ORA RAG_API --&gt; VEC style Spring fill:#0d0f18,stroke:#5a7af0 style Python fill:#0d0f18,stroke:#30c880 style Data fill:#0d0f18,stroke:#e09830 </p>
+<p>🔐</p>
+<p><strong>아키텍처 핵심</strong> Python 사이드카는 "에이전트 오케스트레이션"만 담당. 모든 데이터 접근은 반드시 Spring API를 경유하며, Spring Security가 기존과 동일하게 권한을 집행합니다. Python 코드가 손상되어도 Spring에서 막힙니다. </p>
+<h2 id="왜-하이브리드인가">왜 하이브리드인가?</h2>
+<table>
+<thead>
+<tr>
+<th>접근법</th>
+<th>장점</th>
+<th>단점</th>
+<th>선택</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>순수 Spring (Spring AI)</td>
+<td>단일 JVM, 배포 단순, 권한 자연스러움</td>
+<td>LangGraph 고급 기능 제한, MCP 생태계 Java 지원 약함</td>
+<td>부적합 (요구사항 복잡)</td>
+</tr>
+<tr>
+<td>순수 Python</td>
+<td>LangGraph/MCP 완전 활용</td>
+<td>기존 Spring 권한·API 재사용 어려움</td>
+<td>부적합 (권한 재구현 부담)</td>
+</tr>
+<tr>
+<td><strong>Spring + Python 사이드카 (채택)</strong></td>
+<td>기존 권한 100% 재사용, LangGraph/MCP 고급 기능 활용, 느슨한 결합</td>
+<td>두 언어 스택, JWT 전파 설계 필요</td>
+<td>최적</td>
+</tr>
+</tbody>
+</table>
+<p>03JWT 전파 흐름</p>
+<p>JWT가 전체 레이어에 전파되는 시퀀스</p>
+<p>sequenceDiagram participant U as 사용자 participant SSO as SSO/IdP participant UI as Spring UI participant PX as Spring /api/chat participant PY as Python Gateway participant AG as LangGraph Agent participant TL as MCP Tool participant API as Spring REST API participant DB as Oracle/ES U-&gt;&gt;SSO: 로그인 SSO--&gt;&gt;U: JWT 발급 U-&gt;&gt;UI: /chat (JWT in Cookie/Header) UI-&gt;&gt;PX: 질문 전송 (JWT) Note over PX: JWT 추출 후 Authorization Bearer로 설정 PX-&gt;&gt;PY: POST /api/ask\nAuthorization: Bearer {JWT} Note over PY: JWT 검증 (Spring과 동일 공개키) PY-&gt;&gt;AG: 에이전트 실행\nstate.user_token = JWT AG-&gt;&gt;TL: 도구 호출 (state에서 JWT 전달) TL-&gt;&gt;API: GET /api/customers\nAuthorization: Bearer {JWT} Note over API: Spring Security가 JWT 검증\n@PreAuthorize 권한 체크 API-&gt;&gt;DB: 사용자 권한 필터 적용 조회 DB--&gt;&gt;API: 필터링된 데이터 API--&gt;&gt;TL: 권한 범위 내 응답 TL--&gt;&gt;AG: 결과 (이미 권한 필터링됨) AG--&gt;&gt;PY: LLM이 해석한 답변 PY--&gt;&gt;PX: 최종 응답 PX--&gt;&gt;UI: JSON UI--&gt;&gt;U: 채팅 답변 표시 </p>
+<p>🔑</p>
+<p><strong>JWT 전파의 핵심</strong> 동일한 JWT가 레이어를 타고 최종 Spring API까지 도달합니다. Spring Security가 JWT를 검증하고 기존 권한 로직이 작동하므로, 사용자가 챗봇을 쓰든 기존 UI를 쓰든 <strong>동일한 데이터 범위</strong> 가 보장됩니다. </p>
+<p>04레이어별 역할 &amp; 책임</p>
+<table>
+<thead>
+<tr>
+<th>레이어</th>
+<th>역할</th>
+<th>권한 관련 책임</th>
+<th>기술</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><strong>Spring UI</strong></td>
+<td>채팅 페이지 렌더링</td>
+<td>기존 인증 세션 재사용</td>
+<td>Thymeleaf / 기존 프론트</td>
+</tr>
+<tr>
+<td><strong>Spring 프록시</strong></td>
+<td>LLM 서비스로 요청 중계</td>
+<td>JWT 추출 → Bearer 헤더로 전달</td>
+<td>Spring Controller</td>
+</tr>
+<tr>
+<td><strong>Python Gateway</strong></td>
+<td>API 진입점</td>
+<td>JWT 검증 (Spring과 동일 공개키)</td>
+<td>FastAPI + python-jose</td>
+</tr>
+<tr>
+<td><strong>LangGraph Agent</strong></td>
+<td>에이전트 오케스트레이션</td>
+<td>State에 user_token 보관 &amp; 전파</td>
+<td>LangGraph + LangChain</td>
+</tr>
+<tr>
+<td><strong>MCP Tools</strong></td>
+<td>기존 API 래핑</td>
+<td>JWT를 Spring API로 릴레이</td>
+<td>FastMCP + httpx</td>
+</tr>
+<tr>
+<td><strong>Spring REST API</strong></td>
+<td>실제 데이터 조회</td>
+<td><strong>권한 집행 (핵심)</strong></td>
+<td>Spring Security + @PreAuthorize</td>
+</tr>
+<tr>
+<td><strong>Oracle / ES</strong></td>
+<td>데이터 저장</td>
+<td>기존 방식 (VPD or 앱 필터)</td>
+<td>Oracle 19c / ES</td>
+</tr>
+</tbody>
+</table>
+<p>권한 책임 분리 (Separation of Concerns)</p>
+<p>graph LR subgraph NoAuth["권한 판단 없음"] PY_G["Python Gateway\nJWT 검증만"] AG["LangGraph Agent\n오케스트레이션"] MCP["MCP Tools\n릴레이"] end subgraph Auth["권한 판단 담당"] SPRING["Spring REST API\n@PreAuthorize\nService 필터"] end PY_G --&gt; AG --&gt; MCP --&gt;|JWT| SPRING SPRING --&gt;|필터링된 데이터| MCP style NoAuth fill:#0d0f18,stroke:#e09830 style Auth fill:#0d0f18,stroke:#30c8c0 </p>
+<p>05요청 처리 흐름 (End-to-End)</p>
+<p>사용자 질의부터 응답까지 — 권한 포함 처리</p>
+<p>flowchart TD START(["사용자 질문\n우리 부서 최근 주문 현황 알려줘"]) --&gt; AUTH{JWT 검증} AUTH --&gt;|실패| DENY1["401 재로그인"] AUTH --&gt;|성공| PLAN[에이전트 플래닝\nLLM이 도구 선택] PLAN --&gt; BRANCH{어떤 도구?} BRANCH --&gt;|MCP 기본| T1[get_orders 도구] BRANCH --&gt;|NL2SQL| T2[run_sql 도구] BRANCH --&gt;|RAG| T3[search_docs 도구] T1 --&gt;|JWT| S1[Spring /api/orders] T2 --&gt;|JWT + SQL| S2[Spring /api/nl2sql/execute] T3 --&gt;|JWT + query| S3[Spring /api/rag/search] S1 --&gt; AZ{Spring 권한 체크\n@PreAuthorize} S2 --&gt; AZ S3 --&gt; AZ AZ --&gt;|거부| DENY2["403 → 일반화 메시지"] AZ --&gt;|허용| FILTER[Service 레이어\n사용자별 필터링] FILTER --&gt; DATA[Oracle / ES / Vector] DATA --&gt;|필터링된 데이터| RESULT[도구 결과] RESULT --&gt; AGENT[에이전트 종합] AGENT --&gt; GUARD{Guardrail 검증} GUARD --&gt;|통과| RESPONSE[자연어 응답] GUARD --&gt;|실패| DENY3["기본값 응답"] RESPONSE --&gt; END([사용자에게 답변]) DENY2 --&gt; AGENT DENY3 --&gt; END style AUTH fill:#201010,stroke:#f05050,color:#f08080 style AZ fill:#201010,stroke:#f05050,color:#f08080 style GUARD fill:#201010,stroke:#f05050,color:#f08080 style FILTER fill:#102820,stroke:#30c880,color:#50e898 style AGENT fill:#1a2540,stroke:#5a7af0,color:#7a9aff </p>
+<p>06MCP Tools — 기존 API 래퍼</p>
+<p>MCP 도구 권한 처리 흐름</p>
+<p>sequenceDiagram participant AG as LangGraph Agent participant MCP as MCP Tool participant API as Spring API participant SS as Spring Security participant SVC as Service Layer AG-&gt;&gt;MCP: search_customer(name, ctx.user_token) MCP-&gt;&gt;API: GET /api/customers?name=...\nAuthorization: Bearer {JWT} API-&gt;&gt;SS: JWT 검증 SS-&gt;&gt;SS: @PreAuthorize 권한 체크 alt 권한 있음 SS-&gt;&gt;SVC: customerService.search(name, user) SVC-&gt;&gt;SVC: 부서/역할 필터 적용 SVC--&gt;&gt;API: 필터링된 고객 목록 API--&gt;&gt;MCP: 200 OK + 데이터 MCP--&gt;&gt;AG: {customers: [...]} else 권한 없음 SS--&gt;&gt;API: 403 Forbidden API--&gt;&gt;MCP: 403 MCP--&gt;&gt;AG: {accessible: false,\n message: "접근 권한 없음"} end </p>
+<p>PYTHONMCP Tool 구현 패턴</p>
+<div class="codehilite"><pre><span></span><code><span class="kn">from</span><span class="w"> </span><span class="nn">fastmcp</span><span class="w"> </span><span class="kn">import</span> <span class="n">FastMCP</span><span class="p">,</span> <span class="n">Context</span>
+<span class="kn">import</span><span class="w"> </span><span class="nn">httpx</span>
+
+<span class="n">mcp</span> <span class="o">=</span> <span class="n">FastMCP</span><span class="p">(</span><span class="s2">&quot;enterprise-tools&quot;</span><span class="p">)</span>
+<span class="n">SPRING_API</span> <span class="o">=</span> <span class="s2">&quot;https://internal.company.com/api&quot;</span>
+
+<span class="nd">@mcp</span><span class="o">.</span><span class="n">tool</span>
+<span class="k">async</span> <span class="k">def</span><span class="w"> </span><span class="nf">search_customer</span><span class="p">(</span><span class="n">name</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="n">ctx</span><span class="p">:</span> <span class="n">Context</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">dict</span><span class="p">:</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;고객 정보 검색 (사용자 권한 기반)&quot;&quot;&quot;</span>
+    <span class="n">user_token</span> <span class="o">=</span> <span class="n">ctx</span><span class="o">.</span><span class="n">state</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;user_token&quot;</span><span class="p">)</span>
+    <span class="k">if</span> <span class="ow">not</span> <span class="n">user_token</span><span class="p">:</span>
+        <span class="k">return</span> <span class="p">{</span><span class="s2">&quot;error&quot;</span><span class="p">:</span> <span class="s2">&quot;인증 토큰 없음&quot;</span><span class="p">}</span>
+
+    <span class="k">try</span><span class="p">:</span>
+        <span class="k">async</span> <span class="k">with</span> <span class="n">httpx</span><span class="o">.</span><span class="n">AsyncClient</span><span class="p">(</span><span class="n">timeout</span><span class="o">=</span><span class="mi">15</span><span class="p">)</span> <span class="k">as</span> <span class="n">client</span><span class="p">:</span>
+            <span class="n">resp</span> <span class="o">=</span> <span class="k">await</span> <span class="n">client</span><span class="o">.</span><span class="n">get</span><span class="p">(</span>
+                <span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="n">SPRING_API</span><span class="si">}</span><span class="s2">/customers/search&quot;</span><span class="p">,</span>
+                <span class="n">params</span><span class="o">=</span><span class="p">{</span><span class="s2">&quot;name&quot;</span><span class="p">:</span> <span class="n">name</span><span class="p">},</span>
+                <span class="n">headers</span><span class="o">=</span><span class="p">{</span><span class="s2">&quot;Authorization&quot;</span><span class="p">:</span> <span class="sa">f</span><span class="s2">&quot;Bearer </span><span class="si">{</span><span class="n">user_token</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">},</span>
+            <span class="p">)</span>
+
+        <span class="k">if</span> <span class="n">resp</span><span class="o">.</span><span class="n">status_code</span> <span class="o">==</span> <span class="mi">200</span><span class="p">:</span>
+            <span class="k">return</span> <span class="p">{</span><span class="s2">&quot;success&quot;</span><span class="p">:</span> <span class="kc">True</span><span class="p">,</span> <span class="s2">&quot;data&quot;</span><span class="p">:</span> <span class="n">resp</span><span class="o">.</span><span class="n">json</span><span class="p">()}</span>
+        <span class="k">elif</span> <span class="n">resp</span><span class="o">.</span><span class="n">status_code</span> <span class="o">==</span> <span class="mi">403</span><span class="p">:</span>
+            <span class="k">return</span> <span class="p">{</span><span class="s2">&quot;accessible&quot;</span><span class="p">:</span> <span class="kc">False</span><span class="p">,</span>
+                    <span class="s2">&quot;message&quot;</span><span class="p">:</span> <span class="s2">&quot;요청하신 정보를 제공할 수 없습니다&quot;</span><span class="p">}</span>
+        <span class="k">elif</span> <span class="n">resp</span><span class="o">.</span><span class="n">status_code</span> <span class="o">==</span> <span class="mi">401</span><span class="p">:</span>
+            <span class="k">return</span> <span class="p">{</span><span class="s2">&quot;error&quot;</span><span class="p">:</span> <span class="s2">&quot;인증 만료. 재로그인 필요&quot;</span><span class="p">}</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="k">return</span> <span class="p">{</span><span class="s2">&quot;error&quot;</span><span class="p">:</span> <span class="sa">f</span><span class="s2">&quot;조회 실패 (code: </span><span class="si">{</span><span class="n">resp</span><span class="o">.</span><span class="n">status_code</span><span class="si">}</span><span class="s2">)&quot;</span><span class="p">}</span>
+    <span class="k">except</span> <span class="ne">Exception</span> <span class="k">as</span> <span class="n">e</span><span class="p">:</span>
+        <span class="c1"># 에러 메시지에 내부 정보 노출 금지</span>
+        <span class="k">return</span> <span class="p">{</span><span class="s2">&quot;error&quot;</span><span class="p">:</span> <span class="s2">&quot;일시적 오류&quot;</span><span class="p">}</span>
+</code></pre></div>
+
+<p>⚠️</p>
+<p><strong>반드시 지킬 것</strong></p>
+<ul>
+<li>MCP 도구는 <strong>절대 DB에 직접 접근하지 않는다</strong></li>
+<li>모든 외부 호출은 기존 Spring API 경유</li>
+<li>에러 메시지에 URL, 테이블명, 컬럼명 노출 금지</li>
+<li>사용자 JWT 이외의 credential 사용 금지</li>
+</ul>
+<p>07NL2SQL — 가장 까다로운 권한 처리</p>
+<p>⚠️</p>
+<p><strong>NL2SQL은 가장 위험한 도구</strong> LLM이 자유롭게 SQL을 생성하므로 권한 필터가 누락될 수 있습니다. 따라서 <strong>Python이 SQL 실행을 직접 하지 않고</strong> , Spring 전용 엔드포인트에 위임해야 합니다. </p>
+<p>NL2SQL 권한 안전 처리 흐름</p>
+<p>sequenceDiagram participant AG as LangGraph Agent participant PY as Python NL2SQL Tool participant LLM as 사내 LLM API participant SP as Spring /api/nl2sql/execute participant VAL as Spring SqlValidator participant RW as Spring SqlRewriter participant AUD as Spring AuditLog participant DB as Oracle AG-&gt;&gt;PY: run_sql(question, ctx.user_token) PY-&gt;&gt;LLM: NL → SQL 변환 요청\n(프롬프트에 스키마 + 예제) LLM--&gt;&gt;PY: 생성된 SQL PY-&gt;&gt;SP: POST /api/nl2sql/execute\n{question, sql}\nAuthorization: Bearer {JWT} SP-&gt;&gt;VAL: SQL 문법·허용 테이블 검증 alt 검증 실패 VAL--&gt;&gt;SP: InvalidSql SP--&gt;&gt;PY: 400 + "쿼리 제한 초과" else 검증 통과 VAL--&gt;&gt;SP: OK SP-&gt;&gt;RW: 사용자 권한 기반 WHERE 주입 RW--&gt;&gt;SP: 재작성된 SQL SP-&gt;&gt;AUD: 감사 로그 기록 (원본+재작성+사용자) SP-&gt;&gt;DB: 전용 NL2SQL role로 실행 DB--&gt;&gt;SP: 결과 (사용자 범위 내) SP--&gt;&gt;PY: 데이터 end PY--&gt;&gt;AG: 결과 (LLM이 해석) </p>
+<h3 id="spring-쪽-nl2sql-엔드포인트">Spring 쪽 NL2SQL 엔드포인트</h3>
+<p>JAVANL2SQLController.java</p>
+<div class="codehilite"><pre><span></span><code><span class="err">@</span><span class="nx">RestController</span>
+<span class="err">@</span><span class="nx">RequestMapping</span><span class="p">(</span><span class="s2">&quot;/api/nl2sql&quot;</span><span class="p">)</span>
+<span class="kr">public</span><span class="w"> </span><span class="kd">class</span><span class="w"> </span><span class="nx">NL2SQLController</span><span class="w"> </span><span class="p">{</span>
+
+<span class="w">    </span><span class="err">@</span><span class="nx">Autowired</span><span class="w"> </span><span class="kr">private</span><span class="w"> </span><span class="nx">SqlValidatorService</span><span class="w"> </span><span class="nx">validator</span><span class="p">;</span>
+<span class="w">    </span><span class="err">@</span><span class="nx">Autowired</span><span class="w"> </span><span class="kr">private</span><span class="w"> </span><span class="nx">SqlRewriterService</span><span class="w"> </span><span class="nx">rewriter</span><span class="p">;</span>
+<span class="w">    </span><span class="err">@</span><span class="nx">Autowired</span><span class="w"> </span><span class="kr">private</span><span class="w"> </span><span class="nx">NL2SQLAuditService</span><span class="w"> </span><span class="nx">auditService</span><span class="p">;</span>
+<span class="w">    </span><span class="err">@</span><span class="nx">Autowired</span><span class="w"> </span><span class="kr">private</span><span class="w"> </span><span class="nx">JdbcTemplate</span><span class="w"> </span><span class="nx">nl2sqlJdbc</span><span class="p">;</span><span class="w">  </span><span class="c1">// 전용 role 계정</span>
+
+<span class="w">    </span><span class="err">@</span><span class="nx">PostMapping</span><span class="p">(</span><span class="s2">&quot;/execute&quot;</span><span class="p">)</span>
+<span class="w">    </span><span class="err">@</span><span class="nx">PreAuthorize</span><span class="p">(</span><span class="s2">&quot;hasAnyRole(&#39;ANALYST&#39;, &#39;MANAGER&#39;)&quot;</span><span class="p">)</span>
+<span class="w">    </span><span class="kr">public</span><span class="w"> </span><span class="nx">ResponseEntity</span><span class="cp">&lt;?</span><span class="o">&gt;</span> <span class="nx">execute</span><span class="p">(</span>
+        <span class="o">@</span><span class="nx">RequestBody</span> <span class="nx">NL2SQLRequest</span> <span class="nx">req</span><span class="p">,</span>
+        <span class="o">@</span><span class="nx">AuthenticationPrincipal</span> <span class="nx">UserDetails</span> <span class="nx">user</span>
+    <span class="p">)</span> <span class="p">{</span>
+        <span class="c1">// 1. SQL 검증 (sqlglot 파서 또는 직접 파서)</span>
+        <span class="nx">ValidationResult</span> <span class="nx">vr</span> <span class="o">=</span> <span class="nx">validator</span><span class="o">.</span><span class="nx">validate</span><span class="p">(</span><span class="nx">req</span><span class="o">.</span><span class="nx">getSql</span><span class="p">());</span>
+        <span class="k">if</span> <span class="p">(</span><span class="o">!</span><span class="nx">vr</span><span class="o">.</span><span class="nx">isValid</span><span class="p">())</span> <span class="p">{</span>
+            <span class="nx">auditService</span><span class="o">.</span><span class="nx">logBlocked</span><span class="p">(</span><span class="nx">user</span><span class="p">,</span> <span class="nx">req</span><span class="p">,</span> <span class="nx">vr</span><span class="o">.</span><span class="nx">getReason</span><span class="p">());</span>
+            <span class="k">return</span> <span class="nx">ResponseEntity</span><span class="o">.</span><span class="nx">status</span><span class="p">(</span><span class="mi">400</span><span class="p">)</span>
+                <span class="o">.</span><span class="nx">body</span><span class="p">(</span><span class="nx">Map</span><span class="o">.</span><span class="nx">of</span><span class="p">(</span><span class="s2">&quot;error&quot;</span><span class="p">,</span> <span class="s2">&quot;쿼리 제한을 초과했습니다&quot;</span><span class="p">));</span>
+        <span class="p">}</span>
+
+        <span class="c1">// 2. 사용자 권한 기반 WHERE 주입</span>
+        <span class="nx">String</span> <span class="nx">rewrittenSql</span> <span class="o">=</span> <span class="nx">rewriter</span><span class="o">.</span><span class="nx">addUserFilter</span><span class="p">(</span><span class="nx">req</span><span class="o">.</span><span class="nx">getSql</span><span class="p">(),</span> <span class="nx">user</span><span class="p">);</span>
+
+        <span class="c1">// 3. 감사 로그</span>
+        <span class="nx">String</span> <span class="nx">auditId</span> <span class="o">=</span> <span class="nx">auditService</span><span class="o">.</span><span class="nx">logStart</span><span class="p">(</span><span class="nx">user</span><span class="p">,</span> <span class="nx">req</span><span class="p">,</span> <span class="nx">rewrittenSql</span><span class="p">);</span>
+
+        <span class="k">try</span> <span class="p">{</span>
+            <span class="c1">// 4. 전용 DB 계정으로 실행 (민감 테이블 GRANT 없음)</span>
+            <span class="k">List</span><span class="o">&lt;</span><span class="nx">Map</span><span class="o">&lt;</span><span class="nx">String</span><span class="p">,</span><span class="nx">Object</span><span class="o">&gt;&gt;</span> <span class="nx">rows</span> <span class="o">=</span> <span class="nx">nl2sqlJdbc</span><span class="o">.</span><span class="nx">queryForList</span><span class="p">(</span><span class="nx">rewrittenSql</span><span class="p">);</span>
+
+            <span class="c1">// 5. 결과 마스킹 (필요 시)</span>
+            <span class="nx">rows</span> <span class="o">=</span> <span class="nx">rewriter</span><span class="o">.</span><span class="nx">maskSensitiveColumns</span><span class="p">(</span><span class="nx">rows</span><span class="p">,</span> <span class="nx">user</span><span class="p">);</span>
+
+            <span class="nx">auditService</span><span class="o">.</span><span class="nx">logSuccess</span><span class="p">(</span><span class="nx">auditId</span><span class="p">,</span> <span class="nx">rows</span><span class="o">.</span><span class="nx">size</span><span class="p">());</span>
+            <span class="k">return</span> <span class="nx">ResponseEntity</span><span class="o">.</span><span class="nx">ok</span><span class="p">(</span><span class="nx">Map</span><span class="o">.</span><span class="nx">of</span><span class="p">(</span><span class="s2">&quot;rows&quot;</span><span class="p">,</span> <span class="nx">rows</span><span class="p">,</span> <span class="s2">&quot;count&quot;</span><span class="p">,</span> <span class="nx">rows</span><span class="o">.</span><span class="nx">size</span><span class="p">()));</span>
+        <span class="p">}</span> <span class="k">catch</span> <span class="p">(</span><span class="nx">DataAccessException</span> <span class="nx">e</span><span class="p">)</span> <span class="p">{</span>
+            <span class="nx">auditService</span><span class="o">.</span><span class="nx">logError</span><span class="p">(</span><span class="nx">auditId</span><span class="p">,</span> <span class="nx">e</span><span class="o">.</span><span class="nx">getMessage</span><span class="p">());</span>
+            <span class="k">return</span> <span class="nx">ResponseEntity</span><span class="o">.</span><span class="nx">status</span><span class="p">(</span><span class="mi">500</span><span class="p">)</span>
+                <span class="o">.</span><span class="nx">body</span><span class="p">(</span><span class="nx">Map</span><span class="o">.</span><span class="nx">of</span><span class="p">(</span><span class="s2">&quot;error&quot;</span><span class="p">,</span> <span class="s2">&quot;쿼리 실행 실패&quot;</span><span class="p">));</span>
+        <span class="p">}</span>
+    <span class="p">}</span>
+<span class="p">}</span>
+</code></pre></div>
+
+<h3 id="spring-쪽-권한-기반-where-주입">Spring 쪽 권한 기반 WHERE 주입</h3>
+<p>JAVASqlRewriterService.java</p>
+<div class="codehilite"><pre><span></span><code><span class="nv">@Service</span>
+<span class="k">public</span><span class="w"> </span><span class="k">class</span><span class="w"> </span><span class="n">SqlRewriterService</span><span class="w"> </span><span class="err">{</span>
+
+<span class="w">    </span><span class="cm">/**</span>
+<span class="cm">     * 사용자 권한에 따라 SQL에 WHERE 조건 자동 주입</span>
+<span class="cm">     * - 부서 기반: WHERE dept_id IN (사용자 접근 가능 부서)</span>
+<span class="cm">     * - 소유 기반: WHERE owner_id = 사용자 ID</span>
+<span class="cm">     */</span>
+<span class="w">    </span><span class="k">public</span><span class="w"> </span><span class="n">String</span><span class="w"> </span><span class="n">addUserFilter</span><span class="p">(</span><span class="n">String</span><span class="w"> </span><span class="k">sql</span><span class="p">,</span><span class="w"> </span><span class="n">UserDetails</span><span class="w"> </span><span class="k">user</span><span class="p">)</span><span class="w"> </span><span class="err">{</span>
+<span class="w">        </span><span class="o">//</span><span class="w"> </span><span class="mf">1.</span><span class="w"> </span><span class="n">sqlglot</span><span class="w"> </span><span class="p">(</span><span class="n">또는</span><span class="w"> </span><span class="n">JSQLParser</span><span class="p">)</span><span class="w"> </span><span class="n">AST</span><span class="w"> </span><span class="n">파싱</span>
+<span class="w">        </span><span class="k">Statement</span><span class="w"> </span><span class="n">stmt</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">parseSelect</span><span class="p">(</span><span class="k">sql</span><span class="p">);</span>
+
+<span class="w">        </span><span class="o">//</span><span class="w"> </span><span class="mf">2.</span><span class="w"> </span><span class="n">참조</span><span class="w"> </span><span class="n">테이블에</span><span class="w"> </span><span class="n">따라</span><span class="w"> </span><span class="n">필터</span><span class="w"> </span><span class="n">결정</span>
+<span class="w">        </span><span class="n">List</span><span class="o">&lt;</span><span class="n">String</span><span class="o">&gt;</span><span class="w"> </span><span class="n">tables</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">extractTables</span><span class="p">(</span><span class="n">stmt</span><span class="p">);</span>
+<span class="w">        </span><span class="k">Map</span><span class="o">&lt;</span><span class="n">String</span><span class="p">,</span><span class="w"> </span><span class="n">String</span><span class="o">&gt;</span><span class="w"> </span><span class="n">filters</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="k">new</span><span class="w"> </span><span class="n">HashMap</span><span class="o">&lt;&gt;</span><span class="p">();</span>
+<span class="w">        </span><span class="k">for</span><span class="w"> </span><span class="p">(</span><span class="n">String</span><span class="w"> </span><span class="nc">table</span><span class="w"> </span><span class="err">:</span><span class="w"> </span><span class="n">tables</span><span class="p">)</span><span class="w"> </span><span class="err">{</span>
+<span class="w">            </span><span class="k">if</span><span class="w"> </span><span class="p">(</span><span class="n">tableHasDeptColumn</span><span class="p">(</span><span class="nc">table</span><span class="p">))</span><span class="w"> </span><span class="err">{</span>
+<span class="w">                </span><span class="n">List</span><span class="o">&lt;</span><span class="k">Integer</span><span class="o">&gt;</span><span class="w"> </span><span class="n">allowedDepts</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">getAllowedDepts</span><span class="p">(</span><span class="k">user</span><span class="p">);</span>
+<span class="w">                </span><span class="n">filters</span><span class="p">.</span><span class="n">put</span><span class="p">(</span><span class="nc">table</span><span class="p">,</span><span class="w"> </span><span class="ss">&quot;dept_id IN (&quot;</span><span class="w"> </span><span class="o">+</span><span class="w"> </span><span class="k">join</span><span class="p">(</span><span class="n">allowedDepts</span><span class="p">)</span><span class="w"> </span><span class="o">+</span><span class="w"> </span><span class="ss">&quot;)&quot;</span><span class="p">);</span>
+<span class="w">            </span><span class="err">}</span>
+<span class="w">            </span><span class="k">if</span><span class="w"> </span><span class="p">(</span><span class="n">tableHasOwnerColumn</span><span class="p">(</span><span class="nc">table</span><span class="p">))</span><span class="w"> </span><span class="err">{</span>
+<span class="w">                </span><span class="n">filters</span><span class="p">.</span><span class="n">put</span><span class="p">(</span><span class="nc">table</span><span class="p">,</span><span class="w"> </span><span class="ss">&quot;owner_id = &quot;</span><span class="w"> </span><span class="o">+</span><span class="w"> </span><span class="k">user</span><span class="p">.</span><span class="n">getId</span><span class="p">());</span>
+<span class="w">            </span><span class="err">}</span>
+<span class="w">        </span><span class="err">}</span>
+
+<span class="w">        </span><span class="o">//</span><span class="w"> </span><span class="mf">3.</span><span class="w"> </span><span class="n">AST에</span><span class="w"> </span><span class="k">WHERE</span><span class="w"> </span><span class="n">조건</span><span class="w"> </span><span class="ow">AND</span><span class="w"> </span><span class="n">연결로</span><span class="w"> </span><span class="n">추가</span>
+<span class="w">        </span><span class="k">return</span><span class="w"> </span><span class="n">injectWhere</span><span class="p">(</span><span class="n">stmt</span><span class="p">,</span><span class="w"> </span><span class="n">filters</span><span class="p">).</span><span class="n">toString</span><span class="p">();</span>
+<span class="w">    </span><span class="err">}</span>
+
+<span class="w">    </span><span class="cm">/**</span>
+<span class="cm">     * 민감 컬럼 마스킹 (역할별)</span>
+<span class="cm">     */</span>
+<span class="w">    </span><span class="k">public</span><span class="w"> </span><span class="n">List</span><span class="o">&lt;</span><span class="k">Map</span><span class="o">&lt;</span><span class="n">String</span><span class="p">,</span><span class="k">Object</span><span class="o">&gt;&gt;</span><span class="w"> </span><span class="n">maskSensitiveColumns</span><span class="p">(</span>
+<span class="w">            </span><span class="n">List</span><span class="o">&lt;</span><span class="k">Map</span><span class="o">&lt;</span><span class="n">String</span><span class="p">,</span><span class="k">Object</span><span class="o">&gt;&gt;</span><span class="w"> </span><span class="k">rows</span><span class="p">,</span><span class="w"> </span><span class="n">UserDetails</span><span class="w"> </span><span class="k">user</span><span class="p">)</span><span class="w"> </span><span class="err">{</span>
+<span class="w">        </span><span class="k">if</span><span class="w"> </span><span class="p">(</span><span class="k">user</span><span class="p">.</span><span class="n">hasRole</span><span class="p">(</span><span class="ss">&quot;ADMIN&quot;</span><span class="p">))</span><span class="w"> </span><span class="k">return</span><span class="w"> </span><span class="k">rows</span><span class="p">;</span><span class="w">  </span><span class="o">//</span><span class="w"> </span><span class="n">관리자는</span><span class="w"> </span><span class="n">원본</span>
+
+<span class="w">        </span><span class="k">return</span><span class="w"> </span><span class="k">rows</span><span class="p">.</span><span class="n">stream</span><span class="p">().</span><span class="k">map</span><span class="p">(</span><span class="k">row</span><span class="w"> </span><span class="o">-&gt;</span><span class="w"> </span><span class="err">{</span>
+<span class="w">            </span><span class="k">Map</span><span class="o">&lt;</span><span class="n">String</span><span class="p">,</span><span class="k">Object</span><span class="o">&gt;</span><span class="w"> </span><span class="n">masked</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="k">new</span><span class="w"> </span><span class="n">HashMap</span><span class="o">&lt;&gt;</span><span class="p">(</span><span class="k">row</span><span class="p">);</span>
+<span class="w">            </span><span class="k">if</span><span class="w"> </span><span class="p">(</span><span class="n">masked</span><span class="p">.</span><span class="n">containsKey</span><span class="p">(</span><span class="ss">&quot;ssn&quot;</span><span class="p">))</span><span class="w"> </span><span class="n">masked</span><span class="p">.</span><span class="n">put</span><span class="p">(</span><span class="ss">&quot;ssn&quot;</span><span class="p">,</span><span class="w"> </span><span class="ss">&quot;******-*******&quot;</span><span class="p">);</span>
+<span class="w">            </span><span class="k">if</span><span class="w"> </span><span class="p">(</span><span class="n">masked</span><span class="p">.</span><span class="n">containsKey</span><span class="p">(</span><span class="ss">&quot;phone&quot;</span><span class="p">))</span><span class="w"> </span><span class="n">masked</span><span class="p">.</span><span class="n">put</span><span class="p">(</span><span class="ss">&quot;phone&quot;</span><span class="p">,</span><span class="w"> </span><span class="n">maskPhone</span><span class="p">(...));</span>
+<span class="w">            </span><span class="k">return</span><span class="w"> </span><span class="n">masked</span><span class="p">;</span>
+<span class="w">        </span><span class="err">}</span><span class="p">).</span><span class="n">toList</span><span class="p">();</span>
+<span class="w">    </span><span class="err">}</span>
+<span class="err">}</span>
+</code></pre></div>
+
+<h3 id="python-쪽-nl2sql-도구">Python 쪽 NL2SQL 도구</h3>
+<p>PYTHONnl2sql_tool.py</p>
+<div class="codehilite"><pre><span></span><code><span class="err">@</span><span class="n">mcp</span><span class="o">.</span><span class="k">tool</span>
+<span class="n">async</span><span class="w"> </span><span class="n">def</span><span class="w"> </span><span class="n">run_sql</span><span class="p">(</span><span class="n">question</span><span class="p">:</span><span class="w"> </span><span class="nb">str</span><span class="p">,</span><span class="w"> </span><span class="n">ctx</span><span class="p">:</span><span class="w"> </span><span class="n">Context</span><span class="p">)</span><span class="w"> </span><span class="o">-&gt;</span><span class="w"> </span><span class="n">dict</span><span class="p">:</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;자연어 질문을 SQL로 변환 후 실행&quot;&quot;&quot;</span>
+<span class="w">    </span><span class="n">user_token</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">ctx</span><span class="o">.</span><span class="n">state</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;user_token&quot;</span><span class="p">)</span>
+
+<span class="w">    </span><span class="c1"># 1. LLM이 SQL 생성</span>
+<span class="w">    </span><span class="n">schema_context</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">await</span><span class="w"> </span><span class="n">get_schema_for_user</span><span class="p">(</span><span class="n">user_token</span><span class="p">)</span>
+<span class="w">    </span><span class="n">sql</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">await</span><span class="w"> </span><span class="n">llm</span><span class="o">.</span><span class="n">generate_sql</span><span class="p">(</span><span class="n">question</span><span class="p">,</span><span class="w"> </span><span class="n">schema_context</span><span class="p">)</span>
+
+<span class="w">    </span><span class="c1"># 2. Spring NL2SQL 엔드포인트에 위임 (검증+권한+실행+감사 전부 Spring 책임)</span>
+<span class="w">    </span><span class="n">async</span><span class="w"> </span><span class="n">with</span><span class="w"> </span><span class="n">httpx</span><span class="o">.</span><span class="n">AsyncClient</span><span class="p">(</span><span class="n">timeout</span><span class="o">=</span><span class="mi">30</span><span class="p">)</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="n">client</span><span class="p">:</span>
+<span class="w">        </span><span class="n">resp</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">await</span><span class="w"> </span><span class="n">client</span><span class="o">.</span><span class="n">post</span><span class="p">(</span>
+<span class="w">            </span><span class="n">f</span><span class="s2">&quot;{SPRING_API}/api/nl2sql/execute&quot;</span><span class="p">,</span>
+<span class="w">            </span><span class="n">json</span><span class="o">=</span><span class="p">{</span><span class="s2">&quot;question&quot;</span><span class="p">:</span><span class="w"> </span><span class="n">question</span><span class="p">,</span><span class="w"> </span><span class="s2">&quot;sql&quot;</span><span class="p">:</span><span class="w"> </span><span class="n">sql</span><span class="p">},</span>
+<span class="w">            </span><span class="n">headers</span><span class="o">=</span><span class="p">{</span><span class="s2">&quot;Authorization&quot;</span><span class="p">:</span><span class="w"> </span><span class="n">f</span><span class="s2">&quot;Bearer {user_token}&quot;</span><span class="p">},</span>
+<span class="w">        </span><span class="p">)</span>
+
+<span class="w">    </span><span class="k">if</span><span class="w"> </span><span class="n">resp</span><span class="o">.</span><span class="n">status_code</span><span class="w"> </span><span class="o">==</span><span class="w"> </span><span class="mi">200</span><span class="p">:</span>
+<span class="w">        </span><span class="n">data</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">resp</span><span class="o">.</span><span class="n">json</span><span class="p">()</span>
+<span class="w">        </span><span class="k">return</span><span class="w"> </span><span class="p">{</span><span class="s2">&quot;success&quot;</span><span class="p">:</span><span class="w"> </span><span class="n">True</span><span class="p">,</span><span class="w"> </span><span class="s2">&quot;rows&quot;</span><span class="p">:</span><span class="w"> </span><span class="n">data</span><span class="p">[</span><span class="s2">&quot;rows&quot;</span><span class="p">][:</span><span class="mi">100</span><span class="p">],</span><span class="w">  </span><span class="c1"># 과다 반환 방지</span>
+<span class="w">                </span><span class="s2">&quot;total_count&quot;</span><span class="p">:</span><span class="w"> </span><span class="n">data</span><span class="p">[</span><span class="s2">&quot;count&quot;</span><span class="p">]}</span>
+<span class="w">    </span><span class="k">elif</span><span class="w"> </span><span class="n">resp</span><span class="o">.</span><span class="n">status_code</span><span class="w"> </span><span class="o">==</span><span class="w"> </span><span class="mi">400</span><span class="p">:</span>
+<span class="w">        </span><span class="k">return</span><span class="w"> </span><span class="p">{</span><span class="s2">&quot;error&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;쿼리를 처리할 수 없습니다. 질문을 다시 해주세요&quot;</span><span class="p">}</span>
+<span class="w">    </span><span class="k">elif</span><span class="w"> </span><span class="n">resp</span><span class="o">.</span><span class="n">status_code</span><span class="w"> </span><span class="o">==</span><span class="w"> </span><span class="mi">403</span><span class="p">:</span>
+<span class="w">        </span><span class="k">return</span><span class="w"> </span><span class="p">{</span><span class="s2">&quot;error&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;접근 권한이 없습니다&quot;</span><span class="p">}</span>
+<span class="w">    </span><span class="k">else</span><span class="p">:</span>
+<span class="w">        </span><span class="k">return</span><span class="w"> </span><span class="p">{</span><span class="s2">&quot;error&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;일시적 오류&quot;</span><span class="p">}</span>
+</code></pre></div>
+
+<p>🔐</p>
+<p><strong>왜 Python이 직접 실행하면 안 되나</strong> Python이 Oracle에 직접 연결하면 ① LLM이 생성한 SQL이 권한 필터 없이 실행될 위험, ② Spring Security와 별도의 권한 경로가 생겨 감사 추적 분산, ③ 사내 보안 감사 시 이중 관리 부담. Spring에 위임하면 기존 감사 인프라를 그대로 활용할 수 있습니다. </p>
+<p>08RAG — 권한 메타데이터 기반 필터링</p>
+<p>RAG 인덱싱 시 권한 메타데이터 부착</p>
+<p>flowchart LR DOC[원본 문서\n사내 시스템] --&gt;|수집| CHUNK[청킹 + 임베딩] CHUNK --&gt; META[권한 메타데이터 부착\nacl.roles, acl.depts, sensitivity] META --&gt; VEC[(Vector DB\nQdrant/ES)] DOC -.-&gt;|권한 변경 이벤트| SYNC[ACL 동기화 DAG] SYNC --&gt; VEC style META fill:#201010,stroke:#f05050,color:#f08080 style VEC fill:#102820,stroke:#30c880,color:#50e898 </p>
+<p>RAG 검색 시 권한 필터링 (이중 검증)</p>
+<p>sequenceDiagram participant AG as LangGraph Agent participant RT as RAG Tool participant PERM as Spring /api/me/permissions participant VEC as Vector DB participant VER as Spring /api/rag/verify AG-&gt;&gt;RT: search_documents(query, user_token) RT-&gt;&gt;PERM: GET /api/me/permissions\nAuthorization: Bearer {JWT} PERM--&gt;&gt;RT: {roles: [...], depts: [...], max_level: "internal"} RT-&gt;&gt;VEC: Vector Search\nfilter: acl.roles IN user.roles\n sensitivity &lt;= max_level VEC--&gt;&gt;RT: Top-K 청크 (권한 필터 적용) loop 각 청크 RT-&gt;&gt;VER: POST /api/rag/verify\n{doc_id}\nAuthorization: Bearer {JWT} VER--&gt;&gt;RT: {accessible: true/false} end RT--&gt;&gt;AG: 권한 검증 통과한 청크만 반환 </p>
+<p>PYTHONRAG Tool 구현</p>
+<div class="codehilite"><pre><span></span><code><span class="err">@</span><span class="n">mcp</span><span class="o">.</span><span class="k">tool</span>
+<span class="n">async</span><span class="w"> </span><span class="n">def</span><span class="w"> </span><span class="n">search_documents</span><span class="p">(</span><span class="n">query</span><span class="p">:</span><span class="w"> </span><span class="nb">str</span><span class="p">,</span><span class="w"> </span><span class="n">ctx</span><span class="p">:</span><span class="w"> </span><span class="n">Context</span><span class="p">)</span><span class="w"> </span><span class="o">-&gt;</span><span class="w"> </span><span class="n">list</span><span class="p">:</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;문서 검색 — 권한 기반&quot;&quot;&quot;</span>
+<span class="w">    </span><span class="n">user_token</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">ctx</span><span class="o">.</span><span class="n">state</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;user_token&quot;</span><span class="p">)</span>
+
+<span class="w">    </span><span class="c1"># 1. Spring에서 사용자 권한 조회</span>
+<span class="w">    </span><span class="n">perms</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">await</span><span class="w"> </span><span class="n">fetch_user_permissions</span><span class="p">(</span><span class="n">user_token</span><span class="p">)</span>
+<span class="w">    </span><span class="k">if</span><span class="w"> </span><span class="ow">not</span><span class="w"> </span><span class="n">perms</span><span class="p">:</span>
+<span class="w">        </span><span class="k">return</span><span class="w"> </span><span class="p">[]</span>
+
+<span class="w">    </span><span class="c1"># 2. Vector DB 검색 with 권한 필터</span>
+<span class="w">    </span><span class="n">query_emb</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">await</span><span class="w"> </span><span class="n">embed</span><span class="p">(</span><span class="n">query</span><span class="p">)</span>
+<span class="w">    </span><span class="n">results</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">qdrant</span><span class="o">.</span><span class="n">search</span><span class="p">(</span>
+<span class="w">        </span><span class="n">collection_name</span><span class="o">=</span><span class="s2">&quot;docs&quot;</span><span class="p">,</span>
+<span class="w">        </span><span class="n">query_vector</span><span class="o">=</span><span class="n">query_emb</span><span class="p">,</span>
+<span class="w">        </span><span class="n">query_filter</span><span class="o">=</span><span class="p">{</span>
+<span class="w">            </span><span class="s2">&quot;must&quot;</span><span class="p">:</span><span class="w"> </span><span class="p">[</span>
+<span class="w">                </span><span class="p">{</span><span class="s2">&quot;key&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;acl.roles&quot;</span><span class="p">,</span><span class="w"> </span><span class="s2">&quot;match&quot;</span><span class="p">:</span><span class="w"> </span><span class="p">{</span><span class="s2">&quot;any&quot;</span><span class="p">:</span><span class="w"> </span><span class="n">perms</span><span class="p">[</span><span class="s2">&quot;roles&quot;</span><span class="p">]}},</span>
+<span class="w">                </span><span class="p">{</span><span class="s2">&quot;key&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;acl.depts&quot;</span><span class="p">,</span><span class="w"> </span><span class="s2">&quot;match&quot;</span><span class="p">:</span><span class="w"> </span><span class="p">{</span><span class="s2">&quot;any&quot;</span><span class="p">:</span><span class="w"> </span><span class="n">perms</span><span class="p">[</span><span class="s2">&quot;depts&quot;</span><span class="p">]}},</span>
+<span class="w">                </span><span class="p">{</span><span class="s2">&quot;key&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;acl.sensitivity_level&quot;</span><span class="p">,</span>
+<span class="w">                 </span><span class="s2">&quot;range&quot;</span><span class="p">:</span><span class="w"> </span><span class="p">{</span><span class="s2">&quot;lte&quot;</span><span class="p">:</span><span class="w"> </span><span class="n">perms</span><span class="p">[</span><span class="s2">&quot;max_level&quot;</span><span class="p">]}}</span>
+<span class="w">            </span><span class="p">]</span>
+<span class="w">        </span><span class="p">},</span>
+<span class="w">        </span><span class="n">limit</span><span class="o">=</span><span class="mi">20</span>
+<span class="w">    </span><span class="p">)</span>
+
+<span class="w">    </span><span class="c1"># 3. 이중 검증 (Spring 실시간 확인)</span>
+<span class="w">    </span><span class="n">verified</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="p">[]</span>
+<span class="w">    </span><span class="k">for</span><span class="w"> </span><span class="n">r</span><span class="w"> </span><span class="ow">in</span><span class="w"> </span><span class="n">results</span><span class="p">:</span>
+<span class="w">        </span><span class="k">if</span><span class="w"> </span><span class="n">await</span><span class="w"> </span><span class="n">verify_access</span><span class="p">(</span><span class="n">r</span><span class="o">.</span><span class="n">payload</span><span class="p">[</span><span class="s2">&quot;doc_id&quot;</span><span class="p">],</span><span class="w"> </span><span class="n">user_token</span><span class="p">):</span>
+<span class="w">            </span><span class="n">verified</span><span class="o">.</span><span class="n">append</span><span class="p">({</span>
+<span class="w">                </span><span class="s2">&quot;content&quot;</span><span class="p">:</span><span class="w"> </span><span class="n">r</span><span class="o">.</span><span class="n">payload</span><span class="p">[</span><span class="s2">&quot;content&quot;</span><span class="p">],</span>
+<span class="w">                </span><span class="s2">&quot;source&quot;</span><span class="p">:</span><span class="w"> </span><span class="n">r</span><span class="o">.</span><span class="n">payload</span><span class="p">[</span><span class="s2">&quot;source&quot;</span><span class="p">],</span>
+<span class="w">                </span><span class="s2">&quot;score&quot;</span><span class="p">:</span><span class="w"> </span><span class="n">r</span><span class="o">.</span><span class="n">score</span>
+<span class="w">            </span><span class="p">})</span>
+<span class="w">    </span><span class="k">return</span><span class="w"> </span><span class="n">verified</span><span class="p">[:</span><span class="mi">5</span><span class="p">]</span>
+</code></pre></div>
+
+<p>필터 레벨 1</p>
+<p>벡터 검색 단계</p>
+<p>권한 메타데이터(<code>acl</code>)를 Qdrant/ES 쿼리 필터에 주입. 권한 없는 청크는 <strong>Top-K 결과에 애초에 포함되지 않음</strong>.</p>
+<p>필터 레벨 2</p>
+<p>이중 검증</p>
+<p>검색된 각 청크에 대해 Spring에 <code>GET /api/rag/verify</code> 호출. 권한 변경이 Vector DB에 미반영된 경우 대비.</p>
+<p>동기화</p>
+<p>ACL 동기화 DAG</p>
+<p>원본 문서 권한 변경 시 Vector DB의 <code>acl</code> 메타데이터 업데이트. Airflow 주기적 sync.</p>
+<p>Fallback</p>
+<p>Spring 프록시 패턴</p>
+<p>복잡한 경우 Spring이 RAG 검색 자체를 대행. Python은 <code>/api/rag/search</code> 호출만.</p>
+<p>09Spring 쪽 구현</p>
+<h2 id="채팅-ui--프록시-컨트롤러">채팅 UI + 프록시 컨트롤러</h2>
+<p>JAVAChatController.java</p>
+<div class="codehilite"><pre><span></span><code><span class="err">@</span><span class="nx">RestController</span>
+<span class="err">@</span><span class="nx">RequestMapping</span><span class="p">(</span><span class="s2">&quot;/api/chat&quot;</span><span class="p">)</span>
+<span class="kr">public</span><span class="w"> </span><span class="kd">class</span><span class="w"> </span><span class="nx">ChatController</span><span class="w"> </span><span class="p">{</span>
+
+<span class="w">    </span><span class="err">@</span><span class="nx">Value</span><span class="p">(</span><span class="s2">&quot;${llm.sidecar.url}&quot;</span><span class="p">)</span>
+<span class="w">    </span><span class="kr">private</span><span class="w"> </span><span class="nb">String</span><span class="w"> </span><span class="nx">llmSidecarUrl</span><span class="p">;</span>
+
+<span class="w">    </span><span class="err">@</span><span class="nx">Autowired</span>
+<span class="w">    </span><span class="kr">private</span><span class="w"> </span><span class="nx">RestTemplate</span><span class="w"> </span><span class="nx">restTemplate</span><span class="p">;</span>
+
+<span class="w">    </span><span class="err">@</span><span class="nx">GetMapping</span><span class="p">(</span><span class="s2">&quot;/page&quot;</span><span class="p">)</span>
+<span class="w">    </span><span class="err">@</span><span class="nx">PreAuthorize</span><span class="p">(</span><span class="s2">&quot;isAuthenticated()&quot;</span><span class="p">)</span>
+<span class="w">    </span><span class="kr">public</span><span class="w"> </span><span class="nb">String</span><span class="w"> </span><span class="nx">chatPage</span><span class="p">()</span><span class="w"> </span><span class="p">{</span>
+<span class="w">        </span><span class="k">return</span><span class="w"> </span><span class="s2">&quot;chat&quot;</span><span class="p">;</span><span class="w">  </span><span class="c1">// Thymeleaf chat.html</span>
+<span class="w">    </span><span class="p">}</span>
+
+<span class="w">    </span><span class="err">@</span><span class="nx">PostMapping</span><span class="p">(</span><span class="s2">&quot;/ask&quot;</span><span class="p">)</span>
+<span class="w">    </span><span class="err">@</span><span class="nx">PreAuthorize</span><span class="p">(</span><span class="s2">&quot;isAuthenticated()&quot;</span><span class="p">)</span>
+<span class="w">    </span><span class="kr">public</span><span class="w"> </span><span class="nx">ResponseEntity</span><span class="cp">&lt;?</span><span class="o">&gt;</span> <span class="nx">ask</span><span class="p">(</span>
+        <span class="o">@</span><span class="nx">RequestBody</span> <span class="nx">ChatRequest</span> <span class="nx">req</span><span class="p">,</span>
+        <span class="nx">HttpServletRequest</span> <span class="nx">request</span><span class="p">,</span>
+        <span class="o">@</span><span class="nx">AuthenticationPrincipal</span> <span class="nx">UserDetails</span> <span class="nx">user</span>
+    <span class="p">)</span> <span class="p">{</span>
+        <span class="c1">// 현재 사용자의 JWT 추출</span>
+        <span class="nx">String</span> <span class="nx">jwt</span> <span class="o">=</span> <span class="nx">extractJwt</span><span class="p">(</span><span class="nx">request</span><span class="p">);</span>
+
+        <span class="c1">// Python LLM 서비스 호출</span>
+        <span class="nx">HttpHeaders</span> <span class="nx">headers</span> <span class="o">=</span> <span class="k">new</span> <span class="nx">HttpHeaders</span><span class="p">();</span>
+        <span class="nx">headers</span><span class="o">.</span><span class="nx">setBearerAuth</span><span class="p">(</span><span class="nx">jwt</span><span class="p">);</span>
+        <span class="nx">headers</span><span class="o">.</span><span class="nx">setContentType</span><span class="p">(</span><span class="nx">MediaType</span><span class="o">.</span><span class="nx">APPLICATION_JSON</span><span class="p">);</span>
+
+        <span class="k">try</span> <span class="p">{</span>
+            <span class="nx">ResponseEntity</span><span class="o">&lt;</span><span class="nx">Map</span><span class="o">&gt;</span> <span class="nx">response</span> <span class="o">=</span> <span class="nx">restTemplate</span><span class="o">.</span><span class="nx">exchange</span><span class="p">(</span>
+                <span class="nx">llmSidecarUrl</span> <span class="o">+</span> <span class="s2">&quot;/api/ask&quot;</span><span class="p">,</span>
+                <span class="nx">HttpMethod</span><span class="o">.</span><span class="nx">POST</span><span class="p">,</span>
+                <span class="k">new</span> <span class="nx">HttpEntity</span><span class="o">&lt;&gt;</span><span class="p">(</span><span class="nx">req</span><span class="p">,</span> <span class="nx">headers</span><span class="p">),</span>
+                <span class="nx">Map</span><span class="o">.</span><span class="k">class</span>
+            <span class="err">);</span>
+<span class="w">            </span><span class="k">return</span><span class="w"> </span><span class="nx">ResponseEntity</span><span class="p">.</span><span class="nx">ok</span><span class="p">(</span><span class="nx">response</span><span class="p">.</span><span class="nx">getBody</span><span class="p">());</span>
+<span class="w">        </span><span class="p">}</span><span class="w"> </span><span class="k">catch</span><span class="w"> </span><span class="p">(</span><span class="nx">HttpClientErrorException</span><span class="w"> </span><span class="nx">e</span><span class="p">)</span><span class="w"> </span><span class="p">{</span>
+<span class="w">            </span><span class="c1">// Python 쪽 에러를 그대로 전파</span>
+<span class="w">            </span><span class="k">return</span><span class="w"> </span><span class="nx">ResponseEntity</span><span class="p">.</span><span class="nx">status</span><span class="p">(</span><span class="nx">e</span><span class="p">.</span><span class="nx">getStatusCode</span><span class="p">())</span>
+<span class="w">                </span><span class="p">.</span><span class="nx">body</span><span class="p">(</span><span class="nx">e</span><span class="p">.</span><span class="nx">getResponseBodyAsString</span><span class="p">());</span>
+<span class="w">        </span><span class="p">}</span>
+<span class="w">    </span><span class="p">}</span>
+
+<span class="w">    </span><span class="kr">private</span><span class="w"> </span><span class="nb">String</span><span class="w"> </span><span class="nx">extractJwt</span><span class="p">(</span><span class="nx">HttpServletRequest</span><span class="w"> </span><span class="nx">request</span><span class="p">)</span><span class="w"> </span><span class="p">{</span>
+<span class="w">        </span><span class="nb">String</span><span class="w"> </span><span class="nx">auth</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="nx">request</span><span class="p">.</span><span class="nx">getHeader</span><span class="p">(</span><span class="s2">&quot;Authorization&quot;</span><span class="p">);</span>
+<span class="w">        </span><span class="k">if</span><span class="w"> </span><span class="p">(</span><span class="nx">auth</span><span class="w"> </span><span class="o">!=</span><span class="w"> </span><span class="kc">null</span><span class="w"> </span><span class="o">&amp;&amp;</span><span class="w"> </span><span class="nx">auth</span><span class="p">.</span><span class="nx">startsWith</span><span class="p">(</span><span class="s2">&quot;Bearer &quot;</span><span class="p">))</span><span class="w"> </span><span class="p">{</span>
+<span class="w">            </span><span class="k">return</span><span class="w"> </span><span class="nx">auth</span><span class="p">.</span><span class="nx">substring</span><span class="p">(</span><span class="mf">7</span><span class="p">);</span>
+<span class="w">        </span><span class="p">}</span>
+<span class="w">        </span><span class="c1">// 쿠키에서 꺼내기 (세션 기반 시)</span>
+<span class="w">        </span><span class="k">return</span><span class="w"> </span><span class="p">(</span><span class="nb">String</span><span class="p">)</span><span class="w"> </span><span class="nx">request</span><span class="p">.</span><span class="nx">getAttribute</span><span class="p">(</span><span class="s2">&quot;jwt&quot;</span><span class="p">);</span>
+<span class="w">    </span><span class="p">}</span>
+<span class="p">}</span>
+</code></pre></div>
+
+<h3 id="채팅-페이지-thymeleaf-또는-기존-프론트">채팅 페이지 (Thymeleaf 또는 기존 프론트)</h3>
+<p>HTMLtemplates/chat.html</p>
+<div class="codehilite"><pre><span></span><code><span class="cp">&lt;!DOCTYPE html&gt;</span>
+<span class="nt">&lt;html</span> <span class="na">xmlns:th=</span><span class="s">&quot;http://www.thymeleaf.org&quot;</span><span class="nt">&gt;</span>
+<span class="nt">&lt;head&gt;</span>
+  <span class="nt">&lt;title&gt;</span>사내 AI 챗봇<span class="p">&lt;/</span><span class="nt">title</span><span class="p">&gt;</span>
+  <span class="nt">&lt;meta</span> <span class="na">name=</span><span class="s">&quot;_csrf&quot;</span> <span class="na">th:content=</span><span class="s">&quot;</span><span class="cp">${</span><span class="n">_csrf</span><span class="o">.</span><span class="n">token</span><span class="cp">}</span><span class="s">&quot;/</span><span class="nt">&gt;</span>
+<span class="p">&lt;/</span><span class="nt">head</span><span class="p">&gt;</span>
+<span class="nt">&lt;body&gt;</span>
+  <span class="nt">&lt;div</span> <span class="na">id=</span><span class="s">&quot;chat&quot;</span><span class="nt">&gt;</span>
+    <span class="nt">&lt;div</span> <span class="na">id=</span><span class="s">&quot;messages&quot;</span><span class="nt">&gt;</span>
+</code></pre></div>
+
+<div class="codehilite"><pre><span></span><code><span class="w">        </span><span class="nt">&lt;textarea</span><span class="w"> </span><span class="na">id=</span><span class="s">&quot;input&quot;</span><span class="w"> </span><span class="na">rows=</span><span class="s">&quot;3&quot;</span><span class="nt">&gt;&lt;/textarea&gt;</span>
+<span class="w">        </span><span class="nt">&lt;button</span><span class="w"> </span><span class="na">onclick=</span><span class="s">&quot;send()&quot;</span><span class="nt">&gt;</span>전송<span class="nt">&lt;/button&gt;</span>
+</code></pre></div>
+
+<div class="codehilite"><pre><span></span><code><span class="w">  </span><span class="nt">&lt;script&gt;</span>
+<span class="w">    </span>async<span class="w"> </span>function<span class="w"> </span>send()<span class="w"> </span>{
+<span class="w">      </span>const<span class="w"> </span>q<span class="w"> </span>=<span class="w"> </span>document.getElementById(&#39;input&#39;).value;
+<span class="w">      </span>const<span class="w"> </span>csrf<span class="w"> </span>=<span class="w"> </span>document.querySelector(&#39;meta[name=&quot;_csrf&quot;]&#39;).content;
+
+<span class="w">      </span>const<span class="w"> </span>resp<span class="w"> </span>=<span class="w"> </span>await<span class="w"> </span>fetch(&#39;/api/chat/ask&#39;,<span class="w"> </span>{
+<span class="w">        </span>method:<span class="w"> </span>&#39;POST&#39;,
+<span class="w">        </span>credentials:<span class="w"> </span>&#39;include&#39;,<span class="w">  </span>//<span class="w"> </span>기존<span class="w"> </span>세션<span class="w"> </span>쿠키<span class="w"> </span>포함
+<span class="w">        </span>headers:<span class="w"> </span>{
+<span class="w">          </span>&#39;Content-Type&#39;:<span class="w"> </span>&#39;application/json&#39;,
+<span class="w">          </span>&#39;X-CSRF-TOKEN&#39;:<span class="w"> </span>csrf
+<span class="w">        </span>},
+<span class="w">        </span>body:<span class="w"> </span>JSON.stringify({question:<span class="w"> </span>q})
+<span class="w">      </span>});
+
+<span class="w">      </span>const<span class="w"> </span>data<span class="w"> </span>=<span class="w"> </span>await<span class="w"> </span>resp.json();
+<span class="w">      </span>appendMessage(&#39;assistant&#39;,<span class="w"> </span>data.answer);
+<span class="w">    </span>}
+<span class="w">  </span><span class="nt">&lt;/script&gt;</span>
+<span class="nt">&lt;/body&gt;</span>
+<span class="nt">&lt;/html&gt;</span>
+</code></pre></div>
+
+<p>10Python 쪽 구현</p>
+<p>PYTHONapp/main.py</p>
+<div class="codehilite"><pre><span></span><code><span class="kn">from</span><span class="w"> </span><span class="nn">fastapi</span><span class="w"> </span><span class="kn">import</span> <span class="n">FastAPI</span><span class="p">,</span> <span class="n">Depends</span><span class="p">,</span> <span class="n">HTTPException</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">app.auth</span><span class="w"> </span><span class="kn">import</span> <span class="n">verify_jwt</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">app.agents.graph</span><span class="w"> </span><span class="kn">import</span> <span class="n">create_agent</span>
+
+<span class="n">app</span> <span class="o">=</span> <span class="n">FastAPI</span><span class="p">(</span><span class="n">title</span><span class="o">=</span><span class="s2">&quot;Enterprise LLM Sidecar&quot;</span><span class="p">)</span>
+
+<span class="nd">@app</span><span class="o">.</span><span class="n">post</span><span class="p">(</span><span class="s2">&quot;/api/ask&quot;</span><span class="p">)</span>
+<span class="k">async</span> <span class="k">def</span><span class="w"> </span><span class="nf">ask</span><span class="p">(</span><span class="n">req</span><span class="p">:</span> <span class="n">AskRequest</span><span class="p">,</span> <span class="n">user</span> <span class="o">=</span> <span class="n">Depends</span><span class="p">(</span><span class="n">verify_jwt</span><span class="p">)):</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;에이전트에게 질문 전달&quot;&quot;&quot;</span>
+    <span class="n">agent</span> <span class="o">=</span> <span class="k">await</span> <span class="n">create_agent</span><span class="p">()</span>
+
+    <span class="n">result</span> <span class="o">=</span> <span class="k">await</span> <span class="n">agent</span><span class="o">.</span><span class="n">ainvoke</span><span class="p">({</span>
+        <span class="s2">&quot;messages&quot;</span><span class="p">:</span> <span class="p">[{</span><span class="s2">&quot;role&quot;</span><span class="p">:</span> <span class="s2">&quot;user&quot;</span><span class="p">,</span> <span class="s2">&quot;content&quot;</span><span class="p">:</span> <span class="n">req</span><span class="o">.</span><span class="n">question</span><span class="p">}],</span>
+        <span class="s2">&quot;user_id&quot;</span><span class="p">:</span> <span class="n">user</span><span class="p">[</span><span class="s2">&quot;sub&quot;</span><span class="p">],</span>
+        <span class="s2">&quot;user_token&quot;</span><span class="p">:</span> <span class="n">user</span><span class="p">[</span><span class="s2">&quot;raw_token&quot;</span><span class="p">],</span>  <span class="c1"># 그대로 전파</span>
+    <span class="p">},</span> <span class="n">config</span><span class="o">=</span><span class="p">{</span><span class="s2">&quot;configurable&quot;</span><span class="p">:</span> <span class="p">{</span><span class="s2">&quot;thread_id&quot;</span><span class="p">:</span> <span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="n">user</span><span class="p">[</span><span class="s1">&#39;sub&#39;</span><span class="p">]</span><span class="si">}</span><span class="s2">-</span><span class="si">{</span><span class="n">req</span><span class="o">.</span><span class="n">session_id</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">}})</span>
+
+    <span class="k">return</span> <span class="p">{</span>
+        <span class="s2">&quot;answer&quot;</span><span class="p">:</span> <span class="n">extract_answer</span><span class="p">(</span><span class="n">result</span><span class="p">),</span>
+        <span class="s2">&quot;sources&quot;</span><span class="p">:</span> <span class="n">result</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;sources&quot;</span><span class="p">,</span> <span class="p">[]),</span>
+    <span class="p">}</span>
+</code></pre></div>
+
+<p>PYTHONapp/auth.py — JWT 검증</p>
+<div class="codehilite"><pre><span></span><code><span class="kn">import</span><span class="w"> </span><span class="nn">jwt</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">fastapi</span><span class="w"> </span><span class="kn">import</span> <span class="n">Depends</span><span class="p">,</span> <span class="n">HTTPException</span><span class="p">,</span> <span class="n">Header</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">app.config</span><span class="w"> </span><span class="kn">import</span> <span class="n">settings</span>
+
+<span class="k">async</span> <span class="k">def</span><span class="w"> </span><span class="nf">verify_jwt</span><span class="p">(</span><span class="n">authorization</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="n">Header</span><span class="p">(</span><span class="o">...</span><span class="p">))</span> <span class="o">-&gt;</span> <span class="nb">dict</span><span class="p">:</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Spring과 동일 공개키로 JWT 검증&quot;&quot;&quot;</span>
+    <span class="k">if</span> <span class="ow">not</span> <span class="n">authorization</span><span class="o">.</span><span class="n">startswith</span><span class="p">(</span><span class="s2">&quot;Bearer &quot;</span><span class="p">):</span>
+        <span class="k">raise</span> <span class="n">HTTPException</span><span class="p">(</span><span class="mi">401</span><span class="p">,</span> <span class="s2">&quot;Missing Bearer token&quot;</span><span class="p">)</span>
+
+    <span class="n">token</span> <span class="o">=</span> <span class="n">authorization</span><span class="p">[</span><span class="mi">7</span><span class="p">:]</span>
+    <span class="k">try</span><span class="p">:</span>
+        <span class="n">payload</span> <span class="o">=</span> <span class="n">jwt</span><span class="o">.</span><span class="n">decode</span><span class="p">(</span>
+            <span class="n">token</span><span class="p">,</span>
+            <span class="n">settings</span><span class="o">.</span><span class="n">JWT_PUBLIC_KEY</span><span class="p">,</span>  <span class="c1"># Spring과 공유</span>
+            <span class="n">algorithms</span><span class="o">=</span><span class="p">[</span><span class="s2">&quot;RS256&quot;</span><span class="p">],</span>
+            <span class="n">audience</span><span class="o">=</span><span class="n">settings</span><span class="o">.</span><span class="n">JWT_AUDIENCE</span><span class="p">,</span>
+        <span class="p">)</span>
+        <span class="n">payload</span><span class="p">[</span><span class="s2">&quot;raw_token&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="n">token</span>  <span class="c1"># 하위로 전파용</span>
+        <span class="k">return</span> <span class="n">payload</span>
+    <span class="k">except</span> <span class="n">jwt</span><span class="o">.</span><span class="n">ExpiredSignatureError</span><span class="p">:</span>
+        <span class="k">raise</span> <span class="n">HTTPException</span><span class="p">(</span><span class="mi">401</span><span class="p">,</span> <span class="s2">&quot;Token expired&quot;</span><span class="p">)</span>
+    <span class="k">except</span> <span class="n">jwt</span><span class="o">.</span><span class="n">InvalidTokenError</span><span class="p">:</span>
+        <span class="k">raise</span> <span class="n">HTTPException</span><span class="p">(</span><span class="mi">401</span><span class="p">,</span> <span class="s2">&quot;Invalid token&quot;</span><span class="p">)</span>
+</code></pre></div>
+
+<p>PYTHONapp/agents/graph.py — LangGraph Agent</p>
+<div class="codehilite"><pre><span></span><code><span class="kn">from</span><span class="w"> </span><span class="nn">langgraph.prebuilt</span><span class="w"> </span><span class="kn">import</span> <span class="n">create_react_agent</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">langchain_openai</span><span class="w"> </span><span class="kn">import</span> <span class="n">ChatOpenAI</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">langgraph.checkpoint.postgres.aio</span><span class="w"> </span><span class="kn">import</span> <span class="n">AsyncPostgresSaver</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">app.tools.mcp_client</span><span class="w"> </span><span class="kn">import</span> <span class="n">get_mcp_tools</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">app.config</span><span class="w"> </span><span class="kn">import</span> <span class="n">settings</span>
+
+<span class="k">async</span> <span class="k">def</span><span class="w"> </span><span class="nf">create_agent</span><span class="p">():</span>
+    <span class="c1"># 사내 LLM API (OpenAI 호환 가정)</span>
+    <span class="n">llm</span> <span class="o">=</span> <span class="n">ChatOpenAI</span><span class="p">(</span>
+        <span class="n">model</span><span class="o">=</span><span class="n">settings</span><span class="o">.</span><span class="n">INTERNAL_LLM_MODEL</span><span class="p">,</span>
+        <span class="n">base_url</span><span class="o">=</span><span class="n">settings</span><span class="o">.</span><span class="n">INTERNAL_LLM_BASE_URL</span><span class="p">,</span>
+        <span class="n">api_key</span><span class="o">=</span><span class="n">settings</span><span class="o">.</span><span class="n">INTERNAL_LLM_API_KEY</span><span class="p">,</span>  <span class="c1"># 서비스 계정</span>
+    <span class="p">)</span>
+
+    <span class="n">tools</span> <span class="o">=</span> <span class="k">await</span> <span class="n">get_mcp_tools</span><span class="p">()</span>  <span class="c1"># MCP 도구 로드</span>
+
+    <span class="n">checkpointer</span> <span class="o">=</span> <span class="n">AsyncPostgresSaver</span><span class="o">.</span><span class="n">from_conn_string</span><span class="p">(</span>
+        <span class="n">settings</span><span class="o">.</span><span class="n">DATABASE_URL</span>
+    <span class="p">)</span>
+
+    <span class="k">return</span> <span class="n">create_react_agent</span><span class="p">(</span>
+        <span class="n">llm</span><span class="p">,</span> <span class="n">tools</span><span class="p">,</span>
+        <span class="n">checkpointer</span><span class="o">=</span><span class="n">checkpointer</span><span class="p">,</span>
+        <span class="n">prompt</span><span class="o">=</span><span class="n">SYSTEM_PROMPT</span><span class="p">,</span>
+    <span class="p">)</span>
+</code></pre></div>
+
+<p>11프로젝트 구조</p>
+<p>저장소 구조</p>
+<p>graph LR subgraph Existing["기존 Spring (확장)"] SC["controllers/"] SS["services/"] ST["templates/"] end subgraph New["신규 Python 사이드카"] PA["app/"] PM["mcp-server/"] end SC --&gt; ChatCtrl[ChatController] SC --&gt; NLCtrl[NL2SQLController] SC --&gt; RagCtrl[RagController] SS --&gt; SqlVal[SqlValidator] SS --&gt; SqlRew[SqlRewriter] SS --&gt; Audit[AuditService] ST --&gt; ChatPage[chat.html] PA --&gt; Main[main.py] PA --&gt; Auth[auth.py] PA --&gt; Graph[agents/graph.py] PA --&gt; Tools[tools/] PM --&gt; McpSrv[server.py] PM --&gt; McpTools[tools.py] style Existing fill:#0d0f18,stroke:#5a7af0 style New fill:#0d0f18,stroke:#30c880 </p>
+<p>구조디렉토리 트리</p>
+<div class="codehilite"><pre><span></span><code><span class="n">company</span><span class="o">-</span><span class="n">chatbot</span><span class="o">/</span>
+<span class="err">├──</span><span class="w"> </span><span class="n">spring</span><span class="o">-</span><span class="n">app</span><span class="o">/</span><span class="w">                    </span><span class="c1"># 기존 Spring Boot (확장)</span>
+<span class="err">│</span><span class="w">   </span><span class="err">├──</span><span class="w"> </span><span class="n">src</span><span class="o">/</span><span class="n">main</span><span class="o">/</span><span class="n">java</span><span class="o">/</span><span class="n">com</span><span class="o">/</span><span class="n">company</span><span class="o">/</span>
+<span class="err">│</span><span class="w">   </span><span class="err">│</span><span class="w">   </span><span class="err">├──</span><span class="w"> </span><span class="n">controllers</span><span class="o">/</span>
+<span class="err">│</span><span class="w">   </span><span class="err">│</span><span class="w">   </span><span class="err">│</span><span class="w">   </span><span class="err">├──</span><span class="w"> </span><span class="n">ChatController</span><span class="o">.</span><span class="n">java</span><span class="w">        </span><span class="c1"># /chat UI + 프록시</span>
+<span class="err">│</span><span class="w">   </span><span class="err">│</span><span class="w">   </span><span class="err">│</span><span class="w">   </span><span class="err">├──</span><span class="w"> </span><span class="n">NL2SQLController</span><span class="o">.</span><span class="n">java</span><span class="w">      </span><span class="c1"># NL2SQL 실행 전용</span>
+<span class="err">│</span><span class="w">   </span><span class="err">│</span><span class="w">   </span><span class="err">│</span><span class="w">   </span><span class="err">└──</span><span class="w"> </span><span class="n">RagController</span><span class="o">.</span><span class="n">java</span><span class="w">         </span><span class="c1"># RAG 권한 검증</span>
+<span class="err">│</span><span class="w">   </span><span class="err">│</span><span class="w">   </span><span class="err">├──</span><span class="w"> </span><span class="n">services</span><span class="o">/</span>
+<span class="err">│</span><span class="w">   </span><span class="err">│</span><span class="w">   </span><span class="err">│</span><span class="w">   </span><span class="err">├──</span><span class="w"> </span><span class="n">SqlValidatorService</span><span class="o">.</span><span class="n">java</span>
+<span class="err">│</span><span class="w">   </span><span class="err">│</span><span class="w">   </span><span class="err">│</span><span class="w">   </span><span class="err">├──</span><span class="w"> </span><span class="n">SqlRewriterService</span><span class="o">.</span><span class="n">java</span><span class="w">    </span><span class="c1"># WHERE 주입, 마스킹</span>
+<span class="err">│</span><span class="w">   </span><span class="err">│</span><span class="w">   </span><span class="err">│</span><span class="w">   </span><span class="err">└──</span><span class="w"> </span><span class="n">NL2SQLAuditService</span><span class="o">.</span><span class="n">java</span>
+<span class="err">│</span><span class="w">   </span><span class="err">│</span><span class="w">   </span><span class="err">└──</span><span class="w"> </span><span class="n">security</span><span class="o">/</span>
+<span class="err">│</span><span class="w">   </span><span class="err">│</span><span class="w">       </span><span class="err">└──</span><span class="w"> </span><span class="n">JwtConfig</span><span class="o">.</span><span class="n">java</span><span class="w">             </span><span class="c1"># 기존 + Bearer 지원</span>
+<span class="err">│</span><span class="w">   </span><span class="err">└──</span><span class="w"> </span><span class="n">src</span><span class="o">/</span><span class="n">main</span><span class="o">/</span><span class="n">resources</span><span class="o">/</span><span class="n">templates</span><span class="o">/</span>
+<span class="err">│</span><span class="w">       </span><span class="err">└──</span><span class="w"> </span><span class="n">chat</span><span class="o">.</span><span class="n">html</span><span class="w">                       </span><span class="c1"># 채팅 UI</span>
+<span class="err">│</span>
+<span class="err">└──</span><span class="w"> </span><span class="n">llm</span><span class="o">-</span><span class="n">sidecar</span><span class="o">/</span><span class="w">                    </span><span class="c1"># 신규 Python 서비스</span>
+<span class="w">    </span><span class="err">├──</span><span class="w"> </span><span class="n">app</span><span class="o">/</span>
+<span class="w">    </span><span class="err">│</span><span class="w">   </span><span class="err">├──</span><span class="w"> </span><span class="n">main</span><span class="o">.</span><span class="n">py</span><span class="w">                         </span><span class="c1"># FastAPI</span>
+<span class="w">    </span><span class="err">│</span><span class="w">   </span><span class="err">├──</span><span class="w"> </span><span class="n">auth</span><span class="o">.</span><span class="n">py</span><span class="w">                         </span><span class="c1"># JWT 검증</span>
+<span class="w">    </span><span class="err">│</span><span class="w">   </span><span class="err">├──</span><span class="w"> </span><span class="n">config</span><span class="o">.</span><span class="n">py</span><span class="w">                       </span><span class="c1"># 환경변수</span>
+<span class="w">    </span><span class="err">│</span><span class="w">   </span><span class="err">├──</span><span class="w"> </span><span class="n">agents</span><span class="o">/</span>
+<span class="w">    </span><span class="err">│</span><span class="w">   </span><span class="err">│</span><span class="w">   </span><span class="err">├──</span><span class="w"> </span><span class="n">graph</span><span class="o">.</span><span class="n">py</span><span class="w">                    </span><span class="c1"># LangGraph 에이전트</span>
+<span class="w">    </span><span class="err">│</span><span class="w">   </span><span class="err">│</span><span class="w">   </span><span class="err">├──</span><span class="w"> </span><span class="n">state</span><span class="o">.</span><span class="n">py</span><span class="w">                    </span><span class="c1"># State with user_token</span>
+<span class="w">    </span><span class="err">│</span><span class="w">   </span><span class="err">│</span><span class="w">   </span><span class="err">└──</span><span class="w"> </span><span class="n">prompts</span><span class="o">.</span><span class="n">py</span>
+<span class="w">    </span><span class="err">│</span><span class="w">   </span><span class="err">├──</span><span class="w"> </span><span class="n">tools</span><span class="o">/</span>
+<span class="w">    </span><span class="err">│</span><span class="w">   </span><span class="err">│</span><span class="w">   </span><span class="err">├──</span><span class="w"> </span><span class="n">mcp_client</span><span class="o">.</span><span class="n">py</span><span class="w">               </span><span class="c1"># MCP 서버 연결</span>
+<span class="w">    </span><span class="err">│</span><span class="w">   </span><span class="err">│</span><span class="w">   </span><span class="err">├──</span><span class="w"> </span><span class="n">nl2sql_tool</span><span class="o">.</span><span class="n">py</span><span class="w">              </span><span class="c1"># NL2SQL</span>
+<span class="w">    </span><span class="err">│</span><span class="w">   </span><span class="err">│</span><span class="w">   </span><span class="err">└──</span><span class="w"> </span><span class="n">rag_tool</span><span class="o">.</span><span class="n">py</span><span class="w">                 </span><span class="c1"># RAG</span>
+<span class="w">    </span><span class="err">│</span><span class="w">   </span><span class="err">└──</span><span class="w"> </span><span class="n">middleware</span><span class="o">/</span>
+<span class="w">    </span><span class="err">│</span><span class="w">       </span><span class="err">├──</span><span class="w"> </span><span class="n">audit</span><span class="o">.</span><span class="n">py</span>
+<span class="w">    </span><span class="err">│</span><span class="w">       </span><span class="err">└──</span><span class="w"> </span><span class="n">rate_limit</span><span class="o">.</span><span class="n">py</span>
+<span class="w">    </span><span class="err">├──</span><span class="w"> </span><span class="n">mcp</span><span class="o">-</span><span class="n">server</span><span class="o">/</span>
+<span class="w">    </span><span class="err">│</span><span class="w">   </span><span class="err">├──</span><span class="w"> </span><span class="n">server</span><span class="o">.</span><span class="n">py</span><span class="w">                       </span><span class="c1"># FastMCP</span>
+<span class="w">    </span><span class="err">│</span><span class="w">   </span><span class="err">├──</span><span class="w"> </span><span class="n">tools</span><span class="o">.</span><span class="n">py</span><span class="w">                        </span><span class="c1"># Spring API 래퍼</span>
+<span class="w">    </span><span class="err">│</span><span class="w">   </span><span class="err">└──</span><span class="w"> </span><span class="n">Dockerfile</span>
+<span class="w">    </span><span class="err">├──</span><span class="w"> </span><span class="n">Dockerfile</span>
+<span class="w">    </span><span class="err">├──</span><span class="w"> </span><span class="n">docker</span><span class="o">-</span><span class="n">compose</span><span class="o">.</span><span class="n">yml</span>
+<span class="w">    </span><span class="err">└──</span><span class="w"> </span><span class="n">requirements</span><span class="o">.</span><span class="n">txt</span>
+</code></pre></div>
+
+<p>12감사 &amp; 모니터링</p>
+<p>감사 로그 흐름</p>
+<p>graph TD REQ[사용자 질의] --&gt; GW[Python Gateway] GW --&gt;|요청 로그| PY_AUDIT[(llm_request_log\nPython)] GW --&gt; AG[Agent 실행] AG --&gt; TOOL[MCP Tool 호출] TOOL --&gt;|JWT로 API 호출| SPRING[Spring API] SPRING --&gt;|기존 감사| SPRING_AUDIT[(기존 access_log\nSpring)] SPRING --&gt;|NL2SQL 시| NL_AUDIT[(nl2sql_audit_log\nSpring)] AG --&gt;|최종 응답 로그| PY_AUDIT style PY_AUDIT fill:#201810,stroke:#e09830,color:#f8b840 style SPRING_AUDIT fill:#102040,stroke:#5a7af0,color:#7a9aff style NL_AUDIT fill:#102040,stroke:#5a7af0,color:#7a9aff </p>
+<h3 id="감사-로그-테이블-스키마">감사 로그 테이블 스키마</h3>
+<p>SQLllm_request_log (Python 쪽)</p>
+<div class="codehilite"><pre><span></span><code><span class="n">CREATE</span><span class="w"> </span><span class="n">TABLE</span><span class="w"> </span><span class="n">llm_request_log</span><span class="w"> </span><span class="p">(</span>
+<span class="w">    </span><span class="n">request_id</span><span class="w">      </span><span class="n">UUID</span><span class="w"> </span><span class="n">PRIMARY</span><span class="w"> </span><span class="n">KEY</span><span class="p">,</span>
+<span class="w">    </span><span class="n">user_id</span><span class="w">         </span><span class="n">VARCHAR</span><span class="p">(</span><span class="mi">100</span><span class="p">)</span><span class="w"> </span><span class="n">NOT</span><span class="w"> </span><span class="n">NULL</span><span class="p">,</span>
+<span class="w">    </span><span class="n">session_id</span><span class="w">      </span><span class="n">VARCHAR</span><span class="p">(</span><span class="mi">100</span><span class="p">),</span>
+<span class="w">    </span><span class="n">received_at</span><span class="w">     </span><span class="n">TIMESTAMPTZ</span><span class="w"> </span><span class="n">NOT</span><span class="w"> </span><span class="n">NULL</span><span class="w"> </span><span class="n">DEFAULT</span><span class="w"> </span><span class="n">NOW</span><span class="p">(),</span>
+
+<span class="w">    </span><span class="n">question</span><span class="w">        </span><span class="n">TEXT</span><span class="p">,</span>
+<span class="w">    </span><span class="n">tools_called</span><span class="w">    </span><span class="n">JSONB</span><span class="p">,</span><span class="w">                </span><span class="o">--</span><span class="w"> </span><span class="p">[{</span><span class="n">name</span><span class="p">,</span><span class="w"> </span><span class="n">args</span><span class="p">,</span><span class="w"> </span><span class="n">status</span><span class="p">}]</span>
+<span class="w">    </span><span class="n">api_calls</span><span class="w">       </span><span class="n">JSONB</span><span class="p">,</span><span class="w">                </span><span class="o">--</span><span class="w"> </span><span class="n">Spring</span><span class="w"> </span><span class="n">API</span><span class="w"> </span><span class="err">호출</span><span class="w"> </span><span class="err">내역</span>
+<span class="w">    </span><span class="n">permission_denied_count</span><span class="w"> </span><span class="n">INT</span><span class="w"> </span><span class="n">DEFAULT</span><span class="w"> </span><span class="mi">0</span><span class="p">,</span>
+
+<span class="w">    </span><span class="n">response</span><span class="w">        </span><span class="n">TEXT</span><span class="p">,</span>
+<span class="w">    </span><span class="n">llm_model</span><span class="w">       </span><span class="n">VARCHAR</span><span class="p">(</span><span class="mi">50</span><span class="p">),</span>
+<span class="w">    </span><span class="n">input_tokens</span><span class="w">    </span><span class="n">INT</span><span class="p">,</span>
+<span class="w">    </span><span class="n">output_tokens</span><span class="w">   </span><span class="n">INT</span><span class="p">,</span>
+<span class="w">    </span><span class="n">total_ms</span><span class="w">        </span><span class="n">INT</span><span class="p">,</span>
+
+<span class="w">    </span><span class="n">status</span><span class="w">          </span><span class="n">VARCHAR</span><span class="p">(</span><span class="mi">20</span><span class="p">),</span><span class="w">          </span><span class="o">--</span><span class="w"> </span><span class="n">success</span><span class="p">,</span><span class="w"> </span><span class="n">partial</span><span class="p">,</span><span class="w"> </span><span class="n">denied</span><span class="p">,</span><span class="w"> </span><span class="n">error</span>
+<span class="w">    </span><span class="n">error_message</span><span class="w">   </span><span class="n">TEXT</span>
+<span class="p">);</span>
+
+<span class="n">CREATE</span><span class="w"> </span><span class="n">INDEX</span><span class="w"> </span><span class="n">idx_llm_request_user</span><span class="w"> </span><span class="n">ON</span><span class="w"> </span><span class="n">llm_request_log</span><span class="p">(</span><span class="n">user_id</span><span class="p">,</span><span class="w"> </span><span class="n">received_at</span><span class="w"> </span><span class="n">DESC</span><span class="p">);</span>
+<span class="n">CREATE</span><span class="w"> </span><span class="n">INDEX</span><span class="w"> </span><span class="n">idx_llm_request_status</span><span class="w"> </span><span class="n">ON</span><span class="w"> </span><span class="n">llm_request_log</span><span class="p">(</span><span class="n">status</span><span class="p">)</span>
+<span class="w">    </span><span class="n">WHERE</span><span class="w"> </span><span class="n">status</span><span class="w"> </span><span class="o">!=</span><span class="w"> </span><span class="s1">&#39;success&#39;</span><span class="p">;</span>
+</code></pre></div>
+
+<table>
+<thead>
+<tr>
+<th>감사 항목</th>
+<th>책임</th>
+<th>저장 위치</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>사용자 질의 &amp; 응답</td>
+<td>Python</td>
+<td>llm_request_log</td>
+</tr>
+<tr>
+<td>도구 호출 내역</td>
+<td>Python</td>
+<td>llm_request_log.tools_called</td>
+</tr>
+<tr>
+<td>Spring API 호출</td>
+<td>Spring</td>
+<td>기존 access_log (재사용)</td>
+</tr>
+<tr>
+<td>NL2SQL 생성 &amp; 실행</td>
+<td>Spring</td>
+<td>nl2sql_audit_log</td>
+</tr>
+<tr>
+<td>권한 거부 이벤트</td>
+<td>양쪽</td>
+<td>각자 + 알림</td>
+</tr>
+<tr>
+<td>LLM API 사용량</td>
+<td>사내 LLM 게이트웨이</td>
+<td>LLM 플랫폼</td>
+</tr>
+</tbody>
+</table>
+<h3 id="모니터링-지표">모니터링 지표</h3>
+<p>보안 지표</p>
+<p>이상 탐지</p>
+<ul>
+<li>사용자당 권한 거부 횟수 (비정상 탐색)</li>
+<li>동일 사용자 동시 세션 수</li>
+<li>응답에서 금지 패턴 검출</li>
+<li>NL2SQL 검증 실패율</li>
+</ul>
+<p>품질 지표</p>
+<p>응답 품질</p>
+<ul>
+<li>평균 응답 시간</li>
+<li>도구별 호출 빈도·성공률</li>
+<li>LLM 토큰 사용량</li>
+<li>사용자 피드백 (👍/👎)</li>
+</ul>
+<p>13정보 누출 방지</p>
+<table>
+<thead>
+<tr>
+<th>시나리오</th>
+<th>나쁜 예</th>
+<th>좋은 예</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><strong>에러 메시지</strong></td>
+<td>"users 테이블에 SELECT 권한 없음"</td>
+<td>"요청하신 정보를 제공할 수 없습니다"</td>
+</tr>
+<tr>
+<td><strong>권한 거부 차등</strong></td>
+<td>"영업1팀 데이터만 볼 수 있습니다"</td>
+<td>"접근 가능한 범위를 벗어났습니다"</td>
+</tr>
+<tr>
+<td><strong>민감 필드 프롬프트</strong></td>
+<td>"홍길동 고객 주민번호 860101-..."</td>
+<td>"고객 A의 정보 (주민번호 마스킹)"</td>
+</tr>
+<tr>
+<td><strong>내부 경로 노출</strong></td>
+<td>"https://internal-api/db/secret..."</td>
+<td>URL 표시 없음</td>
+</tr>
+<tr>
+<td><strong>LLM 추정</strong></td>
+<td>"정확한 매출은 모르지만 아마도 10억..."</td>
+<td>"해당 정보는 확인할 수 없습니다"</td>
+</tr>
+</tbody>
+</table>
+<h3 id="캐시-정책">캐시 정책</h3>
+<p>⚠️</p>
+<p><strong>절대 교차 사용자 캐시 금지</strong> 같은 질문이라도 사용자별로 권한 범위가 다르므로 응답이 다를 수 있습니다. 캐시 키는 반드시 <code>(user_id, question)</code>로 구성하거나, 아예 캐시하지 않는 것이 안전합니다. </p>
+<h3 id="llm-guardrail">LLM Guardrail</h3>
+<p>PYTHON출력 후처리 예시</p>
+<div class="codehilite"><pre><span></span><code><span class="c">FORBIDDEN_PATTERNS = </span><span class="k">[</span>
+<span class="c">    r&quot;\d{6}</span><span class="k">[</span><span class="nb">-</span><span class="k">]</span><span class="c">\d{7}&quot;</span><span class="nt">,</span><span class="c">          # 주민번호</span>
+<span class="c">    r&quot;\d{3}</span><span class="k">[</span><span class="nb">-</span><span class="k">]</span><span class="c">\d{3</span><span class="nt">,</span><span class="c">4}</span><span class="k">[</span><span class="nb">-</span><span class="k">]</span><span class="c">\d{4}&quot;</span><span class="nt">,</span><span class="c"> # 전화번호</span>
+<span class="c">    r&quot;\d{10</span><span class="nt">,</span><span class="c">16}&quot;</span><span class="nt">,</span><span class="c">              # 카드번호/계좌번호 유사</span>
+<span class="c">    r&quot;password|secret|api_key&quot;</span><span class="nt">,</span>
+<span class="k">]</span>
+
+<span class="c">def output_guardrail(text: str) </span><span class="nb">-</span><span class="nv">&gt;</span><span class="c"> str:</span>
+<span class="c">    &quot;&quot;&quot;최종 응답에서 금지 패턴 마스킹&quot;&quot;&quot;</span>
+<span class="c">    for pattern in FORBIDDEN_PATTERNS:</span>
+<span class="c">        text = re</span><span class="nt">.</span><span class="c">sub(pattern</span><span class="nt">,</span><span class="c"> &quot;</span><span class="k">[</span><span class="c">마스킹</span><span class="k">]</span><span class="c">&quot;</span><span class="nt">,</span><span class="c"> text</span><span class="nt">,</span><span class="c"> flags=re</span><span class="nt">.</span><span class="c">IGNORECASE)</span>
+<span class="c">    return text</span>
+</code></pre></div>
+
+<p>14실패 모드 &amp; 대응</p>
+<table>
+<thead>
+<tr>
+<th>실패 시나리오</th>
+<th>발생 지점</th>
+<th>대응</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>JWT 만료</td>
+<td>Python Gateway</td>
+<td>401 반환 → UI에서 재로그인 유도</td>
+</tr>
+<tr>
+<td>Spring API 403</td>
+<td>MCP Tool</td>
+<td>일반화 메시지 반환, LLM이 "권한 없음" 답변</td>
+</tr>
+<tr>
+<td>Spring API 장애</td>
+<td>MCP Tool</td>
+<td>Circuit Breaker + "일시적 장애" 응답</td>
+</tr>
+<tr>
+<td>LLM API 타임아웃</td>
+<td>Python Gateway</td>
+<td>Retry 1회, 실패 시 "나중에 다시" 메시지</td>
+</tr>
+<tr>
+<td>LLM Hallucination</td>
+<td>Agent</td>
+<td>Guardrail 후처리 + 도구 결과 우선 정책</td>
+</tr>
+<tr>
+<td>NL2SQL Injection 시도</td>
+<td>Spring Validator</td>
+<td>차단 + 감사 기록 + 관리자 알림</td>
+</tr>
+<tr>
+<td>무한 루프</td>
+<td>LangGraph</td>
+<td>Conditional Edge에 max_iterations 가드</td>
+</tr>
+<tr>
+<td>토큰 탈취</td>
+<td>전 레이어</td>
+<td>짧은 JWT 만료 + refresh + 비정상 활동 탐지</td>
+</tr>
+<tr>
+<td>Vector DB 장애</td>
+<td>RAG Tool</td>
+<td>RAG 도구만 비활성화, 다른 도구는 정상 작동</td>
+</tr>
+</tbody>
+</table>
+<p>권한 거부 이벤트 처리 흐름</p>
+<p>graph TD CALL[MCP Tool이 Spring API 호출] --&gt; RESP{응답 상태} RESP --&gt;|200 OK| OK[정상 결과] RESP --&gt;|403 Forbidden| DENIED[권한 거부] DENIED --&gt; AUDIT[감사 로그 기록] AUDIT --&gt; GENERIC[일반화 메시지 생성\n요청하신 정보를 제공할 수 없습니다] GENERIC --&gt; AG[Agent에 전달] AG --&gt; LLM_EXPLAIN[LLM이 자연스럽게 설명] LLM_EXPLAIN --&gt; USER[사용자에게 답변] AUDIT --&gt;|비정상 패턴| ALERT[보안 알림] style DENIED fill:#201010,stroke:#f05050,color:#f08080 style GENERIC fill:#201810,stroke:#e09830,color:#f8b840 style ALERT fill:#201010,stroke:#f05050,color:#f08080 </p>
+<p>15단계별 로드맵</p>
+<p>구현 로드맵 (10주)</p>
+<p>gantt title Enterprise Chatbot 구현 로드맵 dateFormat YYYY-MM-DD axisFormat %m/%d section Phase 0 사전 LLM API 스펙 조사 :p0a, 2026-04-20, 3d 기존 권한 정책 파악 :p0b, after p0a, 3d 보안팀 사전 협의 :p0c, after p0b, 3d section Phase 1 기본 Spring 프록시 컨트롤러 :p1a, after p0c, 5d Python Gateway + JWT :p1b, after p1a, 5d MCP 도구 5개 래핑 :p1c, after p1b, 7d 채팅 UI 추가 :p1d, after p1c, 3d 테스트 권한 A vs B :p1e, after p1d, 3d section Phase 2 NL2SQL Spring SqlValidator :p2a, after p1e, 5d Spring SqlRewriter :p2b, after p2a, 5d Python NL2SQL Tool :p2c, after p2b, 3d 감사 로그 통합 :p2d, after p2c, 3d section Phase 3 RAG Vector DB 구축 :p3a, after p2d, 5d 권한 메타데이터 인덱싱 :p3b, after p3a, 5d Python RAG Tool + 검증 :p3c, after p3b, 5d section Phase 4 운영 모니터링 대시보드 :p4a, after p3c, 5d 침투 테스트 :p4b, after p4a, 7d 파일럿 사용자 확대 :p4c, after p4b, 7d </p>
+<p>PHASE 0</p>
+<p>사전 준비 (2주)</p>
+<ul>
+<li>사내 LLM API 스펙 확인 (OpenAI 호환? 커스텀?)</li>
+<li>기존 Spring 권한 메커니즘 분석</li>
+<li>Oracle VPD 도입 여부 검토</li>
+<li>보안팀 사전 협의 + 데이터 분류</li>
+</ul>
+<p>PHASE 1</p>
+<p>기본 챗봇 (3주)</p>
+<ul>
+<li>Spring 채팅 페이지 + 프록시</li>
+<li>Python FastAPI Gateway + JWT 검증</li>
+<li>MCP Server + 주요 API 5~10개 래핑</li>
+<li>기본 LangGraph ReAct 에이전트</li>
+<li>권한 A/B 사용자 통합 테스트</li>
+</ul>
+<p>PHASE 2</p>
+<p>NL2SQL (2주)</p>
+<ul>
+<li>Spring NL2SQLController 추가</li>
+<li>SqlValidator (sqlglot/JSQLParser)</li>
+<li>SqlRewriter (WHERE 주입, 마스킹)</li>
+<li>전용 DB role 생성</li>
+<li>감사 로그 통합</li>
+</ul>
+<p>PHASE 3</p>
+<p>RAG (2주)</p>
+<ul>
+<li>Vector DB (Qdrant or ES) 구축</li>
+<li>문서 권한 메타데이터 설계</li>
+<li>ACL 동기화 DAG</li>
+<li>Python RAG Tool + 이중 검증</li>
+</ul>
+<p>PHASE 4</p>
+<p>운영 (3주+)</p>
+<ul>
+<li>모니터링 대시보드 (Grafana)</li>
+<li>보안팀 침투 테스트</li>
+<li>파일럿 → 부서별 확대</li>
+<li>레트로 &amp; 개선</li>
+</ul>
+<p>16런칭 전 체크리스트</p>
+<p>필수보안 검증</p>
+<ul>
+<li>[ ] 권한이 다른 테스트 사용자 2명 이상으로 동일 질문 → 다른 결과 확인</li>
+<li>[ ] 권한 없는 리소스 명시적 요청 시 일반화 메시지만 반환</li>
+<li>[ ] 모든 데이터 접근이 Spring REST API 경유 확인 (Python → DB 직접 접근 금지)</li>
+<li>[ ] LLM 프롬프트/응답에 민감 데이터(PII, 재무) 없는지 검사</li>
+<li>[ ] NL2SQL이 전용 API만 사용하는지 확인</li>
+<li>[ ] RAG 검색에 ACL 필터가 항상 적용되는지 확인</li>
+<li>[ ] Guardrail이 금지 패턴을 차단하는지 테스트</li>
+<li>[ ] 보안팀 침투 테스트 통과</li>
+<li>[ ] JWT 만료 시 재로그인 플로우 동작</li>
+<li>[ ] 토큰 탈취 시 짧은 만료 + refresh 동작 확인</li>
+</ul>
+<p>운영감사 &amp; 모니터링</p>
+<ul>
+<li>[ ] 모든 LLM 요청이 llm_request_log에 기록</li>
+<li>[ ] Spring 기존 감사 로그가 Python 사이드카 요청도 포함</li>
+<li>[ ] NL2SQL 감사 로그 스키마 완비</li>
+<li>[ ] 권한 거부 알림 설정 (Slack/이메일)</li>
+<li>[ ] 사용량 쿼터 &amp; rate limit 설정</li>
+<li>[ ] 비용 모니터링 (LLM API 사용량)</li>
+</ul>
+<p>품질기능 검증</p>
+<ul>
+<li>[ ] 기본 QA (API 기반 질의)</li>
+<li>[ ] NL2SQL 정확도 (벤치마크 쿼리 통과)</li>
+<li>[ ] RAG 검색 품질 (관련성)</li>
+<li>[ ] 멀티 스텝 에이전트 동작</li>
+<li>[ ] 스트리밍 응답 (UX)</li>
+<li>[ ] 오류 발생 시 우아한 fallback</li>
+</ul>
+<h2 id="관련-문서">관련 문서</h2>
+<p><a href="langgraph_technical_guide.html">LangGraph 기술 가이드</a> — 핵심 개념, 아키텍처 패턴</p>
+<p><a href="langgraph_enterprise_guide.html">LangGraph 사내 환경 구축 가이드</a> — Python 환경, FastAPI, Docker</p>
+<p><a href="fastmcp_guide.html">FastMCP 가이드</a> — MCP 서버 구축, 전송 모드, 연동</p>
+<p><a href="bip_agent_strategy.html">BIP 에이전트 전략</a> — 차세대 Planner Agent 아키텍처</p>
+<p><a href="hermes_agent_research.html">Hermes Agent 조사</a> — 자기 개선형 에이전트</p>
+<p><a href="agent_harness_gan_design.html">에이전트 하네스 설계 (GAN)</a> — 생성/평가 분리</p>
+<p><a href="nl2sql_data_layer_reference.html">NL2SQL 데이터 레이어 레퍼런스</a> — 개념, 도구, 보안</p>
+<p>enterprise-chatbot-permission.guide · Hybrid Java + Python · 2026.04.16</p>
+<p>Zero Trust · Permission Propagation · Audit Everything</p>
+</main>
+
+<script>
+  // 테마 전환
+  function setTheme(theme) {
+    document.documentElement.setAttribute('data-theme', theme);
+    localStorage.setItem('doc-theme', theme);
+    document.getElementById('btn-dark').classList.toggle('active', theme === 'dark');
+    document.getElementById('btn-light').classList.toggle('active', theme === 'light');
+    // Mermaid 재렌더링
+    if (typeof mermaid !== 'undefined') {
+      mermaid.initialize({ startOnLoad: false, theme: 'base', securityLevel: 'loose', themeVariables: getMermaidTheme(theme) });
+      document.querySelectorAll('.mermaid').forEach(el => {
+        el.removeAttribute('data-processed');
+        el.innerHTML = el.textContent;
+      });
+      mermaid.run();
+    }
+  }
+
+  // 저장된 테마 로드
+  const savedTheme = localStorage.getItem('doc-theme') || 'dark';
+  setTheme(savedTheme);
+
+  // Mermaid 초기화
+  function getMermaidTheme(theme) {
+    const dark = {
+      primaryColor: '#3d7be0',
+      primaryTextColor: '#ffffff',
+      primaryBorderColor: '#5a9cf0',
+      secondaryColor: '#7c5cbf',
+      secondaryTextColor: '#ffffff',
+      secondaryBorderColor: '#a29bfe',
+      tertiaryColor: '#00997a',
+      tertiaryTextColor: '#ffffff',
+      tertiaryBorderColor: '#55efc4',
+      noteTextColor: '#f0f0f0',
+      noteBkgColor: '#2d3436',
+      noteBorderColor: '#636e72',
+      lineColor: '#8b949e',
+      textColor: '#e6edf3',
+      mainBkg: '#1e3050',
+      nodeBorder: '#5a9cf0',
+      clusterBkg: '#1a1e2e',
+      clusterBorder: '#4a5568',
+      titleColor: '#79c0ff',
+      edgeLabelBackground: '#21262d',
+      actorBkg: '#3d7be0',
+      actorTextColor: '#ffffff',
+      actorBorder: '#5a9cf0',
+      signalColor: '#8b949e',
+      labelBoxBkgColor: '#21262d',
+      labelBoxBorderColor: '#4a5568',
+      labelTextColor: '#e6edf3',
+      loopTextColor: '#e6edf3',
+      activationBorderColor: '#5a9cf0',
+      activationBkgColor: '#1e3050',
+      sequenceNumberColor: '#ffffff',
+      pie1: '#4f8fea', pie2: '#6c5ce7', pie3: '#00b894', pie4: '#e17055',
+      pie5: '#fdcb6e', pie6: '#00cec9', pie7: '#e84393', pie8: '#0984e3'
+    };
+    const light = {
+      primaryColor: '#4f8fea',
+      primaryTextColor: '#1a1a2e',
+      primaryBorderColor: '#3a7bd5',
+      secondaryColor: '#a29bfe',
+      secondaryTextColor: '#1a1a2e',
+      secondaryBorderColor: '#6c5ce7',
+      tertiaryColor: '#55efc4',
+      tertiaryTextColor: '#1a1a2e',
+      tertiaryBorderColor: '#00b894',
+      noteTextColor: '#2d3436',
+      noteBkgColor: '#ffeaa7',
+      noteBorderColor: '#fdcb6e',
+      lineColor: '#636e72',
+      textColor: '#2d3436',
+      mainBkg: '#dfe6e9',
+      nodeBorder: '#3a7bd5',
+      clusterBkg: '#f0f3f5',
+      clusterBorder: '#b2bec3',
+      titleColor: '#2d3436',
+      edgeLabelBackground: '#ffffff',
+      actorBkg: '#4f8fea',
+      actorTextColor: '#ffffff',
+      actorBorder: '#3a7bd5',
+      signalColor: '#636e72',
+      labelBoxBkgColor: '#ffffff',
+      labelBoxBorderColor: '#b2bec3',
+      labelTextColor: '#2d3436',
+      loopTextColor: '#2d3436',
+      activationBorderColor: '#3a7bd5',
+      activationBkgColor: '#dfe6e9',
+      sequenceNumberColor: '#ffffff',
+      pie1: '#4f8fea', pie2: '#6c5ce7', pie3: '#00b894', pie4: '#e17055',
+      pie5: '#fdcb6e', pie6: '#00cec9', pie7: '#e84393', pie8: '#0984e3'
+    };
+    return theme === 'dark' ? dark : light;
+  }
+
+  mermaid.initialize({ startOnLoad: true, theme: 'base', securityLevel: 'loose', themeVariables: getMermaidTheme(savedTheme) });
+
+  // TOC 현재 위치 하이라이트
+  const tocLinks = document.querySelectorAll('.toc a');
+  const headings = [];
+  tocLinks.forEach(link => {
+    const id = link.getAttribute('href').slice(1);
+    const el = document.getElementById(id);
+    if (el) headings.push({ el, link });
+  });
+
+  function updateActiveToc() {
+    let current = null;
+    for (const h of headings) {
+      if (h.el.getBoundingClientRect().top <= 100) current = h;
+    }
+    tocLinks.forEach(l => l.classList.remove('active'));
+    if (current) current.link.classList.add('active');
+  }
+
+  window.addEventListener('scroll', updateActiveToc, { passive: true });
+  updateActiveToc();
+
+  // 모바일: 링크 클릭 시 사이드바 닫기
+  tocLinks.forEach(link => {
+    link.addEventListener('click', () => {
+      if (window.innerWidth <= 900) {
+        document.querySelector('.sidebar').classList.remove('open');
+      }
+    });
+  });
+</script>
+
+</body>
+</html>

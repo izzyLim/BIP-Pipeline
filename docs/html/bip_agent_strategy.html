@@ -1,0 +1,889 @@
+<!DOCTYPE html>
+<html lang="ko" data-theme="dark">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>BIP 에이전트 전략</title>
+<script src="https://cdn.jsdelivr.net/npm/mermaid@11/dist/mermaid.min.js"></script>
+<style>
+  /* ── 테마 변수 ── */
+  :root[data-theme="dark"] {
+    --bg: #0d1117;
+    --bg-sidebar: #161b22;
+    --fg: #e6edf3;
+    --fg-muted: #8b949e;
+    --border: #30363d;
+    --accent: #58a6ff;
+    --accent-hover: #79c0ff;
+    --code-bg: #1e293b;
+    --code-fg: #e2e8f0;
+    --table-header: #161b22;
+    --table-even: #0d1117;
+    --table-odd: #161b22;
+    --blockquote-bg: #161b22;
+    --blockquote-border: #3b82f6;
+    --link: #58a6ff;
+    --strong: #79c0ff;
+    --card-bg: #21262d;
+  }
+  :root[data-theme="light"] {
+    --bg: #ffffff;
+    --bg-sidebar: #f6f8fa;
+    --fg: #1f2937;
+    --fg-muted: #6b7280;
+    --border: #e5e7eb;
+    --accent: #2563eb;
+    --accent-hover: #1d4ed8;
+    --code-bg: #f3f4f6;
+    --code-fg: #1e293b;
+    --table-header: #f8fafc;
+    --table-even: #ffffff;
+    --table-odd: #f9fafb;
+    --blockquote-bg: #eff6ff;
+    --blockquote-border: #3b82f6;
+    --link: #2563eb;
+    --strong: #1e40af;
+    --card-bg: #f3f4f6;
+  }
+
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+
+  body {
+    font-family: 'Pretendard', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+    background: var(--bg);
+    color: var(--fg);
+    line-height: 1.75;
+    display: flex;
+    min-height: 100vh;
+  }
+
+  /* ── 사이드바 ── */
+  .sidebar {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 280px;
+    height: 100vh;
+    background: var(--bg-sidebar);
+    border-right: 1px solid var(--border);
+    overflow-y: auto;
+    padding: 20px 0;
+    z-index: 100;
+    transition: transform 0.3s ease;
+  }
+
+  .sidebar-header {
+    padding: 0 20px 16px;
+    border-bottom: 1px solid var(--border);
+    margin-bottom: 12px;
+  }
+
+  .sidebar-title {
+    font-size: 0.95rem;
+    font-weight: 700;
+    color: var(--fg);
+    line-height: 1.3;
+  }
+
+  .sidebar-controls {
+    display: flex;
+    gap: 8px;
+    margin-top: 12px;
+  }
+
+  .theme-btn {
+    background: var(--card-bg);
+    border: 1px solid var(--border);
+    color: var(--fg-muted);
+    padding: 4px 10px;
+    border-radius: 6px;
+    font-size: 0.7rem;
+    cursor: pointer;
+    transition: all 0.2s;
+  }
+  .theme-btn:hover {
+    border-color: var(--accent);
+    color: var(--accent);
+  }
+  .theme-btn.active {
+    background: var(--accent);
+    color: #fff;
+    border-color: var(--accent);
+  }
+
+  .back-link {
+    display: block;
+    margin-top: 10px;
+    font-size: 0.75rem;
+    color: var(--fg-muted);
+    text-decoration: none;
+  }
+  .back-link:hover {
+    color: var(--accent);
+  }
+
+  /* ── TOC ── */
+  .toc {
+    padding: 0 12px;
+  }
+  .toc ul {
+    list-style: none;
+    padding: 0;
+  }
+  .toc li {
+    margin: 0;
+  }
+  .toc a {
+    display: block;
+    padding: 4px 8px;
+    color: var(--fg-muted);
+    text-decoration: none;
+    font-size: 0.78rem;
+    border-radius: 4px;
+    border-left: 2px solid transparent;
+    transition: all 0.15s;
+    line-height: 1.4;
+  }
+  .toc a:hover {
+    color: var(--accent);
+    background: var(--card-bg);
+    border-left-color: var(--accent);
+  }
+  .toc a.active {
+    color: var(--accent);
+    border-left-color: var(--accent);
+    font-weight: 600;
+  }
+  .toc-h3 a { padding-left: 20px; font-size: 0.75rem; }
+  .toc-h4 a { padding-left: 32px; font-size: 0.72rem; }
+
+  /* ── 본문 ── */
+  .content {
+    margin-left: 280px;
+    flex: 1;
+    max-width: 860px;
+    padding: 40px 48px 80px;
+  }
+
+  /* ── 모바일 ── */
+  .menu-toggle {
+    display: none;
+    position: fixed;
+    top: 12px;
+    left: 12px;
+    z-index: 200;
+    background: var(--bg-sidebar);
+    border: 1px solid var(--border);
+    color: var(--fg);
+    padding: 8px 12px;
+    border-radius: 6px;
+    cursor: pointer;
+    font-size: 1.1rem;
+  }
+
+  @media (max-width: 900px) {
+    .sidebar {
+      transform: translateX(-100%);
+    }
+    .sidebar.open {
+      transform: translateX(0);
+    }
+    .content {
+      margin-left: 0;
+      padding: 60px 20px 60px;
+    }
+    .menu-toggle {
+      display: block;
+    }
+  }
+
+  /* ── 타이포그래피 ── */
+  h1 { font-size: 1.9rem; margin: 2rem 0 1rem; padding-bottom: 0.5rem; border-bottom: 2px solid var(--accent); }
+  h2 { font-size: 1.45rem; margin: 2.5rem 0 0.8rem; padding-bottom: 0.3rem; border-bottom: 1px solid var(--border); color: var(--accent); }
+  h3 { font-size: 1.15rem; margin: 1.8rem 0 0.5rem; }
+  h4 { font-size: 1rem; margin: 1.3rem 0 0.4rem; color: var(--fg-muted); }
+  p { margin: 0.6rem 0; }
+  hr { border: none; border-top: 1px solid var(--border); margin: 2rem 0; }
+  strong { color: var(--strong); }
+  a { color: var(--link); text-decoration: none; }
+  a:hover { text-decoration: underline; }
+  ul, ol { margin: 0.5rem 0 0.5rem 1.5rem; }
+  li { margin: 0.25rem 0; }
+
+  /* ── 테이블 ── */
+  table { width: 100%; border-collapse: collapse; margin: 1rem 0; font-size: 0.85rem; }
+  th, td { border: 1px solid var(--border); padding: 0.5rem 0.75rem; text-align: left; }
+  th { background: var(--table-header); font-weight: 600; }
+  tr:nth-child(even) { background: var(--table-even); }
+  tr:nth-child(odd) { background: var(--table-odd); }
+
+  /* ── 코드 ── */
+  code {
+    background: var(--code-bg);
+    color: var(--code-fg);
+    padding: 0.15rem 0.4rem;
+    border-radius: 4px;
+    font-size: 0.82em;
+    font-family: 'JetBrains Mono', 'Fira Code', 'Cascadia Code', monospace;
+  }
+  pre {
+    background: var(--code-bg);
+    color: var(--code-fg);
+    padding: 1rem 1.2rem;
+    border-radius: 8px;
+    overflow-x: auto;
+    margin: 1rem 0;
+    border: 1px solid var(--border);
+  }
+  pre code {
+    background: none;
+    padding: 0;
+    font-size: 0.82rem;
+    line-height: 1.5;
+  }
+
+  /* ── 인용 ── */
+  blockquote {
+    border-left: 4px solid var(--blockquote-border);
+    padding: 0.6rem 1rem;
+    margin: 1rem 0;
+    background: var(--blockquote-bg);
+    border-radius: 0 6px 6px 0;
+  }
+  blockquote p { margin: 0.3rem 0; }
+
+  /* ── Mermaid ── */
+  .mermaid {
+    margin: 1.5rem 0;
+    text-align: center;
+    background: var(--card-bg);
+    padding: 1rem;
+    border-radius: 8px;
+    border: 1px solid var(--border);
+  }
+  .mermaid svg { max-width: 100%; }
+
+  /* ── Footer ── */
+  footer {
+    margin-top: 3rem;
+    padding-top: 1rem;
+    border-top: 1px solid var(--border);
+    color: var(--fg-muted);
+    font-size: 0.8rem;
+  }
+</style>
+</head>
+<body>
+
+<button class="menu-toggle" onclick="document.querySelector('.sidebar').classList.toggle('open')">☰</button>
+
+<aside class="sidebar">
+  <div class="sidebar-header">
+    <div class="sidebar-title">BIP 에이전트 전략</div>
+    <div class="sidebar-controls">
+      <button class="theme-btn" onclick="setTheme('dark')" id="btn-dark">🌙 Dark</button>
+      <button class="theme-btn" onclick="setTheme('light')" id="btn-light">☀️ Light</button>
+    </div>
+    <a class="back-link" href="index.html">← 문서 목록으로</a>
+  </div>
+  <nav class="toc">
+<ul>
+<li class="toc-h2"><a href="#1-목표-비전">1. 목표 비전</a></li>
+  <li class="toc-h3"><a href="#우리가-원하는-것">우리가 원하는 것</a></li>
+  <li class="toc-h3"><a href="#예시-시나리오">예시 시나리오</a></li>
+<li class="toc-h2"><a href="#2-현재-bip-상태-as-is">2. 현재 BIP 상태 (As-Is)</a></li>
+  <li class="toc-h3"><a href="#현재의-한계">현재의 한계</a></li>
+<li class="toc-h2"><a href="#3-목표-아키텍처-to-be">3. 목표 아키텍처 (To-Be)</a></li>
+  <li class="toc-h3"><a href="#핵심-변화">핵심 변화</a></li>
+<li class="toc-h2"><a href="#4-프레임워크-선택지">4. 프레임워크 선택지</a></li>
+<li class="toc-h2"><a href="#5-추천-전략-단계별-접근">5. 추천 전략: 단계별 접근</a></li>
+  <li class="toc-h3"><a href="#phase-1-planner-agent-프로토타입-23주">Phase 1: Planner Agent 프로토타입 (2~3주)</a></li>
+  <li class="toc-h3"><a href="#phase-2-에이전트-간-협업--웹-ui-12개월">Phase 2: 에이전트 간 협업 + 웹 UI (1~2개월)</a></li>
+  <li class="toc-h3"><a href="#phase-3-학습--고도화-장기">Phase 3: 학습 + 고도화 (장기)</a></li>
+<li class="toc-h2"><a href="#6-phase-1-상세-설계">6. Phase 1 상세 설계</a></li>
+  <li class="toc-h3"><a href="#planner-agent-흐름-예시">Planner Agent 흐름 예시</a></li>
+  <li class="toc-h3"><a href="#도구-목록-phase-1">도구 목록 (Phase 1)</a></li>
+  <li class="toc-h3"><a href="#api-인터페이스">API 인터페이스</a></li>
+<li class="toc-h2"><a href="#7-nl2sql-wren-ai-에이전트-연동">7. NL2SQL (Wren AI) 에이전트 연동</a></li>
+  <li class="toc-h3"><a href="#현재-wren-ai-상태">현재 Wren AI 상태</a></li>
+  <li class="toc-h3"><a href="#에이전트-도구로-래핑">에이전트 도구로 래핑</a></li>
+<li class="toc-h2"><a href="#8-비용-예측">8. 비용 예측</a></li>
+<li class="toc-h2"><a href="#9-기술-결정-사항">9. 기술 결정 사항</a></li>
+  <li class="toc-h3"><a href="#결정됨">결정됨</a></li>
+  <li class="toc-h3"><a href="#미결정-phase-1에서-검증-후-결정">미결정 (Phase 1에서 검증 후 결정)</a></li>
+<li class="toc-h2"><a href="#10-리스크--완화">10. 리스크 &amp; 완화</a></li>
+<li class="toc-h2"><a href="#11-관련-문서">11. 관련 문서</a></li>
+</ul>
+</nav>
+</aside>
+
+<main class="content">
+<h1 id="bip-에이전트-전략">BIP 에이전트 전략</h1>
+<p>차세대 아키텍처 검토 — 복합 질문 처리, 에이전트 협업, 웹 인터페이스 | 2026-04-13</p>
+<h2 id="1-목표-비전">1. 목표 비전</h2>
+<h3 id="우리가-원하는-것">우리가 원하는 것</h3>
+<p>고차원적이고 복합적인 질문에 대해, 내부 NL2SQL / MCP 도구 / RAG를 <strong>에이전트가 알아서 판단하고 조합</strong> 해서 분석하고, 에이전트끼리도 협업해서 최종 답변을 제공하는 시스템.</p>
+<h3 id="예시-시나리오">예시 시나리오</h3>
+<table>
+<thead>
+<tr>
+<th>사용자 질문</th>
+<th>필요한 도구 조합</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>"삼성전자 지금 투자해도 되나? 밸류에이션이랑 수급 같이 봐줘"</td>
+<td>NL2SQL (PER/PBR 5년 추이) + MCP (현재가/외국인 수급) + RAG (반도체 업황 뉴스) → 종합 판단</td>
+</tr>
+<tr>
+<td>"요즘 반도체 섹터 전체적으로 어때?"</td>
+<td>NL2SQL (섹터 수익률) + MCP (삼성전자/SK하이닉스 실시간) + RAG (HBM/DRAM 뉴스) + 뉴스 다이제스트</td>
+</tr>
+<tr>
+<td>"외국인이 최근 뭘 사고 있는지 분석해줘"</td>
+<td>NL2SQL (투자자별 순매수 TOP) + MCP (실시간 수급) + RAG (외국인 매매 배경 뉴스)</td>
+</tr>
+<tr>
+<td>"오늘 시장 요약해줘"</td>
+<td>MCP (지수/환율/수급) + 뉴스 다이제스트 + 체크리스트 에이전트 결과</td>
+</tr>
+<tr>
+<td>"포트폴리오 리밸런싱 해야 할까?"</td>
+<td>NL2SQL (보유 종목 현황) + MCP (현재가) + 스크리너 (대안 종목) + 매크로 분석</td>
+</tr>
+</tbody>
+</table>
+<h2 id="2-현재-bip-상태-as-is">2. 현재 BIP 상태 (As-Is)</h2>
+<p>graph TD subgraph Airflow["Airflow (스케줄링)"] DAG1["모닝리포트<br />
+08:10"] DAG2["체크리스트 모니터링<br />
+09:30~15:35"] DAG3["preopen<br />
+08:40"] DAG4["종목 스크리너"] DAG5["뉴스 다이제스트<br />
+4시간마다"] end subgraph Agents["BIP-Agents (FastAPI)"] CA["checklist_agent<br />
+Haiku + MCP ReAct"] PA["preopen_analyzer<br />
+Haiku + MCP"] SS["stock_screener<br />
+LangGraph 멀티노드"] end subgraph MCP["MCP Server (bip-stock-mcp)"] KIS["한투 API<br />
+시세/수급/예상체결"] UPB["Upbit<br />
+크립토"] YF["yfinance<br />
+EWY/글로벌 지수"] NV["네이버 금융<br />
+환율/뉴스"] end subgraph Data["데이터"] WREN["Wren AI (NL2SQL)<br />
+5모델 + 41 SQL Pairs"] PG["PostgreSQL<br />
+39+ 테이블"] OM["OpenMetadata<br />
+메타데이터"] end subgraph Delivery["발송"] TG["텔레그램<br />
+채널+DM"] EM["이메일"] end DAG1 &amp; DAG2 &amp; DAG3 &amp; DAG4 --&gt; Agents DAG5 --&gt; PG Agents --&gt; MCP MCP --&gt; PG WREN --&gt; PG Agents --&gt; Delivery style Airflow fill:#f0fdf4,stroke:#059669 style Agents fill:#faf5ff,stroke:#7c3aed style MCP fill:#dbeafe,stroke:#2563eb style Data fill:#fef3c7,stroke:#d97706 style Delivery fill:#fee2e2,stroke:#dc2626 </p>
+<h3 id="현재의-한계">현재의 한계</h3>
+<ul>
+<li><strong>스케줄 기반만</strong> — 사용자가 질문하면 응답하는 대화형 인터페이스 없음</li>
+<li><strong>에이전트가 독립적</strong> — checklist/screener/preopen이 서로 결과를 참조하지 않음</li>
+<li><strong>도구 선택이 고정</strong> — 각 에이전트가 어떤 도구를 쓸지 프롬프트에 명시됨. 질문에 따라 동적으로 선택하는 메타 에이전트 없음</li>
+<li><strong>NL2SQL 미연동</strong> — Wren AI가 있지만 에이전트가 자율적으로 DB 쿼리를 생성/실행하지 않음</li>
+<li><strong>웹 UI 없음</strong> — 텔레그램/이메일로만 결과 수신</li>
+</ul>
+<h2 id="3-목표-아키텍처-to-be">3. 목표 아키텍처 (To-Be)</h2>
+<p>graph TD subgraph UI["사용자 인터페이스"] WEB["웹 채팅<br />
+React / Open WebUI"] TG2["텔레그램"] EM2["이메일<br />
+모닝리포트"] end PLANNER["★ Planner Agent<br />
+(메타 에이전트)<br />
+질문 분석 → 도구/에이전트 선택"] subgraph SubAgents["하위 에이전트"] NL2SQL["NL2SQL Agent<br />
+Wren AI → SQL → DB"] RT["Realtime Agent<br />
+MCP (한투/Upbit/yfinance)"] RAG["RAG Agent<br />
+뉴스 다이제스트 + 검색"] ANAL["Analysis Agent<br />
+체크리스트/스크리너 재활용"] end SYNTH["Synthesizer<br />
+결과 종합 → 최종 답변"] subgraph Infra["기존 인프라 (유지)"] AF["Airflow<br />
+스케줄 작업"] PG2["PostgreSQL + OM"] WREN2["Wren AI"] MCP2["MCP Server"] end UI --&gt; PLANNER PLANNER --&gt; NL2SQL &amp; RT &amp; RAG &amp; ANAL NL2SQL &amp; RT &amp; RAG &amp; ANAL --&gt; SYNTH SYNTH --&gt; UI NL2SQL --&gt; WREN2 --&gt; PG2 RT --&gt; MCP2 RAG --&gt; PG2 AF --&gt; Infra style UI fill:#dbeafe,stroke:#2563eb style PLANNER fill:#faf5ff,stroke:#7c3aed,stroke-width:3px style SubAgents fill:#f0fdf4,stroke:#059669 style SYNTH fill:#fef3c7,stroke:#d97706,stroke-width:2px style Infra fill:#f1f5f9,stroke:#64748b </p>
+<h3 id="핵심-변화">핵심 변화</h3>
+<ul>
+<li><strong>Planner Agent 신규</strong> — 사용자 질문을 분석하고 어떤 하위 에이전트/도구를 조합할지 자율 결정</li>
+<li><strong>NL2SQL 에이전트 연동</strong> — Wren AI를 에이전트 도구로 등록. 자연어 → SQL → 데이터 → 해석</li>
+<li><strong>에이전트 간 결과 전달</strong> — NL2SQL 결과를 Analysis Agent에 넘겨 해석, RAG 결과와 합쳐 종합 판단</li>
+<li><strong>대화형 인터페이스</strong> — 웹/텔레그램에서 자유롭게 질문하고 답변 받기</li>
+<li><strong>기존 스케줄은 유지</strong> — 모닝리포트/체크리스트/스크리너는 Airflow가 계속 실행</li>
+</ul>
+<h2 id="4-프레임워크-선택지">4. 프레임워크 선택지</h2>
+<table>
+<thead>
+<tr>
+<th>관점</th>
+<th>Hermes Agent</th>
+<th>Deep Agents</th>
+<th>자체 LangGraph</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><strong>핵심 강점</strong></td>
+<td>학습 루프 + 웹 UI + 멀티 플랫폼</td>
+<td>에이전트 간 협업 오케스트레이션</td>
+<td>기존 인프라 100% 호환, 최대 유연성</td>
+</tr>
+<tr>
+<td><strong>질문 분해 + 라우팅</strong></td>
+<td>ReAct 패턴 (도구 선택)</td>
+<td>Supervisor 패턴 (강점)</td>
+<td>직접 구현</td>
+</tr>
+<tr>
+<td><strong>에이전트 간 협업</strong></td>
+<td>서브에이전트 (단순 위임)</td>
+<td>네이티브 (양방향 소통)</td>
+<td>직접 설계</td>
+</tr>
+<tr>
+<td><strong>NL2SQL 연동</strong></td>
+<td>도구로 호출 가능</td>
+<td>도구로 호출 가능</td>
+<td>도구로 호출 가능</td>
+</tr>
+<tr>
+<td><strong>MCP 연동</strong></td>
+<td>네이티브 지원</td>
+<td>래퍼 필요</td>
+<td>이미 사용 중</td>
+</tr>
+<tr>
+<td><strong>RAG</strong></td>
+<td>도구로 가능</td>
+<td>LangChain RAG 네이티브</td>
+<td>이미 사용 중</td>
+</tr>
+<tr>
+<td><strong>웹 UI</strong></td>
+<td>즉시 가능 (OpenAI 호환)</td>
+<td>전용 UI만</td>
+<td>직접 구현</td>
+</tr>
+<tr>
+<td><strong>학습/스킬</strong></td>
+<td>내장</td>
+<td>없음</td>
+<td>직접 구현</td>
+</tr>
+<tr>
+<td><strong>기존 BIP 호환</strong></td>
+<td>중간 (SQLite vs PG)</td>
+<td>높음 (LangGraph)</td>
+<td>최고</td>
+</tr>
+<tr>
+<td><strong>스케줄링</strong></td>
+<td>내장 cron (미성숙)</td>
+<td>없음</td>
+<td>Airflow (성숙)</td>
+</tr>
+<tr>
+<td><strong>도입 리스크</strong></td>
+<td>중간</td>
+<td>중간</td>
+<td>낮음</td>
+</tr>
+<tr>
+<td><strong>구현 속도</strong></td>
+<td>빠름 (프레임워크 제공)</td>
+<td>중간</td>
+<td>느림 (직접 구현)</td>
+</tr>
+<tr>
+<td><strong>토큰 오버헤드</strong></td>
+<td>+15~25% (리플렉션)</td>
+<td>+10~15% (플래닝)</td>
+<td>최소</td>
+</tr>
+</tbody>
+</table>
+<h2 id="5-추천-전략-단계별-접근">5. 추천 전략: 단계별 접근</h2>
+<p>핵심 판단: 외부 프레임워크를 통째로 도입하기보다, <strong>기존 LangGraph 인프라 위에 Planner Agent를 추가</strong> 하고, 필요한 개념만 차용하는 점진적 접근이 리스크 대비 효과가 가장 큼. </p>
+<p>gantt title BIP 에이전트 로드맵 dateFormat YYYY-MM-DD axisFormat %m/%d section Phase 1 (프로토타입) Planner Agent 구현 :p1a, 2026-04-14, 7d NL2SQL/MCP/RAG 도구 등록 :p1b, after p1a, 5d /api/ask 엔드포인트 :p1c, after p1b, 3d 텔레그램 /ask 커맨드 :p1d, after p1c, 2d section Phase 2 (협업 + 웹UI) 하위 에이전트 분리 :p2a, after p1d, 14d OpenAI 호환 API 래퍼 :p2b, after p2a, 5d 웹 채팅 UI :p2c, after p2b, 10d section Phase 3 (학습) 스킬 시스템 도입 :p3a, after p2c, 14d 사용자 프로필 학습 :p3b, after p3a, 14d </p>
+<h3 id="phase-1-planner-agent-프로토타입-23주">Phase 1: Planner Agent 프로토타입 (2~3주)</h3>
+<p><strong>목표:</strong> "자연어 질문 → 도구 자동 선택 → 답변"이 동작하는 최소 프로토타입</p>
+<div class="codehilite"><pre><span></span><code>새로 만들 것:
+├─ planner_agent.py (LangGraph ReAct)
+│   └─ 도구: wren_ai_query, mcp_realtime, news_search, checklist_status
+├─ /api/ask 엔드포인트 (BIP-Agents FastAPI)
+└─ 텔레그램 /ask 커맨드 (기존 게이트웨이 활용)
+
+재활용:
+├─ MCP Server (기존 그대로)
+├─ news_digest_collector (기존 그대로)
+├─ Wren AI API (기존 그대로, 도구로 래핑만)
+└─ Airflow 스케줄 (기존 그대로)
+</code></pre></div>
+
+<ul>
+<li>LLM: Sonnet (복잡한 플래닝) 또는 Haiku (비용 절감)</li>
+<li>도구 4~5개만 등록해서 시작</li>
+<li>텔레그램에서 <code>/ask 삼성전자 지금 어때?</code> → 답변</li>
+</ul>
+<h3 id="phase-2-에이전트-간-협업--웹-ui-12개월">Phase 2: 에이전트 간 협업 + 웹 UI (1~2개월)</h3>
+<p><strong>목표:</strong> 복합 질문 처리 + 웹 채팅 인터페이스</p>
+<div class="codehilite"><pre><span></span><code>추가할 것:
+├─ 하위 에이전트 분리
+│   ├─ NL2SQL Agent (Wren AI + 결과 해석)
+│   ├─ Realtime Agent (MCP 멀티 호출 + 종합)
+│   ├─ RAG Agent (뉴스 다이제스트 + 실시간 검색)
+│   └─ Synthesizer (하위 결과 통합 → 최종 답변)
+├─ OpenAI 호환 API 래퍼 (/v1/chat/completions)
+└─ Open WebUI 또는 React 채팅 컴포넌트
+</code></pre></div>
+
+<ul>
+<li>Planner가 복잡한 질문을 분해 → 하위 에이전트에 위임 → 결과 종합</li>
+<li>OpenAI 호환 API 노출 → Open WebUI/LobeChat 등 바로 연결</li>
+<li>또는 기존 React-FastAPI에 채팅 페이지 추가</li>
+</ul>
+<h3 id="phase-3-학습--고도화-장기">Phase 3: 학습 + 고도화 (장기)</h3>
+<p><strong>목표:</strong> 반복 질문 패턴 학습, 스킬 저장, 개인화</p>
+<div class="codehilite"><pre><span></span><code>도입할 개념 (Hermes에서 차용):
+├─ 스킬 시스템 — 자주 묻는 분석 패턴을 스킬 문서로 저장
+│   예: &quot;밸류에이션 분석 스킬&quot; = PER/PBR 조회 + 업종 비교 + 수급 확인
+├─ Procedural Memory — &quot;어떻게 분석했는지&quot; 절차 기억
+├─ Progressive Disclosure — 스킬 요약만 로드, 필요 시 상세
+└─ 사용자 프로필 — 선호 분석 스타일, 관심 섹터 학습
+</code></pre></div>
+
+<h2 id="6-phase-1-상세-설계">6. Phase 1 상세 설계</h2>
+<h3 id="planner-agent-흐름-예시">Planner Agent 흐름 예시</h3>
+<p>sequenceDiagram participant U as 사용자 participant P as Planner Agent participant NL as NL2SQL (Wren AI) participant MC as MCP (한투 API) participant S as Synthesizer U-&gt;&gt;P: "삼성전자 밸류에이션이<br />
+역사적으로 어디 수준이야?" Note over P: 질문 분석<br />
+삼성전자 + 밸류에이션 + 추이 P-&gt;&gt;NL: "삼성전자 최근 5년 PER, PBR 추이" NL--&gt;&gt;P: PER 12.3배 (5년 평균 14.8) P-&gt;&gt;MC: 삼성전자 현재가 + 외국인 수급 MC--&gt;&gt;P: 206,000원 / 외인 +4,260억 P-&gt;&gt;S: NL2SQL + MCP 결과 종합 S--&gt;&gt;U: "PER 12.3배 = 5년 평균 대비 17% 할인<br />
+외인 5일 연속 순매수(+4,260억)<br />
+역사적 PER 12배 이하 매수 시 1년 +23%" </p>
+<h3 id="도구-목록-phase-1">도구 목록 (Phase 1)</h3>
+<table>
+<thead>
+<tr>
+<th>도구</th>
+<th>소스</th>
+<th>기능</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>wren_ai_query</code></td>
+<td>Wren AI API</td>
+<td>자연어 → SQL → DB 결과 반환 (재무제표, 시세, 수급 등)</td>
+</tr>
+<tr>
+<td><code>mcp_realtime</code></td>
+<td>bip-stock-mcp</td>
+<td>실시간 시세/수급/환율/지수 (한투 API, Upbit, 네이버)</td>
+</tr>
+<tr>
+<td><code>news_digest</code></td>
+<td>news_digest 테이블</td>
+<td>최근 48시간 뉴스 다이제스트 조회</td>
+</tr>
+<tr>
+<td><code>news_search</code></td>
+<td>네이버 뉴스 API</td>
+<td>특정 키워드 실시간 뉴스 검색</td>
+</tr>
+<tr>
+<td><code>checklist_status</code></td>
+<td>monitor_checklist 테이블</td>
+<td>오늘 체크리스트 현황 조회</td>
+</tr>
+</tbody>
+</table>
+<h3 id="api-인터페이스">API 인터페이스</h3>
+<div class="codehilite"><pre><span></span><code><span class="gh">#</span> BIP-Agents에 추가
+POST /api/ask
+{
+  &quot;question&quot;: &quot;삼성전자 지금 투자해도 되나?&quot;,
+  &quot;context&quot;: &quot;optional 추가 컨텍스트&quot;
+}
+
+<span class="gh">#</span> 응답
+{
+  &quot;answer&quot;: &quot;종합 분석 텍스트...&quot;,
+  &quot;sources&quot;: [&quot;wren_ai_query&quot;, &quot;mcp_realtime&quot;, &quot;news_digest&quot;],
+  &quot;data&quot;: { ... },      // 참조한 원본 데이터
+  &quot;token_usage&quot;: { ... }
+}
+
+<span class="gh">#</span> OpenAI 호환 (Phase 2 — 웹 UI 연동용)
+POST /v1/chat/completions
+{
+  &quot;model&quot;: &quot;bip-planner&quot;,
+  &quot;messages&quot;: [{&quot;role&quot;: &quot;user&quot;, &quot;content&quot;: &quot;삼성전자 어때?&quot;}]
+}
+</code></pre></div>
+
+<h2 id="7-nl2sql-wren-ai-에이전트-연동">7. NL2SQL (Wren AI) 에이전트 연동</h2>
+<h3 id="현재-wren-ai-상태">현재 Wren AI 상태</h3>
+<ul>
+<li>5개 모델 (stock_info, stock_price_1d, financial_statements, consensus_estimates, macro_indicators)</li>
+<li>41개 SQL Pairs (검증된 질문-SQL 쌍)</li>
+<li><code>http://localhost:3000</code>에서 독립 실행 중</li>
+<li>보안: <code>nl2sql_exec</code> 전용 계정 (민감 테이블 DB 레벨 차단)</li>
+</ul>
+<h3 id="에이전트-도구로-래핑">에이전트 도구로 래핑</h3>
+<div class="codehilite"><pre><span></span><code><span class="n">async</span><span class="w"> </span><span class="n">def</span><span class="w"> </span><span class="n">wren_ai_query</span><span class="p">(</span><span class="n">question</span><span class="o">:</span><span class="w"> </span><span class="n">str</span><span class="p">)</span><span class="w"> </span><span class="o">-&gt;</span><span class="w"> </span><span class="n">dict</span><span class="o">:</span>
+<span class="w">    </span><span class="s">&quot;&quot;&quot;</span>
+<span class="s">    자연어 질문 → Wren AI → SQL 생성 → 실행 → 결과 반환</span>
+<span class="s">    보안: nl2sql_exec 계정으로만 실행 (민감 테이블 차단)</span>
+<span class="s">    &quot;&quot;&quot;</span>
+<span class="w">    </span><span class="err">#</span><span class="w"> </span><span class="mf">1.</span><span class="w"> </span><span class="n">Wren</span><span class="w"> </span><span class="n">AI</span><span class="w"> </span><span class="n">API로</span><span class="w"> </span><span class="kr">SQL</span><span class="w"> </span><span class="err">생성</span>
+<span class="w">    </span><span class="kr">sql</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">await</span><span class="w"> </span><span class="n">wren_ai</span><span class="p">.</span><span class="n">ask</span><span class="p">(</span><span class="n">question</span><span class="p">)</span>
+
+<span class="w">    </span><span class="err">#</span><span class="w"> </span><span class="mf">2.</span><span class="w"> </span><span class="n">nl2sql_exec</span><span class="w"> </span><span class="err">계정으로</span><span class="w"> </span><span class="err">실행</span>
+<span class="w">    </span><span class="n">result</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">await</span><span class="w"> </span><span class="n">execute_sql</span><span class="p">(</span><span class="kr">sql</span><span class="p">,</span><span class="w"> </span><span class="n">role</span><span class="o">=</span><span class="s">&quot;nl2sql_exec&quot;</span><span class="p">)</span>
+
+<span class="w">    </span><span class="err">#</span><span class="w"> </span><span class="mf">3.</span><span class="w"> </span><span class="err">결과</span><span class="w"> </span><span class="o">+</span><span class="w"> </span><span class="n">SQL을</span><span class="w"> </span><span class="n">audit</span><span class="w"> </span><span class="n">log에</span><span class="w"> </span><span class="err">기록</span>
+<span class="w">    </span><span class="n">await</span><span class="w"> </span><span class="kd">record_</span><span class="n">nl2sql_audit</span><span class="p">(</span><span class="n">question</span><span class="p">,</span><span class="w"> </span><span class="kr">sql</span><span class="p">,</span><span class="w"> </span><span class="n">result</span><span class="p">)</span>
+
+<span class="w">    </span><span class="kr">return</span><span class="w"> </span><span class="p">{</span><span class="s">&quot;question&quot;</span><span class="o">:</span><span class="w"> </span><span class="n">question</span><span class="p">,</span><span class="w"> </span><span class="s">&quot;sql&quot;</span><span class="o">:</span><span class="w"> </span><span class="kr">sql</span><span class="p">,</span><span class="w"> </span><span class="s">&quot;data&quot;</span><span class="o">:</span><span class="w"> </span><span class="n">result</span><span class="p">}</span>
+</code></pre></div>
+
+<p>보안 거버넌스 준수: raw value를 LLM 프롬프트에 직접 주입하지 않고, 집계된 결과만 전달</p>
+<h2 id="8-비용-예측">8. 비용 예측</h2>
+<table>
+<thead>
+<tr>
+<th>항목</th>
+<th>현재</th>
+<th>Phase 1 추가</th>
+<th>Phase 2 추가</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>모닝리포트 (Sonnet)</td>
+<td>~$0.10/일</td>
+<td>-</td>
+<td>-</td>
+</tr>
+<tr>
+<td>체크리스트 (Haiku ×6)</td>
+<td>~$0.06/일</td>
+<td>-</td>
+<td>-</td>
+</tr>
+<tr>
+<td>뉴스 다이제스트 (Haiku ×7)</td>
+<td>~$0.02/일</td>
+<td>-</td>
+<td>-</td>
+</tr>
+<tr>
+<td><strong>/ask 질문 응답</strong></td>
+<td>-</td>
+<td>~$0.02/질문 (Haiku)</td>
+<td>~$0.05/질문 (Sonnet)</td>
+</tr>
+<tr>
+<td><strong>NL2SQL 호출</strong></td>
+<td>-</td>
+<td>Wren AI 자체 비용 없음 (셀프호스팅)</td>
+<td>-</td>
+</tr>
+<tr>
+<td>일 합계 (질문 10개 가정)</td>
+<td>~$0.18</td>
+<td>+$0.20</td>
+<td>+$0.50</td>
+</tr>
+<tr>
+<td>월 합계</td>
+<td>~$5.4</td>
+<td>~$11.4</td>
+<td>~$20</td>
+</tr>
+</tbody>
+</table>
+<h2 id="9-기술-결정-사항">9. 기술 결정 사항</h2>
+<h3 id="결정됨">결정됨</h3>
+<ul>
+<li><strong>기반 프레임워크: 자체 LangGraph</strong> — 기존 인프라 호환성 최우선. Hermes/Deep Agents 개념은 필요 시 차용</li>
+<li><strong>스케줄링: Airflow 유지</strong> — 정기 작업은 Airflow, 대화형만 새 에이전트</li>
+<li><strong>DB: PostgreSQL 유지</strong> — 새 테이블 추가는 기존 DB에</li>
+<li><strong>보안: 기존 거버넌스 준수</strong> — nl2sql_exec, 감사 로그, 민감 테이블 차단</li>
+</ul>
+<h3 id="미결정-phase-1에서-검증-후-결정">미결정 (Phase 1에서 검증 후 결정)</h3>
+<ul>
+<li><strong>Planner LLM 모델</strong> — Sonnet (정확) vs Haiku (저렴). 질문 복잡도에 따라 동적 선택?</li>
+<li><strong>웹 UI 방식</strong> — Open WebUI (빠른 도입) vs React 직접 구현 (기존 앱에 통합)</li>
+<li><strong>에이전트 간 통신</strong> — 직접 호출 vs 메시지 큐 vs LangGraph State</li>
+<li><strong>학습/스킬 시스템</strong> — Phase 3에서 자체 구현 vs Hermes 도입</li>
+<li><strong>멀티 플랫폼</strong> — 텔레그램 + 웹이면 충분? Slack/Discord 추가?</li>
+</ul>
+<h2 id="10-리스크--완화">10. 리스크 &amp; 완화</h2>
+<table>
+<thead>
+<tr>
+<th>리스크</th>
+<th>영향</th>
+<th>완화 방안</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Planner가 잘못된 도구를 선택</td>
+<td>엉뚱한 답변</td>
+<td>도구 선택 로그 기록 + 사용자 피드백 루프</td>
+</tr>
+<tr>
+<td>NL2SQL이 잘못된 SQL 생성</td>
+<td>부정확한 데이터</td>
+<td>nl2sql_exec 권한 제한 + SQL 검증 단계 추가</td>
+</tr>
+<tr>
+<td>LLM이 민감 데이터(포트폴리오) 노출</td>
+<td>보안 위반</td>
+<td>기존 security_governance 준수 + 응답 필터링</td>
+</tr>
+<tr>
+<td>비용 급증 (사용자 질문 폭증)</td>
+<td>API 비용</td>
+<td>일일 질문 한도 + Haiku 우선 + 캐시</td>
+</tr>
+<tr>
+<td>응답 지연 (멀티 도구 호출)</td>
+<td>사용자 경험</td>
+<td>병렬 호출 + 스트리밍 응답 + 타임아웃</td>
+</tr>
+</tbody>
+</table>
+<h2 id="11-관련-문서">11. 관련 문서</h2>
+<ul>
+<li><a href="hermes_agent_research.html">Hermes Agent 조사 보고서</a> — 자기 개선형 에이전트, 스킬 시스템, 학습 루프</li>
+<li><a href="deepagents_guide.html">Deep Agents 기술 가이드</a> — 멀티 에이전트 오케스트레이션, Supervisor 패턴</li>
+<li><a href="bip_agents_architecture.html">BIP-Agents 전체 아키텍처</a> — 현재 에이전트 시스템 상세</li>
+<li><a href="checklist_agent_architecture.html">체크리스트 에이전트 아키텍처</a> — Phase 6.3 현재 구조</li>
+<li><a href="stock_screener_architecture.html">종목 추천 에이전트 아키텍처</a> — 스크리너 + Bull/Bear 토론</li>
+<li><a href="nl2sql_design.html">NL2SQL 설계</a> — Wren AI 연동, 보안 원칙</li>
+</ul>
+<p>마지막 업데이트: 2026-04-13 | BIP-Pipeline 에이전트 전략 문서 </p>
+</main>
+
+<script>
+  // 테마 전환
+  function setTheme(theme) {
+    document.documentElement.setAttribute('data-theme', theme);
+    localStorage.setItem('doc-theme', theme);
+    document.getElementById('btn-dark').classList.toggle('active', theme === 'dark');
+    document.getElementById('btn-light').classList.toggle('active', theme === 'light');
+    // Mermaid 재렌더링
+    if (typeof mermaid !== 'undefined') {
+      mermaid.initialize({ startOnLoad: false, theme: 'base', securityLevel: 'loose', themeVariables: getMermaidTheme(theme) });
+      document.querySelectorAll('.mermaid').forEach(el => {
+        el.removeAttribute('data-processed');
+        el.innerHTML = el.textContent;
+      });
+      mermaid.run();
+    }
+  }
+
+  // 저장된 테마 로드
+  const savedTheme = localStorage.getItem('doc-theme') || 'dark';
+  setTheme(savedTheme);
+
+  // Mermaid 초기화
+  function getMermaidTheme(theme) {
+    const dark = {
+      primaryColor: '#3d7be0',
+      primaryTextColor: '#ffffff',
+      primaryBorderColor: '#5a9cf0',
+      secondaryColor: '#7c5cbf',
+      secondaryTextColor: '#ffffff',
+      secondaryBorderColor: '#a29bfe',
+      tertiaryColor: '#00997a',
+      tertiaryTextColor: '#ffffff',
+      tertiaryBorderColor: '#55efc4',
+      noteTextColor: '#f0f0f0',
+      noteBkgColor: '#2d3436',
+      noteBorderColor: '#636e72',
+      lineColor: '#8b949e',
+      textColor: '#e6edf3',
+      mainBkg: '#1e3050',
+      nodeBorder: '#5a9cf0',
+      clusterBkg: '#1a1e2e',
+      clusterBorder: '#4a5568',
+      titleColor: '#79c0ff',
+      edgeLabelBackground: '#21262d',
+      actorBkg: '#3d7be0',
+      actorTextColor: '#ffffff',
+      actorBorder: '#5a9cf0',
+      signalColor: '#8b949e',
+      labelBoxBkgColor: '#21262d',
+      labelBoxBorderColor: '#4a5568',
+      labelTextColor: '#e6edf3',
+      loopTextColor: '#e6edf3',
+      activationBorderColor: '#5a9cf0',
+      activationBkgColor: '#1e3050',
+      sequenceNumberColor: '#ffffff',
+      pie1: '#4f8fea', pie2: '#6c5ce7', pie3: '#00b894', pie4: '#e17055',
+      pie5: '#fdcb6e', pie6: '#00cec9', pie7: '#e84393', pie8: '#0984e3'
+    };
+    const light = {
+      primaryColor: '#4f8fea',
+      primaryTextColor: '#1a1a2e',
+      primaryBorderColor: '#3a7bd5',
+      secondaryColor: '#a29bfe',
+      secondaryTextColor: '#1a1a2e',
+      secondaryBorderColor: '#6c5ce7',
+      tertiaryColor: '#55efc4',
+      tertiaryTextColor: '#1a1a2e',
+      tertiaryBorderColor: '#00b894',
+      noteTextColor: '#2d3436',
+      noteBkgColor: '#ffeaa7',
+      noteBorderColor: '#fdcb6e',
+      lineColor: '#636e72',
+      textColor: '#2d3436',
+      mainBkg: '#dfe6e9',
+      nodeBorder: '#3a7bd5',
+      clusterBkg: '#f0f3f5',
+      clusterBorder: '#b2bec3',
+      titleColor: '#2d3436',
+      edgeLabelBackground: '#ffffff',
+      actorBkg: '#4f8fea',
+      actorTextColor: '#ffffff',
+      actorBorder: '#3a7bd5',
+      signalColor: '#636e72',
+      labelBoxBkgColor: '#ffffff',
+      labelBoxBorderColor: '#b2bec3',
+      labelTextColor: '#2d3436',
+      loopTextColor: '#2d3436',
+      activationBorderColor: '#3a7bd5',
+      activationBkgColor: '#dfe6e9',
+      sequenceNumberColor: '#ffffff',
+      pie1: '#4f8fea', pie2: '#6c5ce7', pie3: '#00b894', pie4: '#e17055',
+      pie5: '#fdcb6e', pie6: '#00cec9', pie7: '#e84393', pie8: '#0984e3'
+    };
+    return theme === 'dark' ? dark : light;
+  }
+
+  mermaid.initialize({ startOnLoad: true, theme: 'base', securityLevel: 'loose', themeVariables: getMermaidTheme(savedTheme) });
+
+  // TOC 현재 위치 하이라이트
+  const tocLinks = document.querySelectorAll('.toc a');
+  const headings = [];
+  tocLinks.forEach(link => {
+    const id = link.getAttribute('href').slice(1);
+    const el = document.getElementById(id);
+    if (el) headings.push({ el, link });
+  });
+
+  function updateActiveToc() {
+    let current = null;
+    for (const h of headings) {
+      if (h.el.getBoundingClientRect().top <= 100) current = h;
+    }
+    tocLinks.forEach(l => l.classList.remove('active'));
+    if (current) current.link.classList.add('active');
+  }
+
+  window.addEventListener('scroll', updateActiveToc, { passive: true });
+  updateActiveToc();
+
+  // 모바일: 링크 클릭 시 사이드바 닫기
+  tocLinks.forEach(link => {
+    link.addEventListener('click', () => {
+      if (window.innerWidth <= 900) {
+        document.querySelector('.sidebar').classList.remove('open');
+      }
+    });
+  });
+</script>
+
+</body>
+</html>

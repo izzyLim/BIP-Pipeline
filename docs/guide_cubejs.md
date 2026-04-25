@@ -36,11 +36,11 @@ graph TB
         AGENT[AI Agent / NL2SQL]
     end
     subgraph CubeServer["Cube Server"]
-        API[API Layer<br/>REST · GraphQL · SQL]
+        API["API Layer\nREST · GraphQL · SQL"]
         COMPILER[Query Compiler]
         ORCHESTRATOR[Query Orchestrator]
         CACHE[캐시 레이어]
-        STORE[Cube Store<br/>Pre-aggregation 엔진]
+        STORE["Cube Store\nPre-aggregation 엔진"]
     end
     subgraph DataSources["데이터 소스"]
         PG[(PostgreSQL)]

@@ -1,0 +1,990 @@
+<!DOCTYPE html>
+<html lang="ko" data-theme="dark">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Trading _Agents_ 기술 가이드 v0.2.3 · 2026.04 최신</title>
+<script src="https://cdn.jsdelivr.net/npm/mermaid@11/dist/mermaid.min.js"></script>
+<style>
+  /* ── 테마 변수 ── */
+  :root[data-theme="dark"] {
+    --bg: #0d1117;
+    --bg-sidebar: #161b22;
+    --fg: #e6edf3;
+    --fg-muted: #8b949e;
+    --border: #30363d;
+    --accent: #58a6ff;
+    --accent-hover: #79c0ff;
+    --code-bg: #1e293b;
+    --code-fg: #e2e8f0;
+    --table-header: #161b22;
+    --table-even: #0d1117;
+    --table-odd: #161b22;
+    --blockquote-bg: #161b22;
+    --blockquote-border: #3b82f6;
+    --link: #58a6ff;
+    --strong: #79c0ff;
+    --card-bg: #21262d;
+  }
+  :root[data-theme="light"] {
+    --bg: #ffffff;
+    --bg-sidebar: #f6f8fa;
+    --fg: #1f2937;
+    --fg-muted: #6b7280;
+    --border: #e5e7eb;
+    --accent: #2563eb;
+    --accent-hover: #1d4ed8;
+    --code-bg: #f3f4f6;
+    --code-fg: #1e293b;
+    --table-header: #f8fafc;
+    --table-even: #ffffff;
+    --table-odd: #f9fafb;
+    --blockquote-bg: #eff6ff;
+    --blockquote-border: #3b82f6;
+    --link: #2563eb;
+    --strong: #1e40af;
+    --card-bg: #f3f4f6;
+  }
+
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+
+  body {
+    font-family: 'Pretendard', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+    background: var(--bg);
+    color: var(--fg);
+    line-height: 1.75;
+    display: flex;
+    min-height: 100vh;
+  }
+
+  /* ── 사이드바 ── */
+  .sidebar {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 280px;
+    height: 100vh;
+    background: var(--bg-sidebar);
+    border-right: 1px solid var(--border);
+    overflow-y: auto;
+    padding: 20px 0;
+    z-index: 100;
+    transition: transform 0.3s ease;
+  }
+
+  .sidebar-header {
+    padding: 0 20px 16px;
+    border-bottom: 1px solid var(--border);
+    margin-bottom: 12px;
+  }
+
+  .sidebar-title {
+    font-size: 0.95rem;
+    font-weight: 700;
+    color: var(--fg);
+    line-height: 1.3;
+  }
+
+  .sidebar-controls {
+    display: flex;
+    gap: 8px;
+    margin-top: 12px;
+  }
+
+  .theme-btn {
+    background: var(--card-bg);
+    border: 1px solid var(--border);
+    color: var(--fg-muted);
+    padding: 4px 10px;
+    border-radius: 6px;
+    font-size: 0.7rem;
+    cursor: pointer;
+    transition: all 0.2s;
+  }
+  .theme-btn:hover {
+    border-color: var(--accent);
+    color: var(--accent);
+  }
+  .theme-btn.active {
+    background: var(--accent);
+    color: #fff;
+    border-color: var(--accent);
+  }
+
+  .back-link {
+    display: block;
+    margin-top: 10px;
+    font-size: 0.75rem;
+    color: var(--fg-muted);
+    text-decoration: none;
+  }
+  .back-link:hover {
+    color: var(--accent);
+  }
+
+  /* ── TOC ── */
+  .toc {
+    padding: 0 12px;
+  }
+  .toc ul {
+    list-style: none;
+    padding: 0;
+  }
+  .toc li {
+    margin: 0;
+  }
+  .toc a {
+    display: block;
+    padding: 4px 8px;
+    color: var(--fg-muted);
+    text-decoration: none;
+    font-size: 0.78rem;
+    border-radius: 4px;
+    border-left: 2px solid transparent;
+    transition: all 0.15s;
+    line-height: 1.4;
+  }
+  .toc a:hover {
+    color: var(--accent);
+    background: var(--card-bg);
+    border-left-color: var(--accent);
+  }
+  .toc a.active {
+    color: var(--accent);
+    border-left-color: var(--accent);
+    font-weight: 600;
+  }
+  .toc-h3 a { padding-left: 20px; font-size: 0.75rem; }
+  .toc-h4 a { padding-left: 32px; font-size: 0.72rem; }
+
+  /* ── 본문 ── */
+  .content {
+    margin-left: 280px;
+    flex: 1;
+    max-width: 860px;
+    padding: 40px 48px 80px;
+  }
+
+  /* ── 모바일 ── */
+  .menu-toggle {
+    display: none;
+    position: fixed;
+    top: 12px;
+    left: 12px;
+    z-index: 200;
+    background: var(--bg-sidebar);
+    border: 1px solid var(--border);
+    color: var(--fg);
+    padding: 8px 12px;
+    border-radius: 6px;
+    cursor: pointer;
+    font-size: 1.1rem;
+  }
+
+  @media (max-width: 900px) {
+    .sidebar {
+      transform: translateX(-100%);
+    }
+    .sidebar.open {
+      transform: translateX(0);
+    }
+    .content {
+      margin-left: 0;
+      padding: 60px 20px 60px;
+    }
+    .menu-toggle {
+      display: block;
+    }
+  }
+
+  /* ── 타이포그래피 ── */
+  h1 { font-size: 1.9rem; margin: 2rem 0 1rem; padding-bottom: 0.5rem; border-bottom: 2px solid var(--accent); }
+  h2 { font-size: 1.45rem; margin: 2.5rem 0 0.8rem; padding-bottom: 0.3rem; border-bottom: 1px solid var(--border); color: var(--accent); }
+  h3 { font-size: 1.15rem; margin: 1.8rem 0 0.5rem; }
+  h4 { font-size: 1rem; margin: 1.3rem 0 0.4rem; color: var(--fg-muted); }
+  p { margin: 0.6rem 0; }
+  hr { border: none; border-top: 1px solid var(--border); margin: 2rem 0; }
+  strong { color: var(--strong); }
+  a { color: var(--link); text-decoration: none; }
+  a:hover { text-decoration: underline; }
+  ul, ol { margin: 0.5rem 0 0.5rem 1.5rem; }
+  li { margin: 0.25rem 0; }
+
+  /* ── 테이블 ── */
+  table { width: 100%; border-collapse: collapse; margin: 1rem 0; font-size: 0.85rem; }
+  th, td { border: 1px solid var(--border); padding: 0.5rem 0.75rem; text-align: left; }
+  th { background: var(--table-header); font-weight: 600; }
+  tr:nth-child(even) { background: var(--table-even); }
+  tr:nth-child(odd) { background: var(--table-odd); }
+
+  /* ── 코드 ── */
+  code {
+    background: var(--code-bg);
+    color: var(--code-fg);
+    padding: 0.15rem 0.4rem;
+    border-radius: 4px;
+    font-size: 0.82em;
+    font-family: 'JetBrains Mono', 'Fira Code', 'Cascadia Code', monospace;
+  }
+  pre {
+    background: var(--code-bg);
+    color: var(--code-fg);
+    padding: 1rem 1.2rem;
+    border-radius: 8px;
+    overflow-x: auto;
+    margin: 1rem 0;
+    border: 1px solid var(--border);
+  }
+  pre code {
+    background: none;
+    padding: 0;
+    font-size: 0.82rem;
+    line-height: 1.5;
+  }
+
+  /* ── 인용 ── */
+  blockquote {
+    border-left: 4px solid var(--blockquote-border);
+    padding: 0.6rem 1rem;
+    margin: 1rem 0;
+    background: var(--blockquote-bg);
+    border-radius: 0 6px 6px 0;
+  }
+  blockquote p { margin: 0.3rem 0; }
+
+  /* ── Mermaid ── */
+  .mermaid {
+    margin: 1.5rem 0;
+    text-align: center;
+    background: var(--card-bg);
+    padding: 1rem;
+    border-radius: 8px;
+    border: 1px solid var(--border);
+  }
+  .mermaid svg { max-width: 100%; }
+
+  /* ── Footer ── */
+  footer {
+    margin-top: 3rem;
+    padding-top: 1rem;
+    border-top: 1px solid var(--border);
+    color: var(--fg-muted);
+    font-size: 0.8rem;
+  }
+</style>
+</head>
+<body>
+
+<button class="menu-toggle" onclick="document.querySelector('.sidebar').classList.toggle('open')">☰</button>
+
+<aside class="sidebar">
+  <div class="sidebar-header">
+    <div class="sidebar-title">Trading _Agents_ 기술 가이드 v0.2.3 · 2026.04 최신</div>
+    <div class="sidebar-controls">
+      <button class="theme-btn" onclick="setTheme('dark')" id="btn-dark">🌙 Dark</button>
+      <button class="theme-btn" onclick="setTheme('light')" id="btn-light">☀️ Light</button>
+    </div>
+    <a class="back-link" href="index.html">← 문서 목록으로</a>
+  </div>
+  <nav class="toc">
+<ul>
+<li class="toc-h2"><a href="#외부-데이터-소스--에이전트--결정">외부 데이터 소스 → 에이전트 → 결정</a></li>
+<li class="toc-h2"><a href="#실제-트레이딩-펌을-모방한-5단계-파이프라인">실제 트레이딩 펌을 모방한 5단계 파이프라인</a></li>
+<li class="toc-h2"><a href="#구조화된-출력--자연어-토론의-혼합">구조화된 출력 + 자연어 토론의 혼합</a></li>
+<li class="toc-h2"><a href="#3가지-설치-방법">3가지 설치 방법</a></li>
+<li class="toc-h2"><a href="#기준-모델-대비-주요-지표-개선-arxiv-논문-기준">기준 모델 대비 주요 지표 개선 (arXiv 논문 기준)</a></li>
+<li class="toc-h2"><a href="#유연성과-모듈성을-위한-langgraph-선택">유연성과 모듈성을 위한 LangGraph 선택</a></li>
+  <li class="toc-h3"><a href="#현재-알려진-한계">현재 알려진 한계</a></li>
+<li class="toc-h2"><a href="#전체-기술-구성">전체 기술 구성</a></li>
+  <li class="toc-h3"><a href="#컴포넌트별-상세">컴포넌트별 상세</a></li>
+<li class="toc-h2"><a href="#논문-인용">논문 인용</a></li>
+  <li class="toc-h3"><a href="#주요-링크">주요 링크</a></li>
+</ul>
+</nav>
+</aside>
+
+<main class="content">
+<p>Trading <em>Agents</em> 기술 가이드 v0.2.3 · 2026.04 최신</p>
+<p>개요</p>
+<p>00개요 및 위치 01업데이트 이력</p>
+<p>프레임워크</p>
+<p>02전체 아키텍처 03애널리스트 팀 04리서처 팀 05트레이더 에이전트 06리스크 관리팀 07에이전트 통신 프로토콜</p>
+<p>설치 및 사용</p>
+<p>08설치 09API 키 설정 10CLI 사용법 11Python 패키지 사용 12설정 옵션</p>
+<p>성능 및 연구</p>
+<p>13성능 벤치마크 14LangGraph 기반 설계 15한계 및 주의사항 16기술 스택 17인용 및 링크</p>
+<p>레퍼런스</p>
+<p>16인용 및 링크</p>
+<p>TauricResearch · Multi-Agent LLM Financial Trading</p>
+<h1 id="tradingagents">TradingAgents</h1>
+<p>기술 가이드</p>
+<p>실제 트레이딩 펌의 구조를 모방한 멀티 에이전트 LLM 금융 트레이딩 프레임워크. 애널리스트, 리서처, 트레이더, 리스크 매니저 에이전트들이 협력하여 시장을 분석하고 트레이딩 결정을 내려요.</p>
+<p>LangGraph 기반 멀티 LLM 지원 오픈소스 Apache 2.0 arXiv 2412.20138 Python 3.13+</p>
+<p>⚠</p>
+<p><strong>연구 목적 전용</strong> TradingAgents는 연구 목적으로 설계된 프레임워크입니다. 선택된 LLM 모델, 모델 온도, 거래 기간, 데이터 품질 등 다양한 요인에 의해 트레이딩 성능이 달라질 수 있어요. 금융·투자·트레이딩 자문을 의도하지 않습니다.</p>
+<p>48K+</p>
+<p>GitHub Stars</p>
+<p>7</p>
+<p>전문 에이전트 역할</p>
+<p>6+</p>
+<p>지원 LLM 제공자</p>
+<p>11+</p>
+<p>LLM 호출 / 예측</p>
+<p>01업데이트 이력</p>
+<p>2026-03</p>
+<p><strong>v0.2.3 릴리스</strong> — 다국어 지원, GPT-5.4 패밀리 모델, 통합 모델 카탈로그, 백테스팅 날짜 정확도 개선, 프록시 지원</p>
+<p>2026-03</p>
+<p><strong>v0.2.2 릴리스</strong> — GPT-5.4/Gemini 3.1/Claude 4.6 모델 지원, 5단계 평가 척도, OpenAI Responses API, Anthropic effort control, 크로스 플랫폼 안정성</p>
+<p>2026-02</p>
+<p><strong>v0.2.0 릴리스</strong> — 멀티 프로바이더 LLM 지원 (GPT-5.x, Gemini 3.x, Claude 4.x, Grok 4.x) 및 시스템 아키텍처 개선</p>
+<p>2026-01</p>
+<p><strong>Trading-R1</strong> 기술 보고서 공개 (arXiv:2509.11420), Terminal 곧 출시 예정</p>
+<p>2024-12</p>
+<p><strong>TradingAgents 최초 공개</strong> — arXiv 논문 2412.20138 발표, 오픈소스 전면 공개</p>
+<p>02전체 아키텍처</p>
+<h2 id="외부-데이터-소스--에이전트--결정">외부 데이터 소스 → 에이전트 → 결정</h2>
+<p>데이터 흐름 전체 개요</p>
+<p>flowchart LR subgraph Sources["📡 외부 데이터 소스"] AV["Alpha Vantage\n재무 데이터"] FH["Finnhub\n뉴스·센티먼트"] SM["소셜 미디어\nReddit / Twitter"] CH["차트 데이터\n가격·거래량"] end subgraph Agents["🤖 에이전트 팀"] FA["Fundamentals\nAnalyst"] SA["Sentiment\nAnalyst"] NA["News\nAnalyst"] TA["Technical\nAnalyst"] end subgraph Decision["📋 의사결정 레이어"] RES["Researcher Team\n(Bull vs Bear)"] TR["Trader Agent"] RM["Risk Mgmt"] FM["Fund Manager"] end AV --&gt; FA FH --&gt; NA FH --&gt; SA SM --&gt; SA CH --&gt; TA FA &amp; SA &amp; NA &amp; TA --&gt; RES RES --&gt; TR --&gt; RM --&gt; FM FM --&gt;|승인| OUT["✅ 매수 / 매도 / 보유"] FM --&gt;|거부| BACK["🔄 재검토"] </p>
+<h2 id="실제-트레이딩-펌을-모방한-5단계-파이프라인">실제 트레이딩 펌을 모방한 5단계 파이프라인</h2>
+<p>5단계 트레이딩 결정 파이프라인</p>
+<p>flowchart TD subgraph I["I. 애널리스트 팀 — 병렬 실행 ⚡"] direction LR FA["📈 Fundamentals Analyst\n재무제표 · 내재가치"] SA["💬 Sentiment Analyst\n소셜미디어 · 감성분석"] NA["📰 News Analyst\n뉴스 · 거시경제"] TA["📊 Technical Analyst\nMACD · RSI · 차트패턴"] end subgraph II["II. 리서처 팀 — 토론 💬"] direction LR BR["🐂 Bull Researcher\n상승 논거 · 강세론"] BeR["🐻 Bear Researcher\n하락 리스크 · 약세론"] BR &lt;--&gt;|"⟺ 구조화된 토론 DEBATE"| BeR end subgraph III["III. 트레이더"] TR["💼 Trader Agent\n애널리스트 + 리서처 종합\n매수 / 매도 / 보유 결정"] end subgraph IV["IV. 리스크 관리"] RM["🛡️ Risk Management Team\n변동성 · 유동성 · 포트폴리오 리스크"] end subgraph V["V. 최종 결정"] FM["👔 Fund Manager\n포트폴리오 매니저"] end I --&gt;|"분석 리포트 취합"| II II --&gt;|"균형 잡힌 시장 평가"| III III --&gt;|"결정 제안서"| IV IV --&gt;|"리스크 평가 완료"| V V --&gt;|"승인"| OUT["✅ 주문 실행"] V --&gt;|"거부"| BACK["🔄 재검토 요청"] </p>
+<p>설계 철학왜 멀티 에이전트인가</p>
+<p>단일 LLM 시스템은 펀더멘털, 센티먼트, 기술적 분석, 리스크를 동시에 잘 처리하기 어려워요. TradingAgents는 역할을 분리해서 각 에이전트가 자신의 전문 영역에 집중하도록 설계했어요.</p>
+<p>특히 Bull/Bear 리서처 간의 <strong>구조화된 토론</strong> 이 핵심 차별점이에요. 단순한 데이터 수집을 넘어 반대 의견을 체계적으로 검토하는 과정이 더 균형 잡힌 결정을 만들어요.</p>
+<p>03애널리스트 팀 — 4개 에이전트 병렬 실행</p>
+<p>4명의 애널리스트가 <strong>동시에</strong> 시장 정보를 수집해요. 각자 전문 도구와 제약이 있어요.</p>
+<p>FUNDAMENTALS ANALYST</p>
+<p>펀더멘털 애널리스트</p>
+<p>기업 재무제표와 성과 지표를 평가. 내재 가치와 잠재적 리스크 신호를 파악. 수익성, 부채 비율, 현금흐름 중심 분석.</p>
+<p>재무제표 주가수익비율 Alpha Vantage</p>
+<p>SENTIMENT ANALYST</p>
+<p>센티먼트 애널리스트</p>
+<p>소셜 미디어와 대중 정서를 감성 점수 알고리즘으로 분석. 단기 시장 분위기 측정. Reddit, Twitter 데이터 활용.</p>
+<p>감성분석 소셜 데이터 Finnhub</p>
+<p>NEWS ANALYST</p>
+<p>뉴스 애널리스트</p>
+<p>글로벌 뉴스와 거시경제 지표 모니터링. 이벤트가 시장 상황에 미치는 영향을 해석. 실시간 뉴스 피드 분석.</p>
+<p>글로벌 뉴스 거시경제 Alpha Vantage</p>
+<p>TECHNICAL ANALYST</p>
+<p>기술적 애널리스트</p>
+<p>기술 지표(MACD, RSI 등)로 트레이딩 패턴 감지 및 가격 움직임 예측. 차트 패턴, 지지/저항선 분석.</p>
+<p>MACD RSI 볼린저밴드 이동평균</p>
+<p>04리서처 팀 — Bull vs Bear 토론</p>
+<p>BULL RESEARCHER</p>
+<p>강세론 리서처</p>
+<p>애널리스트 팀의 인사이트를 바탕으로 상승 가능성을 평가. 매수 포지션을 지지하는 논거를 구성하고 방어.</p>
+<p>BEAR RESEARCHER</p>
+<p>약세론 리서처</p>
+<p>동일한 데이터에서 하락 리스크를 발굴. Bull 리서처의 논리를 비판적으로 검토하고 반박 논거 제시.</p>
+<p>핵심구조화된 토론 프로토콜</p>
+<p>두 리서처는 단순히 정보를 수집하는 게 아니라 <strong>서로 논쟁</strong> 해요. 이 토론 과정이 과도한 낙관론이나 비관론을 걸러내고 균형 잡힌 시장 평가를 만들어요.</p>
+<p>토론 라운드 수는 <code>max_debate_rounds</code>로 조정 가능해요. 라운드가 많을수록 더 깊은 분석이 가능하지만 LLM 호출 비용이 늘어요.</p>
+<p>05트레이더 에이전트</p>
+<p>TRADER AGENT</p>
+<p>트레이더 에이전트</p>
+<p>애널리스트 리포트와 리서처 토론 결과를 종합. 거래 타이밍과 규모를 결정하고 구체적인 매매 신호를 생성. 과거 데이터와 현재 인사이트를 통합하여 매수/매도/보유를 결정.</p>
+<p>특징리포트 기반 의사결정</p>
+<p>트레이더는 자유로운 자연어 대화보다 <strong>구조화된 애널리스트 리포트</strong> 를 우선 참조해요. 이렇게 하면 핵심 정보가 유실되지 않고 장시간 상호작용에서도 컨텍스트가 유지돼요.</p>
+<p>06리스크 관리팀 &amp; 펀드 매니저</p>
+<p>RISK MANAGEMENT TEAM</p>
+<p>리스크 관리팀</p>
+<p>시장 변동성, 유동성, 기타 리스크 요소를 평가하여 포트폴리오 리스크를 지속적으로 모니터링. 트레이딩 전략 조정 후 평가 리포트를 펀드 매니저에게 제출.</p>
+<p>변동성 분석 VaR 최대 낙폭</p>
+<p>FUND MANAGER (PORTFOLIO MANAGER)</p>
+<p>펀드 매니저</p>
+<p>리스크 팀의 리포트를 기반으로 거래 제안을 최종 승인 또는 거부. 승인 시 시뮬레이션 거래소에 주문 전달 및 실행.</p>
+<p>07에이전트 통신 프로토콜</p>
+<h2 id="구조화된-출력--자연어-토론의-혼합">구조화된 출력 + 자연어 토론의 혼합</h2>
+<p>에이전트 간 통신 흐름</p>
+<p>flowchart TD subgraph Analysts["📊 애널리스트 팀 — 병렬 실행"] FA[Fundamentals Analyst] SA[Sentiment Analyst] NA[News Analyst] TA[Technical Analyst] end subgraph Reports["📄 구조화된 분석 리포트"] R1[재무 분석 리포트] R2[감성 분석 리포트] R3[뉴스 분석 리포트] R4[기술 분석 리포트] end subgraph Research["🔬 리서처 팀 — 자연어 토론"] BR["🐂 Bull Researcher"] BeR["🐻 Bear Researcher"] BR &lt;--&gt;|논쟁 DEBATE| BeR end subgraph Decision["📋 결정 레이어"] TR[Trader Agent] RM[Risk Management Team] FM[Fund Manager] end FA --&gt;|구조화된 리포트| R1 SA --&gt;|구조화된 리포트| R2 NA --&gt;|구조화된 리포트| R3 TA --&gt;|구조화된 리포트| R4 R1 --&gt; Research R2 --&gt; Research R3 --&gt; Research R4 --&gt; Research Research --&gt;|균형 잡힌 평가| TR TR --&gt;|결정 신호 + 근거| RM RM --&gt;|리스크 평가 리포트| FM FM --&gt;|승인 / 거부| 주문실행[🏦 주문 실행] </p>
+<table>
+<thead>
+<tr>
+<th>상황</th>
+<th>통신 방식</th>
+<th>이유</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>애널리스트 → 트레이더</td>
+<td>구조화된 분석 리포트</td>
+<td>정보 손실 없이 핵심 데이터 전달</td>
+</tr>
+<tr>
+<td>트레이더 → 리스크팀</td>
+<td>결정 신호 + 상세 근거 리포트</td>
+<td>판단 근거의 투명성 확보</td>
+</tr>
+<tr>
+<td>Bull ↔ Bear 리서처</td>
+<td>자연어 토론 (논쟁 형식)</td>
+<td>깊은 추론과 균형 잡힌 시각 형성</td>
+</tr>
+<tr>
+<td>리스크팀 내부</td>
+<td>자연어 토론</td>
+<td>복합적인 리스크 요소 종합 판단</td>
+</tr>
+<tr>
+<td>글로벌 상태 쿼리</td>
+<td>직접 참조</td>
+<td>필요 시 모든 에이전트가 글로벌 상태 직접 접근</td>
+</tr>
+</tbody>
+</table>
+<p>💡</p>
+<p><strong>설계 원칙</strong> 이전 프레임워크들이 비구조화 대화에 의존했던 것과 달리, TradingAgents는 구조화된 리포트를 기본 통신 수단으로 사용해요. 자연어 대화는 토론이 필요한 특정 인터랙션(리서처, 리스크팀)에만 제한적으로 활용해요.</p>
+<p>08설치</p>
+<h2 id="3가지-설치-방법">3가지 설치 방법</h2>
+<p>방법 1로컬 설치 (권장)</p>
+<div class="codehilite"><pre><span></span><code># 1. 클론
+git clone https://github.com/TauricResearch/TradingAgents.git
+cd TradingAgents
+
+# 2. 가상환경 생성 (Python 3.13 필요)
+conda create -n tradingagents python=3.13
+conda activate tradingagents
+
+# 3. 패키지 설치
+pip install .
+</code></pre></div>
+
+<p>방법 2Docker 실행</p>
+<div class="codehilite"><pre><span></span><code># 기본 실행
+cp .env.example .env   # API 키 입력
+docker compose run --rm tradingagents
+
+# Ollama (로컬 모델) 사용 시
+docker compose --profile ollama run --rm tradingagents-ollama
+</code></pre></div>
+
+<p>09API 키 설정</p>
+<p>환경변수LLM 제공자별 API 키</p>
+<div class="codehilite"><pre><span></span><code><span class="c1"># LLM 제공자 (하나 이상 설정)</span>
+<span class="k">export</span><span class="w"> </span><span class="n">OPENAI_API_KEY</span><span class="o">=...</span><span class="w">          </span><span class="c1"># OpenAI (GPT-5.x)</span>
+<span class="k">export</span><span class="w"> </span><span class="n">GOOGLE_API_KEY</span><span class="o">=...</span><span class="w">          </span><span class="c1"># Google (Gemini 3.x)</span>
+<span class="k">export</span><span class="w"> </span><span class="n">ANTHROPIC_API_KEY</span><span class="o">=...</span><span class="w">       </span><span class="c1"># Anthropic (Claude 4.x)</span>
+<span class="k">export</span><span class="w"> </span><span class="n">XAI_API_KEY</span><span class="o">=...</span><span class="w">             </span><span class="c1"># xAI (Grok 4.x)</span>
+<span class="k">export</span><span class="w"> </span><span class="n">OPENROUTER_API_KEY</span><span class="o">=...</span><span class="w">      </span><span class="c1"># OpenRouter (멀티 모델)</span>
+
+<span class="c1"># 금융 데이터 제공자 (하나 필요)</span>
+<span class="k">export</span><span class="w"> </span><span class="n">ALPHA_VANTAGE_API_KEY</span><span class="o">=...</span><span class="w">   </span><span class="c1"># Alpha Vantage (무료 티어 가능)</span>
+
+<span class="c1"># 또는 .env 파일로 관리</span>
+<span class="n">cp</span><span class="w"> </span><span class="o">.</span><span class="n">env</span><span class="o">.</span><span class="n">example</span><span class="w"> </span><span class="o">.</span><span class="n">env</span>
+<span class="c1"># .env 파일에 키 입력</span>
+</code></pre></div>
+
+<table>
+<thead>
+<tr>
+<th>제공자</th>
+<th>환경변수</th>
+<th>지원 모델 (v0.2.3)</th>
+<th>비용 팁</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><strong>OpenAI</strong></td>
+<td><code>OPENAI_API_KEY</code></td>
+<td>GPT-5.4, GPT-5.4-mini</td>
+<td>테스트는 gpt-5.4-mini 권장</td>
+</tr>
+<tr>
+<td><strong>Anthropic</strong></td>
+<td><code>ANTHROPIC_API_KEY</code></td>
+<td>Claude 4.6, Claude 4.6 Haiku</td>
+<td>Haiku로 비용 절감</td>
+</tr>
+<tr>
+<td><strong>Google</strong></td>
+<td><code>GOOGLE_API_KEY</code></td>
+<td>Gemini 3.1, Gemini 3.1 Flash</td>
+<td>Flash로 빠른 실행</td>
+</tr>
+<tr>
+<td><strong>xAI</strong></td>
+<td><code>XAI_API_KEY</code></td>
+<td>Grok 4.x</td>
+<td></td>
+</tr>
+<tr>
+<td><strong>Ollama</strong></td>
+<td>불필요</td>
+<td>로컬 모델</td>
+<td>API 비용 없음</td>
+</tr>
+</tbody>
+</table>
+<p>10CLI 사용법</p>
+<p>BASHCLI 실행</p>
+<div class="codehilite"><pre><span></span><code># 설치된 커맨드 사용
+tradingagents
+
+# 또는 소스에서 직접 실행
+python -m cli.main
+</code></pre></div>
+
+<p>CLI 기능인터랙티브 화면에서 선택 가능한 항목</p>
+<ul>
+<li><strong>Tickers</strong> — 분석할 종목 코드 (예: NVDA, AAPL, TSLA)</li>
+<li><strong>Analysis Date</strong> — 분석 기준 날짜 (백테스팅용)</li>
+<li><strong>LLM Provider</strong> — OpenAI, Google, Anthropic, xAI, OpenRouter, Ollama</li>
+<li><strong>Research Depth</strong> — 분석 깊이 (깊을수록 LLM 호출 증가)</li>
+</ul>
+<p>실행 중 에이전트 진행 상황을 실시간으로 추적하는 인터페이스가 표시돼요.</p>
+<p>11Python 패키지 사용</p>
+<p>PYTHON기본 사용법</p>
+<div class="codehilite"><pre><span></span><code><span class="kn">from</span><span class="w"> </span><span class="nn">tradingagents.graph.trading_graph</span><span class="w"> </span><span class="kn">import</span> <span class="n">TradingAgentsGraph</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">tradingagents.default_config</span><span class="w"> </span><span class="kn">import</span> <span class="n">DEFAULT_CONFIG</span>
+
+<span class="c1"># 기본 설정으로 초기화</span>
+<span class="n">ta</span> <span class="o">=</span> <span class="n">TradingAgentsGraph</span><span class="p">(</span><span class="n">debug</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span> <span class="n">config</span><span class="o">=</span><span class="n">DEFAULT_CONFIG</span><span class="o">.</span><span class="n">copy</span><span class="p">())</span>
+
+<span class="c1"># 종목 + 날짜로 분석 실행 (forward propagate)</span>
+<span class="n">_</span><span class="p">,</span> <span class="n">decision</span> <span class="o">=</span> <span class="n">ta</span><span class="o">.</span><span class="n">propagate</span><span class="p">(</span><span class="s2">&quot;NVDA&quot;</span><span class="p">,</span> <span class="s2">&quot;2026-01-15&quot;</span><span class="p">)</span>
+<span class="nb">print</span><span class="p">(</span><span class="n">decision</span><span class="p">)</span>
+</code></pre></div>
+
+<p>PYTHON커스텀 설정</p>
+<div class="codehilite"><pre><span></span><code><span class="kn">from</span><span class="w"> </span><span class="nn">tradingagents.graph.trading_graph</span><span class="w"> </span><span class="kn">import</span> <span class="n">TradingAgentsGraph</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">tradingagents.default_config</span><span class="w"> </span><span class="kn">import</span> <span class="n">DEFAULT_CONFIG</span>
+
+<span class="n">config</span> <span class="o">=</span> <span class="n">DEFAULT_CONFIG</span><span class="o">.</span><span class="n">copy</span><span class="p">()</span>
+
+<span class="c1"># LLM 설정</span>
+<span class="n">config</span><span class="p">[</span><span class="s2">&quot;llm_provider&quot;</span><span class="p">]</span>   <span class="o">=</span> <span class="s2">&quot;anthropic&quot;</span>       <span class="c1"># openai | google | anthropic | xai | openrouter | ollama</span>
+<span class="n">config</span><span class="p">[</span><span class="s2">&quot;deep_think_llm&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="s2">&quot;claude-sonnet-4-6&quot;</span> <span class="c1"># 복잡한 추론용 (고비용)</span>
+<span class="n">config</span><span class="p">[</span><span class="s2">&quot;quick_think_llm&quot;</span><span class="p">]</span><span class="o">=</span> <span class="s2">&quot;claude-haiku-4-5&quot;</span>  <span class="c1"># 빠른 작업용 (저비용)</span>
+
+<span class="c1"># 에이전트 동작 설정</span>
+<span class="n">config</span><span class="p">[</span><span class="s2">&quot;max_debate_rounds&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="mi">2</span>   <span class="c1"># Bull/Bear 토론 라운드 수</span>
+<span class="n">config</span><span class="p">[</span><span class="s2">&quot;online_tools&quot;</span><span class="p">]</span>     <span class="o">=</span> <span class="kc">True</span>  <span class="c1"># 실시간 데이터 수집 여부</span>
+
+<span class="n">ta</span> <span class="o">=</span> <span class="n">TradingAgentsGraph</span><span class="p">(</span><span class="n">debug</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span> <span class="n">config</span><span class="o">=</span><span class="n">config</span><span class="p">)</span>
+<span class="n">_</span><span class="p">,</span> <span class="n">decision</span> <span class="o">=</span> <span class="n">ta</span><span class="o">.</span><span class="n">propagate</span><span class="p">(</span><span class="s2">&quot;AAPL&quot;</span><span class="p">,</span> <span class="s2">&quot;2026-01-15&quot;</span><span class="p">)</span>
+<span class="nb">print</span><span class="p">(</span><span class="n">decision</span><span class="p">)</span>
+</code></pre></div>
+
+<p>12주요 설정 옵션</p>
+<table>
+<thead>
+<tr>
+<th>설정 키</th>
+<th>기본값</th>
+<th>설명</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>llm_provider</code></td>
+<td><code>"openai"</code></td>
+<td>LLM 제공자 선택</td>
+</tr>
+<tr>
+<td><code>deep_think_llm</code></td>
+<td><code>"gpt-5.4"</code></td>
+<td>복잡한 추론 담당 모델 (리서처, 리스크팀)</td>
+</tr>
+<tr>
+<td><code>quick_think_llm</code></td>
+<td><code>"gpt-5.4-mini"</code></td>
+<td>빠른 작업 담당 모델 (애널리스트)</td>
+</tr>
+<tr>
+<td><code>max_debate_rounds</code></td>
+<td><code>1</code></td>
+<td>Bull/Bear 토론 라운드 수 (많을수록 깊은 분석, 비용 증가)</td>
+</tr>
+<tr>
+<td><code>online_tools</code></td>
+<td><code>True</code></td>
+<td>실시간 데이터 수집 활성화 여부</td>
+</tr>
+<tr>
+<td><code>backend_url</code></td>
+<td>로컬</td>
+<td>Ollama 등 로컬 모델 서버 URL</td>
+</tr>
+</tbody>
+</table>
+<p>⚡</p>
+<p><strong>비용 주의</strong> 예측 1회당 11+ LLM 호출, 20+ 도구 호출이 발생해요. 테스트 시에는 <code>quick_think_llm</code>에 저렴한 모델(Haiku, gpt-5.4-mini)을 사용하고, <code>max_debate_rounds</code>를 1로 설정하는 걸 권장해요.</p>
+<p>13성능 벤치마크</p>
+<h2 id="기준-모델-대비-주요-지표-개선-arxiv-논문-기준">기준 모델 대비 주요 지표 개선 (arXiv 논문 기준)</h2>
+<p>↑</p>
+<p>누적 수익률</p>
+<p>Cumulative Returns</p>
+<p>↑</p>
+<p>샤프 비율</p>
+<p>Sharpe Ratio</p>
+<p>↓</p>
+<p>최대 낙폭</p>
+<p>Maximum Drawdown</p>
+<p>ℹ</p>
+<p><strong>샤프 비율 해석</strong> 논문 실험에서 샤프 비율이 예상 경험적 범위(SR &gt; 2 = 우수, &gt; 3 = 탁월)를 초과한 구간이 있었어요. 연구팀은 결정 시퀀스를 검토해서 계산 정확성을 확인했고, 해당 기간에 TradingAgents의 풀백이 거의 없었던 것이 원인이라고 설명해요. 결과는 있는 그대로 보고됩니다.</p>
+<p>중요성능 가변 요인</p>
+<ul>
+<li>선택한 LLM 백본 모델의 품질</li>
+<li>모델 temperature 설정</li>
+<li>거래 기간 및 시장 환경</li>
+<li>데이터 품질 (금융 데이터 API)</li>
+<li>기타 비결정론적 요인</li>
+</ul>
+<p>14LangGraph 기반 설계</p>
+<h2 id="유연성과-모듈성을-위한-langgraph-선택">유연성과 모듈성을 위한 LangGraph 선택</h2>
+<p>LangGraph 노드 구성 및 LLM 역할 분리</p>
+<p>flowchart LR subgraph Quick["⚡ quick_think_llm\n(빠른 작업 · 저비용)"] FA[Fundamentals Analyst] SA[Sentiment Analyst] NA[News Analyst] TA[Technical Analyst] end subgraph Deep["🧠 deep_think_llm\n(복잡한 추론 · 고비용)"] BR[Bull Researcher] BeR[Bear Researcher] RM[Risk Management] end subgraph Any["🔄 선택 가능"] TR[Trader Agent] FM[Fund Manager] end Quick --&gt; Deep Deep --&gt; Any </p>
+<p>지원 LLM 제공자 및 모델 교체 구조</p>
+<p>flowchart LR TG[TradingAgentsGraph] --&gt; LLM{LLM Provider} LLM --&gt;|openai| GPT["GPT-5.4 / GPT-5.4-mini"] LLM --&gt;|anthropic| Claude["Claude 4.6 / Haiku"] LLM --&gt;|google| Gemini["Gemini 3.1 / Flash"] LLM --&gt;|xai| Grok["Grok 4.x"] LLM --&gt;|openrouter| OR["멀티 모델 라우팅"] LLM --&gt;|ollama| Local["로컬 모델\n(API 비용 없음)"] </p>
+<p>설계왜 LangGraph인가</p>
+<p>TradingAgents는 LangGraph로 구축되어 각 에이전트 역할이 독립적인 노드로 구성돼요. 이 덕분에 특정 에이전트만 교체하거나, 새 역할을 추가하거나, 모델을 바꾸는 작업이 다른 부분에 영향을 주지 않아요.</p>
+<p>GPU 없이 API 크레딧만으로 배포 가능. 어떤 로컬 또는 API 접근 가능한 모델로도 교체 가능해서 향후 더 나은 추론 모델이나 금융 특화 모델로 쉽게 업그레이드할 수 있어요.</p>
+<table>
+<thead>
+<tr>
+<th>에이전트 역할</th>
+<th>LLM 유형</th>
+<th>이유</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Bull/Bear 리서처</td>
+<td>deep_think_llm</td>
+<td>복잡한 논쟁과 추론 필요</td>
+</tr>
+<tr>
+<td>리스크 관리팀</td>
+<td>deep_think_llm</td>
+<td>다차원 리스크 평가</td>
+</tr>
+<tr>
+<td>펀더멘털 애널리스트</td>
+<td>quick_think_llm</td>
+<td>데이터 처리 중심</td>
+</tr>
+<tr>
+<td>센티먼트 애널리스트</td>
+<td>quick_think_llm</td>
+<td>패턴 인식 중심</td>
+</tr>
+<tr>
+<td>뉴스 애널리스트</td>
+<td>quick_think_llm</td>
+<td>텍스트 요약 중심</td>
+</tr>
+<tr>
+<td>기술적 애널리스트</td>
+<td>quick_think_llm</td>
+<td>지표 계산 중심</td>
+</tr>
+</tbody>
+</table>
+<p>💡</p>
+<p><strong>비용 최적화 전략</strong> 역할별로 다른 모델을 쓰는 게 핵심이에요. 복잡한 추론이 필요한 리서처와 리스크팀에는 비싼 모델, 데이터 처리 중심의 애널리스트에는 저렴한 모델을 배정하면 품질을 유지하면서 비용을 크게 줄일 수 있어요.</p>
+<p>15한계 및 주의사항</p>
+<p>예측 1회당 LLM 호출 흐름 (11+ calls · 20+ tool calls)</p>
+<p>flowchart TD Start([종목 + 날짜 입력]) --&gt; Parallel subgraph Parallel["병렬 실행 — 4 LLM calls"] direction LR A[Fundamentals\nAnalyst] B[Sentiment\nAnalyst] C[News\nAnalyst] D[Technical\nAnalyst] end Parallel --&gt; Debate subgraph Debate["토론 — max_debate_rounds × 2 calls"] direction LR BR["🐂 Bull\nResearcher"] &lt;--&gt;|논쟁| BeR["🐻 Bear\nResearcher"] end Debate --&gt; TR["Trader Agent\n— 1 call"] TR --&gt; RM["Risk Management\n— 1~2 calls"] RM --&gt; FM["Fund Manager\n— 1 call"] FM --&gt; End(["✅ 최종 결정 반환"]) </p>
+<p>필독실제 투자에 사용하면 안 되는 이유</p>
+<ul>
+<li><strong>연구 목적 전용</strong> — 프로덕션 트레이딩 시스템이 아니에요</li>
+<li><strong>LLM 비결정성</strong> — 동일 입력에도 매번 다른 결정이 나올 수 있어요</li>
+<li><strong>데이터 의존성</strong> — 무료 API 데이터 품질에 크게 의존해요</li>
+<li><strong>과거 데이터 편향</strong> — 백테스팅 결과가 미래 성과를 보장하지 않아요</li>
+<li><strong>높은 API 비용</strong> — 실시간 운영 시 예측 1회당 상당한 LLM 비용 발생</li>
+</ul>
+<h3 id="현재-알려진-한계">현재 알려진 한계</h3>
+<table>
+<thead>
+<tr>
+<th>한계</th>
+<th>상세</th>
+<th>개선 방향</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>LLM 추론 비용</td>
+<td>예측당 11+ LLM 호출, 20+ 도구 호출</td>
+<td>캐싱, 배치 처리 최적화 (예정)</td>
+</tr>
+<tr>
+<td>블랙박스 의사결정</td>
+<td>현재 딥러닝 방식의 복잡한 아키텍처 해석 어려움</td>
+<td>투명성 개선 연구 중</td>
+</tr>
+<tr>
+<td>시장 미시구조 미반영</td>
+<td>주문 실행 비용, 슬리피지 등 미고려</td>
+<td>시뮬레이션 정교화</td>
+</tr>
+</tbody>
+</table>
+<p>16기술 스택</p>
+<h2 id="전체-기술-구성">전체 기술 구성</h2>
+<p>기술 스택 전체 구성도</p>
+<p>flowchart TB subgraph Ext["📡 외부 연동 레이어"] direction LR subgraph DataSrc["금융 데이터"] AV["Alpha Vantage\n재무·뉴스·지표"] FH["Finnhub\n뉴스·감성·실시간"] end subgraph LLMSrc["LLM 제공자"] OAI["OpenAI\nGPT-5.4 / mini"] ANT["Anthropic\nClaude 4.6 / Haiku"] GGL["Google\nGemini 3.1 / Flash"] XAI["xAI\nGrok 4.x"] OLM["Ollama\n로컬 모델"] end end subgraph Core["⚙️ 핵심 프레임워크"] direction TB LC["LangChain\n추상화 레이어"] LG["LangGraph\n에이전트 그래프 실행"] LC --&gt; LG end subgraph App["🤖 TradingAgents 애플리케이션"] direction TB TG["TradingAgentsGraph\n.propagate(ticker, date)"] subgraph AgentNodes["에이전트 노드 (LangGraph)"] direction LR AN["Analyst\nNodes × 4"] RN["Researcher\nNodes × 2"] TN["Trader\nNode"] RMN["Risk Mgmt\nNode"] FMN["Fund Manager\nNode"] end TG --&gt; AgentNodes end subgraph Interface["🖥️ 인터페이스"] direction LR CLI["CLI\npython -m cli.main"] PKG["Python Package\nTradingAgentsGraph()"] DOC["Docker\ncompose run"] end DataSrc --&gt; Core LLMSrc --&gt; Core Core --&gt; App App --&gt; Interface </p>
+<h3 id="컴포넌트별-상세">컴포넌트별 상세</h3>
+<table>
+<thead>
+<tr>
+<th>레이어</th>
+<th>컴포넌트</th>
+<th>버전</th>
+<th>역할</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><strong>런타임</strong></td>
+<td>Python</td>
+<td>3.13+</td>
+<td>전체 실행 환경</td>
+</tr>
+<tr>
+<td><strong>프레임워크</strong></td>
+<td>LangChain</td>
+<td>최신</td>
+<td>LLM 추상화, 체인 구성, 도구 통합</td>
+</tr>
+<tr>
+<td>LangGraph</td>
+<td>최신</td>
+<td>에이전트 그래프 실행, 상태 관리, 노드 라우팅</td>
+<td></td>
+</tr>
+<tr>
+<td><strong>LLM 제공자</strong></td>
+<td>OpenAI</td>
+<td>GPT-5.4 / mini</td>
+<td>기본 권장 모델 (실험 기준)</td>
+</tr>
+<tr>
+<td>Anthropic</td>
+<td>Claude 4.6 / Haiku</td>
+<td>v0.2.2부터 공식 지원</td>
+<td></td>
+</tr>
+<tr>
+<td>Google</td>
+<td>Gemini 3.1 / Flash</td>
+<td>v0.2.2부터 공식 지원</td>
+<td></td>
+</tr>
+<tr>
+<td>xAI</td>
+<td>Grok 4.x</td>
+<td>v0.2.0부터 지원</td>
+<td></td>
+</tr>
+<tr>
+<td>Ollama</td>
+<td>로컬 모델 자유 선택</td>
+<td>API 비용 없음 · 완전 로컬</td>
+<td></td>
+</tr>
+<tr>
+<td><strong>금융 데이터</strong></td>
+<td>Alpha Vantage</td>
+<td>무료 티어 가능</td>
+<td>재무제표, 주가, 거시경제 지표</td>
+</tr>
+<tr>
+<td>Finnhub</td>
+<td>무료 티어 가능</td>
+<td>실시간 뉴스, 감성 데이터</td>
+<td></td>
+</tr>
+<tr>
+<td><strong>배포</strong></td>
+<td>pip install</td>
+<td>—</td>
+<td>Python 패키지로 직접 설치</td>
+</tr>
+<tr>
+<td>Docker</td>
+<td>compose v2</td>
+<td>컨테이너 실행, Ollama 프로파일 포함</td>
+<td></td>
+</tr>
+<tr>
+<td>Conda</td>
+<td>—</td>
+<td>가상환경 관리 권장</td>
+<td></td>
+</tr>
+<tr>
+<td><strong>인터페이스</strong></td>
+<td>CLI</td>
+<td>python -m cli.main</td>
+<td>인터랙티브 종목·날짜·LLM 선택</td>
+</tr>
+<tr>
+<td>Python API</td>
+<td>TradingAgentsGraph</td>
+<td>.propagate(ticker, date) 한 줄로 실행</td>
+<td></td>
+</tr>
+</tbody>
+</table>
+<p>LLM 역할 분리 — 비용 최적화 구조</p>
+<p>flowchart LR subgraph DT["🧠 deep_think_llm\n복잡한 추론 · 고비용"] BR["Bull Researcher"] BeR["Bear Researcher"] RM["Risk Management"] end subgraph QT["⚡ quick_think_llm\n빠른 처리 · 저비용"] FA["Fundamentals Analyst"] SA["Sentiment Analyst"] NA["News Analyst"] TA["Technical Analyst"] end subgraph TR["🔄 설정 가능"] T["Trader Agent"] FM["Fund Manager"] end QT --&gt;|"분석 리포트"| DT DT --&gt;|"시장 평가"| TR style DT fill:#181428,stroke:#8858e8 style QT fill:#14181c,stroke:#e8a020 style TR fill:#101828,stroke:#4878e8 </p>
+<p>💡</p>
+<p><strong>GPU 불필요</strong> TradingAgents는 모든 LLM을 API로 호출하기 때문에 GPU 없이 API 크레딧만으로 실행할 수 있어요. 단, 로컬 모델(Ollama)을 쓸 때는 충분한 RAM이 필요해요 (7B 모델 기준 8GB+).</p>
+<p>17인용 및 링크</p>
+<h2 id="논문-인용">논문 인용</h2>
+<p>BIBTEXarXiv 2412.20138</p>
+<div class="codehilite"><pre><span></span><code><span class="nv">@misc</span><span class="err">{</span><span class="n">xiao2025tradingagentsmultiagentsllmfinancial</span><span class="p">,</span>
+<span class="w">  </span><span class="n">title</span><span class="o">=</span><span class="err">{</span><span class="nl">TradingAgents</span><span class="p">:</span><span class="w"> </span><span class="n">Multi</span><span class="o">-</span><span class="n">Agents</span><span class="w"> </span><span class="n">LLM</span><span class="w"> </span><span class="n">Financial</span><span class="w"> </span><span class="n">Trading</span><span class="w"> </span><span class="n">Framework</span><span class="err">}</span><span class="p">,</span>
+<span class="w">  </span><span class="n">author</span><span class="o">=</span><span class="err">{</span><span class="n">Yijia</span><span class="w"> </span><span class="n">Xiao</span><span class="w"> </span><span class="ow">and</span><span class="w"> </span><span class="n">Edward</span><span class="w"> </span><span class="n">Sun</span><span class="w"> </span><span class="ow">and</span><span class="w"> </span><span class="n">Di</span><span class="w"> </span><span class="n">Luo</span><span class="w"> </span><span class="ow">and</span><span class="w"> </span><span class="n">Wei</span><span class="w"> </span><span class="n">Wang</span><span class="err">}</span><span class="p">,</span>
+<span class="w">  </span><span class="nf">year</span><span class="o">=</span><span class="err">{</span><span class="mi">2025</span><span class="err">}</span><span class="p">,</span>
+<span class="w">  </span><span class="n">eprint</span><span class="o">=</span><span class="err">{</span><span class="mf">2412.20138</span><span class="err">}</span><span class="p">,</span>
+<span class="w">  </span><span class="n">archivePrefix</span><span class="o">=</span><span class="err">{</span><span class="n">arXiv</span><span class="err">}</span><span class="p">,</span>
+<span class="w">  </span><span class="n">primaryClass</span><span class="o">=</span><span class="err">{</span><span class="n">q</span><span class="o">-</span><span class="n">fin</span><span class="p">.</span><span class="n">TR</span><span class="err">}</span><span class="p">,</span>
+<span class="w">  </span><span class="n">url</span><span class="o">=</span><span class="err">{</span><span class="nl">https</span><span class="p">:</span><span class="o">//</span><span class="n">arxiv</span><span class="p">.</span><span class="n">org</span><span class="o">/</span><span class="nf">abs</span><span class="o">/</span><span class="mf">2412.20138</span><span class="err">}</span><span class="p">,</span>
+<span class="err">}</span>
+</code></pre></div>
+
+<h3 id="주요-링크">주요 링크</h3>
+<p><a href="https://github.com/TauricResearch/TradingAgents">GitHub 레포</a> <a href="https://arxiv.org/abs/2412.20138">arXiv 논문</a> <a href="https://tauricresearch.github.io/TradingAgents/">공식 문서</a> <a href="https://arxiv.org/abs/2509.11420">Trading-R1 리포트</a></p>
+<p>ℹ</p>
+<p><strong>Tauric Research</strong> TradingAgents 외에 Trading-R1(RL 기반 트레이딩 모델)도 연구 중이에요. Terminal 제품도 곧 출시 예정. 오픈소스 금융 AI 리서치 커뮤니티에 관심 있다면 GitHub Discussions에 참여할 수 있어요.</p>
+<p>tradingagents.guide · v0.2.3 기준 · 2026.04.12</p>
+<p>연구 목적 전용 · Apache License 2.0 · TauricResearch</p>
+</main>
+
+<script>
+  // 테마 전환
+  function setTheme(theme) {
+    document.documentElement.setAttribute('data-theme', theme);
+    localStorage.setItem('doc-theme', theme);
+    document.getElementById('btn-dark').classList.toggle('active', theme === 'dark');
+    document.getElementById('btn-light').classList.toggle('active', theme === 'light');
+    // Mermaid 재렌더링
+    if (typeof mermaid !== 'undefined') {
+      mermaid.initialize({ startOnLoad: false, theme: 'base', securityLevel: 'loose', themeVariables: getMermaidTheme(theme) });
+      document.querySelectorAll('.mermaid').forEach(el => {
+        el.removeAttribute('data-processed');
+        el.innerHTML = el.textContent;
+      });
+      mermaid.run();
+    }
+  }
+
+  // 저장된 테마 로드
+  const savedTheme = localStorage.getItem('doc-theme') || 'dark';
+  setTheme(savedTheme);
+
+  // Mermaid 초기화
+  function getMermaidTheme(theme) {
+    const dark = {
+      primaryColor: '#3d7be0',
+      primaryTextColor: '#ffffff',
+      primaryBorderColor: '#5a9cf0',
+      secondaryColor: '#7c5cbf',
+      secondaryTextColor: '#ffffff',
+      secondaryBorderColor: '#a29bfe',
+      tertiaryColor: '#00997a',
+      tertiaryTextColor: '#ffffff',
+      tertiaryBorderColor: '#55efc4',
+      noteTextColor: '#f0f0f0',
+      noteBkgColor: '#2d3436',
+      noteBorderColor: '#636e72',
+      lineColor: '#8b949e',
+      textColor: '#e6edf3',
+      mainBkg: '#1e3050',
+      nodeBorder: '#5a9cf0',
+      clusterBkg: '#1a1e2e',
+      clusterBorder: '#4a5568',
+      titleColor: '#79c0ff',
+      edgeLabelBackground: '#21262d',
+      actorBkg: '#3d7be0',
+      actorTextColor: '#ffffff',
+      actorBorder: '#5a9cf0',
+      signalColor: '#8b949e',
+      labelBoxBkgColor: '#21262d',
+      labelBoxBorderColor: '#4a5568',
+      labelTextColor: '#e6edf3',
+      loopTextColor: '#e6edf3',
+      activationBorderColor: '#5a9cf0',
+      activationBkgColor: '#1e3050',
+      sequenceNumberColor: '#ffffff',
+      pie1: '#4f8fea', pie2: '#6c5ce7', pie3: '#00b894', pie4: '#e17055',
+      pie5: '#fdcb6e', pie6: '#00cec9', pie7: '#e84393', pie8: '#0984e3'
+    };
+    const light = {
+      primaryColor: '#4f8fea',
+      primaryTextColor: '#1a1a2e',
+      primaryBorderColor: '#3a7bd5',
+      secondaryColor: '#a29bfe',
+      secondaryTextColor: '#1a1a2e',
+      secondaryBorderColor: '#6c5ce7',
+      tertiaryColor: '#55efc4',
+      tertiaryTextColor: '#1a1a2e',
+      tertiaryBorderColor: '#00b894',
+      noteTextColor: '#2d3436',
+      noteBkgColor: '#ffeaa7',
+      noteBorderColor: '#fdcb6e',
+      lineColor: '#636e72',
+      textColor: '#2d3436',
+      mainBkg: '#dfe6e9',
+      nodeBorder: '#3a7bd5',
+      clusterBkg: '#f0f3f5',
+      clusterBorder: '#b2bec3',
+      titleColor: '#2d3436',
+      edgeLabelBackground: '#ffffff',
+      actorBkg: '#4f8fea',
+      actorTextColor: '#ffffff',
+      actorBorder: '#3a7bd5',
+      signalColor: '#636e72',
+      labelBoxBkgColor: '#ffffff',
+      labelBoxBorderColor: '#b2bec3',
+      labelTextColor: '#2d3436',
+      loopTextColor: '#2d3436',
+      activationBorderColor: '#3a7bd5',
+      activationBkgColor: '#dfe6e9',
+      sequenceNumberColor: '#ffffff',
+      pie1: '#4f8fea', pie2: '#6c5ce7', pie3: '#00b894', pie4: '#e17055',
+      pie5: '#fdcb6e', pie6: '#00cec9', pie7: '#e84393', pie8: '#0984e3'
+    };
+    return theme === 'dark' ? dark : light;
+  }
+
+  mermaid.initialize({ startOnLoad: true, theme: 'base', securityLevel: 'loose', themeVariables: getMermaidTheme(savedTheme) });
+
+  // TOC 현재 위치 하이라이트
+  const tocLinks = document.querySelectorAll('.toc a');
+  const headings = [];
+  tocLinks.forEach(link => {
+    const id = link.getAttribute('href').slice(1);
+    const el = document.getElementById(id);
+    if (el) headings.push({ el, link });
+  });
+
+  function updateActiveToc() {
+    let current = null;
+    for (const h of headings) {
+      if (h.el.getBoundingClientRect().top <= 100) current = h;
+    }
+    tocLinks.forEach(l => l.classList.remove('active'));
+    if (current) current.link.classList.add('active');
+  }
+
+  window.addEventListener('scroll', updateActiveToc, { passive: true });
+  updateActiveToc();
+
+  // 모바일: 링크 클릭 시 사이드바 닫기
+  tocLinks.forEach(link => {
+    link.addEventListener('click', () => {
+      if (window.innerWidth <= 900) {
+        document.querySelector('.sidebar').classList.remove('open');
+      }
+    });
+  });
+</script>
+
+</body>
+</html>
