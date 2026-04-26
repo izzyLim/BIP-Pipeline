@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>LangGraph</title>
+<title>LangGraph 사내 환경 구축 가이드</title>
 <script src="https://cdn.jsdelivr.net/npm/mermaid@11/dist/mermaid.min.js"></script>
 <style>
   /* ── 테마 변수 ── */
@@ -279,7 +279,7 @@
 
 <aside class="sidebar">
   <div class="sidebar-header">
-    <div class="sidebar-title">LangGraph</div>
+    <div class="sidebar-title">LangGraph 사내 환경 구축 가이드</div>
     <div class="sidebar-controls">
       <button class="theme-btn" onclick="setTheme('dark')" id="btn-dark">🌙 Dark</button>
       <button class="theme-btn" onclick="setTheme('light')" id="btn-light">☀️ Light</button>
@@ -288,41 +288,112 @@
   </div>
   <nav class="toc">
 <ul>
-<li class="toc-h2"><a href="#최종-목표-아키텍처">최종 목표 아키텍처</a></li>
-  <li class="toc-h3"><a href="#옵션-비교">옵션 비교</a></li>
-  <li class="toc-h3"><a href="#a-postgresql-체크포인터-공식">A. PostgreSQL 체크포인터 (공식)</a></li>
-  <li class="toc-h3"><a href="#b-oracle-rac-체크포인터-커스텀">B. Oracle RAC 체크포인터 (커스텀)</a></li>
-  <li class="toc-h3"><a href="#운영-공통">운영 공통</a></li>
-  <li class="toc-h3"><a href="#방법-a-tool-데코레이터-간단-mcp-불필요">방법 A: @tool 데코레이터 (간단, MCP 불필요)</a></li>
-  <li class="toc-h3"><a href="#방법-b-mcp-서버-확장성-여러-에이전트가-공유">방법 B: MCP 서버 (확장성, 여러 에이전트가 공유)</a></li>
-  <li class="toc-h3"><a href="#스트리밍-엔드포인트-실시간-채팅-ui용">스트리밍 엔드포인트 (실시간 채팅 UI용)</a></li>
-  <li class="toc-h3"><a href="#기본-단일-서버-docker-compose">기본: 단일 서버 Docker Compose</a></li>
-  <li class="toc-h3"><a href="#프로덕션-multi-vm-ha-배포-k8s-없이">프로덕션: Multi-VM HA 배포 (K8s 없이)</a></li>
-  <li class="toc-h3"><a href="#장애-대응-매트릭스">장애 대응 매트릭스</a></li>
-  <li class="toc-h3"><a href="#옵션-비교_1">옵션 비교</a></li>
-  <li class="toc-h3"><a href="#langfuse-권장--self-hosted">LangFuse (권장 — Self-hosted)</a></li>
-  <li class="toc-h3"><a href="#langfuse-trace-상세-화면-예시">LangFuse Trace 상세 화면 예시</a></li>
-  <li class="toc-h3"><a href="#langfuse-제공-기능">LangFuse 제공 기능</a></li>
-  <li class="toc-h3"><a href="#인프라-메트릭-grafana-기존-활용">인프라 메트릭: Grafana (기존 활용)</a></li>
-  <li class="toc-h3"><a href="#참고-langsmith--saas-환경용">(참고) LangSmith — SaaS 환경용</a></li>
-  <li class="toc-h3"><a href="#bip에서-얻은-교훈">BIP에서 얻은 교훈</a></li>
+<li class="toc-h2"><a href="#1-개요">1. 개요</a></li>
+  <li class="toc-h3"><a href="#11-목적">1.1 목적</a></li>
+  <li class="toc-h3"><a href="#12-왜-langgraph인가">1.2 왜 LangGraph인가</a></li>
+  <li class="toc-h3"><a href="#13-전제-조건">1.3 전제 조건</a></li>
+  <li class="toc-h3"><a href="#14-최종-목표-아키텍처">1.4 최종 목표 아키텍처</a></li>
+<li class="toc-h2"><a href="#2-python-환경-구축">2. Python 환경 구축</a></li>
+  <li class="toc-h3"><a href="#21-pyenv--venv-설정">2.1 pyenv + venv 설정</a></li>
+  <li class="toc-h3"><a href="#22-패키지-설치">2.2 패키지 설치</a></li>
+  <li class="toc-h3"><a href="#23-requirementstxt">2.3 requirements.txt</a></li>
+  <li class="toc-h3"><a href="#24-프로젝트-레이아웃">2.4 프로젝트 레이아웃</a></li>
+  <li class="toc-h3"><a href="#25-환경변수-관리">2.5 환경변수 관리</a></li>
+<li class="toc-h2"><a href="#3-첫-번째-agent-구축-step-by-step-전체-코드">3. 첫 번째 Agent 구축 (Step-by-Step 전체 코드)</a></li>
+  <li class="toc-h3"><a href="#31-핵심-개념-관계도">3.1 핵심 개념 관계도</a></li>
+  <li class="toc-h3"><a href="#32-state-정의">3.2 State 정의</a></li>
+  <li class="toc-h3"><a href="#33-도구-정의">3.3 도구 정의</a></li>
+  <li class="toc-h3"><a href="#34-react-에이전트-create_react_agent">3.4 ReAct 에이전트 (create_react_agent)</a></li>
+  <li class="toc-h3"><a href="#35-커스텀-stategraph-고급">3.5 커스텀 StateGraph (고급)</a></li>
+  <li class="toc-h3"><a href="#36-실행-테스트">3.6 실행 테스트</a></li>
+<li class="toc-h2"><a href="#4-mcp-도구-연동-langchain-mcp-adapters">4. MCP 도구 연동 (langchain-mcp-adapters)</a></li>
+  <li class="toc-h3"><a href="#41-방법-비교">4.1 방법 비교</a></li>
+  <li class="toc-h3"><a href="#42-mcp-서버-구축">4.2 MCP 서버 구축</a></li>
+  <li class="toc-h3"><a href="#43-에이전트에서-mcp-서버-연결">4.3 에이전트에서 MCP 서버 연결</a></li>
+  <li class="toc-h3"><a href="#44-mcp--tool-혼합-사용">4.4 MCP + @tool 혼합 사용</a></li>
+<li class="toc-h2"><a href="#5-fastapi-서빙-rest-api-스트리밍">5. FastAPI 서빙 (REST API, 스트리밍)</a></li>
+  <li class="toc-h3"><a href="#51-기본-rest-엔드포인트">5.1 기본 REST 엔드포인트</a></li>
+  <li class="toc-h3"><a href="#52-sse-스트리밍-엔드포인트">5.2 SSE 스트리밍 엔드포인트</a></li>
+  <li class="toc-h3"><a href="#53-요청-흐름">5.3 요청 흐름</a></li>
+<li class="toc-h2"><a href="#6-docker-배포-dockerfile-docker-composeyml">6. Docker 배포 (Dockerfile, docker-compose.yml)</a></li>
+  <li class="toc-h3"><a href="#61-dockerfile">6.1 Dockerfile</a></li>
+  <li class="toc-h3"><a href="#62-docker-composeyml-개발--poc">6.2 docker-compose.yml (개발 / PoC)</a></li>
+  <li class="toc-h3"><a href="#64-docker-composeprodyml-프로덕션-ha">6.4 docker-compose.prod.yml (프로덕션 HA)</a></li>
+  <li class="toc-h3"><a href="#65-실행-명령">6.5 실행 명령</a></li>
+<li class="toc-h2"><a href="#7-langsmith--langfuse-연동-모니터링">7. LangSmith / LangFuse 연동 (모니터링)</a></li>
+  <li class="toc-h3"><a href="#71-옵션-비교">7.1 옵션 비교</a></li>
+  <li class="toc-h3"><a href="#72-langfuse-연동-코드-3줄">7.2 LangFuse 연동 (코드 3줄)</a></li>
+  <li class="toc-h3"><a href="#73-langfuse-제공-기능">7.3 LangFuse 제공 기능</a></li>
+  <li class="toc-h3"><a href="#74-langsmith-saas-환경용">7.4 LangSmith (SaaS 환경용)</a></li>
+  <li class="toc-h3"><a href="#75-인프라-메트릭-prometheus--grafana">7.5 인프라 메트릭 (Prometheus + Grafana)</a></li>
+<li class="toc-h2"><a href="#8-사내-보안-고려사항">8. 사내 보안 고려사항</a></li>
+  <li class="toc-h3"><a href="#81-보안-체크-흐름">8.1 보안 체크 흐름</a></li>
+  <li class="toc-h3"><a href="#82-보안-체크리스트">8.2 보안 체크리스트</a></li>
+  <li class="toc-h3"><a href="#83-감사-로그">8.3 감사 로그</a></li>
+<li class="toc-h2"><a href="#9-트러블슈팅">9. 트러블슈팅</a></li>
+  <li class="toc-h3"><a href="#checkpointer-데이터-정리">Checkpointer 데이터 정리</a></li>
+  <li class="toc-h3"><a href="#디버깅-팁">디버깅 팁</a></li>
+<li class="toc-h2"><a href="#10-참고-자료--변경-이력">10. 참고 자료 + 변경 이력</a></li>
+  <li class="toc-h3"><a href="#101-참고-자료">10.1 참고 자료</a></li>
+  <li class="toc-h3"><a href="#102-관련-bip-문서">10.2 관련 BIP 문서</a></li>
+  <li class="toc-h3"><a href="#103-비용-참고">10.3 비용 참고</a></li>
+  <li class="toc-h3"><a href="#104-변경-이력">10.4 변경 이력</a></li>
 </ul>
 </nav>
 </aside>
 
 <main class="content">
-<h1 id="langgraph">LangGraph</h1>
-<p>사내 환경 구축</p>
-<p>Python 환경 설정부터 체크포인터(PostgreSQL/Oracle RAC), MCP 서버, FastAPI 에이전트 서버, Multi-VM Docker HA 배포, Airflow 연동, LangFuse 모니터링까지 — 사내 폐쇄망에 LangGraph 기반 에이전트 시스템을 처음부터 구축하는 전 과정.</p>
-<p>Python 3.11+ PostgreSQL / Oracle RAC Docker + Multi-VM HA FastAPI MCP LangFuse (Self-hosted)</p>
-<h2 id="최종-목표-아키텍처">최종 목표 아키텍처</h2>
-<p>사내 프로덕션 환경 전체 구성도 (Multi-VM + Oracle RAC + LangFuse)</p>
-<p>graph TD subgraph Client["클라이언트"] SPRING["Spring Boot\n기존 웹 시스템"] TG["텔레그램"] AF["Airflow DAG"] end subgraph LB_LAYER["로드 밸런서"] LB["L4 Load Balancer\nF5 / HAProxy\n(VIP)"] end subgraph VM1["VM-1 (Docker)"] W1A["Worker 1a"] W1B["Worker 1b"] end subgraph VM2["VM-2 (Docker)"] W2A["Worker 2a"] W2B["Worker 2b"] end subgraph VM3["VM-3 (Docker)"] W3A["Worker 3a"] W3B["Worker 3b"] end subgraph Worker_Detail["Worker 내부 구조"] FAST["FastAPI\nHTTP/WebSocket"] LG["LangGraph\n에이전트 그래프"] TOOLS["로컬 도구\n@tool"] MCP_C["MCP Client"] end subgraph MCP_S["MCP 서버 (Docker)"] MCP_T["MCP 도구\n외부 API 래핑"] end subgraph DB_LAYER["데이터 계층"] SCAN["SCAN Listener\n단일 진입점"] subgraph RAC["Oracle Exadata RAC"] NODE1["RAC Node 1\nActive"] NODE2["RAC Node 2\nActive"] end ASM["ASM\n공유 스토리지"] end subgraph Monitor["모니터링"] FUSE["LangFuse\nSelf-hosted\n트레이싱 UI"] GRAF["Grafana\n인프라 메트릭"] AUDIT["감사 로그\nagent_audit_log"] end Client --&gt; LB LB --&gt; VM1 LB --&gt; VM2 LB --&gt; VM3 FAST --&gt; LG LG --&gt; TOOLS LG --&gt; MCP_C MCP_C --&gt; MCP_T W1A &amp; W1B &amp; W2A &amp; W2B &amp; W3A &amp; W3B --&gt; SCAN MCP_T --&gt; SCAN SCAN --&gt; NODE1 SCAN --&gt; NODE2 NODE1 --&gt; ASM NODE2 --&gt; ASM LG -.-&gt;|callback| FUSE LG -.-&gt; AUDIT VM1 &amp; VM2 &amp; VM3 -.-&gt;|metrics| GRAF style LB_LAYER fill:#0d0f18,stroke:#f05050,color:#f08080 style VM1 fill:#0d0f18,stroke:#30c880 style VM2 fill:#0d0f18,stroke:#30c880 style VM3 fill:#0d0f18,stroke:#30c880 style Worker_Detail fill:#0d0f18,stroke:#5a7af0 style MCP_S fill:#0d0f18,stroke:#5a7af0 style DB_LAYER fill:#0d0f18,stroke:#e09830 style RAC fill:#101520,stroke:#e09830 style Monitor fill:#0d0f18,stroke:#9060f0 </p>
-<p>요청 흐름 시퀀스</p>
-<p>sequenceDiagram participant U as Spring Boot (사용자) participant LB as Load Balancer participant W as Worker (FastAPI) participant LG as LangGraph participant MCP as MCP 서버 participant ORA as Oracle RAC (SCAN) participant LF as LangFuse U-&gt;&gt;LB: POST /api/ask (JWT 포함) LB-&gt;&gt;W: 라우팅 (health check 통과 Worker) W-&gt;&gt;LG: graph.ainvoke(state, config) activate LG LG-&gt;&gt;ORA: Checkpoint 로드 (thread_id) LG-&gt;&gt;LG: router 노드 (분기 판단) LG-&gt;&gt;MCP: 도구 호출 (get_stock_price 등) MCP-&gt;&gt;ORA: SQL 조회 ORA--&gt;&gt;MCP: 결과 MCP--&gt;&gt;LG: 도구 결과 LG-&gt;&gt;ORA: LLM 호출 (사내 API) LG-&gt;&gt;ORA: Checkpoint 저장 LG--&gt;&gt;W: 최종 응답 deactivate LG W--&gt;&gt;LB: JSON 응답 LB--&gt;&gt;U: 응답 전달 W--)LF: 트레이스 비동기 전송 </p>
-<p>ℹ</p>
-<p><strong>핵심 설계 원칙</strong> Worker는 완전 Stateless — 모든 상태는 Oracle RAC에 위임. 어떤 Worker가 요청을 받아도 동일하게 동작하므로, 장애 시 LB가 다른 Worker로 자동 라우팅.</p>
-<p>01사전 준비</p>
+<h1 id="langgraph-사내-환경-구축-가이드">LangGraph 사내 환경 구축 가이드</h1>
+<blockquote>
+<p><strong>공식 문서:</strong> https://langchain-ai.github.io/langgraph/
+<strong>최종 수정:</strong> 2026-04-26 | <strong>버전:</strong> v3.0
+<strong>대상 독자:</strong> 사내 AI 에이전트 시스템 구축 담당자 (Python 기본 지식 필요)</p>
+</blockquote>
+<hr />
+<h2 id="1-개요">1. 개요</h2>
+<h3 id="11-목적">1.1 목적</h3>
+<p>LangGraph는 LLM 기반 에이전트 워크플로우를 <strong>그래프(노드 + 엣지)</strong> 로 모델링하는 상태 기반 오케스트레이션 프레임워크이다.
+이 가이드는 Python 환경 설정부터 Docker 프로덕션 배포, MCP 도구 연동, 모니터링까지
+사내 폐쇄망에서 LangGraph 기반 에이전트를 운영 수준으로 구축하는 전 과정을 다룬다.</p>
+<h3 id="12-왜-langgraph인가">1.2 왜 LangGraph인가</h3>
+<table>
+<thead>
+<tr>
+<th>항목</th>
+<th>LangChain (Chain)</th>
+<th>LangGraph (Graph)</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><strong>실행 흐름</strong></td>
+<td>A -&gt; B -&gt; C (선형)</td>
+<td>분기, 루프, 병렬 가능</td>
+</tr>
+<tr>
+<td><strong>상태 관리</strong></td>
+<td>없음 (입출력 전달만)</td>
+<td>공유 State 객체</td>
+</tr>
+<tr>
+<td><strong>Human-in-the-Loop</strong></td>
+<td>수동 구현</td>
+<td>네이티브 <code>interrupt()</code></td>
+</tr>
+<tr>
+<td><strong>내구성</strong></td>
+<td>없음</td>
+<td>Checkpointer로 크래시 복구</td>
+</tr>
+<tr>
+<td><strong>멀티 에이전트</strong></td>
+<td>어색한 통합</td>
+<td>1등 시민 설계</td>
+</tr>
+</tbody>
+</table>
+<p><strong>판단 기준:</strong> 워크플로우에 분기(if-then)나 루프(retry/revise)가 필요하면 LangGraph. 단순 직선 파이프라인이면 LangChain으로 충분하다.</p>
+<h3 id="13-전제-조건">1.3 전제 조건</h3>
 <table>
 <thead>
 <tr>
@@ -333,147 +404,135 @@
 </thead>
 <tbody>
 <tr>
-<td><strong>Python</strong></td>
+<td>Python</td>
 <td>3.11 이상</td>
-<td>3.13 권장. asyncio 성능 향상</td>
+<td>3.13 권장 (asyncio 성능 향상)</td>
 </tr>
 <tr>
-<td><strong>PostgreSQL</strong></td>
+<td>PostgreSQL</td>
 <td>14 이상</td>
-<td>체크포인터 + 데이터 저장. 16 권장</td>
+<td>Checkpointer + 데이터 저장. 16 권장</td>
 </tr>
 <tr>
-<td><strong>Docker</strong></td>
+<td>Docker</td>
 <td>선택 (프로덕션 필수)</td>
 <td>Docker Compose로 전체 환경 관리</td>
 </tr>
 <tr>
-<td><strong>LLM API 키</strong></td>
+<td>LLM API 키</td>
 <td>최소 1개</td>
 <td>Anthropic, OpenAI, Google 중 택</td>
 </tr>
-<tr>
-<td><strong>Git</strong></td>
-<td>필수</td>
-<td>버전 관리</td>
-</tr>
 </tbody>
 </table>
-<p>SHELLPython 가상환경 생성</p>
-<div class="codehilite"><pre><span></span><code># Python 3.11+ 확인
-python3 --version
+<h3 id="14-최종-목표-아키텍처">1.4 최종 목표 아키텍처</h3>
+<div class="mermaid">
+graph TD
+    subgraph Client["클라이언트"]
+        SPRING["Spring Boot / React"]
+        AF["Airflow DAG"]
+    end
 
-# 프로젝트 디렉토리 생성
-mkdir my-langgraph-agents &amp;&amp; cd my-langgraph-agents
+    subgraph LB_LAYER["로드 밸런서"]
+        LB["L4 Load Balancer\nHAProxy / F5"]
+    end
 
-# 가상환경 생성 + 활성화
-python3 -m venv .venv
-source .venv/bin/activate  # Linux/Mac
-# .venv\Scripts\activate   # Windows
+    subgraph Workers["Agent Workers - Stateless"]
+        W1["Worker 1\nFastAPI + LangGraph"]
+        W2["Worker 2\nFastAPI + LangGraph"]
+    end
+
+    subgraph Tools["도구 계층"]
+        LOCAL["@tool 로컬 도구"]
+        MCP_S["MCP Server 공유 도구"]
+    end
+
+    subgraph Data["데이터 계층"]
+        PG["PostgreSQL\nCheckpointer + Data"]
+    end
+
+    subgraph Monitor["모니터링"]
+        FUSE["LangFuse Self-hosted"]
+        GRAF["Grafana 인프라 메트릭"]
+    end
+
+    Client --> LB
+    LB --> W1 & W2
+    W1 & W2 --> LOCAL & MCP_S
+    W1 & W2 --> PG
+    MCP_S --> PG
+    W1 & W2 -.->|callback| FUSE
+    W1 & W2 -.->|metrics| GRAF
+    style Client fill:#4f8fea22,stroke:#4f8fea,stroke-width:2px,color:#e6edf3
+    style LB_LAYER fill:#6c5ce722,stroke:#6c5ce7,stroke-width:2px,color:#e6edf3
+    style Workers fill:#00b89422,stroke:#00b894,stroke-width:2px,color:#e6edf3
+    style Tools fill:#e1705522,stroke:#e17055,stroke-width:2px,color:#e6edf3
+    style Data fill:#fdcb6e22,stroke:#fdcb6e,stroke-width:2px,color:#e6edf3
+    style Monitor fill:#00cec922,stroke:#00cec9,stroke-width:2px,color:#e6edf3
+</div>
+
+<p>핵심 설계 원칙: Worker는 완전 Stateless이다. 모든 상태는 PostgreSQL Checkpointer에 위임한다. 어떤 Worker가 요청을 받아도 동일하게 동작하므로, 장애 시 LB가 다른 Worker로 자동 라우팅한다.</p>
+<hr />
+<h2 id="2-python-환경-구축">2. Python 환경 구축</h2>
+<h3 id="21-pyenv--venv-설정">2.1 pyenv + venv 설정</h3>
+<div class="codehilite"><pre><span></span><code><span class="c1"># pyenv 설치 (macOS: brew install pyenv / Linux: curl https://pyenv.run | bash)</span>
+pyenv<span class="w"> </span>install<span class="w"> </span><span class="m">3</span>.13.1<span class="w"> </span><span class="o">&amp;&amp;</span><span class="w"> </span>pyenv<span class="w"> </span><span class="nb">local</span><span class="w"> </span><span class="m">3</span>.13.1
+
+mkdir<span class="w"> </span>my-langgraph-agents<span class="w"> </span><span class="o">&amp;&amp;</span><span class="w"> </span><span class="nb">cd</span><span class="w"> </span>my-langgraph-agents
+python<span class="w"> </span>-m<span class="w"> </span>venv<span class="w"> </span>.venv<span class="w"> </span><span class="o">&amp;&amp;</span><span class="w"> </span><span class="nb">source</span><span class="w"> </span>.venv/bin/activate
 </code></pre></div>
 
-<p>02패키지 설치</p>
-<p>SHELL필수 패키지</p>
-<div class="codehilite"><pre><span></span><code># LangGraph 코어
-pip install langgraph
-
-# LLM 프로바이더 (사용할 것만)
-pip install langchain-anthropic    # Claude
-pip install langchain-openai       # OpenAI
-pip install langchain-google-genai # Gemini
-
-# 체크포인터 (프로덕션)
-pip install langgraph-checkpoint-postgres
-
-# MCP 도구 연동
-pip install langchain-mcp-adapters
-
-# 웹 서버
-pip install fastapi uvicorn
-
-# 모니터링
-pip install langsmith
+<h3 id="22-패키지-설치">2.2 패키지 설치</h3>
+<div class="codehilite"><pre><span></span><code>pip<span class="w"> </span>install<span class="w"> </span>langgraph<span class="w"> </span>langchain-anthropic<span class="w"> </span>langgraph-checkpoint-postgres<span class="w"> </span><span class="se">\</span>
+<span class="w">    </span>langchain-mcp-adapters<span class="w"> </span>fastapi<span class="w"> </span>uvicorn<span class="w"> </span>langfuse<span class="w"> </span>psycopg<span class="o">[</span>binary<span class="o">]</span><span class="w"> </span>python-dotenv
 </code></pre></div>
 
-<p>FILErequirements.txt</p>
-<div class="codehilite"><pre><span></span><code><span class="n">langgraph</span><span class="o">&gt;=</span><span class="mf">1.1.0</span>
-<span class="n">langchain</span><span class="o">-</span><span class="n">anthropic</span><span class="o">&gt;=</span><span class="mf">0.3.0</span>
-<span class="n">langgraph</span><span class="o">-</span><span class="k">checkpoint</span><span class="o">-</span><span class="n">postgres</span><span class="o">&gt;=</span><span class="mf">2.0.0</span>
-<span class="n">langchain</span><span class="o">-</span><span class="n">mcp</span><span class="o">-</span><span class="n">adapters</span><span class="o">&gt;=</span><span class="mf">0.1.0</span>
-<span class="n">fastapi</span><span class="o">&gt;=</span><span class="mf">0.115.0</span>
-<span class="n">uvicorn</span><span class="o">[</span><span class="n">standard</span><span class="o">]&gt;=</span><span class="mf">0.32.0</span>
-<span class="n">langsmith</span><span class="o">&gt;=</span><span class="mf">0.2.0</span>
-<span class="n">psycopg</span><span class="o">[</span><span class="n">binary</span><span class="o">]&gt;=</span><span class="mf">3.2.0</span>
-<span class="n">python</span><span class="o">-</span><span class="n">dotenv</span><span class="o">&gt;=</span><span class="mf">1.0.0</span>
+<h3 id="23-requirementstxt">2.3 requirements.txt</h3>
+<div class="codehilite"><pre><span></span><code>langgraph&gt;=0.4.0
+langchain-anthropic&gt;=0.3.0
+langgraph-checkpoint-postgres&gt;=2.0.0
+langchain-mcp-adapters&gt;=0.1.0
+fastapi&gt;=0.115.0
+uvicorn[standard]&gt;=0.32.0
+langfuse&gt;=2.50.0
+psycopg[binary]&gt;=3.2.0
+python-dotenv&gt;=1.0.0
 </code></pre></div>
 
-<p>03프로젝트 구조</p>
-<p>구조권장 프로젝트 레이아웃</p>
+<h3 id="24-프로젝트-레이아웃">2.4 프로젝트 레이아웃</h3>
 <div class="codehilite"><pre><span></span><code><span class="n">my</span><span class="o">-</span><span class="n">langgraph</span><span class="o">-</span><span class="n">agents</span><span class="o">/</span>
 <span class="err">├──</span><span class="w"> </span><span class="o">.</span><span class="n">env</span><span class="w">                    </span><span class="c1"># 환경변수 (git 제외)</span>
 <span class="err">├──</span><span class="w"> </span><span class="o">.</span><span class="n">env</span><span class="o">.</span><span class="n">example</span><span class="w">            </span><span class="c1"># 환경변수 템플릿</span>
 <span class="err">├──</span><span class="w"> </span><span class="n">requirements</span><span class="o">.</span><span class="n">txt</span>
 <span class="err">├──</span><span class="w"> </span><span class="n">docker</span><span class="o">-</span><span class="n">compose</span><span class="o">.</span><span class="n">yml</span>
 <span class="err">├──</span><span class="w"> </span><span class="n">Dockerfile</span>
-<span class="err">│</span>
-<span class="err">├──</span><span class="w"> </span><span class="n">app</span><span class="o">/</span><span class="w">                    </span><span class="c1"># 메인 애플리케이션</span>
+<span class="err">├──</span><span class="w"> </span><span class="n">app</span><span class="o">/</span>
 <span class="err">│</span><span class="w">   </span><span class="err">├──</span><span class="w"> </span><span class="n">__init__</span><span class="o">.</span><span class="n">py</span>
 <span class="err">│</span><span class="w">   </span><span class="err">├──</span><span class="w"> </span><span class="n">main</span><span class="o">.</span><span class="n">py</span><span class="w">             </span><span class="c1"># FastAPI 엔트리포인트</span>
 <span class="err">│</span><span class="w">   </span><span class="err">├──</span><span class="w"> </span><span class="n">config</span><span class="o">.</span><span class="n">py</span><span class="w">           </span><span class="c1"># 설정 (환경변수 로드)</span>
-<span class="err">│</span><span class="w">   </span><span class="err">│</span>
-<span class="err">│</span><span class="w">   </span><span class="err">├──</span><span class="w"> </span><span class="n">agents</span><span class="o">/</span><span class="w">             </span><span class="c1"># 에이전트 정의</span>
-<span class="err">│</span><span class="w">   </span><span class="err">│</span><span class="w">   </span><span class="err">├──</span><span class="w"> </span><span class="n">__init__</span><span class="o">.</span><span class="n">py</span>
+<span class="err">│</span><span class="w">   </span><span class="err">├──</span><span class="w"> </span><span class="n">agents</span><span class="o">/</span>
 <span class="err">│</span><span class="w">   </span><span class="err">│</span><span class="w">   </span><span class="err">├──</span><span class="w"> </span><span class="n">state</span><span class="o">.</span><span class="n">py</span><span class="w">        </span><span class="c1"># State 스키마 (TypedDict)</span>
 <span class="err">│</span><span class="w">   </span><span class="err">│</span><span class="w">   </span><span class="err">├──</span><span class="w"> </span><span class="n">nodes</span><span class="o">.</span><span class="n">py</span><span class="w">        </span><span class="c1"># 노드 함수들</span>
 <span class="err">│</span><span class="w">   </span><span class="err">│</span><span class="w">   </span><span class="err">├──</span><span class="w"> </span><span class="n">graph</span><span class="o">.</span><span class="n">py</span><span class="w">        </span><span class="c1"># StateGraph 구성 + 컴파일</span>
 <span class="err">│</span><span class="w">   </span><span class="err">│</span><span class="w">   </span><span class="err">└──</span><span class="w"> </span><span class="n">prompts</span><span class="o">.</span><span class="n">py</span><span class="w">      </span><span class="c1"># 시스템 프롬프트</span>
-<span class="err">│</span><span class="w">   </span><span class="err">│</span>
-<span class="err">│</span><span class="w">   </span><span class="err">├──</span><span class="w"> </span><span class="n">tools</span><span class="o">/</span><span class="w">              </span><span class="c1"># 도구 정의</span>
-<span class="err">│</span><span class="w">   </span><span class="err">│</span><span class="w">   </span><span class="err">├──</span><span class="w"> </span><span class="n">__init__</span><span class="o">.</span><span class="n">py</span>
+<span class="err">│</span><span class="w">   </span><span class="err">├──</span><span class="w"> </span><span class="n">tools</span><span class="o">/</span>
 <span class="err">│</span><span class="w">   </span><span class="err">│</span><span class="w">   </span><span class="err">├──</span><span class="w"> </span><span class="n">db_tools</span><span class="o">.</span><span class="n">py</span><span class="w">     </span><span class="c1"># DB 조회 도구</span>
 <span class="err">│</span><span class="w">   </span><span class="err">│</span><span class="w">   </span><span class="err">├──</span><span class="w"> </span><span class="n">api_tools</span><span class="o">.</span><span class="n">py</span><span class="w">    </span><span class="c1"># 외부 API 도구</span>
 <span class="err">│</span><span class="w">   </span><span class="err">│</span><span class="w">   </span><span class="err">└──</span><span class="w"> </span><span class="n">mcp_client</span><span class="o">.</span><span class="n">py</span><span class="w">   </span><span class="c1"># MCP 서버 연결</span>
-<span class="err">│</span><span class="w">   </span><span class="err">│</span>
-<span class="err">│</span><span class="w">   </span><span class="err">└──</span><span class="w"> </span><span class="n">middleware</span><span class="o">/</span><span class="w">          </span><span class="c1"># 미들웨어</span>
+<span class="err">│</span><span class="w">   </span><span class="err">└──</span><span class="w"> </span><span class="n">middleware</span><span class="o">/</span>
 <span class="err">│</span><span class="w">       </span><span class="err">├──</span><span class="w"> </span><span class="n">auth</span><span class="o">.</span><span class="n">py</span><span class="w">         </span><span class="c1"># 인증</span>
 <span class="err">│</span><span class="w">       </span><span class="err">└──</span><span class="w"> </span><span class="n">audit</span><span class="o">.</span><span class="n">py</span><span class="w">        </span><span class="c1"># 감사 로깅</span>
-<span class="err">│</span>
-<span class="err">├──</span><span class="w"> </span><span class="n">mcp</span><span class="o">-</span><span class="n">server</span><span class="o">/</span><span class="w">             </span><span class="c1"># MCP 도구 서버 (별도 컨테이너)</span>
+<span class="err">├──</span><span class="w"> </span><span class="n">mcp</span><span class="o">-</span><span class="n">server</span><span class="o">/</span>
 <span class="err">│</span><span class="w">   </span><span class="err">├──</span><span class="w"> </span><span class="n">server</span><span class="o">.</span><span class="n">py</span>
 <span class="err">│</span><span class="w">   </span><span class="err">├──</span><span class="w"> </span><span class="n">tools</span><span class="o">.</span><span class="n">py</span>
 <span class="err">│</span><span class="w">   </span><span class="err">└──</span><span class="w"> </span><span class="n">Dockerfile</span>
-<span class="err">│</span>
 <span class="err">└──</span><span class="w"> </span><span class="n">tests</span><span class="o">/</span>
-<span class="w">    </span><span class="err">├──</span><span class="w"> </span><span class="n">test_agents</span><span class="o">.</span><span class="n">py</span>
-<span class="w">    </span><span class="err">└──</span><span class="w"> </span><span class="n">test_tools</span><span class="o">.</span><span class="n">py</span>
+<span class="w">    </span><span class="err">└──</span><span class="w"> </span><span class="n">test_agents</span><span class="o">.</span><span class="n">py</span>
 </code></pre></div>
 
-<p>💡</p>
-<p><strong>핵심 분리 원칙</strong> State 정의(state.py), 노드 로직(nodes.py), 그래프 구성(graph.py)을 분리하면 테스트와 유지보수가 쉬워요. 프롬프트도 별도 파일로.</p>
-<p>04환경변수 &amp; 시크릿 관리</p>
-<p>FILE.env.example (git에 커밋)</p>
-<div class="codehilite"><pre><span></span><code><span class="err">#</span><span class="w"> </span><span class="n">LLM</span><span class="w"> </span><span class="n">프로바이더</span>
-<span class="n">ANTHROPIC_API_KEY</span><span class="o">=</span><span class="n">sk</span><span class="o">-</span><span class="n">ant</span><span class="o">-</span><span class="p">...</span>
-<span class="n">OPENAI_API_KEY</span><span class="o">=</span><span class="n">sk</span><span class="o">-</span><span class="p">...</span>
-
-<span class="err">#</span><span class="w"> </span><span class="n">PostgreSQL</span>
-<span class="n">DATABASE_URL</span><span class="o">=</span><span class="nl">postgresql</span><span class="p">:</span><span class="o">//</span><span class="k">user</span><span class="err">:</span><span class="n">password</span><span class="nv">@localhost</span><span class="err">:</span><span class="mi">5432</span><span class="o">/</span><span class="n">agentdb</span>
-
-<span class="err">#</span><span class="w"> </span><span class="n">MCP</span><span class="w"> </span><span class="n">서버</span>
-<span class="n">MCP_SERVER_URL</span><span class="o">=</span><span class="nl">http</span><span class="p">:</span><span class="o">//</span><span class="nl">localhost</span><span class="p">:</span><span class="mi">8000</span><span class="o">/</span><span class="n">sse</span>
-
-<span class="err">#</span><span class="w"> </span><span class="n">LangSmith</span><span class="w"> </span><span class="n">모니터링</span>
-<span class="n">LANGSMITH_TRACING</span><span class="o">=</span><span class="k">true</span>
-<span class="n">LANGSMITH_API_KEY</span><span class="o">=</span><span class="n">lsv2_</span><span class="p">...</span>
-<span class="n">LANGSMITH_PROJECT</span><span class="o">=</span><span class="n">my</span><span class="o">-</span><span class="n">agents</span>
-
-<span class="err">#</span><span class="w"> </span><span class="n">앱</span><span class="w"> </span><span class="n">설정</span>
-<span class="n">APP_ENV</span><span class="o">=</span><span class="n">development</span>
-<span class="n">LOG_LEVEL</span><span class="o">=</span><span class="n">INFO</span>
-</code></pre></div>
-
-<p>PYTHONapp/config.py</p>
-<div class="codehilite"><pre><span></span><code><span class="kn">import</span><span class="w"> </span><span class="nn">os</span>
+<h3 id="25-환경변수-관리">2.5 환경변수 관리</h3>
+<div class="codehilite"><pre><span></span><code><span class="c1"># app/config.py</span>
+<span class="kn">import</span><span class="w"> </span><span class="nn">os</span>
 <span class="kn">from</span><span class="w"> </span><span class="nn">dotenv</span><span class="w"> </span><span class="kn">import</span> <span class="n">load_dotenv</span>
 
 <span class="n">load_dotenv</span><span class="p">()</span>
@@ -481,355 +540,223 @@ pip install langsmith
 <span class="k">class</span><span class="w"> </span><span class="nc">Settings</span><span class="p">:</span>
     <span class="n">ANTHROPIC_API_KEY</span> <span class="o">=</span> <span class="n">os</span><span class="o">.</span><span class="n">getenv</span><span class="p">(</span><span class="s2">&quot;ANTHROPIC_API_KEY&quot;</span><span class="p">)</span>
     <span class="n">DATABASE_URL</span> <span class="o">=</span> <span class="n">os</span><span class="o">.</span><span class="n">getenv</span><span class="p">(</span><span class="s2">&quot;DATABASE_URL&quot;</span><span class="p">)</span>
-    <span class="n">MCP_SERVER_URL</span> <span class="o">=</span> <span class="n">os</span><span class="o">.</span><span class="n">getenv</span><span class="p">(</span><span class="s2">&quot;MCP_SERVER_URL&quot;</span><span class="p">,</span>
-                                <span class="s2">&quot;http://localhost:8000/sse&quot;</span><span class="p">)</span>
-    <span class="n">LANGSMITH_TRACING</span> <span class="o">=</span> <span class="n">os</span><span class="o">.</span><span class="n">getenv</span><span class="p">(</span><span class="s2">&quot;LANGSMITH_TRACING&quot;</span><span class="p">,</span> <span class="s2">&quot;false&quot;</span><span class="p">)</span>
-    <span class="n">APP_ENV</span> <span class="o">=</span> <span class="n">os</span><span class="o">.</span><span class="n">getenv</span><span class="p">(</span><span class="s2">&quot;APP_ENV&quot;</span><span class="p">,</span> <span class="s2">&quot;development&quot;</span><span class="p">)</span>
+    <span class="n">MCP_SERVER_URL</span> <span class="o">=</span> <span class="n">os</span><span class="o">.</span><span class="n">getenv</span><span class="p">(</span><span class="s2">&quot;MCP_SERVER_URL&quot;</span><span class="p">,</span> <span class="s2">&quot;http://localhost:8000/sse&quot;</span><span class="p">)</span>
+    <span class="n">LANGFUSE_HOST</span> <span class="o">=</span> <span class="n">os</span><span class="o">.</span><span class="n">getenv</span><span class="p">(</span><span class="s2">&quot;LANGFUSE_HOST&quot;</span><span class="p">,</span> <span class="s2">&quot;http://localhost:3100&quot;</span><span class="p">)</span>
+    <span class="n">LANGFUSE_PUBLIC_KEY</span> <span class="o">=</span> <span class="n">os</span><span class="o">.</span><span class="n">getenv</span><span class="p">(</span><span class="s2">&quot;LANGFUSE_PUBLIC_KEY&quot;</span><span class="p">)</span>
+    <span class="n">LANGFUSE_SECRET_KEY</span> <span class="o">=</span> <span class="n">os</span><span class="o">.</span><span class="n">getenv</span><span class="p">(</span><span class="s2">&quot;LANGFUSE_SECRET_KEY&quot;</span><span class="p">)</span>
 
 <span class="n">settings</span> <span class="o">=</span> <span class="n">Settings</span><span class="p">()</span>
 </code></pre></div>
 
-<p>⚠️</p>
-<p><strong>보안 필수</strong> <code>.env</code>는 절대 git에 커밋하지 마세요. <code>.gitignore</code>에 추가. 프로덕션에서는 Vault, AWS Secrets Manager, 또는 Docker secrets 사용.</p>
-<p>05LLM 프로바이더 연결</p>
-<table>
-<thead>
-<tr>
-<th>프로바이더</th>
-<th>패키지</th>
-<th>모델 예시</th>
-<th>특징</th>
-</tr>
-</thead>
-<tbody>
-<tr>
-<td><strong>Anthropic</strong></td>
-<td><code>langchain-anthropic</code></td>
-<td>claude-sonnet-4-6, claude-haiku-4-5</td>
-<td>도구 사용 우수, MCP 네이티브</td>
-</tr>
-<tr>
-<td><strong>OpenAI</strong></td>
-<td><code>langchain-openai</code></td>
-<td>gpt-5.4, gpt-5.4-mini</td>
-<td>범용성, 풍부한 생태계</td>
-</tr>
-<tr>
-<td><strong>Google</strong></td>
-<td><code>langchain-google-genai</code></td>
-<td>gemini-3.1-flash</td>
-<td>빠른 속도, 비용 효율</td>
-</tr>
-<tr>
-<td><strong>Ollama (로컬)</strong></td>
-<td><code>langchain-ollama</code></td>
-<td>llama3, mistral</td>
-<td>API 비용 없음, GPU 필요</td>
-</tr>
-</tbody>
-</table>
-<p>PYTHONLLM 초기화 패턴</p>
-<div class="codehilite"><pre><span></span><code><span class="kn">from</span><span class="w"> </span><span class="nn">langchain_anthropic</span><span class="w"> </span><span class="kn">import</span> <span class="n">ChatAnthropic</span>
-<span class="kn">from</span><span class="w"> </span><span class="nn">langchain_openai</span><span class="w"> </span><span class="kn">import</span> <span class="n">ChatOpenAI</span>
+<blockquote>
+<p><strong>보안 필수:</strong> <code>.env</code>는 절대 git에 커밋하지 않는다. 프로덕션에서는 Docker secrets 또는 Vault를 사용한다.</p>
+</blockquote>
+<hr />
+<h2 id="3-첫-번째-agent-구축-step-by-step-전체-코드">3. 첫 번째 Agent 구축 (Step-by-Step 전체 코드)</h2>
+<h3 id="31-핵심-개념-관계도">3.1 핵심 개념 관계도</h3>
+<div class="mermaid">
+graph LR
+    STATE["State\n공유 메모리"] --> NODE["Node\n작업 단위"]
+    NODE --> EDGE["Edge\n흐름 연결"]
+    EDGE --> COND["Conditional Edge\n조건 분기"]
+    COND --> CHECK["Checkpointer\n상태 저장"]
+    CHECK --> HITL["Human-in-the-Loop\n사람 개입"]
+</div>
 
-<span class="c1"># Anthropic (BIP에서 사용)</span>
-<span class="n">llm_haiku</span> <span class="o">=</span> <span class="n">ChatAnthropic</span><span class="p">(</span>
-    <span class="n">model</span><span class="o">=</span><span class="s2">&quot;claude-haiku-4-5-20251001&quot;</span><span class="p">,</span>
-    <span class="n">max_tokens</span><span class="o">=</span><span class="mi">4000</span><span class="p">,</span>
-<span class="p">)</span>
-<span class="n">llm_sonnet</span> <span class="o">=</span> <span class="n">ChatAnthropic</span><span class="p">(</span>
-    <span class="n">model</span><span class="o">=</span><span class="s2">&quot;claude-sonnet-4-6-20260414&quot;</span><span class="p">,</span>
-    <span class="n">max_tokens</span><span class="o">=</span><span class="mi">8000</span><span class="p">,</span>
-<span class="p">)</span>
+<ul>
+<li><strong>State</strong> -- 그래프 전체에서 공유되는 메모리 객체. 모든 노드가 읽고 쓴다.</li>
+<li><strong>Node</strong> -- 하나의 작업 단위(함수). State를 받아서 변환 후 반환한다.</li>
+<li><strong>Edge</strong> -- 노드 간 직접 연결. A가 끝나면 B로 이동한다.</li>
+<li><strong>Conditional Edge</strong> -- 조건에 따라 다른 노드로 라우팅. 루프의 핵심이다.</li>
+<li><strong>Checkpointer</strong> -- 매 노드 실행 후 상태 자동 저장. 크래시 복구, 대화 지속.</li>
+</ul>
+<h3 id="32-state-정의">3.2 State 정의</h3>
+<div class="codehilite"><pre><span></span><code><span class="c1"># app/agents/state.py</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">typing</span><span class="w"> </span><span class="kn">import</span> <span class="n">TypedDict</span><span class="p">,</span> <span class="n">Annotated</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">langgraph.graph.message</span><span class="w"> </span><span class="kn">import</span> <span class="n">add_messages</span>
 
-<span class="c1"># OpenAI</span>
-<span class="n">llm_gpt</span> <span class="o">=</span> <span class="n">ChatOpenAI</span><span class="p">(</span>
-    <span class="n">model</span><span class="o">=</span><span class="s2">&quot;gpt-5.4-mini&quot;</span><span class="p">,</span>
-    <span class="n">temperature</span><span class="o">=</span><span class="mi">0</span><span class="p">,</span>
-<span class="p">)</span>
-
-<span class="c1"># 역할별 분리 (비용 최적화)</span>
-<span class="c1"># 단순 판단 → Haiku ($0.003/질문)</span>
-<span class="c1"># 복잡 분석 → Sonnet ($0.05/질문)</span>
+<span class="k">class</span><span class="w"> </span><span class="nc">AgentState</span><span class="p">(</span><span class="n">TypedDict</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;에이전트 공유 상태. 모든 노드가 읽고 쓴다.&quot;&quot;&quot;</span>
+    <span class="n">messages</span><span class="p">:</span> <span class="n">Annotated</span><span class="p">[</span><span class="nb">list</span><span class="p">,</span> <span class="n">add_messages</span><span class="p">]</span>  <span class="c1"># 대화 이력 (자동 누적)</span>
+    <span class="n">iteration</span><span class="p">:</span> <span class="nb">int</span>                            <span class="c1"># 루프 카운터</span>
 </code></pre></div>
 
-<p>💡</p>
-<p><strong>BIP 비용 전략</strong> 단순 판단(체크리스트, 뉴스 요약)은 Haiku, 복잡한 분석(모닝리포트)만 Sonnet. 월 $6으로 6개 에이전트 운영 중.</p>
-<p>06체크포인터 설정 (PostgreSQL / Oracle RAC)</p>
-<h3 id="옵션-비교">옵션 비교</h3>
-<table>
-<thead>
-<tr>
-<th>방안</th>
-<th>장점</th>
-<th>단점</th>
-<th>권장 환경</th>
-</tr>
-</thead>
-<tbody>
-<tr>
-<td><strong>A. PostgreSQL (공식)</strong></td>
-<td>공식 지원, setup() 자동 생성</td>
-<td>별도 DB 인프라 필요</td>
-<td>신규 구축, PoC</td>
-</tr>
-<tr>
-<td><strong>B. Oracle RAC (커스텀)</strong></td>
-<td>기존 Exadata RAC 활용, 추가 인프라 없음</td>
-<td>BaseCheckpointSaver 구현 필요 (4~5개 메서드)</td>
-<td>사내 Oracle 있는 경우</td>
-</tr>
-<tr>
-<td><strong>C. SQLite</strong></td>
-<td>설치 불필요</td>
-<td>단일 프로세스, HA 불가</td>
-<td>로컬 개발 전용</td>
-</tr>
-</tbody>
-</table>
-<h3 id="a-postgresql-체크포인터-공식">A. PostgreSQL 체크포인터 (공식)</h3>
-<p>체크포인터 DB 스키마 (자동 생성)</p>
-<p>erDiagram checkpoints { text thread_id PK text checkpoint_ns text checkpoint_id PK jsonb checkpoint jsonb metadata } checkpoint_blobs { text thread_id FK text channel text version bytea blob } checkpoint_writes { text thread_id FK text task_id int idx text channel bytea blob } checkpoint_migrations { int v PK } checkpoints ||--o{ checkpoint_blobs : "stores large data" checkpoints ||--o{ checkpoint_writes : "intermediate writes" </p>
-<p>SQLDB 생성 (수동 시)</p>
-<div class="codehilite"><pre><span></span><code><span class="c1">-- 전용 데이터베이스 생성 (기존 DB 사용도 가능)</span>
-<span class="k">CREATE</span><span class="w"> </span><span class="k">DATABASE</span><span class="w"> </span><span class="n">agentdb</span><span class="p">;</span>
+<p><code>Annotated[list, add_messages]</code>는 LangGraph의 리듀서(reducer) 문법이다. 노드가 <code>{"messages": [new_msg]}</code>를 반환하면, 기존 리스트에 자동 추가된다.</p>
+<h3 id="33-도구-정의">3.3 도구 정의</h3>
+<div class="codehilite"><pre><span></span><code><span class="c1"># app/tools/api_tools.py</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">langchain_core.tools</span><span class="w"> </span><span class="kn">import</span> <span class="n">tool</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">datetime</span><span class="w"> </span><span class="kn">import</span> <span class="n">datetime</span>
 
-<span class="c1">-- 전용 사용자 (선택)</span>
-<span class="k">CREATE</span><span class="w"> </span><span class="n">USER</span><span class="w"> </span><span class="n">agent_user</span><span class="w"> </span><span class="k">WITH</span><span class="w"> </span><span class="n">PASSWORD</span><span class="w"> </span><span class="s1">&#39;secure_password&#39;</span><span class="p">;</span>
-<span class="k">GRANT</span><span class="w"> </span><span class="k">ALL</span><span class="w"> </span><span class="k">PRIVILEGES</span><span class="w"> </span><span class="k">ON</span><span class="w"> </span><span class="k">DATABASE</span><span class="w"> </span><span class="n">agentdb</span><span class="w"> </span><span class="k">TO</span><span class="w"> </span><span class="n">agent_user</span><span class="p">;</span>
+<span class="nd">@tool</span>
+<span class="k">def</span><span class="w"> </span><span class="nf">get_current_time</span><span class="p">()</span> <span class="o">-&gt;</span> <span class="nb">str</span><span class="p">:</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;현재 시각을 반환합니다.&quot;&quot;&quot;</span>
+    <span class="k">return</span> <span class="n">datetime</span><span class="o">.</span><span class="n">now</span><span class="p">()</span><span class="o">.</span><span class="n">strftime</span><span class="p">(</span><span class="s2">&quot;%Y-%m-</span><span class="si">%d</span><span class="s2"> %H:%M:%S&quot;</span><span class="p">)</span>
+
+<span class="nd">@tool</span>
+<span class="k">def</span><span class="w"> </span><span class="nf">get_stock_price</span><span class="p">(</span><span class="n">ticker</span><span class="p">:</span> <span class="nb">str</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">str</span><span class="p">:</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;종목 현재가를 조회합니다. ticker 예시: 005930 (삼성전자)&quot;&quot;&quot;</span>
+    <span class="n">prices</span> <span class="o">=</span> <span class="p">{</span><span class="s2">&quot;005930&quot;</span><span class="p">:</span> <span class="mi">72500</span><span class="p">,</span> <span class="s2">&quot;000660&quot;</span><span class="p">:</span> <span class="mi">185000</span><span class="p">}</span>
+    <span class="n">price</span> <span class="o">=</span> <span class="n">prices</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="n">ticker</span><span class="p">,</span> <span class="kc">None</span><span class="p">)</span>
+    <span class="k">if</span> <span class="n">price</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+        <span class="k">return</span> <span class="sa">f</span><span class="s2">&quot;&#39;</span><span class="si">{</span><span class="n">ticker</span><span class="si">}</span><span class="s2">&#39; 종목을 찾을 수 없습니다.&quot;</span>
+    <span class="k">return</span> <span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="n">ticker</span><span class="si">}</span><span class="s2"> 현재가: </span><span class="si">{</span><span class="n">price</span><span class="si">:</span><span class="s2">,</span><span class="si">}</span><span class="s2">원&quot;</span>
+
+<span class="nd">@tool</span>
+<span class="k">def</span><span class="w"> </span><span class="nf">search_news</span><span class="p">(</span><span class="n">query</span><span class="p">:</span> <span class="nb">str</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">str</span><span class="p">:</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;최신 뉴스를 검색합니다.&quot;&quot;&quot;</span>
+    <span class="k">return</span> <span class="sa">f</span><span class="s2">&quot;&#39;</span><span class="si">{</span><span class="n">query</span><span class="si">}</span><span class="s2">&#39; 관련 최신 뉴스: [예시 결과]&quot;</span>
 </code></pre></div>
 
-<p>PYTHON체크포인터 초기화 + 테이블 자동 생성</p>
-<div class="codehilite"><pre><span></span><code><span class="kn">from</span><span class="w"> </span><span class="nn">langgraph.checkpoint.postgres</span><span class="w"> </span><span class="kn">import</span> <span class="n">PostgresSaver</span>
+<h3 id="34-react-에이전트-create_react_agent">3.4 ReAct 에이전트 (create_react_agent)</h3>
+<div class="codehilite"><pre><span></span><code><span class="c1"># app/agents/graph.py</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">langgraph.prebuilt</span><span class="w"> </span><span class="kn">import</span> <span class="n">create_react_agent</span>
 <span class="kn">from</span><span class="w"> </span><span class="nn">langgraph.checkpoint.postgres.aio</span><span class="w"> </span><span class="kn">import</span> <span class="n">AsyncPostgresSaver</span>
-<span class="kn">import</span><span class="w"> </span><span class="nn">psycopg</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">langchain_anthropic</span><span class="w"> </span><span class="kn">import</span> <span class="n">ChatAnthropic</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">app.tools.api_tools</span><span class="w"> </span><span class="kn">import</span> <span class="n">get_current_time</span><span class="p">,</span> <span class="n">get_stock_price</span><span class="p">,</span> <span class="n">search_news</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">app.config</span><span class="w"> </span><span class="kn">import</span> <span class="n">settings</span>
 
-<span class="c1"># 동기 버전</span>
-<span class="n">conn</span> <span class="o">=</span> <span class="n">psycopg</span><span class="o">.</span><span class="n">connect</span><span class="p">(</span>
-    <span class="s2">&quot;postgresql://user:pass@localhost:5432/agentdb&quot;</span><span class="p">,</span>
-    <span class="n">autocommit</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span>         <span class="c1"># 필수! setup()이 커밋하려면</span>
-    <span class="n">row_factory</span><span class="o">=</span><span class="n">psycopg</span><span class="o">.</span><span class="n">rows</span><span class="o">.</span><span class="n">dict_row</span>  <span class="c1"># 필수!</span>
-<span class="p">)</span>
-<span class="n">checkpointer</span> <span class="o">=</span> <span class="n">PostgresSaver</span><span class="p">(</span><span class="n">conn</span><span class="p">)</span>
-<span class="n">checkpointer</span><span class="o">.</span><span class="n">setup</span><span class="p">()</span>  <span class="c1"># 테이블 자동 생성</span>
+<span class="k">async</span> <span class="k">def</span><span class="w"> </span><span class="nf">create_agent</span><span class="p">():</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;ReAct 에이전트 인스턴스 생성&quot;&quot;&quot;</span>
+    <span class="c1"># 1. Checkpointer 설정</span>
+    <span class="n">checkpointer</span> <span class="o">=</span> <span class="n">AsyncPostgresSaver</span><span class="o">.</span><span class="n">from_conn_string</span><span class="p">(</span><span class="n">settings</span><span class="o">.</span><span class="n">DATABASE_URL</span><span class="p">)</span>
+    <span class="k">await</span> <span class="n">checkpointer</span><span class="o">.</span><span class="n">setup</span><span class="p">()</span>  <span class="c1"># 테이블 자동 생성 (최초 1회)</span>
 
-<span class="c1"># 비동기 버전 (FastAPI에서 사용)</span>
-<span class="n">checkpointer</span> <span class="o">=</span> <span class="n">AsyncPostgresSaver</span><span class="o">.</span><span class="n">from_conn_string</span><span class="p">(</span>
-    <span class="s2">&quot;postgresql://user:pass@localhost:5432/agentdb&quot;</span>
-<span class="p">)</span>
-<span class="k">await</span> <span class="n">checkpointer</span><span class="o">.</span><span class="n">setup</span><span class="p">()</span>
+    <span class="c1"># 2. LLM 초기화</span>
+    <span class="n">llm</span> <span class="o">=</span> <span class="n">ChatAnthropic</span><span class="p">(</span><span class="n">model</span><span class="o">=</span><span class="s2">&quot;claude-haiku-4-5-20251001&quot;</span><span class="p">,</span> <span class="n">max_tokens</span><span class="o">=</span><span class="mi">4000</span><span class="p">)</span>
 
-<span class="c1"># 에이전트에 적용</span>
-<span class="n">app</span> <span class="o">=</span> <span class="n">workflow</span><span class="o">.</span><span class="n">compile</span><span class="p">(</span><span class="n">checkpointer</span><span class="o">=</span><span class="n">checkpointer</span><span class="p">)</span>
+    <span class="c1"># 3. 도구 목록</span>
+    <span class="n">tools</span> <span class="o">=</span> <span class="p">[</span><span class="n">get_current_time</span><span class="p">,</span> <span class="n">get_stock_price</span><span class="p">,</span> <span class="n">search_news</span><span class="p">]</span>
 
-<span class="c1"># thread_id로 대화 관리</span>
-<span class="n">config</span> <span class="o">=</span> <span class="p">{</span><span class="s2">&quot;configurable&quot;</span><span class="p">:</span> <span class="p">{</span><span class="s2">&quot;thread_id&quot;</span><span class="p">:</span> <span class="s2">&quot;user-123-session-1&quot;</span><span class="p">}}</span>
-<span class="n">result</span> <span class="o">=</span> <span class="k">await</span> <span class="n">app</span><span class="o">.</span><span class="n">ainvoke</span><span class="p">(</span><span class="n">input_state</span><span class="p">,</span> <span class="n">config</span><span class="p">)</span>
+    <span class="c1"># 4. 에이전트 컴파일</span>
+    <span class="k">return</span> <span class="n">create_react_agent</span><span class="p">(</span>
+        <span class="n">llm</span><span class="p">,</span> <span class="n">tools</span><span class="p">,</span>
+        <span class="n">checkpointer</span><span class="o">=</span><span class="n">checkpointer</span><span class="p">,</span>
+        <span class="n">prompt</span><span class="o">=</span><span class="s2">&quot;당신은 주식 시장 데이터 분석 전문가입니다. &quot;</span>
+               <span class="s2">&quot;도구를 적극 활용해 정확한 정보를 제공하세요.&quot;</span><span class="p">,</span>
+    <span class="p">)</span>
 </code></pre></div>
 
-<p>⚠️</p>
-<p><strong>필수 설정</strong> <code>autocommit=True</code>와 <code>row_factory=dict_row</code>가 없으면 setup()이 실패하거나 조회 에러 발생. 가장 흔한 실수.</p>
-<h3 id="b-oracle-rac-체크포인터-커스텀">B. Oracle RAC 체크포인터 (커스텀)</h3>
-<p>기존 Oracle 19c Exadata RAC가 있는 사내 환경에서는 별도 PostgreSQL을 추가할 필요 없이 Custom Checkpointer로 기존 인프라를 활용.</p>
-<p>Oracle RAC Checkpointer 구조</p>
-<p>graph LR subgraph Workers["Stateless Workers"] W1["Worker 1"] W2["Worker 2"] W3["Worker 3"] end subgraph Oracle["Oracle Exadata RAC"] SCAN["SCAN Listener\n단일 DNS 진입점"] N1["RAC Node 1\nActive"] N2["RAC Node 2\nActive"] ASM["ASM\n공유 스토리지"] end W1 --&gt;|"oracledb\n(FAN event)"| SCAN W2 --&gt; SCAN W3 --&gt; SCAN SCAN --&gt; N1 SCAN --&gt; N2 N1 --&gt; ASM N2 --&gt; ASM style Workers fill:#0d0f18,stroke:#30c880 style Oracle fill:#0d0f18,stroke:#e09830 </p>
-<p>SQLOracle 테이블 생성</p>
-<div class="codehilite"><pre><span></span><code><span class="o">--</span><span class="w"> </span><span class="nx">Checkpoints</span><span class="w"> </span><span class="p">(</span><span class="nx">상태</span><span class="w"> </span><span class="nx">저장</span><span class="p">)</span>
-<span class="nx">CREATE</span><span class="w"> </span><span class="nx">TABLE</span><span class="w"> </span><span class="nx">langgraph_checkpoints</span><span class="w"> </span><span class="p">(</span>
-<span class="w">    </span><span class="nx">thread_id</span><span class="w">             </span><span class="nx">VARCHAR2</span><span class="p">(</span><span class="mi">128</span><span class="p">)</span><span class="w"> </span><span class="nx">NOT</span><span class="w"> </span><span class="nx">NULL</span><span class="p">,</span>
-<span class="w">    </span><span class="nx">checkpoint_ns</span><span class="w">         </span><span class="nx">VARCHAR2</span><span class="p">(</span><span class="mi">128</span><span class="p">)</span><span class="w"> </span><span class="nx">DEFAULT</span><span class="w"> </span><span class="err">&#39;&#39;</span><span class="w"> </span><span class="nx">NOT</span><span class="w"> </span><span class="nx">NULL</span><span class="p">,</span>
-<span class="w">    </span><span class="nx">checkpoint_id</span><span class="w">         </span><span class="nx">VARCHAR2</span><span class="p">(</span><span class="mi">128</span><span class="p">)</span><span class="w"> </span><span class="nx">NOT</span><span class="w"> </span><span class="nx">NULL</span><span class="p">,</span>
-<span class="w">    </span><span class="nx">parent_checkpoint_id</span><span class="w">  </span><span class="nx">VARCHAR2</span><span class="p">(</span><span class="mi">128</span><span class="p">),</span>
-<span class="w">    </span><span class="nx">checkpoint_data</span><span class="w">       </span><span class="nx">BLOB</span><span class="w">          </span><span class="nx">NOT</span><span class="w"> </span><span class="nx">NULL</span><span class="p">,</span><span class="w">   </span><span class="o">--</span><span class="w"> </span><span class="nx">JSON</span><span class="w"> </span><span class="nx">직렬화</span>
-<span class="w">    </span><span class="nx">metadata</span><span class="w">              </span><span class="nx">CLOB</span><span class="p">,</span>
-<span class="w">    </span><span class="nx">updated_at</span><span class="w">            </span><span class="nx">TIMESTAMP</span><span class="w"> </span><span class="nx">DEFAULT</span><span class="w"> </span><span class="nx">SYSTIMESTAMP</span><span class="p">,</span>
-<span class="w">    </span><span class="nx">CONSTRAINT</span><span class="w"> </span><span class="nx">pk_lg_checkpoint</span>
-<span class="w">        </span><span class="nx">PRIMARY</span><span class="w"> </span><span class="nx">KEY</span><span class="w"> </span><span class="p">(</span><span class="nx">thread_id</span><span class="p">,</span><span class="w"> </span><span class="nx">checkpoint_ns</span><span class="p">,</span><span class="w"> </span><span class="nx">checkpoint_id</span><span class="p">)</span>
-<span class="p">)</span><span class="w"> </span><span class="nx">TABLESPACE</span><span class="w"> </span><span class="nx">langgraph_data</span><span class="p">;</span>
+<h3 id="35-커스텀-stategraph-고급">3.5 커스텀 StateGraph (고급)</h3>
+<p><code>create_react_agent</code>로 부족할 때, <code>StateGraph</code>로 노드와 엣지를 직접 구성한다.</p>
+<div class="codehilite"><pre><span></span><code><span class="c1"># app/agents/custom_graph.py</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">langgraph.graph</span><span class="w"> </span><span class="kn">import</span> <span class="n">StateGraph</span><span class="p">,</span> <span class="n">END</span>
 
-<span class="o">--</span><span class="w"> </span><span class="nx">Channel</span><span class="w"> </span><span class="nx">Writes</span><span class="w"> </span><span class="p">(</span><span class="nx">중간</span><span class="w"> </span><span class="nx">상태</span><span class="p">)</span>
-<span class="nx">CREATE</span><span class="w"> </span><span class="nx">TABLE</span><span class="w"> </span><span class="nx">langgraph_writes</span><span class="w"> </span><span class="p">(</span>
-<span class="w">    </span><span class="nx">thread_id</span><span class="w">       </span><span class="nx">VARCHAR2</span><span class="p">(</span><span class="mi">128</span><span class="p">)</span><span class="w"> </span><span class="nx">NOT</span><span class="w"> </span><span class="nx">NULL</span><span class="p">,</span>
-<span class="w">    </span><span class="nx">checkpoint_ns</span><span class="w">   </span><span class="nx">VARCHAR2</span><span class="p">(</span><span class="mi">128</span><span class="p">)</span><span class="w"> </span><span class="nx">DEFAULT</span><span class="w"> </span><span class="err">&#39;&#39;</span><span class="w"> </span><span class="nx">NOT</span><span class="w"> </span><span class="nx">NULL</span><span class="p">,</span>
-<span class="w">    </span><span class="nx">checkpoint_id</span><span class="w">   </span><span class="nx">VARCHAR2</span><span class="p">(</span><span class="mi">128</span><span class="p">)</span><span class="w"> </span><span class="nx">NOT</span><span class="w"> </span><span class="nx">NULL</span><span class="p">,</span>
-<span class="w">    </span><span class="nx">task_id</span><span class="w">         </span><span class="nx">VARCHAR2</span><span class="p">(</span><span class="mi">128</span><span class="p">)</span><span class="w"> </span><span class="nx">NOT</span><span class="w"> </span><span class="nx">NULL</span><span class="p">,</span>
-<span class="w">    </span><span class="nx">idx</span><span class="w">             </span><span class="nx">NUMBER</span><span class="p">(</span><span class="mi">10</span><span class="p">)</span><span class="w">    </span><span class="nx">NOT</span><span class="w"> </span><span class="nx">NULL</span><span class="p">,</span>
-<span class="w">    </span><span class="nx">channel</span><span class="w">         </span><span class="nx">VARCHAR2</span><span class="p">(</span><span class="mi">256</span><span class="p">)</span><span class="w"> </span><span class="nx">NOT</span><span class="w"> </span><span class="nx">NULL</span><span class="p">,</span>
-<span class="w">    </span><span class="k">type</span><span class="w">            </span><span class="nx">VARCHAR2</span><span class="p">(</span><span class="mi">256</span><span class="p">),</span>
-<span class="w">    </span><span class="nx">blob_data</span><span class="w">       </span><span class="nx">BLOB</span><span class="p">,</span>
-<span class="w">    </span><span class="nx">CONSTRAINT</span><span class="w"> </span><span class="nx">pk_lg_writes</span>
-<span class="w">        </span><span class="nx">PRIMARY</span><span class="w"> </span><span class="nx">KEY</span><span class="w"> </span><span class="p">(</span><span class="nx">thread_id</span><span class="p">,</span><span class="w"> </span><span class="nx">checkpoint_ns</span><span class="p">,</span><span class="w"> </span><span class="nx">checkpoint_id</span><span class="p">,</span><span class="w"> </span><span class="nx">task_id</span><span class="p">,</span><span class="w"> </span><span class="nx">idx</span><span class="p">)</span>
-<span class="p">)</span><span class="w"> </span><span class="nx">TABLESPACE</span><span class="w"> </span><span class="nx">langgraph_data</span><span class="p">;</span>
-
-<span class="o">--</span><span class="w"> </span><span class="nx">오래된</span><span class="w"> </span><span class="nx">체크포인트</span><span class="w"> </span><span class="nx">정리</span><span class="w"> </span><span class="p">(</span><span class="mi">30</span><span class="nx">일</span><span class="p">)</span>
-<span class="o">--</span><span class="w"> </span><span class="nx">DBMS_SCHEDULER</span><span class="w"> </span><span class="nx">또는</span><span class="w"> </span><span class="nx">interval</span><span class="w"> </span><span class="nx">partition</span><span class="w"> </span><span class="nx">활용</span>
-</code></pre></div>
-
-<p>PYTHONOracleCheckpointSaver 구현</p>
-<div class="codehilite"><pre><span></span><code><span class="kn">from</span><span class="w"> </span><span class="nn">langgraph.checkpoint.base</span><span class="w"> </span><span class="kn">import</span> <span class="n">BaseCheckpointSaver</span>
-<span class="kn">import</span><span class="w"> </span><span class="nn">oracledb</span>
-<span class="kn">import</span><span class="w"> </span><span class="nn">json</span>
-
-<span class="k">class</span><span class="w"> </span><span class="nc">OracleCheckpointSaver</span><span class="p">(</span><span class="n">BaseCheckpointSaver</span><span class="p">):</span>
-<span class="w">    </span><span class="sd">&quot;&quot;&quot;Oracle 19c RAC용 Checkpointer&quot;&quot;&quot;</span>
-
-    <span class="k">def</span><span class="w"> </span><span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">dsn</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="n">user</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="n">password</span><span class="p">:</span> <span class="nb">str</span><span class="p">):</span>
-        <span class="nb">super</span><span class="p">()</span><span class="o">.</span><span class="fm">__init__</span><span class="p">()</span>
-        <span class="bp">self</span><span class="o">.</span><span class="n">pool</span> <span class="o">=</span> <span class="n">oracledb</span><span class="o">.</span><span class="n">create_pool</span><span class="p">(</span>
-            <span class="n">dsn</span><span class="o">=</span><span class="n">dsn</span><span class="p">,</span>           <span class="c1"># SCAN DNS</span>
-            <span class="n">user</span><span class="o">=</span><span class="n">user</span><span class="p">,</span>
-            <span class="n">password</span><span class="o">=</span><span class="n">password</span><span class="p">,</span>
-            <span class="nb">min</span><span class="o">=</span><span class="mi">5</span><span class="p">,</span> <span class="nb">max</span><span class="o">=</span><span class="mi">20</span><span class="p">,</span>
-            <span class="n">increment</span><span class="o">=</span><span class="mi">2</span><span class="p">,</span>
-            <span class="n">events</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span>       <span class="c1"># FAN 이벤트 수신 (RAC failover 감지)</span>
-        <span class="p">)</span>
-
-    <span class="k">def</span><span class="w"> </span><span class="nf">put</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">config</span><span class="p">,</span> <span class="n">checkpoint</span><span class="p">,</span> <span class="n">metadata</span><span class="p">,</span> <span class="n">new_versions</span><span class="p">):</span>
-<span class="w">        </span><span class="sd">&quot;&quot;&quot;체크포인트 저장 (MERGE = upsert)&quot;&quot;&quot;</span>
-        <span class="n">thread_id</span> <span class="o">=</span> <span class="n">config</span><span class="p">[</span><span class="s2">&quot;configurable&quot;</span><span class="p">][</span><span class="s2">&quot;thread_id&quot;</span><span class="p">]</span>
-        <span class="n">checkpoint_ns</span> <span class="o">=</span> <span class="n">config</span><span class="p">[</span><span class="s2">&quot;configurable&quot;</span><span class="p">]</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;checkpoint_ns&quot;</span><span class="p">,</span> <span class="s2">&quot;&quot;</span><span class="p">)</span>
-        <span class="n">checkpoint_id</span> <span class="o">=</span> <span class="n">checkpoint</span><span class="p">[</span><span class="s2">&quot;id&quot;</span><span class="p">]</span>
-        <span class="n">parent_id</span> <span class="o">=</span> <span class="n">config</span><span class="p">[</span><span class="s2">&quot;configurable&quot;</span><span class="p">]</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;checkpoint_id&quot;</span><span class="p">)</span>
-
-        <span class="k">with</span> <span class="bp">self</span><span class="o">.</span><span class="n">pool</span><span class="o">.</span><span class="n">acquire</span><span class="p">()</span> <span class="k">as</span> <span class="n">conn</span><span class="p">:</span>
-            <span class="k">with</span> <span class="n">conn</span><span class="o">.</span><span class="n">cursor</span><span class="p">()</span> <span class="k">as</span> <span class="n">cur</span><span class="p">:</span>
-                <span class="n">cur</span><span class="o">.</span><span class="n">execute</span><span class="p">(</span><span class="s2">&quot;&quot;&quot;</span>
-<span class="s2">                    MERGE INTO langgraph_checkpoints t</span>
-<span class="s2">                    USING (SELECT :tid AS thread_id,</span>
-<span class="s2">                                  :ns  AS checkpoint_ns,</span>
-<span class="s2">                                  :cid AS checkpoint_id FROM dual) s</span>
-<span class="s2">                    ON (t.thread_id = s.thread_id</span>
-<span class="s2">                        AND t.checkpoint_ns = s.checkpoint_ns</span>
-<span class="s2">                        AND t.checkpoint_id = s.checkpoint_id)</span>
-<span class="s2">                    WHEN MATCHED THEN UPDATE SET</span>
-<span class="s2">                        checkpoint_data = :data,</span>
-<span class="s2">                        metadata = :meta,</span>
-<span class="s2">                        updated_at = SYSTIMESTAMP</span>
-<span class="s2">                    WHEN NOT MATCHED THEN INSERT</span>
-<span class="s2">                        (thread_id, checkpoint_ns, checkpoint_id,</span>
-<span class="s2">                         parent_checkpoint_id, checkpoint_data,</span>
-<span class="s2">                         metadata, updated_at)</span>
-<span class="s2">                    VALUES (:tid, :ns, :cid, :pid, :data,</span>
-<span class="s2">                            :meta, SYSTIMESTAMP)</span>
-<span class="s2">                &quot;&quot;&quot;</span><span class="p">,</span> <span class="p">{</span>
-                    <span class="s2">&quot;tid&quot;</span><span class="p">:</span> <span class="n">thread_id</span><span class="p">,</span> <span class="s2">&quot;ns&quot;</span><span class="p">:</span> <span class="n">checkpoint_ns</span><span class="p">,</span>
-                    <span class="s2">&quot;cid&quot;</span><span class="p">:</span> <span class="n">checkpoint_id</span><span class="p">,</span> <span class="s2">&quot;pid&quot;</span><span class="p">:</span> <span class="n">parent_id</span><span class="p">,</span>
-                    <span class="s2">&quot;data&quot;</span><span class="p">:</span> <span class="n">json</span><span class="o">.</span><span class="n">dumps</span><span class="p">(</span><span class="n">checkpoint</span><span class="p">)</span><span class="o">.</span><span class="n">encode</span><span class="p">(),</span>
-                    <span class="s2">&quot;meta&quot;</span><span class="p">:</span> <span class="n">json</span><span class="o">.</span><span class="n">dumps</span><span class="p">(</span><span class="n">metadata</span><span class="p">),</span>
-                <span class="p">})</span>
-            <span class="n">conn</span><span class="o">.</span><span class="n">commit</span><span class="p">()</span>
-
-    <span class="k">def</span><span class="w"> </span><span class="nf">get_tuple</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">config</span><span class="p">):</span>
-<span class="w">        </span><span class="sd">&quot;&quot;&quot;thread_id + checkpoint_ns 기준 최신 checkpoint 조회&quot;&quot;&quot;</span>
-        <span class="c1"># ... SELECT + ORDER BY updated_at DESC FETCH FIRST 1 ROW</span>
-
-    <span class="k">def</span><span class="w"> </span><span class="nf">list</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">config</span><span class="p">,</span> <span class="o">*</span><span class="p">,</span> <span class="nb">filter</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">before</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">limit</span><span class="o">=</span><span class="mi">10</span><span class="p">):</span>
-<span class="w">        </span><span class="sd">&quot;&quot;&quot;checkpoint 이력 조회&quot;&quot;&quot;</span>
-        <span class="c1"># ... SELECT + pagination</span>
-
-<span class="c1"># 사용</span>
-<span class="n">checkpointer</span> <span class="o">=</span> <span class="n">OracleCheckpointSaver</span><span class="p">(</span>
-    <span class="n">dsn</span><span class="o">=</span><span class="s2">&quot;(DESCRIPTION=(ADDRESS=(PROTOCOL=TCP)&quot;</span>
-        <span class="s2">&quot;(HOST=scan.internal)(PORT=1521))&quot;</span>
-        <span class="s2">&quot;(CONNECT_DATA=(SERVICE_NAME=CHATBOT)))&quot;</span><span class="p">,</span>
-    <span class="n">user</span><span class="o">=</span><span class="s2">&quot;langgraph_svc&quot;</span><span class="p">,</span>
-    <span class="n">password</span><span class="o">=</span><span class="n">os</span><span class="o">.</span><span class="n">environ</span><span class="p">[</span><span class="s2">&quot;ORACLE_PASSWORD&quot;</span><span class="p">],</span>
+<span class="n">workflow</span> <span class="o">=</span> <span class="n">StateGraph</span><span class="p">(</span><span class="n">AgentState</span><span class="p">)</span>
+<span class="n">workflow</span><span class="o">.</span><span class="n">add_node</span><span class="p">(</span><span class="s2">&quot;router&quot;</span><span class="p">,</span> <span class="n">router_node</span><span class="p">)</span>      <span class="c1"># 분기 판단</span>
+<span class="n">workflow</span><span class="o">.</span><span class="n">add_node</span><span class="p">(</span><span class="s2">&quot;researcher&quot;</span><span class="p">,</span> <span class="n">researcher_node</span><span class="p">)</span>  <span class="c1"># 리서치 실행</span>
+<span class="n">workflow</span><span class="o">.</span><span class="n">set_entry_point</span><span class="p">(</span><span class="s2">&quot;router&quot;</span><span class="p">)</span>
+<span class="n">workflow</span><span class="o">.</span><span class="n">add_edge</span><span class="p">(</span><span class="s2">&quot;router&quot;</span><span class="p">,</span> <span class="s2">&quot;researcher&quot;</span><span class="p">)</span>
+<span class="n">workflow</span><span class="o">.</span><span class="n">add_conditional_edges</span><span class="p">(</span>
+    <span class="s2">&quot;researcher&quot;</span><span class="p">,</span>
+    <span class="k">lambda</span> <span class="n">s</span><span class="p">:</span> <span class="s2">&quot;router&quot;</span> <span class="k">if</span> <span class="n">s</span><span class="p">[</span><span class="s2">&quot;iteration&quot;</span><span class="p">]</span> <span class="o">&lt;</span> <span class="mi">3</span> <span class="ow">and</span> <span class="nb">hasattr</span><span class="p">(</span><span class="n">s</span><span class="p">[</span><span class="s2">&quot;messages&quot;</span><span class="p">][</span><span class="o">-</span><span class="mi">1</span><span class="p">],</span> <span class="s2">&quot;tool_calls&quot;</span><span class="p">)</span> <span class="k">else</span> <span class="n">END</span><span class="p">,</span>
 <span class="p">)</span>
 <span class="n">graph</span> <span class="o">=</span> <span class="n">workflow</span><span class="o">.</span><span class="n">compile</span><span class="p">(</span><span class="n">checkpointer</span><span class="o">=</span><span class="n">checkpointer</span><span class="p">)</span>
 </code></pre></div>
 
-<p>💡</p>
-<p><strong>RAC가 제공하는 HA</strong></p>
-<ul>
-<li><strong>SCAN Listener</strong> — Worker는 단일 DNS로 연결, 노드 장애 시 자동 라우팅</li>
-<li><strong>FAN 이벤트</strong> — <code>events=True</code>로 노드 다운 즉시 감지, 커넥션 풀 자동 정리</li>
-<li><strong>Active-Active</strong> — 두 노드 모두 읽기/쓰기 가능, 별도 failover 대기 없음</li>
-<li><strong>TAF</strong> — SELECT 중 노드 장애 시 다른 노드에서 자동 재실행</li>
-</ul>
-<h3 id="운영-공통">운영 공통</h3>
-<p>운영체크포인트 데이터 관리</p>
-<ul>
-<li><strong>데이터 증가</strong> — 매 노드 실행마다 State 저장. 장기 운영 시 주기적 정리 필요</li>
-<li><strong>정리</strong> : PostgreSQL <code>DELETE ... WHERE created_at &lt; NOW() - INTERVAL '30 days'</code> / Oracle <code>DBMS_SCHEDULER</code> 또는 interval partition</li>
-<li><strong>스키마 변경</strong> — State TypedDict에 필드 추가 후 기존 체크포인트와 호환 안 될 수 있음. 마이그레이션 계획 필수</li>
-<li><strong>커넥션 풀</strong> — PostgreSQL: pgBouncer 20+ / Oracle: oracledb pool <code>min=5, max=20</code></li>
-</ul>
-<p>07MCP 서버 구축 &amp; 연동</p>
-<p>MCP 서버 ↔ LangGraph 연동 구조</p>
-<p>graph LR LG["LangGraph Agent"] --&gt;|"langchain-mcp-adapters"| CLIENT["MCP Client\n(MultiServerMCPClient)"] CLIENT --&gt;|SSE| MCP1["MCP Server 1\n도구 A, B, C"] CLIENT --&gt;|SSE| MCP2["MCP Server 2\n도구 D, E"] MCP1 --&gt; API1["외부 API"] MCP1 --&gt; DB1["데이터베이스"] MCP2 --&gt; API2["다른 서비스"] style LG fill:#1a2540,stroke:#5a7af0,color:#7a9aff style CLIENT fill:#201810,stroke:#e09830,color:#f8b840 style MCP1 fill:#102820,stroke:#30c880,color:#50e898 style MCP2 fill:#102820,stroke:#30c880,color:#50e898 </p>
-<h3 id="방법-a-tool-데코레이터-간단-mcp-불필요">방법 A: @tool 데코레이터 (간단, MCP 불필요)</h3>
-<p>PYTHON로컬 도구 정의</p>
-<div class="codehilite"><pre><span></span><code><span class="kn">from</span><span class="w"> </span><span class="nn">langchain_core.tools</span><span class="w"> </span><span class="kn">import</span> <span class="n">tool</span>
+<h3 id="36-실행-테스트">3.6 실행 테스트</h3>
+<div class="codehilite"><pre><span></span><code><span class="c1"># test_run.py</span>
+<span class="kn">import</span><span class="w"> </span><span class="nn">asyncio</span>
 
-<span class="nd">@tool</span>
-<span class="k">def</span><span class="w"> </span><span class="nf">search_database</span><span class="p">(</span><span class="n">query</span><span class="p">:</span> <span class="nb">str</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">str</span><span class="p">:</span>
-<span class="w">    </span><span class="sd">&quot;&quot;&quot;데이터베이스에서 검색합니다.&quot;&quot;&quot;</span>
-    <span class="c1"># 실제 DB 쿼리</span>
-    <span class="n">result</span> <span class="o">=</span> <span class="n">db</span><span class="o">.</span><span class="n">execute</span><span class="p">(</span><span class="n">query</span><span class="p">)</span>
-    <span class="k">return</span> <span class="nb">str</span><span class="p">(</span><span class="n">result</span><span class="p">)</span>
+<span class="k">async</span> <span class="k">def</span><span class="w"> </span><span class="nf">main</span><span class="p">():</span>
+    <span class="n">agent</span> <span class="o">=</span> <span class="k">await</span> <span class="n">create_agent</span><span class="p">()</span>
+    <span class="n">config</span> <span class="o">=</span> <span class="p">{</span><span class="s2">&quot;configurable&quot;</span><span class="p">:</span> <span class="p">{</span><span class="s2">&quot;thread_id&quot;</span><span class="p">:</span> <span class="s2">&quot;test-session-1&quot;</span><span class="p">}}</span>
 
-<span class="nd">@tool</span>
-<span class="k">def</span><span class="w"> </span><span class="nf">get_stock_price</span><span class="p">(</span><span class="n">ticker</span><span class="p">:</span> <span class="nb">str</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">str</span><span class="p">:</span>
-<span class="w">    </span><span class="sd">&quot;&quot;&quot;종목 현재가를 조회합니다.&quot;&quot;&quot;</span>
-    <span class="n">price</span> <span class="o">=</span> <span class="n">api</span><span class="o">.</span><span class="n">get_price</span><span class="p">(</span><span class="n">ticker</span><span class="p">)</span>
-    <span class="k">return</span> <span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="n">ticker</span><span class="si">}</span><span class="s2">: </span><span class="si">{</span><span class="n">price</span><span class="si">}</span><span class="s2">원&quot;</span>
+    <span class="c1"># 첫 번째 질문</span>
+    <span class="n">result</span> <span class="o">=</span> <span class="k">await</span> <span class="n">agent</span><span class="o">.</span><span class="n">ainvoke</span><span class="p">(</span>
+        <span class="p">{</span><span class="s2">&quot;messages&quot;</span><span class="p">:</span> <span class="p">[{</span><span class="s2">&quot;role&quot;</span><span class="p">:</span> <span class="s2">&quot;user&quot;</span><span class="p">,</span> <span class="s2">&quot;content&quot;</span><span class="p">:</span> <span class="s2">&quot;삼성전자 현재가 알려줘&quot;</span><span class="p">}]},</span>
+        <span class="n">config</span><span class="p">,</span>
+    <span class="p">)</span>
+    <span class="nb">print</span><span class="p">(</span><span class="n">result</span><span class="p">[</span><span class="s2">&quot;messages&quot;</span><span class="p">][</span><span class="o">-</span><span class="mi">1</span><span class="p">]</span><span class="o">.</span><span class="n">content</span><span class="p">)</span>
 
-<span class="c1"># 에이전트에 도구 등록</span>
-<span class="n">agent</span> <span class="o">=</span> <span class="n">create_react_agent</span><span class="p">(</span><span class="n">llm</span><span class="p">,</span> <span class="n">tools</span><span class="o">=</span><span class="p">[</span><span class="n">search_database</span><span class="p">,</span> <span class="n">get_stock_price</span><span class="p">])</span>
+    <span class="c1"># 같은 thread_id -&gt; 대화 이력 유지</span>
+    <span class="n">result</span> <span class="o">=</span> <span class="k">await</span> <span class="n">agent</span><span class="o">.</span><span class="n">ainvoke</span><span class="p">(</span>
+        <span class="p">{</span><span class="s2">&quot;messages&quot;</span><span class="p">:</span> <span class="p">[{</span><span class="s2">&quot;role&quot;</span><span class="p">:</span> <span class="s2">&quot;user&quot;</span><span class="p">,</span> <span class="s2">&quot;content&quot;</span><span class="p">:</span> <span class="s2">&quot;SK하이닉스도 알려줘&quot;</span><span class="p">}]},</span>
+        <span class="n">config</span><span class="p">,</span>
+    <span class="p">)</span>
+    <span class="nb">print</span><span class="p">(</span><span class="n">result</span><span class="p">[</span><span class="s2">&quot;messages&quot;</span><span class="p">][</span><span class="o">-</span><span class="mi">1</span><span class="p">]</span><span class="o">.</span><span class="n">content</span><span class="p">)</span>
+
+<span class="n">asyncio</span><span class="o">.</span><span class="n">run</span><span class="p">(</span><span class="n">main</span><span class="p">())</span>
 </code></pre></div>
 
-<h3 id="방법-b-mcp-서버-확장성-여러-에이전트가-공유">방법 B: MCP 서버 (확장성, 여러 에이전트가 공유)</h3>
-<p>PYTHONMCP 서버 구축 (mcp-server/server.py)</p>
-<div class="codehilite"><pre><span></span><code><span class="kn">from</span><span class="w"> </span><span class="nn">mcp.server.fastmcp</span><span class="w"> </span><span class="kn">import</span> <span class="n">FastMCP</span>
+<hr />
+<h2 id="4-mcp-도구-연동-langchain-mcp-adapters">4. MCP 도구 연동 (langchain-mcp-adapters)</h2>
+<h3 id="41-방법-비교">4.1 방법 비교</h3>
+<table>
+<thead>
+<tr>
+<th>방법</th>
+<th>장점</th>
+<th>단점</th>
+<th>권장 상황</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>@tool</code> 데코레이터</td>
+<td>간단, 의존성 없음</td>
+<td>공유 불가</td>
+<td>단일 에이전트 전용 도구</td>
+</tr>
+<tr>
+<td>MCP 서버</td>
+<td>여러 에이전트 공유, 독립 배포</td>
+<td>네트워크 레이턴시</td>
+<td>공유 도구, 마이크로서비스</td>
+</tr>
+</tbody>
+</table>
+<h3 id="42-mcp-서버-구축">4.2 MCP 서버 구축</h3>
+<div class="codehilite"><pre><span></span><code><span class="c1"># mcp-server/server.py</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">mcp.server.fastmcp</span><span class="w"> </span><span class="kn">import</span> <span class="n">FastMCP</span>
 
-<span class="n">mcp</span> <span class="o">=</span> <span class="n">FastMCP</span><span class="p">(</span><span class="s2">&quot;my-tools&quot;</span><span class="p">)</span>
-
-<span class="nd">@mcp</span><span class="o">.</span><span class="n">tool</span><span class="p">()</span>
-<span class="k">async</span> <span class="k">def</span><span class="w"> </span><span class="nf">search_database</span><span class="p">(</span><span class="n">query</span><span class="p">:</span> <span class="nb">str</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">str</span><span class="p">:</span>
-<span class="w">    </span><span class="sd">&quot;&quot;&quot;데이터베이스에서 검색합니다.&quot;&quot;&quot;</span>
-    <span class="n">result</span> <span class="o">=</span> <span class="k">await</span> <span class="n">db</span><span class="o">.</span><span class="n">execute</span><span class="p">(</span><span class="n">query</span><span class="p">)</span>
-    <span class="k">return</span> <span class="nb">str</span><span class="p">(</span><span class="n">result</span><span class="p">)</span>
+<span class="n">mcp</span> <span class="o">=</span> <span class="n">FastMCP</span><span class="p">(</span><span class="s2">&quot;bip-tools&quot;</span><span class="p">)</span>
 
 <span class="nd">@mcp</span><span class="o">.</span><span class="n">tool</span><span class="p">()</span>
 <span class="k">async</span> <span class="k">def</span><span class="w"> </span><span class="nf">get_stock_price</span><span class="p">(</span><span class="n">ticker</span><span class="p">:</span> <span class="nb">str</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">str</span><span class="p">:</span>
 <span class="w">    </span><span class="sd">&quot;&quot;&quot;종목 현재가를 조회합니다.&quot;&quot;&quot;</span>
-    <span class="n">price</span> <span class="o">=</span> <span class="k">await</span> <span class="n">api</span><span class="o">.</span><span class="n">get_price</span><span class="p">(</span><span class="n">ticker</span><span class="p">)</span>
-    <span class="k">return</span> <span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="n">ticker</span><span class="si">}</span><span class="s2">: </span><span class="si">{</span><span class="n">price</span><span class="si">}</span><span class="s2">원&quot;</span>
+    <span class="n">price</span> <span class="o">=</span> <span class="k">await</span> <span class="n">fetch_price_from_api</span><span class="p">(</span><span class="n">ticker</span><span class="p">)</span>
+    <span class="k">return</span> <span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="n">ticker</span><span class="si">}</span><span class="s2">: </span><span class="si">{</span><span class="n">price</span><span class="si">:</span><span class="s2">,</span><span class="si">}</span><span class="s2">원&quot;</span>
+
+<span class="nd">@mcp</span><span class="o">.</span><span class="n">tool</span><span class="p">()</span>
+<span class="k">async</span> <span class="k">def</span><span class="w"> </span><span class="nf">get_market_index</span><span class="p">(</span><span class="n">index_name</span><span class="p">:</span> <span class="nb">str</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">str</span><span class="p">:</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;시장 지수를 조회합니다. (KOSPI, KOSDAQ, S&amp;P500 등)&quot;&quot;&quot;</span>
+    <span class="n">value</span> <span class="o">=</span> <span class="k">await</span> <span class="n">fetch_index</span><span class="p">(</span><span class="n">index_name</span><span class="p">)</span>
+    <span class="k">return</span> <span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="n">index_name</span><span class="si">}</span><span class="s2">: </span><span class="si">{</span><span class="n">value</span><span class="si">}</span><span class="s2">&quot;</span>
 
 <span class="k">if</span> <span class="vm">__name__</span> <span class="o">==</span> <span class="s2">&quot;__main__&quot;</span><span class="p">:</span>
-    <span class="n">mcp</span><span class="o">.</span><span class="n">run</span><span class="p">(</span><span class="n">transport</span><span class="o">=</span><span class="s2">&quot;sse&quot;</span><span class="p">)</span>  <span class="c1"># SSE로 노출</span>
+    <span class="n">mcp</span><span class="o">.</span><span class="n">run</span><span class="p">(</span><span class="n">transport</span><span class="o">=</span><span class="s2">&quot;sse&quot;</span><span class="p">)</span>
 </code></pre></div>
 
-<p>PYTHON에이전트에서 MCP 서버 연결</p>
-<div class="codehilite"><pre><span></span><code><span class="kn">from</span><span class="w"> </span><span class="nn">langchain_mcp_adapters.client</span><span class="w"> </span><span class="kn">import</span> <span class="n">MultiServerMCPClient</span>
-<span class="kn">from</span><span class="w"> </span><span class="nn">langgraph.prebuilt</span><span class="w"> </span><span class="kn">import</span> <span class="n">create_react_agent</span>
+<h3 id="43-에이전트에서-mcp-서버-연결">4.3 에이전트에서 MCP 서버 연결</h3>
+<div class="codehilite"><pre><span></span><code><span class="c1"># app/tools/mcp_client.py</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">langchain_mcp_adapters.client</span><span class="w"> </span><span class="kn">import</span> <span class="n">MultiServerMCPClient</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">app.config</span><span class="w"> </span><span class="kn">import</span> <span class="n">settings</span>
 
-<span class="c1"># MCP 서버 연결 (여러 서버 동시 연결 가능)</span>
-<span class="n">mcp_client</span> <span class="o">=</span> <span class="n">MultiServerMCPClient</span><span class="p">({</span>
-    <span class="s2">&quot;my-tools&quot;</span><span class="p">:</span> <span class="p">{</span>
-        <span class="s2">&quot;url&quot;</span><span class="p">:</span> <span class="s2">&quot;http://localhost:8000/sse&quot;</span><span class="p">,</span>
-        <span class="s2">&quot;transport&quot;</span><span class="p">:</span> <span class="s2">&quot;sse&quot;</span>
-    <span class="p">},</span>
-    <span class="s2">&quot;another-server&quot;</span><span class="p">:</span> <span class="p">{</span>
-        <span class="s2">&quot;url&quot;</span><span class="p">:</span> <span class="s2">&quot;http://localhost:8001/sse&quot;</span><span class="p">,</span>
-        <span class="s2">&quot;transport&quot;</span><span class="p">:</span> <span class="s2">&quot;sse&quot;</span>
-    <span class="p">}</span>
-<span class="p">})</span>
-<span class="n">tools</span> <span class="o">=</span> <span class="k">await</span> <span class="n">mcp_client</span><span class="o">.</span><span class="n">get_tools</span><span class="p">()</span>
-
-<span class="c1"># 에이전트에 MCP 도구 등록</span>
-<span class="n">agent</span> <span class="o">=</span> <span class="n">create_react_agent</span><span class="p">(</span><span class="n">llm</span><span class="p">,</span> <span class="n">tools</span><span class="p">)</span>
-<span class="n">result</span> <span class="o">=</span> <span class="k">await</span> <span class="n">agent</span><span class="o">.</span><span class="n">ainvoke</span><span class="p">({</span><span class="s2">&quot;messages&quot;</span><span class="p">:</span> <span class="p">[</span><span class="o">...</span><span class="p">]})</span>
+<span class="k">async</span> <span class="k">def</span><span class="w"> </span><span class="nf">get_mcp_tools</span><span class="p">():</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;MCP 서버에서 도구 목록을 가져온다.&quot;&quot;&quot;</span>
+    <span class="n">client</span> <span class="o">=</span> <span class="n">MultiServerMCPClient</span><span class="p">({</span>
+        <span class="s2">&quot;bip-tools&quot;</span><span class="p">:</span> <span class="p">{</span>
+            <span class="s2">&quot;url&quot;</span><span class="p">:</span> <span class="n">settings</span><span class="o">.</span><span class="n">MCP_SERVER_URL</span><span class="p">,</span>
+            <span class="s2">&quot;transport&quot;</span><span class="p">:</span> <span class="s2">&quot;sse&quot;</span><span class="p">,</span>
+        <span class="p">},</span>
+    <span class="p">})</span>
+    <span class="k">return</span> <span class="k">await</span> <span class="n">client</span><span class="o">.</span><span class="n">get_tools</span><span class="p">()</span>
 </code></pre></div>
 
-<p>ℹ</p>
-<p><strong>MCP vs @tool 판단 기준</strong> 도구를 한 에이전트만 쓰면 @tool로 충분. 여러 에이전트/서비스가 같은 도구를 공유하거나, 도구를 독립 배포/스케일링해야 하면 MCP 서버로 분리. 상세는 → <a href="fastmcp_guide.html">FastMCP 가이드</a> 참조.</p>
-<p>08FastAPI 에이전트 서버</p>
-<p>PYTHONapp/main.py — 최소 서버</p>
-<div class="codehilite"><pre><span></span><code><span class="kn">from</span><span class="w"> </span><span class="nn">fastapi</span><span class="w"> </span><span class="kn">import</span> <span class="n">FastAPI</span>
+<h3 id="44-mcp--tool-혼합-사용">4.4 MCP + @tool 혼합 사용</h3>
+<div class="codehilite"><pre><span></span><code><span class="n">local_tools</span> <span class="o">=</span> <span class="p">[</span><span class="n">get_current_time</span><span class="p">]</span>          <span class="c1"># @tool</span>
+<span class="n">mcp_tools</span> <span class="o">=</span> <span class="k">await</span> <span class="n">get_mcp_tools</span><span class="p">()</span>         <span class="c1"># MCP 서버</span>
+<span class="n">all_tools</span> <span class="o">=</span> <span class="n">local_tools</span> <span class="o">+</span> <span class="n">mcp_tools</span>
+<span class="n">agent</span> <span class="o">=</span> <span class="n">create_react_agent</span><span class="p">(</span><span class="n">llm</span><span class="p">,</span> <span class="n">all_tools</span><span class="p">,</span> <span class="n">checkpointer</span><span class="o">=</span><span class="n">checkpointer</span><span class="p">)</span>
+</code></pre></div>
+
+<hr />
+<h2 id="5-fastapi-서빙-rest-api-스트리밍">5. FastAPI 서빙 (REST API, 스트리밍)</h2>
+<h3 id="51-기본-rest-엔드포인트">5.1 기본 REST 엔드포인트</h3>
+<div class="codehilite"><pre><span></span><code><span class="c1"># app/main.py</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">fastapi</span><span class="w"> </span><span class="kn">import</span> <span class="n">FastAPI</span><span class="p">,</span> <span class="n">HTTPException</span>
 <span class="kn">from</span><span class="w"> </span><span class="nn">pydantic</span><span class="w"> </span><span class="kn">import</span> <span class="n">BaseModel</span>
 <span class="kn">from</span><span class="w"> </span><span class="nn">app.agents.graph</span><span class="w"> </span><span class="kn">import</span> <span class="n">create_agent</span>
-<span class="kn">from</span><span class="w"> </span><span class="nn">app.config</span><span class="w"> </span><span class="kn">import</span> <span class="n">settings</span>
 
 <span class="n">app</span> <span class="o">=</span> <span class="n">FastAPI</span><span class="p">(</span><span class="n">title</span><span class="o">=</span><span class="s2">&quot;LangGraph Agent Server&quot;</span><span class="p">)</span>
 
@@ -841,336 +768,236 @@ pip install langsmith
     <span class="n">answer</span><span class="p">:</span> <span class="nb">str</span>
     <span class="n">tools_used</span><span class="p">:</span> <span class="nb">list</span><span class="p">[</span><span class="nb">str</span><span class="p">]</span> <span class="o">=</span> <span class="p">[]</span>
 
+<span class="nd">@app</span><span class="o">.</span><span class="n">on_event</span><span class="p">(</span><span class="s2">&quot;startup&quot;</span><span class="p">)</span>
+<span class="k">async</span> <span class="k">def</span><span class="w"> </span><span class="nf">startup</span><span class="p">():</span>
+    <span class="n">app</span><span class="o">.</span><span class="n">state</span><span class="o">.</span><span class="n">agent</span> <span class="o">=</span> <span class="k">await</span> <span class="n">create_agent</span><span class="p">()</span>
+
+<span class="nd">@app</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;/health&quot;</span><span class="p">)</span>
+<span class="k">async</span> <span class="k">def</span><span class="w"> </span><span class="nf">health</span><span class="p">():</span>
+    <span class="k">return</span> <span class="p">{</span><span class="s2">&quot;status&quot;</span><span class="p">:</span> <span class="s2">&quot;ok&quot;</span><span class="p">}</span>
+
 <span class="nd">@app</span><span class="o">.</span><span class="n">post</span><span class="p">(</span><span class="s2">&quot;/api/ask&quot;</span><span class="p">,</span> <span class="n">response_model</span><span class="o">=</span><span class="n">AskResponse</span><span class="p">)</span>
 <span class="k">async</span> <span class="k">def</span><span class="w"> </span><span class="nf">ask</span><span class="p">(</span><span class="n">req</span><span class="p">:</span> <span class="n">AskRequest</span><span class="p">):</span>
-    <span class="n">agent</span> <span class="o">=</span> <span class="k">await</span> <span class="n">create_agent</span><span class="p">()</span>
     <span class="n">config</span> <span class="o">=</span> <span class="p">{</span><span class="s2">&quot;configurable&quot;</span><span class="p">:</span> <span class="p">{</span><span class="s2">&quot;thread_id&quot;</span><span class="p">:</span> <span class="n">req</span><span class="o">.</span><span class="n">thread_id</span><span class="p">}}</span>
-
-    <span class="n">result</span> <span class="o">=</span> <span class="k">await</span> <span class="n">agent</span><span class="o">.</span><span class="n">ainvoke</span><span class="p">(</span>
-        <span class="p">{</span><span class="s2">&quot;messages&quot;</span><span class="p">:</span> <span class="p">[{</span><span class="s2">&quot;role&quot;</span><span class="p">:</span> <span class="s2">&quot;user&quot;</span><span class="p">,</span>
-                       <span class="s2">&quot;content&quot;</span><span class="p">:</span> <span class="n">req</span><span class="o">.</span><span class="n">question</span><span class="p">}]},</span>
-        <span class="n">config</span>
-    <span class="p">)</span>
-
-    <span class="c1"># 마지막 AI 메시지 추출</span>
-    <span class="n">messages</span> <span class="o">=</span> <span class="n">result</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;messages&quot;</span><span class="p">,</span> <span class="p">[])</span>
-    <span class="n">answer</span> <span class="o">=</span> <span class="n">messages</span><span class="p">[</span><span class="o">-</span><span class="mi">1</span><span class="p">]</span><span class="o">.</span><span class="n">content</span> <span class="k">if</span> <span class="n">messages</span> <span class="k">else</span> <span class="s2">&quot;&quot;</span>
-
-    <span class="k">return</span> <span class="n">AskResponse</span><span class="p">(</span><span class="n">answer</span><span class="o">=</span><span class="n">answer</span><span class="p">)</span>
-
-<span class="c1"># 실행: uvicorn app.main:app --host 0.0.0.0 --port 8100</span>
+    <span class="k">try</span><span class="p">:</span>
+        <span class="n">result</span> <span class="o">=</span> <span class="k">await</span> <span class="n">app</span><span class="o">.</span><span class="n">state</span><span class="o">.</span><span class="n">agent</span><span class="o">.</span><span class="n">ainvoke</span><span class="p">(</span>
+            <span class="p">{</span><span class="s2">&quot;messages&quot;</span><span class="p">:</span> <span class="p">[{</span><span class="s2">&quot;role&quot;</span><span class="p">:</span> <span class="s2">&quot;user&quot;</span><span class="p">,</span> <span class="s2">&quot;content&quot;</span><span class="p">:</span> <span class="n">req</span><span class="o">.</span><span class="n">question</span><span class="p">}]},</span>
+            <span class="n">config</span><span class="p">,</span>
+        <span class="p">)</span>
+        <span class="n">messages</span> <span class="o">=</span> <span class="n">result</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;messages&quot;</span><span class="p">,</span> <span class="p">[])</span>
+        <span class="n">answer</span> <span class="o">=</span> <span class="n">messages</span><span class="p">[</span><span class="o">-</span><span class="mi">1</span><span class="p">]</span><span class="o">.</span><span class="n">content</span> <span class="k">if</span> <span class="n">messages</span> <span class="k">else</span> <span class="s2">&quot;&quot;</span>
+        <span class="k">return</span> <span class="n">AskResponse</span><span class="p">(</span><span class="n">answer</span><span class="o">=</span><span class="n">answer</span><span class="p">)</span>
+    <span class="k">except</span> <span class="ne">Exception</span> <span class="k">as</span> <span class="n">e</span><span class="p">:</span>
+        <span class="k">raise</span> <span class="n">HTTPException</span><span class="p">(</span><span class="n">status_code</span><span class="o">=</span><span class="mi">500</span><span class="p">,</span> <span class="n">detail</span><span class="o">=</span><span class="nb">str</span><span class="p">(</span><span class="n">e</span><span class="p">))</span>
 </code></pre></div>
 
-<p>PYTHONapp/agents/graph.py — 에이전트 그래프</p>
-<div class="codehilite"><pre><span></span><code><span class="kn">from</span><span class="w"> </span><span class="nn">langgraph.prebuilt</span><span class="w"> </span><span class="kn">import</span> <span class="n">create_react_agent</span>
-<span class="kn">from</span><span class="w"> </span><span class="nn">langgraph.checkpoint.postgres.aio</span><span class="w"> </span><span class="kn">import</span> <span class="n">AsyncPostgresSaver</span>
-<span class="kn">from</span><span class="w"> </span><span class="nn">langchain_anthropic</span><span class="w"> </span><span class="kn">import</span> <span class="n">ChatAnthropic</span>
-<span class="kn">from</span><span class="w"> </span><span class="nn">app.tools.mcp_client</span><span class="w"> </span><span class="kn">import</span> <span class="n">get_mcp_tools</span>
-<span class="kn">from</span><span class="w"> </span><span class="nn">app.config</span><span class="w"> </span><span class="kn">import</span> <span class="n">settings</span>
-
-<span class="k">async</span> <span class="k">def</span><span class="w"> </span><span class="nf">create_agent</span><span class="p">():</span>
-<span class="w">    </span><span class="sd">&quot;&quot;&quot;에이전트 인스턴스 생성&quot;&quot;&quot;</span>
-    <span class="c1"># 체크포인터</span>
-    <span class="n">checkpointer</span> <span class="o">=</span> <span class="n">AsyncPostgresSaver</span><span class="o">.</span><span class="n">from_conn_string</span><span class="p">(</span>
-        <span class="n">settings</span><span class="o">.</span><span class="n">DATABASE_URL</span>
-    <span class="p">)</span>
-
-    <span class="c1"># LLM</span>
-    <span class="n">llm</span> <span class="o">=</span> <span class="n">ChatAnthropic</span><span class="p">(</span>
-        <span class="n">model</span><span class="o">=</span><span class="s2">&quot;claude-haiku-4-5-20251001&quot;</span><span class="p">,</span>
-        <span class="n">max_tokens</span><span class="o">=</span><span class="mi">4000</span><span class="p">,</span>
-    <span class="p">)</span>
-
-    <span class="c1"># 도구 (MCP 또는 로컬)</span>
-    <span class="n">tools</span> <span class="o">=</span> <span class="k">await</span> <span class="n">get_mcp_tools</span><span class="p">()</span>
-
-    <span class="c1"># 에이전트 컴파일</span>
-    <span class="k">return</span> <span class="n">create_react_agent</span><span class="p">(</span>
-        <span class="n">llm</span><span class="p">,</span> <span class="n">tools</span><span class="p">,</span>
-        <span class="n">checkpointer</span><span class="o">=</span><span class="n">checkpointer</span><span class="p">,</span>
-        <span class="n">prompt</span><span class="o">=</span><span class="s2">&quot;당신은 데이터 분석 전문가입니다.&quot;</span>
-    <span class="p">)</span>
-</code></pre></div>
-
-<h3 id="스트리밍-엔드포인트-실시간-채팅-ui용">스트리밍 엔드포인트 (실시간 채팅 UI용)</h3>
-<p>PYTHONSSE 스트리밍</p>
+<h3 id="52-sse-스트리밍-엔드포인트">5.2 SSE 스트리밍 엔드포인트</h3>
 <div class="codehilite"><pre><span></span><code><span class="kn">from</span><span class="w"> </span><span class="nn">fastapi.responses</span><span class="w"> </span><span class="kn">import</span> <span class="n">StreamingResponse</span>
 
 <span class="nd">@app</span><span class="o">.</span><span class="n">post</span><span class="p">(</span><span class="s2">&quot;/api/ask/stream&quot;</span><span class="p">)</span>
 <span class="k">async</span> <span class="k">def</span><span class="w"> </span><span class="nf">ask_stream</span><span class="p">(</span><span class="n">req</span><span class="p">:</span> <span class="n">AskRequest</span><span class="p">):</span>
-    <span class="n">agent</span> <span class="o">=</span> <span class="k">await</span> <span class="n">create_agent</span><span class="p">()</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;SSE 스트리밍 -- 실시간 채팅 UI용&quot;&quot;&quot;</span>
     <span class="n">config</span> <span class="o">=</span> <span class="p">{</span><span class="s2">&quot;configurable&quot;</span><span class="p">:</span> <span class="p">{</span><span class="s2">&quot;thread_id&quot;</span><span class="p">:</span> <span class="n">req</span><span class="o">.</span><span class="n">thread_id</span><span class="p">}}</span>
 
     <span class="k">async</span> <span class="k">def</span><span class="w"> </span><span class="nf">event_generator</span><span class="p">():</span>
-        <span class="k">async</span> <span class="k">for</span> <span class="n">event</span> <span class="ow">in</span> <span class="n">agent</span><span class="o">.</span><span class="n">astream_events</span><span class="p">(</span>
-            <span class="p">{</span><span class="s2">&quot;messages&quot;</span><span class="p">:</span> <span class="p">[{</span><span class="s2">&quot;role&quot;</span><span class="p">:</span> <span class="s2">&quot;user&quot;</span><span class="p">,</span>
-                           <span class="s2">&quot;content&quot;</span><span class="p">:</span> <span class="n">req</span><span class="o">.</span><span class="n">question</span><span class="p">}]},</span>
-            <span class="n">config</span><span class="p">,</span> <span class="n">version</span><span class="o">=</span><span class="s2">&quot;v2&quot;</span>
+        <span class="k">async</span> <span class="k">for</span> <span class="n">event</span> <span class="ow">in</span> <span class="n">app</span><span class="o">.</span><span class="n">state</span><span class="o">.</span><span class="n">agent</span><span class="o">.</span><span class="n">astream_events</span><span class="p">(</span>
+            <span class="p">{</span><span class="s2">&quot;messages&quot;</span><span class="p">:</span> <span class="p">[{</span><span class="s2">&quot;role&quot;</span><span class="p">:</span> <span class="s2">&quot;user&quot;</span><span class="p">,</span> <span class="s2">&quot;content&quot;</span><span class="p">:</span> <span class="n">req</span><span class="o">.</span><span class="n">question</span><span class="p">}]},</span>
+            <span class="n">config</span><span class="p">,</span> <span class="n">version</span><span class="o">=</span><span class="s2">&quot;v2&quot;</span><span class="p">,</span>
         <span class="p">):</span>
-            <span class="k">if</span> <span class="n">event</span><span class="p">[</span><span class="s2">&quot;event&quot;</span><span class="p">]</span> <span class="o">==</span> <span class="s2">&quot;on_llm_stream&quot;</span><span class="p">:</span>
-                <span class="n">token</span> <span class="o">=</span> <span class="n">event</span><span class="p">[</span><span class="s2">&quot;data&quot;</span><span class="p">][</span><span class="s2">&quot;chunk&quot;</span><span class="p">]</span><span class="o">.</span><span class="n">content</span>
-                <span class="k">yield</span> <span class="sa">f</span><span class="s2">&quot;data: </span><span class="si">{</span><span class="n">token</span><span class="si">}</span><span class="se">\n\n</span><span class="s2">&quot;</span>
+            <span class="k">if</span> <span class="n">event</span><span class="p">[</span><span class="s2">&quot;event&quot;</span><span class="p">]</span> <span class="o">==</span> <span class="s2">&quot;on_chat_model_stream&quot;</span><span class="p">:</span>
+                <span class="n">chunk</span> <span class="o">=</span> <span class="n">event</span><span class="p">[</span><span class="s2">&quot;data&quot;</span><span class="p">][</span><span class="s2">&quot;chunk&quot;</span><span class="p">]</span>
+                <span class="k">if</span> <span class="n">chunk</span><span class="o">.</span><span class="n">content</span><span class="p">:</span>
+                    <span class="k">yield</span> <span class="sa">f</span><span class="s2">&quot;data: </span><span class="si">{</span><span class="n">chunk</span><span class="o">.</span><span class="n">content</span><span class="si">}</span><span class="se">\n\n</span><span class="s2">&quot;</span>
         <span class="k">yield</span> <span class="s2">&quot;data: [DONE]</span><span class="se">\n\n</span><span class="s2">&quot;</span>
 
-    <span class="k">return</span> <span class="n">StreamingResponse</span><span class="p">(</span>
-        <span class="n">event_generator</span><span class="p">(),</span>
-        <span class="n">media_type</span><span class="o">=</span><span class="s2">&quot;text/event-stream&quot;</span>
-    <span class="p">)</span>
+    <span class="k">return</span> <span class="n">StreamingResponse</span><span class="p">(</span><span class="n">event_generator</span><span class="p">(),</span> <span class="n">media_type</span><span class="o">=</span><span class="s2">&quot;text/event-stream&quot;</span><span class="p">)</span>
 </code></pre></div>
 
-<p>09Docker 컨테이너화 &amp; Multi-VM HA 배포</p>
-<h3 id="기본-단일-서버-docker-compose">기본: 단일 서버 Docker Compose</h3>
-<p>DOCKERDockerfile</p>
-<div class="codehilite"><pre><span></span><code>FROM python:3.13-slim
+<h3 id="53-요청-흐름">5.3 요청 흐름</h3>
+<div class="mermaid">
+sequenceDiagram
+    participant U as 클라이언트
+    participant LB as Load Balancer
+    participant W as Worker (FastAPI)
+    participant LG as LangGraph
+    participant MCP as MCP 서버
+    participant DB as PostgreSQL
+    participant LF as LangFuse
 
-WORKDIR /app
-COPY requirements.txt .
-RUN pip install --no-cache-dir -r requirements.txt
-COPY app/ ./app/
+    U->>LB: POST /api/ask (JWT)
+    LB->>W: 라우팅
+    W->>LG: agent.ainvoke(state, config)
+    activate LG
+    LG->>DB: Checkpoint 로드 (thread_id)
+    LG->>MCP: 도구 호출
+    MCP->>DB: SQL 조회
+    DB-->>MCP: 결과
+    MCP-->>LG: 도구 결과
+    LG->>LG: LLM 호출 (응답 생성)
+    LG->>DB: Checkpoint 저장
+    LG-->>W: 최종 응답
+    deactivate LG
+    W-->>LB: JSON 응답
+    LB-->>U: 응답 전달
+    W--)LF: 트레이스 비동기 전송
+</div>
 
-EXPOSE 8100
-CMD [&quot;uvicorn&quot;, &quot;app.main:app&quot;, \
-     &quot;--host&quot;, &quot;0.0.0.0&quot;, &quot;--port&quot;, &quot;8100&quot;]
+<hr />
+<h2 id="6-docker-배포-dockerfile-docker-composeyml">6. Docker 배포 (Dockerfile, docker-compose.yml)</h2>
+<h3 id="61-dockerfile">6.1 Dockerfile</h3>
+<div class="codehilite"><pre><span></span><code><span class="k">FROM</span><span class="w"> </span><span class="s">python:3.13-slim</span>
+
+<span class="k">WORKDIR</span><span class="w"> </span><span class="s">/app</span>
+
+<span class="k">RUN</span><span class="w"> </span>apt-get<span class="w"> </span>update<span class="w"> </span><span class="o">&amp;&amp;</span><span class="w"> </span>apt-get<span class="w"> </span>install<span class="w"> </span>-y<span class="w"> </span>--no-install-recommends<span class="w"> </span>curl<span class="w"> </span><span class="se">\</span>
+<span class="w">    </span><span class="o">&amp;&amp;</span><span class="w"> </span>rm<span class="w"> </span>-rf<span class="w"> </span>/var/lib/apt/lists/*
+
+<span class="k">COPY</span><span class="w"> </span>requirements.txt<span class="w"> </span>.
+<span class="k">RUN</span><span class="w"> </span>pip<span class="w"> </span>install<span class="w"> </span>--no-cache-dir<span class="w"> </span>-r<span class="w"> </span>requirements.txt
+
+<span class="k">COPY</span><span class="w"> </span>app/<span class="w"> </span>./app/
+
+<span class="k">RUN</span><span class="w"> </span>useradd<span class="w"> </span>-m<span class="w"> </span>appuser<span class="w"> </span><span class="o">&amp;&amp;</span><span class="w"> </span>chown<span class="w"> </span>-R<span class="w"> </span>appuser:appuser<span class="w"> </span>/app
+<span class="k">USER</span><span class="w"> </span><span class="s">appuser</span>
+
+<span class="k">EXPOSE</span><span class="w"> </span><span class="s">8100</span>
+
+<span class="k">HEALTHCHECK</span><span class="w"> </span>--interval<span class="o">=</span>10s<span class="w"> </span>--timeout<span class="o">=</span>5s<span class="w"> </span>--retries<span class="o">=</span><span class="m">3</span><span class="w"> </span><span class="se">\</span>
+<span class="w">    </span><span class="k">CMD</span><span class="w"> </span>curl<span class="w"> </span>-f<span class="w"> </span>http://localhost:8100/health<span class="w"> </span><span class="o">||</span><span class="w"> </span><span class="nb">exit</span><span class="w"> </span><span class="m">1</span>
+
+<span class="k">CMD</span><span class="w"> </span><span class="o">[</span><span class="s2">&quot;uvicorn&quot;</span>,<span class="w"> </span><span class="s2">&quot;app.main:app&quot;</span>,<span class="w"> </span><span class="se">\</span>
+<span class="w">     </span><span class="s2">&quot;--host&quot;</span>,<span class="w"> </span><span class="s2">&quot;0.0.0.0&quot;</span>,<span class="w"> </span><span class="s2">&quot;--port&quot;</span>,<span class="w"> </span><span class="s2">&quot;8100&quot;</span>,<span class="w"> </span><span class="se">\</span>
+<span class="w">     </span><span class="s2">&quot;--workers&quot;</span>,<span class="w"> </span><span class="s2">&quot;2&quot;</span><span class="o">]</span>
 </code></pre></div>
 
-<p>DOCKERdocker-compose.yml (개발/PoC)</p>
-<div class="codehilite"><pre><span></span><code><span class="n">services</span><span class="o">:</span>
-<span class="w">  </span><span class="n">agent</span><span class="o">-</span><span class="n">server</span><span class="o">:</span>
-<span class="w">    </span><span class="n">build</span><span class="o">:</span><span class="w"> </span><span class="o">.</span>
-<span class="w">    </span><span class="n">ports</span><span class="o">:</span><span class="w"> </span><span class="o">[</span><span class="s2">&quot;8100:8100&quot;</span><span class="o">]</span>
-<span class="w">    </span><span class="n">environment</span><span class="o">:</span>
-<span class="w">      </span><span class="o">-</span><span class="w"> </span><span class="n">LLM_API_URL</span><span class="o">=</span><span class="n">https</span><span class="o">://</span><span class="n">llm</span><span class="o">-</span><span class="n">gateway</span><span class="o">.</span><span class="na">internal</span><span class="o">/</span><span class="n">v1</span>
-<span class="w">      </span><span class="o">-</span><span class="w"> </span><span class="n">DATABASE_URL</span><span class="o">=</span><span class="n">postgresql</span><span class="o">://</span><span class="n">user</span><span class="o">:</span><span class="n">pass</span><span class="err">@</span><span class="n">postgres</span><span class="o">:</span><span class="mi">5432</span><span class="o">/</span><span class="n">agentdb</span>
-<span class="w">      </span><span class="o">-</span><span class="w"> </span><span class="n">MCP_SERVER_URL</span><span class="o">=</span><span class="n">http</span><span class="o">://</span><span class="n">mcp</span><span class="o">-</span><span class="n">server</span><span class="o">:</span><span class="mi">8000</span><span class="o">/</span><span class="n">sse</span>
-<span class="w">      </span><span class="o">-</span><span class="w"> </span><span class="n">LANGFUSE_HOST</span><span class="o">=</span><span class="n">http</span><span class="o">://</span><span class="n">langfuse</span><span class="o">:</span><span class="mi">3000</span>
-<span class="w">    </span><span class="n">depends_on</span><span class="o">:</span><span class="w"> </span><span class="o">[</span><span class="n">postgres</span><span class="o">,</span><span class="w"> </span><span class="n">mcp</span><span class="o">-</span><span class="n">server</span><span class="o">]</span>
+<h3 id="62-docker-composeyml-개발--poc">6.2 docker-compose.yml (개발 / PoC)</h3>
+<div class="codehilite"><pre><span></span><code><span class="nt">services</span><span class="p">:</span>
+<span class="w">  </span><span class="nt">agent-server</span><span class="p">:</span>
+<span class="w">    </span><span class="nt">build</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">.</span>
+<span class="w">    </span><span class="nt">ports</span><span class="p">:</span>
+<span class="w">      </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="s">&quot;8100:8100&quot;</span>
+<span class="w">    </span><span class="nt">environment</span><span class="p">:</span>
+<span class="w">      </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">ANTHROPIC_API_KEY=${ANTHROPIC_API_KEY}</span>
+<span class="w">      </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">DATABASE_URL=postgresql://agent:agentpass@postgres:5432/agentdb</span>
+<span class="w">      </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">MCP_SERVER_URL=http://mcp-server:8000/sse</span>
+<span class="w">      </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">LANGFUSE_HOST=http://langfuse:3100</span>
+<span class="w">      </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">LANGFUSE_PUBLIC_KEY=${LANGFUSE_PUBLIC_KEY}</span>
+<span class="w">      </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">LANGFUSE_SECRET_KEY=${LANGFUSE_SECRET_KEY}</span>
+<span class="w">    </span><span class="nt">depends_on</span><span class="p">:</span>
+<span class="w">      </span><span class="nt">postgres</span><span class="p">:</span>
+<span class="w">        </span><span class="nt">condition</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">service_healthy</span>
+<span class="w">      </span><span class="nt">mcp-server</span><span class="p">:</span>
+<span class="w">        </span><span class="nt">condition</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">service_started</span>
+<span class="w">    </span><span class="nt">restart</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">unless-stopped</span>
 
-<span class="w">  </span><span class="n">mcp</span><span class="o">-</span><span class="n">server</span><span class="o">:</span>
-<span class="w">    </span><span class="n">build</span><span class="o">:</span><span class="w"> </span><span class="o">./</span><span class="n">mcp</span><span class="o">-</span><span class="n">server</span>
-<span class="w">    </span><span class="n">ports</span><span class="o">:</span><span class="w"> </span><span class="o">[</span><span class="s2">&quot;8000:8000&quot;</span><span class="o">]</span>
-<span class="w">    </span><span class="n">environment</span><span class="o">:</span>
-<span class="w">      </span><span class="o">-</span><span class="w"> </span><span class="n">DATABASE_URL</span><span class="o">=</span><span class="n">postgresql</span><span class="o">://</span><span class="n">user</span><span class="o">:</span><span class="n">pass</span><span class="err">@</span><span class="n">postgres</span><span class="o">:</span><span class="mi">5432</span><span class="o">/</span><span class="n">agentdb</span>
+<span class="w">  </span><span class="nt">mcp-server</span><span class="p">:</span>
+<span class="w">    </span><span class="nt">build</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">./mcp-server</span>
+<span class="w">    </span><span class="nt">ports</span><span class="p">:</span>
+<span class="w">      </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="s">&quot;8000:8000&quot;</span>
+<span class="w">    </span><span class="nt">environment</span><span class="p">:</span>
+<span class="w">      </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">DATABASE_URL=postgresql://agent:agentpass@postgres:5432/agentdb</span>
+<span class="w">    </span><span class="nt">restart</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">unless-stopped</span>
 
-<span class="w">  </span><span class="n">postgres</span><span class="o">:</span>
-<span class="w">    </span><span class="n">image</span><span class="o">:</span><span class="w"> </span><span class="n">postgres</span><span class="o">:</span><span class="mi">16</span>
-<span class="w">    </span><span class="n">environment</span><span class="o">:</span>
-<span class="w">      </span><span class="n">POSTGRES_USER</span><span class="o">:</span><span class="w"> </span><span class="n">user</span>
-<span class="w">      </span><span class="n">POSTGRES_PASSWORD</span><span class="o">:</span><span class="w"> </span><span class="n">pass</span>
-<span class="w">      </span><span class="n">POSTGRES_DB</span><span class="o">:</span><span class="w"> </span><span class="n">agentdb</span>
-<span class="w">    </span><span class="n">volumes</span><span class="o">:</span><span class="w"> </span><span class="o">[</span><span class="n">pgdata</span><span class="o">:/</span><span class="n">var</span><span class="sr">/lib/postgresql/</span><span class="n">data</span><span class="o">]</span>
+<span class="w">  </span><span class="nt">postgres</span><span class="p">:</span>
+<span class="w">    </span><span class="nt">image</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">postgres:16</span>
+<span class="w">    </span><span class="nt">environment</span><span class="p">:</span>
+<span class="w">      </span><span class="nt">POSTGRES_USER</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">agent</span>
+<span class="w">      </span><span class="nt">POSTGRES_PASSWORD</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">agentpass</span>
+<span class="w">      </span><span class="nt">POSTGRES_DB</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">agentdb</span>
+<span class="w">    </span><span class="nt">volumes</span><span class="p">:</span>
+<span class="w">      </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">pgdata:/var/lib/postgresql/data</span>
+<span class="w">    </span><span class="nt">healthcheck</span><span class="p">:</span>
+<span class="w">      </span><span class="nt">test</span><span class="p">:</span><span class="w"> </span><span class="p p-Indicator">[</span><span class="s">&quot;CMD-SHELL&quot;</span><span class="p p-Indicator">,</span><span class="w"> </span><span class="s">&quot;pg_isready</span><span class="nv"> </span><span class="s">-U</span><span class="nv"> </span><span class="s">agent</span><span class="nv"> </span><span class="s">-d</span><span class="nv"> </span><span class="s">agentdb&quot;</span><span class="p p-Indicator">]</span>
+<span class="w">      </span><span class="nt">interval</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">5s</span>
+<span class="w">      </span><span class="nt">timeout</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">3s</span>
+<span class="w">      </span><span class="nt">retries</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">5</span>
+<span class="w">    </span><span class="nt">ports</span><span class="p">:</span>
+<span class="w">      </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="s">&quot;5432:5432&quot;</span>
 
-<span class="n">volumes</span><span class="o">:</span>
-<span class="w">  </span><span class="n">pgdata</span><span class="o">:</span>
+<span class="w">  </span><span class="nt">langfuse</span><span class="p">:</span>
+<span class="w">    </span><span class="nt">image</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">langfuse/langfuse:2</span>
+<span class="w">    </span><span class="nt">ports</span><span class="p">:</span>
+<span class="w">      </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="s">&quot;3100:3000&quot;</span>
+<span class="w">    </span><span class="nt">environment</span><span class="p">:</span>
+<span class="w">      </span><span class="nt">DATABASE_URL</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">postgresql://langfuse:lfpass@langfuse-db:5432/langfuse</span>
+<span class="w">      </span><span class="nt">NEXTAUTH_SECRET</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">${NEXTAUTH_SECRET:-change-me}</span>
+<span class="w">      </span><span class="nt">NEXTAUTH_URL</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">http://localhost:3100</span>
+<span class="w">      </span><span class="nt">SALT</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">${LANGFUSE_SALT:-change-me}</span>
+<span class="w">      </span><span class="nt">TELEMETRY_ENABLED</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;false&quot;</span>
+<span class="w">    </span><span class="nt">depends_on</span><span class="p">:</span>
+<span class="w">      </span><span class="nt">langfuse-db</span><span class="p">:</span>
+<span class="w">        </span><span class="nt">condition</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">service_healthy</span>
+
+<span class="w">  </span><span class="nt">langfuse-db</span><span class="p">:</span>
+<span class="w">    </span><span class="nt">image</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">postgres:15</span>
+<span class="w">    </span><span class="nt">environment</span><span class="p">:</span>
+<span class="w">      </span><span class="nt">POSTGRES_USER</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">langfuse</span>
+<span class="w">      </span><span class="nt">POSTGRES_PASSWORD</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">lfpass</span>
+<span class="w">      </span><span class="nt">POSTGRES_DB</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">langfuse</span>
+<span class="w">    </span><span class="nt">volumes</span><span class="p">:</span>
+<span class="w">      </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">langfuse_data:/var/lib/postgresql/data</span>
+<span class="w">    </span><span class="nt">healthcheck</span><span class="p">:</span>
+<span class="w">      </span><span class="nt">test</span><span class="p">:</span><span class="w"> </span><span class="p p-Indicator">[</span><span class="s">&quot;CMD-SHELL&quot;</span><span class="p p-Indicator">,</span><span class="w"> </span><span class="s">&quot;pg_isready</span><span class="nv"> </span><span class="s">-U</span><span class="nv"> </span><span class="s">langfuse&quot;</span><span class="p p-Indicator">]</span>
+<span class="w">      </span><span class="nt">interval</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">5s</span>
+<span class="w">      </span><span class="nt">timeout</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">3s</span>
+<span class="w">      </span><span class="nt">retries</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">5</span>
+
+<span class="nt">volumes</span><span class="p">:</span>
+<span class="w">  </span><span class="nt">pgdata</span><span class="p">:</span>
+<span class="w">  </span><span class="nt">langfuse_data</span><span class="p">:</span>
 </code></pre></div>
 
-<h3 id="프로덕션-multi-vm-ha-배포-k8s-없이">프로덕션: Multi-VM HA 배포 (K8s 없이)</h3>
-<p>사내 K8s 클러스터를 활용하기 어려운 경우, VM 2~3대 + Docker Compose + 사내 L4 LB로 프로덕션 HA를 구성할 수 있습니다. 핵심은 <strong>Worker가 완전 Stateless</strong> 이므로 어디서든 동일하게 동작한다는 점.</p>
-<p>Multi-VM HA 배포 토폴로지</p>
-<p>graph TD subgraph LB["Load Balancer (F5 / HAProxy)"] VIP["VIP: 10.x.x.100\nHealth Check: GET /health"] end subgraph VM1["VM-1 (10.x.x.1)"] DC1["docker-compose"] W1A["Worker 1a :8000"] W1B["Worker 1b :8001"] MCP1["MCP Server :9000"] end subgraph VM2["VM-2 (10.x.x.2)"] DC2["docker-compose"] W2A["Worker 2a :8000"] W2B["Worker 2b :8001"] MCP2["MCP Server :9000"] end subgraph VM3["VM-3 (10.x.x.3)"] DC3["docker-compose"] W3A["Worker 3a :8000"] W3B["Worker 3b :8001"] MCP3["MCP Server :9000"] end subgraph Monitoring["모니터링 VM"] LF["LangFuse :3100"] GF["Grafana :3000"] end VIP --&gt; DC1 VIP --&gt; DC2 VIP --&gt; DC3 DC1 --&gt; W1A DC1 --&gt; W1B DC2 --&gt; W2A DC2 --&gt; W2B DC3 --&gt; W3A DC3 --&gt; W3B W1A &amp; W2A &amp; W3A -.-&gt; LF style LB fill:#0d0f18,stroke:#f05050,color:#f08080 style VM1 fill:#0d0f18,stroke:#30c880 style VM2 fill:#0d0f18,stroke:#30c880 style VM3 fill:#0d0f18,stroke:#30c880 style Monitoring fill:#0d0f18,stroke:#9060f0 </p>
-<p>| 최소 (HA 최소 충족)| 권장<br />
----|---|---<br />
-<strong>VM 수</strong>|  2대| 3대<br />
-<strong>Worker / VM</strong>|  1~2개| 2~4개 (CPU 코어 수 따라)<br />
-<strong>총 Worker</strong>|  2~4개| 6~12개<br />
-<strong>LB</strong>|  사내 F5 활용| 별도 HAProxy VM 2대 (Active-Standby)<br />
-<strong>DB</strong>|  기존 Oracle RAC 또는 PostgreSQL<br />
-<strong>VM 스펙</strong>|  4 core / 8GB| 8 core / 16GB  </p>
-<p>DOCKERdocker-compose.yml (각 VM에 동일 배포)</p>
-<div class="codehilite"><pre><span></span><code><span class="n">services</span><span class="o">:</span>
-<span class="w">  </span><span class="n">langgraph</span><span class="o">-</span><span class="n">worker</span><span class="o">:</span>
-<span class="w">    </span><span class="n">image</span><span class="o">:</span><span class="w"> </span><span class="n">registry</span><span class="o">.</span><span class="na">internal</span><span class="o">/</span><span class="n">langgraph</span><span class="o">-</span><span class="n">worker</span><span class="o">:</span><span class="n">latest</span>
-<span class="w">    </span><span class="n">deploy</span><span class="o">:</span>
-<span class="w">      </span><span class="n">replicas</span><span class="o">:</span><span class="w"> </span><span class="mi">2</span><span class="w">                          </span><span class="err">#</span><span class="w"> </span><span class="n">VM당</span><span class="w"> </span><span class="mi">2</span><span class="err">개</span><span class="w"> </span><span class="n">Worker</span>
-<span class="w">    </span><span class="n">restart</span><span class="o">:</span><span class="w"> </span><span class="n">always</span>
-<span class="w">    </span><span class="n">ports</span><span class="o">:</span>
-<span class="w">      </span><span class="o">-</span><span class="w"> </span><span class="s2">&quot;8000-8001:8000&quot;</span>
-<span class="w">    </span><span class="n">environment</span><span class="o">:</span>
-<span class="w">      </span><span class="n">ORACLE_DSN</span><span class="o">:</span><span class="w"> </span><span class="s2">&quot;(DESCRIPTION=(ADDRESS=(PROTOCOL=TCP)(HOST=scan.internal)(PORT=1521))(CONNECT_DATA=(SERVICE_NAME=CHATBOT)))&quot;</span>
-<span class="w">      </span><span class="n">ORACLE_USER</span><span class="o">:</span><span class="w"> </span><span class="n">langgraph_svc</span>
-<span class="w">      </span><span class="n">ORACLE_PASSWORD_FILE</span><span class="o">:</span><span class="w"> </span><span class="sr">/run/secrets/</span><span class="n">oracle_pw</span>
-<span class="w">      </span><span class="n">LLM_API_URL</span><span class="o">:</span><span class="w"> </span><span class="n">https</span><span class="o">://</span><span class="n">llm</span><span class="o">-</span><span class="n">gateway</span><span class="o">.</span><span class="na">internal</span><span class="o">/</span><span class="n">v1</span>
-<span class="w">      </span><span class="n">LANGFUSE_HOST</span><span class="o">:</span><span class="w"> </span><span class="n">http</span><span class="o">://</span><span class="n">langfuse</span><span class="o">.</span><span class="na">internal</span><span class="o">:</span><span class="mi">3100</span>
-<span class="w">      </span><span class="n">LANGFUSE_PUBLIC_KEY</span><span class="o">:</span><span class="w"> </span><span class="n">pk</span><span class="o">-</span><span class="n">xxx</span>
-<span class="w">      </span><span class="n">LANGFUSE_SECRET_KEY_FILE</span><span class="o">:</span><span class="w"> </span><span class="sr">/run/secrets/</span><span class="n">langfuse_sk</span>
-<span class="w">      </span><span class="n">WORKER_CONCURRENCY</span><span class="o">:</span><span class="w"> </span><span class="mi">20</span>
-<span class="w">    </span><span class="n">healthcheck</span><span class="o">:</span>
-<span class="w">      </span><span class="n">test</span><span class="o">:</span><span class="w"> </span><span class="o">[</span><span class="s2">&quot;CMD&quot;</span><span class="o">,</span><span class="w"> </span><span class="s2">&quot;curl&quot;</span><span class="o">,</span><span class="w"> </span><span class="s2">&quot;-f&quot;</span><span class="o">,</span><span class="w"> </span><span class="s2">&quot;http://localhost:8000/health&quot;</span><span class="o">]</span>
-<span class="w">      </span><span class="n">interval</span><span class="o">:</span><span class="w"> </span><span class="mi">10</span><span class="n">s</span>
-<span class="w">      </span><span class="n">timeout</span><span class="o">:</span><span class="w"> </span><span class="mi">5</span><span class="n">s</span>
-<span class="w">      </span><span class="n">retries</span><span class="o">:</span><span class="w"> </span><span class="mi">3</span>
-<span class="w">    </span><span class="n">secrets</span><span class="o">:</span>
-<span class="w">      </span><span class="o">-</span><span class="w"> </span><span class="n">oracle_pw</span>
-<span class="w">      </span><span class="o">-</span><span class="w"> </span><span class="n">langfuse_sk</span>
+<h3 id="64-docker-composeprodyml-프로덕션-ha">6.4 docker-compose.prod.yml (프로덕션 HA)</h3>
+<p>각 VM에 동일한 Compose 파일을 배포하고, 상위 L4 LB로 묶는다.</p>
+<div class="codehilite"><pre><span></span><code><span class="nt">services</span><span class="p">:</span>
+<span class="w">  </span><span class="nt">langgraph-worker</span><span class="p">:</span>
+<span class="w">    </span><span class="nt">image</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">registry.internal/langgraph-worker:${TAG:-latest}</span>
+<span class="w">    </span><span class="nt">deploy</span><span class="p">:</span>
+<span class="w">      </span><span class="nt">replicas</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">2</span>
+<span class="w">    </span><span class="nt">restart</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">always</span>
+<span class="w">    </span><span class="nt">ports</span><span class="p">:</span>
+<span class="w">      </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="s">&quot;8100-8101:8100&quot;</span>
+<span class="w">    </span><span class="nt">environment</span><span class="p">:</span>
+<span class="w">      </span><span class="nt">DATABASE_URL</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">postgresql://agent:${DB_PASSWORD}@db.internal:5432/agentdb</span>
+<span class="w">      </span><span class="nt">MCP_SERVER_URL</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">http://mcp-server:8000/sse</span>
+<span class="w">      </span><span class="nt">LANGFUSE_HOST</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">http://langfuse.internal:3100</span>
+<span class="w">      </span><span class="nt">ANTHROPIC_API_KEY_FILE</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">/run/secrets/anthropic_key</span>
+<span class="w">      </span><span class="nt">WORKER_CONCURRENCY</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">20</span>
+<span class="w">    </span><span class="nt">healthcheck</span><span class="p">:</span>
+<span class="w">      </span><span class="nt">test</span><span class="p">:</span><span class="w"> </span><span class="p p-Indicator">[</span><span class="s">&quot;CMD&quot;</span><span class="p p-Indicator">,</span><span class="w"> </span><span class="s">&quot;curl&quot;</span><span class="p p-Indicator">,</span><span class="w"> </span><span class="s">&quot;-f&quot;</span><span class="p p-Indicator">,</span><span class="w"> </span><span class="s">&quot;http://localhost:8100/health&quot;</span><span class="p p-Indicator">]</span>
+<span class="w">      </span><span class="nt">interval</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">10s</span>
+<span class="w">      </span><span class="nt">timeout</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">5s</span>
+<span class="w">      </span><span class="nt">retries</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">3</span>
+<span class="w">    </span><span class="nt">secrets</span><span class="p">:</span>
+<span class="w">      </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">anthropic_key</span>
 
-<span class="w">  </span><span class="n">mcp</span><span class="o">-</span><span class="n">server</span><span class="o">:</span>
-<span class="w">    </span><span class="n">image</span><span class="o">:</span><span class="w"> </span><span class="n">registry</span><span class="o">.</span><span class="na">internal</span><span class="o">/</span><span class="n">mcp</span><span class="o">-</span><span class="n">server</span><span class="o">:</span><span class="n">latest</span>
-<span class="w">    </span><span class="n">restart</span><span class="o">:</span><span class="w"> </span><span class="n">always</span>
-<span class="w">    </span><span class="n">ports</span><span class="o">:</span><span class="w"> </span><span class="o">[</span><span class="s2">&quot;9000:9000&quot;</span><span class="o">]</span>
+<span class="w">  </span><span class="nt">mcp-server</span><span class="p">:</span>
+<span class="w">    </span><span class="nt">image</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">registry.internal/mcp-server:${TAG:-latest}</span>
+<span class="w">    </span><span class="nt">restart</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">always</span>
+<span class="w">    </span><span class="nt">ports</span><span class="p">:</span>
+<span class="w">      </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="s">&quot;8000:8000&quot;</span>
 
-<span class="n">secrets</span><span class="o">:</span>
-<span class="w">  </span><span class="n">oracle_pw</span><span class="o">:</span>
-<span class="w">    </span><span class="n">file</span><span class="o">:</span><span class="w"> </span><span class="sr">/etc/secrets/</span><span class="n">oracle_pw</span><span class="o">.</span><span class="na">txt</span>
-<span class="w">  </span><span class="n">langfuse_sk</span><span class="o">:</span>
-<span class="w">    </span><span class="n">file</span><span class="o">:</span><span class="w"> </span><span class="sr">/etc/secrets/</span><span class="n">langfuse_sk</span><span class="o">.</span><span class="na">txt</span>
+<span class="nt">secrets</span><span class="p">:</span>
+<span class="w">  </span><span class="nt">anthropic_key</span><span class="p">:</span>
+<span class="w">    </span><span class="nt">file</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">/etc/secrets/anthropic_key.txt</span>
 </code></pre></div>
 
-<p>HAPROXYhaproxy.cfg (상위 LB 설정)</p>
-<div class="codehilite"><pre><span></span><code>frontend langgraph_front
-    bind *:443 ssl crt /etc/ssl/langgraph.pem
-    default_backend langgraph_workers
-
-backend langgraph_workers
-    balance roundrobin
-    option httpchk GET /health
-    http-check expect status 200
-
-    server vm1 10.x.x.1:80 check inter 5s fall 3 rise 2
-    server vm2 10.x.x.2:80 check inter 5s fall 3 rise 2
-    server vm3 10.x.x.3:80 check inter 5s fall 3 rise 2
+<h3 id="65-실행-명령">6.5 실행 명령</h3>
+<div class="codehilite"><pre><span></span><code>docker<span class="w"> </span>compose<span class="w"> </span>up<span class="w"> </span>-d<span class="w">                                        </span><span class="c1"># 개발</span>
+<span class="nv">TAG</span><span class="o">=</span>v1.2.3<span class="w"> </span>docker<span class="w"> </span>compose<span class="w"> </span>-f<span class="w"> </span>docker-compose.prod.yml<span class="w"> </span>up<span class="w"> </span>-d<span class="w">  </span><span class="c1"># 프로덕션</span>
+docker<span class="w"> </span>compose<span class="w"> </span>logs<span class="w"> </span>-f<span class="w"> </span>agent-server<span class="w">                         </span><span class="c1"># 로그</span>
+docker<span class="w"> </span>compose<span class="w"> </span>up<span class="w"> </span>-d<span class="w"> </span>--scale<span class="w"> </span>langgraph-worker<span class="o">=</span><span class="m">4</span><span class="w">             </span><span class="c1"># 스케일 아웃</span>
 </code></pre></div>
 
-<p>SHELL순차 무중단 배포 스크립트</p>
-<div class="codehilite"><table class="codehilitetable"><tr><td class="linenos"><div class="linenodiv"><pre><span class="normal"> 1</span>
-<span class="normal"> 2</span>
-<span class="normal"> 3</span>
-<span class="normal"> 4</span>
-<span class="normal"> 5</span>
-<span class="normal"> 6</span>
-<span class="normal"> 7</span>
-<span class="normal"> 8</span>
-<span class="normal"> 9</span>
-<span class="normal">10</span>
-<span class="normal">11</span>
-<span class="normal">12</span>
-<span class="normal">13</span>
-<span class="normal">14</span>
-<span class="normal">15</span>
-<span class="normal">16</span>
-<span class="normal">17</span>
-<span class="normal">18</span>
-<span class="normal">19</span>
-<span class="normal">20</span>
-<span class="normal">21</span>
-<span class="normal">22</span>
-<span class="normal">23</span>
-<span class="normal">24</span>
-<span class="normal">25</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="ch">#!/bin/bash</span>
-<span class="c1"># deploy.sh — VM 순차 무중단 배포 (K8s rolling update 대체)</span>
-<span class="nv">SERVERS</span><span class="o">=</span><span class="s2">&quot;vm1 vm2 vm3&quot;</span>
-<span class="nv">IMAGE</span><span class="o">=</span><span class="s2">&quot;registry.internal/langgraph-worker:</span><span class="si">${</span><span class="nv">TAG</span><span class="si">}</span><span class="s2">&quot;</span>
-
-<span class="k">for</span><span class="w"> </span>server<span class="w"> </span><span class="k">in</span><span class="w"> </span><span class="nv">$SERVERS</span><span class="p">;</span><span class="w"> </span><span class="k">do</span>
-<span class="w">    </span><span class="nb">echo</span><span class="w"> </span><span class="s2">&quot;=== </span><span class="nv">$server</span><span class="s2"> 배포 시작 ===&quot;</span>
-<span class="w">    </span><span class="c1"># 1. LB에서 제외 (drain)</span>
-<span class="w">    </span>ssh<span class="w"> </span>lb<span class="w"> </span><span class="s2">&quot;echo &#39;set server langgraph_workers/</span><span class="nv">$server</span><span class="s2"> state drain&#39; \</span>
-<span class="s2">        | socat stdio /var/run/haproxy.sock&quot;</span>
-<span class="w">    </span><span class="c1"># 2. 기존 요청 완료 대기</span>
-<span class="w">    </span>sleep<span class="w"> </span><span class="m">30</span>
-<span class="w">    </span><span class="c1"># 3. 새 이미지 pull + 재시작</span>
-<span class="w">    </span>ssh<span class="w"> </span><span class="nv">$server</span><span class="w"> </span><span class="s2">&quot;cd /opt/langgraph &amp;&amp; \</span>
-<span class="s2">        docker compose pull &amp;&amp; docker compose up -d --force-recreate&quot;</span>
-<span class="w">    </span><span class="c1"># 4. Health check 통과 대기</span>
-<span class="w">    </span><span class="k">for</span><span class="w"> </span>i<span class="w"> </span><span class="k">in</span><span class="w"> </span><span class="k">$(</span>seq<span class="w"> </span><span class="m">1</span><span class="w"> </span><span class="m">30</span><span class="k">)</span><span class="p">;</span><span class="w"> </span><span class="k">do</span>
-<span class="w">        </span>ssh<span class="w"> </span><span class="nv">$server</span><span class="w"> </span><span class="s2">&quot;curl -sf http://localhost:80/health&quot;</span><span class="w"> </span><span class="o">&amp;&amp;</span><span class="w"> </span><span class="k">break</span>
-<span class="w">        </span>sleep<span class="w"> </span><span class="m">2</span>
-<span class="w">    </span><span class="k">done</span>
-<span class="w">    </span><span class="c1"># 5. LB 복귀</span>
-<span class="w">    </span>ssh<span class="w"> </span>lb<span class="w"> </span><span class="s2">&quot;echo &#39;set server langgraph_workers/</span><span class="nv">$server</span><span class="s2"> state ready&#39; \</span>
-<span class="s2">        | socat stdio /var/run/haproxy.sock&quot;</span>
-<span class="w">    </span><span class="nb">echo</span><span class="w"> </span><span class="s2">&quot;=== </span><span class="nv">$server</span><span class="s2"> 완료 ===&quot;</span>
-<span class="k">done</span>
-</code></pre></div></td></tr></table></div>
-
-<h3 id="장애-대응-매트릭스">장애 대응 매트릭스</h3>
-<table>
-<thead>
-<tr>
-<th>장애</th>
-<th>영향</th>
-<th>자동 대응</th>
-</tr>
-</thead>
-<tbody>
-<tr>
-<td><strong>Worker 1대 죽음</strong></td>
-<td>해당 요청 실패</td>
-<td>Docker restart: always + LB가 다른 VM으로 라우팅. Checkpointer 덕분에 중간 상태 복구 가능</td>
-</tr>
-<tr>
-<td><strong>VM 1대 다운</strong></td>
-<td>해당 VM의 Worker 전체 중단</td>
-<td>LB health check 실패 → 자동 제외. 나머지 VM이 처리</td>
-</tr>
-<tr>
-<td><strong>Oracle Node 다운</strong></td>
-<td>순간 커넥션 끊김</td>
-<td>FAN 이벤트로 자동 감지 → SCAN이 살아있는 노드로 라우팅 (Active-Active)</td>
-</tr>
-<tr>
-<td><strong>LLM API 타임아웃</strong></td>
-<td>그래프 노드 실패</td>
-<td>Retry with exponential backoff + circuit breaker</td>
-</tr>
-</tbody>
-</table>
-<p>SHELLwatchdog.sh (Worker 자동 복구 — crontab 1분)</p>
-<div class="codehilite"><table class="codehilitetable"><tr><td class="linenos"><div class="linenodiv"><pre><span class="normal">1</span>
-<span class="normal">2</span>
-<span class="normal">3</span>
-<span class="normal">4</span>
-<span class="normal">5</span>
-<span class="normal">6</span>
-<span class="normal">7</span>
-<span class="normal">8</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="ch">#!/bin/bash</span>
-<span class="nv">HEALTHY</span><span class="o">=</span><span class="k">$(</span>docker<span class="w"> </span>compose<span class="w"> </span>ps<span class="w"> </span>--format<span class="w"> </span>json<span class="w"> </span><span class="p">|</span><span class="w"> </span>jq<span class="w"> </span>-r<span class="w"> </span><span class="s1">&#39;select(.Health==&quot;healthy&quot;)&#39;</span><span class="w"> </span><span class="p">|</span><span class="w"> </span>wc<span class="w"> </span>-l<span class="k">)</span>
-<span class="nv">EXPECTED</span><span class="o">=</span><span class="m">2</span>
-<span class="k">if</span><span class="w"> </span><span class="o">[</span><span class="w"> </span><span class="s2">&quot;</span><span class="nv">$HEALTHY</span><span class="s2">&quot;</span><span class="w"> </span>-lt<span class="w"> </span><span class="s2">&quot;</span><span class="nv">$EXPECTED</span><span class="s2">&quot;</span><span class="w"> </span><span class="o">]</span><span class="p">;</span><span class="w"> </span><span class="k">then</span>
-<span class="w">    </span>docker<span class="w"> </span>compose<span class="w"> </span>up<span class="w"> </span>-d<span class="w"> </span>--force-recreate<span class="w"> </span>langgraph-worker
-<span class="w">    </span>curl<span class="w"> </span>-X<span class="w"> </span>POST<span class="w"> </span><span class="s2">&quot;https://hooks.internal/alert&quot;</span><span class="w"> </span><span class="se">\</span>
-<span class="w">         </span>-d<span class="w"> </span><span class="s2">&quot;text=</span><span class="k">$(</span>hostname<span class="k">)</span><span class="s2"> Worker 재시작 (</span><span class="nv">$HEALTHY</span><span class="s2">/</span><span class="nv">$EXPECTED</span><span class="s2">)&quot;</span>
-<span class="k">fi</span>
-</code></pre></div></td></tr></table></div>
-
-<p>10Airflow 스케줄링 연동</p>
-<p>Airflow → 에이전트 서버 연동 패턴</p>
-<p>sequenceDiagram participant AF as Airflow DAG participant API as Agent Server (FastAPI) participant LG as LangGraph Agent participant TG as 텔레그램 AF-&gt;&gt;API: POST /api/analyze (스케줄 실행) API-&gt;&gt;LG: agent.ainvoke() LG-&gt;&gt;LG: 도구 호출 + 분석 LG--&gt;&gt;API: 결과 반환 API--&gt;&gt;AF: JSON 응답 AF-&gt;&gt;TG: 텔레그램 발송 </p>
-<p>PYTHONAirflow DAG에서 에이전트 호출</p>
-<div class="codehilite"><pre><span></span><code><span class="kn">from</span><span class="w"> </span><span class="nn">airflow</span><span class="w"> </span><span class="kn">import</span> <span class="n">DAG</span>
-<span class="kn">from</span><span class="w"> </span><span class="nn">airflow.operators.python</span><span class="w"> </span><span class="kn">import</span> <span class="n">PythonOperator</span>
-<span class="kn">import</span><span class="w"> </span><span class="nn">requests</span>
-
-<span class="k">def</span><span class="w"> </span><span class="nf">call_agent</span><span class="p">(</span><span class="o">**</span><span class="n">context</span><span class="p">):</span>
-<span class="w">    </span><span class="sd">&quot;&quot;&quot;에이전트 서버에 HTTP 호출&quot;&quot;&quot;</span>
-    <span class="n">resp</span> <span class="o">=</span> <span class="n">requests</span><span class="o">.</span><span class="n">post</span><span class="p">(</span>
-        <span class="s2">&quot;http://agent-server:8100/api/analyze&quot;</span><span class="p">,</span>
-        <span class="n">json</span><span class="o">=</span><span class="p">{</span><span class="s2">&quot;checklist_text&quot;</span><span class="p">:</span> <span class="s2">&quot;...&quot;</span><span class="p">,</span>
-              <span class="s2">&quot;time_phase&quot;</span><span class="p">:</span> <span class="s2">&quot;intraday&quot;</span><span class="p">},</span>
-        <span class="n">timeout</span><span class="o">=</span><span class="mi">180</span><span class="p">,</span>
-    <span class="p">)</span>
-    <span class="n">result</span> <span class="o">=</span> <span class="n">resp</span><span class="o">.</span><span class="n">json</span><span class="p">()</span>
-    <span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;분석 완료: </span><span class="si">{</span><span class="n">result</span><span class="p">[</span><span class="s1">&#39;answer&#39;</span><span class="p">][:</span><span class="mi">100</span><span class="p">]</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
-
-    <span class="c1"># 텔레그램 발송</span>
-    <span class="n">send_telegram</span><span class="p">(</span><span class="n">result</span><span class="p">[</span><span class="s2">&quot;answer&quot;</span><span class="p">])</span>
-
-<span class="k">with</span> <span class="n">DAG</span><span class="p">(</span><span class="s2">&quot;agent_schedule&quot;</span><span class="p">,</span> <span class="n">schedule</span><span class="o">=</span><span class="s2">&quot;*/10 9-15 * * 1-5&quot;</span><span class="p">):</span>
-    <span class="n">task</span> <span class="o">=</span> <span class="n">PythonOperator</span><span class="p">(</span>
-        <span class="n">task_id</span><span class="o">=</span><span class="s2">&quot;run_agent&quot;</span><span class="p">,</span>
-        <span class="n">python_callable</span><span class="o">=</span><span class="n">call_agent</span>
-    <span class="p">)</span>
-</code></pre></div>
-
-<p>ℹ</p>
-<p><strong>BIP 패턴</strong> Airflow는 스케줄링만 담당하고, 에이전트 로직은 BIP-Agents 서버에 위임. HTTP로 느슨하게 결합하면 에이전트 업데이트가 DAG 변경 없이 가능.</p>
-<p>11모니터링 — LangFuse (Self-hosted) / LangSmith</p>
-<h3 id="옵션-비교_1">옵션 비교</h3>
+<hr />
+<h2 id="7-langsmith--langfuse-연동-모니터링">7. LangSmith / LangFuse 연동 (모니터링)</h2>
+<h3 id="71-옵션-비교">7.1 옵션 비교</h3>
 <table>
 <thead>
 <tr>
 <th>도구</th>
 <th>형태</th>
 <th>Self-host</th>
-<th>특징</th>
 <th>사내 폐쇄망</th>
 </tr>
 </thead>
@@ -1179,93 +1006,36 @@ backend langgraph_workers
 <td><strong>LangSmith</strong></td>
 <td>SaaS</td>
 <td>Enterprise만</td>
-<td>업계 표준, 자동 트레이싱</td>
-<td>X (데이터 외부 전송)</td>
+<td>불가 (데이터 외부 전송)</td>
 </tr>
 <tr>
 <td><strong>LangFuse</strong></td>
 <td>오픈소스</td>
 <td>Docker 1줄</td>
-<td>LangSmith 대체 1순위</td>
-<td>O (권장)</td>
-</tr>
-<tr>
-<td><strong>Arize Phoenix</strong></td>
-<td>오픈소스</td>
-<td>단일 컨테이너</td>
-<td>경량, 빠름</td>
-<td>O</td>
+<td>가능 (권장)</td>
 </tr>
 </tbody>
 </table>
-<p>ℹ</p>
-<p><strong>사내 폐쇄망이면 LangSmith 사용 불가</strong> — 모든 트레이스가 외부 SaaS로 전송됩니다. LangFuse를 사내 VM에 Docker로 띄우면 동일한 기능을 폐쇄망 내부에서 사용할 수 있습니다.</p>
-<h3 id="langfuse-권장--self-hosted">LangFuse (권장 — Self-hosted)</h3>
-<p>LangFuse 모니터링 아키텍처</p>
-<p>graph LR subgraph Workers["LangGraph Workers"] W1["Worker 1"] W2["Worker 2"] W3["Worker 3"] end subgraph LF_Stack["LangFuse (사내 VM)"] LF_APP["LangFuse Server\n:3100"] LF_DB["PostgreSQL\n(LangFuse 전용)"] end subgraph Features["제공 기능"] TRACE["Traces\n노드별 워터폴"] GEN["Generations\nLLM 입출력/토큰"] SESS["Sessions\n사용자별 세션"] DASH["Dashboard\n요약 차트"] SCORE["Scores\n품질 평가"] PROMPT["Prompts\n버전 관리"] end W1 --&gt;|"CallbackHandler\n(비동기)"| LF_APP W2 --&gt; LF_APP W3 --&gt; LF_APP LF_APP --&gt; LF_DB LF_APP --&gt; Features style Workers fill:#0d0f18,stroke:#30c880 style LF_Stack fill:#0d0f18,stroke:#9060f0 style Features fill:#0d0f18,stroke:#5a7af0 </p>
-<p>DOCKERLangFuse 설치 (사내 VM)</p>
-<div class="codehilite"><pre><span></span><code><span class="c1"># docker-compose.langfuse.yml</span>
-<span class="n">services</span><span class="p">:</span>
-<span class="w">  </span><span class="n">langfuse</span><span class="p">:</span>
-<span class="w">    </span><span class="n">image</span><span class="p">:</span><span class="w"> </span><span class="n">langfuse</span><span class="o">/</span><span class="n">langfuse</span><span class="p">:</span><span class="mi">2</span>
-<span class="w">    </span><span class="n">ports</span><span class="p">:</span><span class="w"> </span><span class="p">[</span><span class="s2">&quot;3100:3000&quot;</span><span class="p">]</span>
-<span class="w">    </span><span class="n">environment</span><span class="p">:</span>
-<span class="w">      </span><span class="n">DATABASE_URL</span><span class="p">:</span><span class="w"> </span><span class="n">postgresql</span><span class="p">:</span><span class="o">//</span><span class="n">langfuse</span><span class="p">:</span><span class="n">pw</span><span class="err">@</span><span class="n">langfuse</span><span class="o">-</span><span class="n">db</span><span class="p">:</span><span class="mi">5432</span><span class="o">/</span><span class="n">langfuse</span>
-<span class="w">      </span><span class="n">NEXTAUTH_SECRET</span><span class="p">:</span><span class="w"> </span><span class="n">your</span><span class="o">-</span><span class="n">secret</span><span class="o">-</span><span class="n">key</span>
-<span class="w">      </span><span class="n">NEXTAUTH_URL</span><span class="p">:</span><span class="w"> </span><span class="n">http</span><span class="p">:</span><span class="o">//</span><span class="n">langfuse</span><span class="o">.</span><span class="n">internal</span><span class="p">:</span><span class="mi">3100</span>
-<span class="w">      </span><span class="n">SALT</span><span class="p">:</span><span class="w"> </span><span class="n">your</span><span class="o">-</span><span class="n">salt</span>
-<span class="w">      </span><span class="n">TELEMETRY_ENABLED</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;false&quot;</span><span class="w">         </span><span class="c1"># 폐쇄망: 텔레메트리 비활성화</span>
-<span class="w">    </span><span class="n">depends_on</span><span class="p">:</span><span class="w"> </span><span class="p">[</span><span class="n">langfuse</span><span class="o">-</span><span class="n">db</span><span class="p">]</span>
-
-<span class="w">  </span><span class="n">langfuse</span><span class="o">-</span><span class="n">db</span><span class="p">:</span>
-<span class="w">    </span><span class="n">image</span><span class="p">:</span><span class="w"> </span><span class="n">postgres</span><span class="p">:</span><span class="mi">15</span>
-<span class="w">    </span><span class="n">environment</span><span class="p">:</span>
-<span class="w">      </span><span class="n">POSTGRES_USER</span><span class="p">:</span><span class="w"> </span><span class="n">langfuse</span>
-<span class="w">      </span><span class="n">POSTGRES_PASSWORD</span><span class="p">:</span><span class="w"> </span><span class="n">pw</span>
-<span class="w">      </span><span class="n">POSTGRES_DB</span><span class="p">:</span><span class="w"> </span><span class="n">langfuse</span>
-<span class="w">    </span><span class="n">volumes</span><span class="p">:</span><span class="w"> </span><span class="p">[</span><span class="n">langfuse_data</span><span class="p">:</span><span class="o">/</span><span class="k">var</span><span class="o">/</span><span class="n">lib</span><span class="o">/</span><span class="n">postgresql</span><span class="o">/</span><span class="n">data</span><span class="p">]</span>
-
-<span class="n">volumes</span><span class="p">:</span>
-<span class="w">  </span><span class="n">langfuse_data</span><span class="p">:</span>
-
-<span class="c1"># 실행</span>
-<span class="c1"># docker compose -f docker-compose.langfuse.yml up -d</span>
-<span class="c1"># → http://langfuse.internal:3100 접속</span>
-</code></pre></div>
-
-<p>PYTHONLangGraph 연동 (코드 3줄)</p>
+<blockquote>
+<p>사내 폐쇄망이면 LangSmith 사용 불가. LangFuse를 사내 VM에 Docker로 설치하면 동일한 기능을 내부에서 사용할 수 있다.</p>
+</blockquote>
+<h3 id="72-langfuse-연동-코드-3줄">7.2 LangFuse 연동 (코드 3줄)</h3>
 <div class="codehilite"><pre><span></span><code><span class="kn">from</span><span class="w"> </span><span class="nn">langfuse.callback</span><span class="w"> </span><span class="kn">import</span> <span class="n">CallbackHandler</span>
 
-<span class="c1"># LangFuse 콜백 생성</span>
 <span class="n">langfuse_handler</span> <span class="o">=</span> <span class="n">CallbackHandler</span><span class="p">(</span>
-    <span class="n">host</span><span class="o">=</span><span class="s2">&quot;http://langfuse.internal:3100&quot;</span><span class="p">,</span>    <span class="c1"># 사내 주소</span>
+    <span class="n">host</span><span class="o">=</span><span class="s2">&quot;http://langfuse.internal:3100&quot;</span><span class="p">,</span>
     <span class="n">public_key</span><span class="o">=</span><span class="s2">&quot;pk-...&quot;</span><span class="p">,</span>
     <span class="n">secret_key</span><span class="o">=</span><span class="s2">&quot;sk-...&quot;</span><span class="p">,</span>
 <span class="p">)</span>
 
-<span class="c1"># 그래프 실행 시 config에 추가 — 끝</span>
 <span class="n">result</span> <span class="o">=</span> <span class="k">await</span> <span class="n">graph</span><span class="o">.</span><span class="n">ainvoke</span><span class="p">(</span>
     <span class="n">initial_state</span><span class="p">,</span>
-    <span class="n">config</span><span class="o">=</span><span class="p">{</span><span class="s2">&quot;callbacks&quot;</span><span class="p">:</span> <span class="p">[</span><span class="n">langfuse_handler</span><span class="p">]}</span>
+    <span class="n">config</span><span class="o">=</span><span class="p">{</span><span class="s2">&quot;callbacks&quot;</span><span class="p">:</span> <span class="p">[</span><span class="n">langfuse_handler</span><span class="p">]},</span>
 <span class="p">)</span>
 <span class="c1"># 자동 수집: 노드별 실행 시간, LLM 입출력, 토큰 수, 에러 트레이스</span>
 </code></pre></div>
 
-<h3 id="langfuse-trace-상세-화면-예시">LangFuse Trace 상세 화면 예시</h3>
-<p>UITrace 워터폴 (노드별 실행 타임라인)</p>
-<div class="codehilite"><pre><span></span><code>Trace: &quot;올해 매출 상위 10개 부서&quot;              2.8s  ✅
-├── router              0.08s  ✅  → nl2sql
-├── nl2sql_generate     1.20s  ✅  GPT-4o  tokens: 450→120
-│   └── LLM Call        1.18s      prompt: &quot;Convert to SQL...&quot;
-├── sql_validate        0.15s  ✅  passed
-├── sql_execute         0.35s  ✅  10 rows
-└── summarize           0.90s  ✅  GPT-4o  tokens: 200→350
-    └── LLM Call        0.88s      prompt: &quot;Summarize these...&quot;
-
-Total: 2.8s | Tokens: 650 in / 470 out | Cost: $0.023
-</code></pre></div>
-
-<h3 id="langfuse-제공-기능">LangFuse 제공 기능</h3>
+<h3 id="73-langfuse-제공-기능">7.3 LangFuse 제공 기능</h3>
 <table>
 <thead>
 <tr>
@@ -1292,54 +1062,38 @@ Total: 2.8s | Tokens: 650 in / 470 out | Cost: $0.023
 </tr>
 <tr>
 <td><strong>Scores</strong></td>
-<td>품질 평가 — 자동(LLM-as-Judge) / 수동(사용자 피드백)</td>
+<td>품질 평가 -- 자동(LLM-as-Judge) / 수동(사용자 피드백)</td>
 </tr>
 <tr>
 <td><strong>Prompts</strong></td>
 <td>프롬프트 버전 관리 + 배포</td>
 </tr>
-<tr>
-<td><strong>Users</strong></td>
-<td>사용자별 사용량, 비용, 에러율 추적</td>
-</tr>
 </tbody>
 </table>
-<h3 id="인프라-메트릭-grafana-기존-활용">인프라 메트릭: Grafana (기존 활용)</h3>
-<p>LangFuse는 에이전트 실행 트레이싱 전용. CPU, 메모리, Worker 상태 등 인프라 메트릭은 기존 Grafana + Prometheus를 활용.</p>
-<p>PYTHONPrometheus 메트릭 노출 (Worker)</p>
-<div class="codehilite"><pre><span></span><code><span class="kn">from</span><span class="w"> </span><span class="nn">prometheus_client</span><span class="w"> </span><span class="kn">import</span> <span class="n">Counter</span><span class="p">,</span> <span class="n">Histogram</span><span class="p">,</span> <span class="n">Gauge</span>
-
-<span class="n">graph_runs_total</span> <span class="o">=</span> <span class="n">Counter</span><span class="p">(</span>
-    <span class="s2">&quot;langgraph_runs_total&quot;</span><span class="p">,</span> <span class="s2">&quot;Total graph executions&quot;</span><span class="p">,</span>
-    <span class="p">[</span><span class="s2">&quot;graph_id&quot;</span><span class="p">,</span> <span class="s2">&quot;status&quot;</span><span class="p">]</span>
-<span class="p">)</span>
-<span class="n">node_duration</span> <span class="o">=</span> <span class="n">Histogram</span><span class="p">(</span>
-    <span class="s2">&quot;langgraph_node_duration_seconds&quot;</span><span class="p">,</span> <span class="s2">&quot;Node execution time&quot;</span><span class="p">,</span>
-    <span class="p">[</span><span class="s2">&quot;node_name&quot;</span><span class="p">]</span>
-<span class="p">)</span>
-<span class="n">active_runs</span> <span class="o">=</span> <span class="n">Gauge</span><span class="p">(</span>
-    <span class="s2">&quot;langgraph_active_runs&quot;</span><span class="p">,</span> <span class="s2">&quot;Currently running graphs&quot;</span>
-<span class="p">)</span>
-<span class="n">llm_tokens_total</span> <span class="o">=</span> <span class="n">Counter</span><span class="p">(</span>
-    <span class="s2">&quot;langgraph_llm_tokens_total&quot;</span><span class="p">,</span> <span class="s2">&quot;LLM tokens consumed&quot;</span><span class="p">,</span>
-    <span class="p">[</span><span class="s2">&quot;direction&quot;</span><span class="p">]</span>   <span class="c1"># input / output</span>
-<span class="p">)</span>
+<h3 id="74-langsmith-saas-환경용">7.4 LangSmith (SaaS 환경용)</h3>
+<div class="codehilite"><pre><span></span><code><span class="c1"># 환경변수만 설정하면 자동 트레이싱 (코드 변경 없음)</span>
+<span class="nv">LANGSMITH_TRACING</span><span class="o">=</span><span class="nb">true</span>
+<span class="nv">LANGSMITH_ENDPOINT</span><span class="o">=</span>https://api.smith.langchain.com
+<span class="nv">LANGSMITH_API_KEY</span><span class="o">=</span>lsv2_pt_xxxxxxxx
+<span class="nv">LANGSMITH_PROJECT</span><span class="o">=</span>my-agents
 </code></pre></div>
 
-<h3 id="참고-langsmith--saas-환경용">(참고) LangSmith — SaaS 환경용</h3>
-<p>설정외부 인터넷 사용 가능한 경우</p>
-<div class="codehilite"><pre><span></span><code><span class="o">#</span> <span class="err">환경변수만</span> <span class="err">설정하면</span> <span class="err">자동</span> <span class="err">트레이싱</span> <span class="p">(</span><span class="err">코드</span> <span class="err">변경</span> <span class="err">없음</span><span class="p">)</span>
-<span class="n">LANGSMITH_TRACING</span><span class="o">=</span><span class="n">true</span>
-<span class="n">LANGSMITH_ENDPOINT</span><span class="o">=</span><span class="n">https</span><span class="p">:</span><span class="o">//</span><span class="n">api</span><span class="p">.</span><span class="n">smith</span><span class="p">.</span><span class="n">langchain</span><span class="p">.</span><span class="n">com</span>
-<span class="n">LANGSMITH_API_KEY</span><span class="o">=</span><span class="n">lsv2_pt_xxxxxxxx</span>
-<span class="n">LANGSMITH_PROJECT</span><span class="o">=</span><span class="n">my</span><span class="o">-</span><span class="n">agents</span>
-</code></pre></div>
+<h3 id="75-인프라-메트릭-prometheus--grafana">7.5 인프라 메트릭 (Prometheus + Grafana)</h3>
+<p>LangFuse는 에이전트 트레이싱 전용이다. CPU, 메모리, Worker 상태 등 인프라 메트릭은 <code>prometheus_client</code>로 커스텀 메트릭(<code>langgraph_runs_total</code>, <code>langgraph_node_duration_seconds</code>, <code>langgraph_active_runs</code>)을 노출하고 Grafana로 시각화한다.</p>
+<hr />
+<h2 id="8-사내-보안-고려사항">8. 사내 보안 고려사항</h2>
+<h3 id="81-보안-체크-흐름">8.1 보안 체크 흐름</h3>
+<div class="mermaid">
+graph TD
+    INPUT["사용자 입력"] --> GUARD["Guardrail\n입력 검증\nPII/인젝션 차단"]
+    GUARD -->|통과| AGENT["에이전트 실행"]
+    GUARD -->|차단| REJECT["거부 응답"]
+    AGENT --> AUDIT["감사 로그\nagent_audit_log"]
+    AGENT --> FILTER["출력 필터\n민감 정보 마스킹"]
+    FILTER --> OUTPUT["응답"]
+</div>
 
-<p>⚠️</p>
-<p><strong>사내 폐쇄망에서는 사용 불가</strong> 모든 트레이스 데이터가 외부 LangSmith 서버로 전송됩니다. 사내 데이터 유출 가능성이 있으므로 폐쇄망에서는 LangFuse (Self-hosted)를 권장합니다.</p>
-<p>12보안 &amp; 거버넌스</p>
-<p>보안 체크 흐름</p>
-<p>graph TD INPUT["사용자 입력"] --&gt; GUARD["Guardrail\n입력 검증\nPII/인젝션 차단"] GUARD --&gt;|통과| AGENT["에이전트 실행"] GUARD --&gt;|차단| REJECT["거부 응답"] AGENT --&gt; AUDIT["감사 로그\nagent_audit_log"] AGENT --&gt; FILTER["출력 필터\n민감 정보 마스킹"] FILTER --&gt; OUTPUT["응답"] style GUARD fill:#201010,stroke:#f05050,color:#f08080 style AUDIT fill:#201810,stroke:#e09830,color:#f8b840 </p>
+<h3 id="82-보안-체크리스트">8.2 보안 체크리스트</h3>
 <table>
 <thead>
 <tr>
@@ -1350,7 +1104,7 @@ Total: 2.8s | Tokens: 650 in / 470 out | Cost: $0.023
 <tbody>
 <tr>
 <td><strong>API 키 보호</strong></td>
-<td>.env + Docker secrets. 절대 코드/git에 하드코딩 금지</td>
+<td><code>.env</code> + Docker secrets. 절대 코드/git에 하드코딩 금지</td>
 </tr>
 <tr>
 <td><strong>DB 접근 제어</strong></td>
@@ -1372,9 +1126,16 @@ Total: 2.8s | Tokens: 650 in / 470 out | Cost: $0.023
 <td><strong>출력 필터</strong></td>
 <td>PII(개인정보), 민감 데이터가 응답에 노출되지 않도록</td>
 </tr>
+<tr>
+<td><strong>네트워크 격리</strong></td>
+<td>MCP 서버, DB는 내부 네트워크에서만 접근</td>
+</tr>
 </tbody>
 </table>
-<p>13트러블슈팅</p>
+<h3 id="83-감사-로그">8.3 감사 로그</h3>
+<p>모든 LLM 호출을 <code>agent_audit_log</code> 테이블에 기록한다. 필수 컬럼: <code>agent_name</code>, <code>input_text</code>, <code>output_text</code>, <code>tools_used</code>, <code>token_input</code>, <code>token_output</code>, <code>model</code>, <code>latency_ms</code>, <code>created_at</code>. BIP 프로젝트의 구현 예시는 <code>docs/checklist_agent_architecture.md</code> 참조.</p>
+<hr />
+<h2 id="9-트러블슈팅">9. 트러블슈팅</h2>
 <table>
 <thead>
 <tr>
@@ -1385,48 +1146,150 @@ Total: 2.8s | Tokens: 650 in / 470 out | Cost: $0.023
 </thead>
 <tbody>
 <tr>
-<td><strong>checkpointer.setup() 실패</strong></td>
-<td>autocommit=True 누락</td>
+<td><code>checkpointer.setup()</code> 실패</td>
+<td><code>autocommit=True</code> 누락</td>
 <td><code>psycopg.connect(..., autocommit=True)</code></td>
 </tr>
 <tr>
-<td><strong>체크포인트 조회 에러</strong></td>
-<td>row_factory 미설정</td>
+<td>Checkpoint 조회 에러</td>
+<td><code>row_factory</code> 미설정</td>
 <td><code>row_factory=psycopg.rows.dict_row</code></td>
 </tr>
 <tr>
-<td><strong>MCP 연결 끊김</strong></td>
+<td>MCP 연결 끊김</td>
 <td>SSE 타임아웃</td>
-<td>try/finally로 <code>mcp_client.close()</code> 보장</td>
+<td><code>try/finally</code>로 <code>mcp_client.close()</code> 보장</td>
 </tr>
 <tr>
-<td><strong>에이전트 무한 루프</strong></td>
+<td>에이전트 무한 루프</td>
 <td>Conditional Edge에 종료 조건 누락</td>
 <td><code>iteration &lt; 3</code> 가드 추가</td>
 </tr>
 <tr>
-<td><strong>토큰 한도 초과</strong></td>
+<td>토큰 한도 초과</td>
 <td>긴 대화 컨텍스트</td>
-<td>context_compressor로 요약 또는 새 thread 시작</td>
+<td>context compressor로 요약 또는 새 thread 시작</td>
 </tr>
 <tr>
-<td><strong>LangSmith에 트레이스 안 뜸</strong></td>
-<td>환경변수 미설정</td>
-<td><code>LANGSMITH_TRACING=true</code> 확인</td>
+<td>LangFuse에 트레이스 안 뜸</td>
+<td>콜백 미설정</td>
+<td><code>config={"callbacks": [handler]}</code> 확인</td>
 </tr>
 <tr>
-<td><strong>State 스키마 호환 에러</strong></td>
-<td>TypedDict 변경 후 기존 체크포인트</td>
+<td>State 스키마 호환 에러</td>
+<td>TypedDict 변경 후 기존 체크포인트 불일치</td>
 <td>thread_id를 새로 생성하거나 체크포인트 정리</td>
 </tr>
 <tr>
-<td><strong>도구 호출 실패 (404)</strong></td>
+<td>도구 호출 실패 (404)</td>
 <td>MCP 서버 미실행 또는 URL 오류</td>
-<td>docker ps로 확인, MCP_SERVER_URL 검증</td>
+<td><code>docker ps</code>로 확인, <code>MCP_SERVER_URL</code> 검증</td>
+</tr>
+<tr>
+<td><code>create_react_agent</code> import 에러</td>
+<td>langgraph 버전 불일치</td>
+<td><code>pip install langgraph&gt;=0.4.0</code></td>
+</tr>
+<tr>
+<td>Docker 빌드 시 psycopg 에러</td>
+<td>libpq 미설치</td>
+<td><code>psycopg[binary]</code> 사용 또는 <code>apt install libpq-dev</code></td>
 </tr>
 </tbody>
 </table>
-<p>14비용 가이드</p>
+<h3 id="checkpointer-데이터-정리">Checkpointer 데이터 정리</h3>
+<div class="codehilite"><pre><span></span><code><span class="c1">-- 오래된 체크포인트 정리 (30일 이전)</span>
+<span class="k">DELETE</span><span class="w"> </span><span class="k">FROM</span><span class="w"> </span><span class="n">checkpoints</span>
+<span class="k">WHERE</span><span class="w"> </span><span class="p">(</span><span class="n">metadata</span><span class="o">-&gt;&gt;</span><span class="s1">&#39;created_at&#39;</span><span class="p">)::</span><span class="k">timestamp</span><span class="w"> </span><span class="o">&lt;</span><span class="w"> </span><span class="n">NOW</span><span class="p">()</span><span class="w"> </span><span class="o">-</span><span class="w"> </span><span class="nb">INTERVAL</span><span class="w"> </span><span class="s1">&#39;30 days&#39;</span><span class="p">;</span>
+</code></pre></div>
+
+<h3 id="디버깅-팁">디버깅 팁</h3>
+<p><code>agent.astream_events(..., version="v2")</code>로 실행 중간 상태를 확인할 수 있다. <code>on_tool_start</code>, <code>on_tool_end</code>, <code>on_chat_model_stream</code> 이벤트를 로깅하면 도구 호출 흐름을 추적할 수 있다.</p>
+<hr />
+<h2 id="10-참고-자료--변경-이력">10. 참고 자료 + 변경 이력</h2>
+<h3 id="101-참고-자료">10.1 참고 자료</h3>
+<table>
+<thead>
+<tr>
+<th>자료</th>
+<th>URL</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>LangGraph 공식 문서</td>
+<td>https://langchain-ai.github.io/langgraph/</td>
+</tr>
+<tr>
+<td>LangGraph GitHub</td>
+<td>https://github.com/langchain-ai/langgraph</td>
+</tr>
+<tr>
+<td>LangGraph 배포 옵션</td>
+<td>https://langchain-ai.github.io/langgraph/concepts/deployment_options/</td>
+</tr>
+<tr>
+<td>LangGraph 튜토리얼</td>
+<td>https://langchain-ai.github.io/langgraph/tutorials/</td>
+</tr>
+<tr>
+<td>LangGraph How-to Guides</td>
+<td>https://langchain-ai.github.io/langgraph/how-tos/</td>
+</tr>
+<tr>
+<td>langgraph-checkpoint-postgres</td>
+<td>https://pypi.org/project/langgraph-checkpoint-postgres/</td>
+</tr>
+<tr>
+<td>langchain-mcp-adapters</td>
+<td>https://pypi.org/project/langchain-mcp-adapters/</td>
+</tr>
+<tr>
+<td>LangFuse 문서</td>
+<td>https://langfuse.com/docs</td>
+</tr>
+<tr>
+<td>LangFuse + LangChain 연동</td>
+<td>https://langfuse.com/docs/integrations/langchain/tracing</td>
+</tr>
+<tr>
+<td>LangSmith 설정 가이드</td>
+<td>https://docs.smith.langchain.com/</td>
+</tr>
+</tbody>
+</table>
+<h3 id="102-관련-bip-문서">10.2 관련 BIP 문서</h3>
+<table>
+<thead>
+<tr>
+<th>문서</th>
+<th>경로</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>LangGraph 기술 가이드 (핵심 개념 스터디)</td>
+<td><code>docs/langgraph_technical_guide.md</code></td>
+</tr>
+<tr>
+<td>체크리스트 에이전트 아키텍처</td>
+<td><code>docs/checklist_agent_architecture.md</code></td>
+</tr>
+<tr>
+<td>FastMCP 가이드</td>
+<td><code>docs/fastmcp_guide.md</code></td>
+</tr>
+<tr>
+<td>BIP 에이전트 전략</td>
+<td><code>docs/bip_agent_strategy.md</code></td>
+</tr>
+<tr>
+<td>보안 거버넌스</td>
+<td><code>docs/security_governance.md</code></td>
+</tr>
+</tbody>
+</table>
+<h3 id="103-비용-참고">10.3 비용 참고</h3>
 <table>
 <thead>
 <tr>
@@ -1437,117 +1300,72 @@ Total: 2.8s | Tokens: 650 in / 470 out | Cost: $0.023
 </thead>
 <tbody>
 <tr>
-<td><strong>LangGraph</strong></td>
+<td>LangGraph</td>
 <td>무료 (MIT)</td>
 <td>오픈소스</td>
 </tr>
 <tr>
-<td><strong>Haiku 호출</strong></td>
+<td>Haiku 호출</td>
 <td>~$0.003/질문</td>
 <td>단순 판단용 최적</td>
 </tr>
 <tr>
-<td><strong>Sonnet 호출</strong></td>
+<td>Sonnet 호출</td>
 <td>~$0.05/질문</td>
 <td>복잡 분석용</td>
 </tr>
 <tr>
-<td><strong>PostgreSQL</strong></td>
+<td>PostgreSQL</td>
 <td>셀프호스팅 무료</td>
 <td>Docker 볼륨</td>
 </tr>
 <tr>
-<td><strong>LangSmith</strong></td>
-<td>무료 티어 있음</td>
-<td>프로덕션은 유료 권장</td>
-</tr>
-<tr>
-<td><strong>인프라 오버헤드</strong></td>
-<td>+10~20%</td>
-<td>체크포인팅 DB I/O</td>
+<td>LangFuse</td>
+<td>셀프호스팅 무료</td>
+<td>Docker 볼륨</td>
 </tr>
 </tbody>
 </table>
-<p>💡</p>
-<p><strong>BIP 실제 비용</strong> 6개 에이전트(모닝리포트/체크리스트/preopen/스크리너/뉴스/인사이트) 운영에 월 ~$6. Haiku 중심 + Sonnet은 분석에만.</p>
-<p>15BIP 적용 사례 요약</p>
+<blockquote>
+<p><strong>BIP 실제 비용:</strong> 6개 에이전트 운영에 월 약 $6. Haiku 중심, Sonnet은 복잡한 분석에만 사용한다.</p>
+</blockquote>
+<h3 id="104-변경-이력">10.4 변경 이력</h3>
 <table>
 <thead>
 <tr>
-<th>에이전트</th>
-<th>패턴</th>
-<th>LLM</th>
-<th>도구</th>
-<th>스케줄</th>
+<th>버전</th>
+<th>날짜</th>
+<th>변경 내용</th>
+<th>작성자</th>
 </tr>
 </thead>
 <tbody>
 <tr>
-<td><strong>체크리스트 모니터링</strong></td>
-<td>ReAct</td>
-<td>Haiku</td>
-<td>MCP 44개</td>
-<td>10분마다</td>
+<td>v1.0</td>
+<td>2026-04-05</td>
+<td>초기 작성. 환경 구축, 에이전트 기본, Docker 배포</td>
+<td>-</td>
 </tr>
 <tr>
-<td><strong>종목 추천</strong></td>
-<td>멀티 노드 (Bull/Bear 토론)</td>
-<td>Haiku</td>
-<td>MCP</td>
-<td>일 1회</td>
+<td>v1.5</td>
+<td>2026-04-11</td>
+<td>MCP 연동, LangSmith 모니터링 추가</td>
+<td>-</td>
 </tr>
 <tr>
-<td><strong>Preopen 분석</strong></td>
-<td>단일 LLM + MCP 병렬</td>
-<td>Haiku</td>
-<td>MCP</td>
-<td>08:40</td>
+<td>v2.0</td>
+<td>2026-04-18</td>
+<td>Oracle RAC Checkpointer, Multi-VM HA, LangFuse 전환, Airflow 연동</td>
+<td>-</td>
 </tr>
 <tr>
-<td><strong>모닝리포트</strong></td>
-<td>단일 LLM</td>
-<td>Sonnet</td>
-<td>뉴스 API</td>
-<td>08:10</td>
-</tr>
-<tr>
-<td><strong>뉴스 다이제스트</strong></td>
-<td>단일 LLM</td>
-<td>Haiku</td>
-<td>뉴스 API</td>
-<td>4시간마다</td>
+<td>v3.0</td>
+<td>2026-04-26</td>
+<td>전면 재작성. 공식 문서 기반 10장 구조, Step-by-Step 코드 보강, Mermaid 5개, 트러블슈팅 확대, 보안 섹션 강화, 변경 이력 테이블 추가</td>
+<td>-</td>
 </tr>
 </tbody>
 </table>
-<h3 id="bip에서-얻은-교훈">BIP에서 얻은 교훈</h3>
-<p>성공</p>
-<p>잘 작동한 것</p>
-<ul>
-<li>ReAct + MCP: 코드 변경 없이 새 항목 대응</li>
-<li>Haiku 중심: 월 $6으로 6개 에이전트</li>
-<li>Airflow↔FastAPI: 느슨한 결합</li>
-</ul>
-<p>교훈</p>
-<p>다음에 주의할 것</p>
-<ul>
-<li>프롬프트가 결과의 80%. 구조보다 중요</li>
-<li>테스트 환경 반드시 분리 (채널 오염)</li>
-<li>감사 로그는 처음부터. 나중에 추가 어려움</li>
-</ul>
-<p>16참고 자료</p>
-<p><a href="langgraph_technical_guide.html">LangGraph 기술 가이드</a> — 핵심 개념, 아키텍처 패턴, 코드 예시 (스터디용)</p>
-<p><a href="bip_agent_strategy.html">BIP 에이전트 전략</a> — 차세대 아키텍처 검토</p>
-<p><a href="https://github.com/langchain-ai/langgraph">GitHub — langgraph</a> (29.2K stars, MIT)</p>
-<p><a href="https://docs.langchain.com/oss/python/langgraph/overview">LangGraph 공식 문서</a></p>
-<p><a href="https://docs.langchain.com/oss/python/langgraph/quickstart">Quickstart 가이드</a></p>
-<p><a href="https://pypi.org/project/langgraph-checkpoint-postgres/">langgraph-checkpoint-postgres (PyPI)</a></p>
-<p><a href="https://langfuse.com/docs">LangFuse 공식 문서 (Self-hosted 가이드 포함)</a></p>
-<p><a href="https://langfuse.com/docs/integrations/langchain/tracing">LangFuse + LangChain/LangGraph 연동 가이드</a></p>
-<p><a href="https://docs.langchain.com/langsmith/platform-setup">LangSmith 설정 가이드 (SaaS 환경용)</a></p>
-<p><a href="https://github.com/NicholasGoh/fastapi-mcp-langgraph-template">FastAPI + MCP + LangGraph 템플릿 (GitHub)</a></p>
-<p><a href="https://medium.com/@termtrix/building-a-simple-ai-agent-using-fastapi-langgraph-mcp-03fc7ffbea59">FastAPI + LangGraph + MCP 튜토리얼 (Medium)</a></p>
-<p>langgraph-setup.guide · Step-by-Step v2.0 · 2026.04.18</p>
-<p>MIT License · LangChain</p>
 </main>
 
 <script>

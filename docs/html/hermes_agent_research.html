@@ -288,93 +288,305 @@
   </div>
   <nav class="toc">
 <ul>
+<li class="toc-h2"><a href="#목차">목차</a></li>
 <li class="toc-h2"><a href="#1-개요">1. 개요</a></li>
   <li class="toc-h3"><a href="#hermes-agent란">Hermes Agent란?</a></li>
   <li class="toc-h3"><a href="#nous-research">Nous Research</a></li>
 <li class="toc-h2"><a href="#2-핵심-학습-루프-closed-learning-loop">2. 핵심 학습 루프 (Closed Learning Loop)</a></li>
+  <li class="toc-h3"><a href="#각-단계-상세">각 단계 상세</a></li>
   <li class="toc-h3"><a href="#자기-개선-효과">자기 개선 효과</a></li>
+  <li class="toc-h3"><a href="#학습-루프가-없는-에이전트와의-차이">학습 루프가 없는 에이전트와의 차이</a></li>
 <li class="toc-h2"><a href="#3-메모리-아키텍처-3계층">3. 메모리 아키텍처 (3계층)</a></li>
+  <li class="toc-h3"><a href="#계층별-상세">계층별 상세</a></li>
   <li class="toc-h3"><a href="#핵심-혁신-procedural-memory">핵심 혁신: Procedural Memory</a></li>
+  <li class="toc-h3"><a href="#캐시-인식-설계">캐시 인식 설계</a></li>
+  <li class="toc-h3"><a href="#context-compression">Context Compression</a></li>
 <li class="toc-h2"><a href="#4-스킬-시스템">4. 스킬 시스템</a></li>
-  <li class="toc-h3"><a href="#스킬-구조">스킬 구조</a></li>
+  <li class="toc-h3"><a href="#스킬-디렉터리-구조">스킬 디렉터리 구조</a></li>
+  <li class="toc-h3"><a href="#skillmd-예시">SKILL.md 예시</a></li>
   <li class="toc-h3"><a href="#progressive-disclosure-3단계">Progressive Disclosure (3단계)</a></li>
   <li class="toc-h3"><a href="#스킬-생명주기">스킬 생명주기</a></li>
+  <li class="toc-h3"><a href="#번들-스킬-카테고리">번들 스킬 카테고리</a></li>
 <li class="toc-h2"><a href="#5-코어-아키텍처">5. 코어 아키텍처</a></li>
   <li class="toc-h3"><a href="#5개-주요-서브시스템">5개 주요 서브시스템</a></li>
+  <li class="toc-h3"><a href="#아키텍처-다이어그램">아키텍처 다이어그램</a></li>
   <li class="toc-h3"><a href="#데이터-플로우">데이터 플로우</a></li>
+  <li class="toc-h3"><a href="#프롬프트-구성-순서">프롬프트 구성 순서</a></li>
   <li class="toc-h3"><a href="#설계-원칙">설계 원칙</a></li>
 <li class="toc-h2"><a href="#6-실행-환경--플랫폼">6. 실행 환경 &amp; 플랫폼</a></li>
   <li class="toc-h3"><a href="#터미널-백엔드-6개">터미널 백엔드 (6개)</a></li>
   <li class="toc-h3"><a href="#메시징-플랫폼-15">메시징 플랫폼 (15+)</a></li>
   <li class="toc-h3"><a href="#설치">설치</a></li>
 <li class="toc-h2"><a href="#7-다른-에이전트와-비교">7. 다른 에이전트와 비교</a></li>
+  <li class="toc-h3"><a href="#핵심-차이-요약">핵심 차이 요약</a></li>
 <li class="toc-h2"><a href="#8-bip-프로젝트-관점-시사점">8. BIP 프로젝트 관점 시사점</a></li>
   <li class="toc-h3"><a href="#참고-가능한-개념">참고 가능한 개념</a></li>
   <li class="toc-h3"><a href="#현재-bip와의-차이">현재 BIP와의 차이</a></li>
   <li class="toc-h3"><a href="#도입-시-고려사항">도입 시 고려사항</a></li>
 <li class="toc-h2"><a href="#9-웹앱--open-webui-연동">9. 웹앱 / Open WebUI 연동</a></li>
-  <li class="toc-h3"><a href="#hermes-agent--웹-연동-최상">Hermes Agent — 웹 연동 (최상)</a></li>
-  <li class="toc-h3"><a href="#deep-agents--웹-연동-제한적">Deep Agents — 웹 연동 (제한적)</a></li>
+  <li class="toc-h3"><a href="#hermes-agent----웹-연동-최상">Hermes Agent -- 웹 연동 (최상)</a></li>
+  <li class="toc-h3"><a href="#open-webui-연동-설정-예시">Open WebUI 연동 설정 예시</a></li>
+  <li class="toc-h3"><a href="#deep-agents----웹-연동-제한적">Deep Agents -- 웹 연동 (제한적)</a></li>
 <li class="toc-h2"><a href="#10-bip에-hermes를-도입한다면">10. BIP에 Hermes를 도입한다면?</a></li>
-  <li class="toc-h3"><a href="#현재-bip-구조-vs-hermes-최상단-구조">현재 BIP 구조 vs Hermes 최상단 구조</a></li>
-  <li class="toc-h3"><a href="#현재-bip">현재 BIP</a></li>
-  <li class="toc-h3"><a href="#hermes-최상단">Hermes 최상단</a></li>
+  <li class="toc-h3"><a href="#현재-bip-구조-vs-hermes-도입-구조">현재 BIP 구조 vs Hermes 도입 구조</a></li>
   <li class="toc-h3"><a href="#3가지-선택지">3가지 선택지</a></li>
   <li class="toc-h3"><a href="#옵션-a-차용-가능한-hermes-개념">옵션 A: 차용 가능한 Hermes 개념</a></li>
   <li class="toc-h3"><a href="#옵션-b-hermes를-인터페이스-레이어로-쓸-때">옵션 B: Hermes를 인터페이스 레이어로 쓸 때</a></li>
+  <li class="toc-h3"><a href="#옵션-c-전면-교체-비추천">옵션 C: 전면 교체 (비추천)</a></li>
   <li class="toc-h3"><a href="#hermes-도입-시-잃는-것">Hermes 도입 시 잃는 것</a></li>
 <li class="toc-h2"><a href="#11-비용-구조">11. 비용 구조</a></li>
+  <li class="toc-h3"><a href="#인프라-비용">인프라 비용</a></li>
+  <li class="toc-h3"><a href="#api-비용">API 비용</a></li>
+  <li class="toc-h3"><a href="#오버헤드">오버헤드</a></li>
+  <li class="toc-h3"><a href="#bip-현재-비용과-비교">BIP 현재 비용과 비교</a></li>
 <li class="toc-h2"><a href="#12-참고-자료">12. 참고 자료</a></li>
+<li class="toc-h2"><a href="#변경-이력">변경 이력</a></li>
 </ul>
 </nav>
 </aside>
 
 <main class="content">
 <h1 id="hermes-agent-조사-보고서">Hermes Agent 조사 보고서</h1>
+<blockquote>
 <p>Nous Research의 자기 개선형 오픈소스 AI 에이전트 | 2026-04-13 조사</p>
-<p>69.9K</p>
-<p>GitHub Stars</p>
-<p>40+</p>
-<p>Built-in Tools</p>
-<p>118</p>
-<p>Bundled Skills</p>
-<p>200+</p>
-<p>지원 LLM</p>
-<p>15+</p>
-<p>플랫폼</p>
-<p>MIT</p>
-<p>라이선스</p>
+</blockquote>
+<hr />
+<table>
+<thead>
+<tr>
+<th>항목</th>
+<th>수치</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>GitHub Stars</td>
+<td>69.9K</td>
+</tr>
+<tr>
+<td>Built-in Tools</td>
+<td>40+</td>
+</tr>
+<tr>
+<td>Bundled Skills</td>
+<td>118</td>
+</tr>
+<tr>
+<td>지원 LLM</td>
+<td>200+</td>
+</tr>
+<tr>
+<td>플랫폼</td>
+<td>15+</td>
+</tr>
+<tr>
+<td>라이선스</td>
+<td>MIT</td>
+</tr>
+</tbody>
+</table>
+<hr />
+<h2 id="목차">목차</h2>
+<ol>
+<li><a href="#1-개요">개요</a></li>
+<li><a href="#2-핵심-학습-루프-closed-learning-loop">핵심 학습 루프 (Closed Learning Loop)</a></li>
+<li><a href="#3-메모리-아키텍처-3계층">메모리 아키텍처 (3계층)</a></li>
+<li><a href="#4-스킬-시스템">스킬 시스템</a></li>
+<li><a href="#5-코어-아키텍처">코어 아키텍처</a></li>
+<li><a href="#6-실행-환경--플랫폼">실행 환경 &amp; 플랫폼</a></li>
+<li><a href="#7-다른-에이전트와-비교">다른 에이전트와 비교</a></li>
+<li><a href="#8-bip-프로젝트-관점-시사점">BIP 프로젝트 관점 시사점</a></li>
+<li><a href="#9-웹앱--open-webui-연동">웹앱 / Open WebUI 연동</a></li>
+<li><a href="#10-bip에-hermes를-도입한다면">BIP에 Hermes를 도입한다면?</a></li>
+<li><a href="#11-비용-구조">비용 구조</a></li>
+<li><a href="#12-참고-자료">참고 자료</a></li>
+</ol>
+<hr />
 <h2 id="1-개요">1. 개요</h2>
 <h3 id="hermes-agent란">Hermes Agent란?</h3>
-<p>Nous Research가 개발한 <strong>자기 개선형(Self-Improving) 오픈소스 AI 에이전트</strong>. 2026년 2월 출시, v0.7.0 (2026-04-03 기준).</p>
-<p>핵심 차별점: <strong>내장 학습 루프(Built-in Learning Loop)</strong> — 작업 완료 후 자동으로 스킬을 생성/개선하고, 세션 간 지식을 유지하며, 사용할수록 더 똑똑해짐.</p>
-<p>IDE 종속 코파일럿이나 단순 챗봇 래퍼가 아닌, <strong>인프라 위에서 독립적으로 실행되는 자율 에이전트</strong>.</p>
+<p>Nous Research가 개발한 <strong>자기 개선형(Self-Improving) 오픈소스 AI 에이전트</strong>이다.
+2026년 2월 출시되었으며, 현재 v0.7.0 (2026-04-03 기준)까지 릴리스되었다.</p>
+<p><strong>핵심 차별점</strong>은 <strong>내장 학습 루프(Built-in Learning Loop)</strong>에 있다.
+작업 완료 후 자동으로 스킬을 생성/개선하고, 세션 간 지식을 유지하며,
+사용할수록 더 똑똑해진다.</p>
+<p>IDE 종속 코파일럿이나 단순 챗봇 래퍼가 아닌,
+<strong>인프라 위에서 독립적으로 실행되는 자율 에이전트</strong>이다.
+로컬 머신, VPS, 클라우드 환경 어디서든 동작하며,
+다양한 메시징 플랫폼과 연동하여 사용자와 상호작용한다.</p>
 <h3 id="nous-research">Nous Research</h3>
-<p>Hermes, Nomos, Psyche 언어 모델을 개발한 AI 연구 조직. Hermes Agent는 이들의 에이전트 프레임워크 제품.</p>
-<p>호환 제공자: Nous Portal, OpenRouter (200+모델), OpenAI, Anthropic, z.ai, Kimi/Moonshot, 커스텀 엔드포인트</p>
+<p>Hermes, Nomos, Psyche 언어 모델을 개발한 AI 연구 조직이다.
+오픈소스 LLM 생태계에서 높은 인지도를 가지고 있으며,
+Hermes Agent는 이들의 에이전트 프레임워크 제품에 해당한다.</p>
+<p>GitHub 조직: <a href="https://github.com/NousResearch">github.com/NousResearch</a></p>
+<p><strong>호환 제공자:</strong></p>
+<table>
+<thead>
+<tr>
+<th>프로바이더</th>
+<th>특징</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Nous Portal</td>
+<td>자체 추론 엔드포인트</td>
+</tr>
+<tr>
+<td>OpenRouter</td>
+<td>200+ 모델 라우팅</td>
+</tr>
+<tr>
+<td>OpenAI</td>
+<td>GPT-4o, o1 등</td>
+</tr>
+<tr>
+<td>Anthropic</td>
+<td>Claude 3.5/4 계열</td>
+</tr>
+<tr>
+<td>z.ai</td>
+<td>xAI Grok 모델</td>
+</tr>
+<tr>
+<td>Kimi / Moonshot</td>
+<td>중국어 특화</td>
+</tr>
+<tr>
+<td>커스텀 엔드포인트</td>
+<td>OpenAI 호환 API 모두 가능</td>
+</tr>
+</tbody>
+</table>
+<hr />
 <h2 id="2-핵심-학습-루프-closed-learning-loop">2. 핵심 학습 루프 (Closed Learning Loop)</h2>
-<p>1. Receive<br />
-메시지 수신</p>
-<p>→</p>
-<p>2. Retrieve<br />
-메모리/스킬 검색</p>
-<p>→</p>
-<p>3. Reason &amp; Act<br />
-LLM 추론 + 도구 호출</p>
-<p>→</p>
-<p>4. Document<br />
-스킬 자동 생성/갱신</p>
-<p>→</p>
-<p>5. Persist<br />
-지식 영구 저장</p>
+<p>Hermes Agent의 가장 중요한 차별점은 5단계 학습 루프이다.
+작업을 수행하면서 동시에 학습하고, 학습 결과를 다음 작업에 자동 적용한다.
+이것이 단순 챗봇 래퍼와의 근본적 차이이다.</p>
+<div class="mermaid">
+flowchart LR
+    A["1. Receive\n메시지 수신"] --> B["2. Retrieve\n메모리/스킬 검색"]
+    B --> C["3. Reason & Act\nLLM 추론 + 도구 호출"]
+    C --> D["4. Document\n스킬 자동 생성/갱신"]
+    D --> E["5. Persist\n지식 영구 저장"]
+    E -->|"다음 작업"| A
+
+    style A fill:#e8f4fd,stroke:#2196F3
+    style B fill:#e8f4fd,stroke:#2196F3
+    style C fill:#fff3e0,stroke:#FF9800
+    style D fill:#e8f5e9,stroke:#4CAF50
+    style E fill:#e8f5e9,stroke:#4CAF50
+</div>
+
+<h3 id="각-단계-상세">각 단계 상세</h3>
+<table>
+<thead>
+<tr>
+<th>단계</th>
+<th>이름</th>
+<th>동작</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>1</td>
+<td><strong>Receive</strong></td>
+<td>사용자 메시지를 수신한다. CLI, Telegram, Discord 등 어떤 채널이든 동일한 포맷으로 정규화된다.</td>
+</tr>
+<tr>
+<td>2</td>
+<td><strong>Retrieve</strong></td>
+<td>Persistent Memory와 Skill 저장소를 FTS5 전문검색으로 조회한다. 관련 컨텍스트와 이전에 성공한 절차를 프롬프트에 주입한다.</td>
+</tr>
+<tr>
+<td>3</td>
+<td><strong>Reason &amp; Act</strong></td>
+<td>LLM이 컨텍스트를 기반으로 추론하고, 필요한 도구를 호출한다. 멀티 스텝 작업은 자동으로 분해된다.</td>
+</tr>
+<tr>
+<td>4</td>
+<td><strong>Document</strong></td>
+<td>작업 완료 후 에이전트가 해당 작업 과정을 리플렉션한다. 5+ 도구 호출이 필요한 복잡 작업이면 자동으로 스킬 문서를 생성하거나 기존 스킬을 갱신한다.</td>
+</tr>
+<tr>
+<td>5</td>
+<td><strong>Persist</strong></td>
+<td>대화 기록, 학습된 사실, 생성/수정된 스킬을 SQLite와 스킬 파일에 영구 저장한다.</td>
+</tr>
+</tbody>
+</table>
 <h3 id="자기-개선-효과">자기 개선 효과</h3>
+<table>
+<thead>
+<tr>
+<th>지표</th>
+<th>수치</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>연구 작업 완료 속도</td>
+<td>자동 생성 스킬 사용 시 <strong>40% 향상</strong> (프롬프트 튜닝 없이)</td>
+</tr>
+<tr>
+<td>스킬 자동 생성 조건</td>
+<td>5+ 도구 호출이 필요한 복잡 작업 완료 시</td>
+</tr>
+<tr>
+<td>반복 작업 효율</td>
+<td>점진적 향상 (사용자 선호 형식 학습)</td>
+</tr>
+<tr>
+<td>리플렉션 토큰 오버헤드</td>
+<td>일반 에이전트 대비 <strong>15~25% 추가</strong></td>
+</tr>
+</tbody>
+</table>
+<h3 id="학습-루프가-없는-에이전트와의-차이">학습 루프가 없는 에이전트와의 차이</h3>
+<p>일반 에이전트는 매 세션마다 동일한 출발점에서 시작한다.
+같은 유형의 작업을 반복해도 효율이 개선되지 않는다.</p>
+<p>Hermes는 학습 루프를 통해 다음을 달성한다:</p>
 <ul>
-<li>자동 생성된 스킬을 사용한 에이전트는 연구 작업을 <strong>40% 더 빠르게</strong> 완료 (프롬프트 튜닝 없이)</li>
-<li>5+ 도구 호출이 필요한 복잡 작업 완료 시 자동으로 스킬 문서 생성</li>
-<li>반복 작업은 점진적으로 효율 향상 (사용자 선호 형식 학습)</li>
-<li>리플렉션 토큰 오버헤드: 일반 에이전트 대비 15~25% 추가</li>
+<li><strong>작업 절차의 재활용</strong>: 한번 성공한 워크플로우를 스킬로 저장하여 유사 작업에 자동 적용</li>
+<li><strong>사용자 선호 학습</strong>: 응답 형식, 코드 스타일, 분석 깊이 등을 기억하여 맞춤 응답</li>
+<li><strong>오류 패턴 회피</strong>: 실패한 접근법을 기록하여 동일 실수를 반복하지 않음</li>
 </ul>
+<hr />
 <h2 id="3-메모리-아키텍처-3계층">3. 메모리 아키텍처 (3계층)</h2>
+<p>Hermes의 메모리는 인간의 기억 체계에서 영감을 받은 3계층 구조이다.</p>
+<div class="mermaid">
+flowchart TB
+    subgraph Session["Session Memory (세션 내)"]
+        direction LR
+        S1["컨텍스트 윈도우 유지"]
+        S2["context_compressor.py\n초과 시 요약"]
+    end
+
+    subgraph Persistent["Persistent Memory (영구)"]
+        direction LR
+        P1["SQLite + FTS5 전문검색"]
+        P2["LLM 요약 기반 압축"]
+        P3["~10ms 검색\n(10K+ 문서)"]
+    end
+
+    subgraph Procedural["Procedural Memory / Skills (영구)"]
+        direction LR
+        K1["Markdown 스킬 파일"]
+        K2["agentskills.io 표준"]
+        K3["Progressive Disclosure\n(3단계)"]
+    end
+
+    Session --> Persistent
+    Persistent --> Procedural
+
+    style Session fill:#e3f2fd,stroke:#1565C0
+    style Persistent fill:#fff8e1,stroke:#F9A825
+    style Procedural fill:#e8f5e9,stroke:#2E7D32
+    style Session fill:#4f8fea22,stroke:#4f8fea,stroke-width:2px,color:#e6edf3
+    style Persistent fill:#6c5ce722,stroke:#6c5ce7,stroke-width:2px,color:#e6edf3
+    style Procedural fill:#00b89422,stroke:#00b894,stroke-width:2px,color:#e6edf3
+</div>
+
+<h3 id="계층별-상세">계층별 상세</h3>
 <table>
 <thead>
 <tr>
@@ -399,17 +611,36 @@ LLM 추론 + 도구 호출</p>
 </tr>
 <tr>
 <td><strong>Procedural Memory (Skills)</strong></td>
-<td>방법론 기억 — "어떻게 했는지" 절차 저장</td>
+<td>방법론 기억 -- "어떻게 했는지" 절차 저장</td>
 <td>Markdown 스킬 파일, agentskills.io 표준, Progressive Disclosure (3단계)</td>
 <td>영구</td>
 </tr>
 </tbody>
 </table>
 <h3 id="핵심-혁신-procedural-memory">핵심 혁신: Procedural Memory</h3>
-<p>전통적 에이전트가 <strong>사실(facts)</strong> 을 기억하는 반면, Hermes는 <strong>방법(methods)</strong> 을 기억한다. 성공한 워크플로우를 재사용 가능한 절차로 변환하여 유사 문제 발생 시 자동 로드.</p>
-<p>캐시 인식 설계: 시스템 프롬프트 스냅샷을 세션 초기화 시 고정하여 고빈도 모델 호출이 캐시된 컨텍스트 윈도우를 효율적으로 사용.</p>
+<p>전통적 에이전트가 <strong>사실(facts)</strong>을 기억하는 반면, Hermes는 <strong>방법(methods)</strong>을 기억한다.
+성공한 워크플로우를 재사용 가능한 절차로 변환하여 유사 문제 발생 시 자동 로드한다.</p>
+<p>예시:</p>
+<ul>
+<li>"Python 프로젝트 셋업" 스킬: venv 생성 -&gt; requirements.txt 설치 -&gt; 테스트 실행 절차</li>
+<li>"데이터 분석 리포트" 스킬: 데이터 로드 -&gt; 전처리 -&gt; 시각화 -&gt; 마크다운 보고서 생성</li>
+</ul>
+<h3 id="캐시-인식-설계">캐시 인식 설계</h3>
+<p>시스템 프롬프트 스냅샷을 세션 초기화 시 고정하여,
+고빈도 모델 호출이 캐시된 컨텍스트 윈도우를 효율적으로 사용한다.
+이는 Anthropic의 prompt caching 기능과 자연스럽게 연동되어
+반복 호출 시 비용을 절감한다.</p>
+<h3 id="context-compression">Context Compression</h3>
+<p>컨텍스트 윈도우 초과 시 <code>context_compressor.py</code>가 동작한다:</p>
+<ol>
+<li>오래된 대화를 LLM으로 요약</li>
+<li>요약본을 Persistent Memory에 저장</li>
+<li>현재 윈도우에는 요약본 + 최근 대화만 유지</li>
+<li>핵심 정보 손실 최소화</li>
+</ol>
+<hr />
 <h2 id="4-스킬-시스템">4. 스킬 시스템</h2>
-<h3 id="스킬-구조">스킬 구조</h3>
+<h3 id="스킬-디렉터리-구조">스킬 디렉터리 구조</h3>
 <div class="codehilite"><pre><span></span><code>my-skill/
   SKILL.md          # YAML frontmatter + 절차 내용
   scripts/          # 실행 스크립트
@@ -417,14 +648,61 @@ LLM 추론 + 도구 호출</p>
   assets/           # 이미지 등
 </code></pre></div>
 
-<p>agentskills.io 오픈 표준 준수</p>
+<p><a href="https://agentskills.io">agentskills.io</a> 오픈 표준을 준수한다.</p>
+<h3 id="skillmd-예시">SKILL.md 예시</h3>
+<div class="codehilite"><pre><span></span><code><span class="nn">---</span>
+<span class="nt">name</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">deploy-docker-app</span>
+<span class="nt">description</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">Docker 기반 애플리케이션 배포 절차</span>
+<span class="nt">version</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">1.2.0</span>
+<span class="nt">tags</span><span class="p">:</span><span class="w"> </span><span class="p p-Indicator">[</span><span class="nv">docker</span><span class="p p-Indicator">,</span><span class="w"> </span><span class="nv">deployment</span><span class="p p-Indicator">,</span><span class="w"> </span><span class="nv">devops</span><span class="p p-Indicator">]</span>
+<span class="nt">triggers</span><span class="p">:</span>
+<span class="w">  </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="s">&quot;Docker로</span><span class="nv"> </span><span class="s">배포&quot;</span>
+<span class="w">  </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="s">&quot;컨테이너</span><span class="nv"> </span><span class="s">배포&quot;</span>
+<span class="nn">---</span>
+
+<span class="c1">## 절차</span>
+
+<span class="l l-Scalar l-Scalar-Plain">1. Dockerfile 유효성 검증</span>
+<span class="l l-Scalar l-Scalar-Plain">2. docker-compose.yml 구성 확인</span>
+<span class="l l-Scalar l-Scalar-Plain">3. 이미지 빌드 및 태깅</span>
+<span class="l l-Scalar l-Scalar-Plain">4. 헬스체크 포트 확인</span>
+<span class="l l-Scalar l-Scalar-Plain">5. 배포 및 상태 모니터링</span>
+</code></pre></div>
+
 <h3 id="progressive-disclosure-3단계">Progressive Disclosure (3단계)</h3>
-<ul>
-<li><strong>Level 0</strong> : 스킬 이름+설명 목록만 (토큰 최소)</li>
-<li><strong>Level 1</strong> : 특정 스킬 전체 내용 로드</li>
-<li><strong>Level 2</strong> : 스킬 내 특정 참조 파일 로드</li>
-</ul>
-<p>필요할 때만 상세 로드 → 토큰 절약</p>
+<table>
+<thead>
+<tr>
+<th>레벨</th>
+<th>로드 범위</th>
+<th>토큰 비용</th>
+<th>사용 시점</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><strong>Level 0</strong></td>
+<td>스킬 이름 + 설명 목록만</td>
+<td>최소</td>
+<td>매 대화 시작 시 자동 로드</td>
+</tr>
+<tr>
+<td><strong>Level 1</strong></td>
+<td>특정 스킬 전체 내용 로드</td>
+<td>중간</td>
+<td>관련 스킬 감지 시 자동 로드</td>
+</tr>
+<tr>
+<td><strong>Level 2</strong></td>
+<td>스킬 내 특정 참조 파일 로드</td>
+<td>필요분만</td>
+<td>실행 단계에서 필요 시</td>
+</tr>
+</tbody>
+</table>
+<p>필요할 때만 상세 로드하여 토큰을 절약한다.
+118개 스킬 전체를 Level 0으로 로드해도 토큰 소모가 적고,
+실제로 사용하는 스킬만 Level 1/2로 확장된다.</p>
 <h3 id="스킬-생명주기">스킬 생명주기</h3>
 <table>
 <thead>
@@ -435,24 +713,60 @@ LLM 추론 + 도구 호출</p>
 </thead>
 <tbody>
 <tr>
-<td>자동 생성</td>
+<td><strong>자동 생성</strong></td>
 <td>5+ 도구 호출 복잡 작업 완료 후 에이전트가 자동으로 <code>SKILL.md</code> 생성</td>
 </tr>
 <tr>
-<td>자기 개선</td>
+<td><strong>자기 개선</strong></td>
 <td>사용 중 모순/확장 정보 발견 시 스킬 문서 자동 패치</td>
 </tr>
 <tr>
-<td>공유</td>
+<td><strong>공유</strong></td>
 <td>agentskills.io Skills Hub를 통해 커뮤니티 공유 (보안 스캔 통과 필수)</td>
 </tr>
 <tr>
-<td>검색</td>
+<td><strong>검색</strong></td>
 <td>FTS5 전문검색으로 ~10ms 내 관련 스킬 조회</td>
 </tr>
 </tbody>
 </table>
-<p>118개 번들 스킬 (96 기본 + 22 선택), 26+ 카테고리</p>
+<h3 id="번들-스킬-카테고리">번들 스킬 카테고리</h3>
+<p>총 <strong>118개</strong> (96 기본 + 22 선택), 26+ 카테고리:</p>
+<table>
+<thead>
+<tr>
+<th>카테고리</th>
+<th>예시 스킬</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>개발</td>
+<td>Git 워크플로우, 코드 리뷰, CI/CD 파이프라인</td>
+</tr>
+<tr>
+<td>데이터</td>
+<td>CSV 분석, SQL 쿼리, 데이터 시각화</td>
+</tr>
+<tr>
+<td>DevOps</td>
+<td>Docker 배포, 서버 모니터링, 로그 분석</td>
+</tr>
+<tr>
+<td>리서치</td>
+<td>웹 리서치, 논문 분석, 기술 비교</td>
+</tr>
+<tr>
+<td>문서</td>
+<td>마크다운 작성, API 문서화, README 생성</td>
+</tr>
+<tr>
+<td>시스템</td>
+<td>파일 관리, 프로세스 모니터링, 디스크 정리</td>
+</tr>
+</tbody>
+</table>
+<hr />
 <h2 id="5-코어-아키텍처">5. 코어 아키텍처</h2>
 <h3 id="5개-주요-서브시스템">5개 주요 서브시스템</h3>
 <table>
@@ -467,7 +781,7 @@ LLM 추론 + 도구 호출</p>
 <tr>
 <td><strong>AIAgent Loop</strong></td>
 <td><code>run_agent.py</code> (~9,200줄)</td>
-<td>중앙 오케스트레이션 — 프로바이더 선택, 프롬프트 구성, 도구 실행, 영속성</td>
+<td>중앙 오케스트레이션 -- 프로바이더 선택, 프롬프트 구성, 도구 실행, 영속성</td>
 </tr>
 <tr>
 <td><strong>Prompt System</strong></td>
@@ -477,7 +791,7 @@ LLM 추론 + 도구 호출</p>
 <tr>
 <td><strong>Provider Resolver</strong></td>
 <td>공유 런타임</td>
-<td>(provider, model) 튜플 → 자격증명 + API 모드 매핑 (18+ 프로바이더)</td>
+<td>(provider, model) 튜플 -&gt; 자격증명 + API 모드 매핑 (18+ 프로바이더)</td>
 </tr>
 <tr>
 <td><strong>Tool System</strong></td>
@@ -491,6 +805,63 @@ LLM 추론 + 도구 호출</p>
 </tr>
 </tbody>
 </table>
+<h3 id="아키텍처-다이어그램">아키텍처 다이어그램</h3>
+<div class="mermaid">
+flowchart TB
+    subgraph Input["입력 채널"]
+        CLI["CLI"]
+        GW["Messaging Gateway\n(15+ 플랫폼)"]
+        CRON["Cron Scheduler"]
+    end
+
+    subgraph Core["코어 엔진"]
+        AGENT["AIAgent Loop\n(run_agent.py)"]
+        PROMPT["Prompt System\n(prompt_builder.py)"]
+        PROVIDER["Provider Resolver\n(18+ 프로바이더)"]
+    end
+
+    subgraph Tools["도구 시스템"]
+        TOOLREG["Tool Registry\n(47개 도구)"]
+        TERMINAL["Terminal Backend\n(6종)"]
+        MCP["MCP Server\n(확장 도구)"]
+    end
+
+    subgraph Memory["메모리 계층"]
+        SESSION["Session Memory"]
+        PERSIST["Persistent Memory\n(SQLite + FTS5)"]
+        SKILLS["Procedural Memory\n(Skills)"]
+    end
+
+    subgraph LLM["LLM Providers"]
+        NOUS["Nous Portal"]
+        OPENAI["OpenAI"]
+        ANTHROPIC["Anthropic"]
+        OTHER["OpenRouter\n+ 기타"]
+    end
+
+    CLI --> AGENT
+    GW --> AGENT
+    CRON --> AGENT
+    AGENT --> PROMPT
+    AGENT --> TOOLREG
+    TOOLREG --> MCP
+    PROMPT --> PROVIDER
+    PROVIDER --> LLM
+    TOOLREG --> TERMINAL
+    AGENT --> Memory
+
+    style Core fill:#fff3e0,stroke:#E65100
+    style Memory fill:#e8f5e9,stroke:#2E7D32
+    style Tools fill:#e3f2fd,stroke:#1565C0
+    style Input fill:#f3e5f5,stroke:#7B1FA2
+    style LLM fill:#fce4ec,stroke:#C62828
+    style Input fill:#4f8fea22,stroke:#4f8fea,stroke-width:2px,color:#e6edf3
+    style Core fill:#6c5ce722,stroke:#6c5ce7,stroke-width:2px,color:#e6edf3
+    style Tools fill:#00b89422,stroke:#00b894,stroke-width:2px,color:#e6edf3
+    style Memory fill:#e1705522,stroke:#e17055,stroke-width:2px,color:#e6edf3
+    style LLM fill:#fdcb6e22,stroke:#fdcb6e,stroke-width:2px,color:#e6edf3
+</div>
+
 <h3 id="데이터-플로우">데이터 플로우</h3>
 <table>
 <thead>
@@ -502,49 +873,152 @@ LLM 추론 + 도구 호출</p>
 <tbody>
 <tr>
 <td><strong>CLI</strong></td>
-<td>user input → <code>HermesCLI.process_input()</code> → <code>AIAgent.run_conversation()</code> → API call → tool dispatch → response → DB persist</td>
+<td><code>user input</code> -&gt; <code>HermesCLI.process_input()</code> -&gt; <code>AIAgent.run_conversation()</code> -&gt; API call -&gt; tool dispatch -&gt; response -&gt; DB persist</td>
 </tr>
 <tr>
 <td><strong>Gateway</strong></td>
-<td>platform event → adapter → auth → session resolve → <code>AIAgent.run_conversation()</code> → platform delivery</td>
+<td><code>platform event</code> -&gt; adapter -&gt; auth -&gt; session resolve -&gt; <code>AIAgent.run_conversation()</code> -&gt; platform delivery</td>
 </tr>
 <tr>
 <td><strong>Cron</strong></td>
-<td>scheduler tick → job load → fresh AIAgent → skill inject → response → state update</td>
+<td><code>scheduler tick</code> -&gt; job load -&gt; fresh AIAgent -&gt; skill inject -&gt; response -&gt; state update</td>
 </tr>
 </tbody>
 </table>
+<h3 id="프롬프트-구성-순서">프롬프트 구성 순서</h3>
+<p><code>prompt_builder.py</code>가 시스템 프롬프트를 다음 순서로 조립한다:</p>
+<ol>
+<li><strong>성격 파일 (Personality)</strong> -- 에이전트의 기본 행동 지침</li>
+<li><strong>프로필 설정</strong> -- 사용자별 커스텀 지시사항</li>
+<li><strong>도구 목록</strong> -- 현재 활성화된 도구 설명</li>
+<li><strong>스킬 목록 (Level 0)</strong> -- 전체 스킬의 이름과 설명</li>
+<li><strong>관련 스킬 (Level 1)</strong> -- 현재 대화와 관련된 스킬 전체 내용</li>
+<li><strong>메모리 검색 결과</strong> -- Persistent Memory에서 관련 정보 검색</li>
+<li><strong>컨텍스트 문서</strong> -- 사용자가 지정한 참조 파일</li>
+</ol>
 <h3 id="설계-원칙">설계 원칙</h3>
-<ul>
-<li><strong>Prompt Stability</strong> : 대화 중 시스템 프롬프트 변경 불가</li>
-<li><strong>Observable Execution</strong> : 모든 도구 호출이 사용자에게 가시적</li>
-<li><strong>Interruptible</strong> : 작업 중단 가능</li>
-<li><strong>Platform-Agnostic Core</strong> : 코어와 플랫폼 분리</li>
-<li><strong>Loose Coupling</strong> : 레지스트리 기반 느슨한 결합</li>
-<li><strong>Profile Isolation</strong> : 여러 프로필 동시 실행 가능</li>
-</ul>
+<table>
+<thead>
+<tr>
+<th>원칙</th>
+<th>설명</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><strong>Prompt Stability</strong></td>
+<td>대화 중 시스템 프롬프트 변경 불가. 세션 초기에 스냅샷을 고정한다.</td>
+</tr>
+<tr>
+<td><strong>Observable Execution</strong></td>
+<td>모든 도구 호출이 사용자에게 가시적. 숨겨진 행동 없음.</td>
+</tr>
+<tr>
+<td><strong>Interruptible</strong></td>
+<td>진행 중인 작업을 언제든 중단 가능.</td>
+</tr>
+<tr>
+<td><strong>Platform-Agnostic Core</strong></td>
+<td>코어 로직과 플랫폼 어댑터를 완전히 분리한다.</td>
+</tr>
+<tr>
+<td><strong>Loose Coupling</strong></td>
+<td>레지스트리 기반 느슨한 결합. 도구/프로바이더를 동적으로 추가/제거한다.</td>
+</tr>
+<tr>
+<td><strong>Profile Isolation</strong></td>
+<td>여러 프로필을 동시에 실행 가능. 메모리와 스킬이 프로필별로 격리된다.</td>
+</tr>
+</tbody>
+</table>
+<hr />
 <h2 id="6-실행-환경--플랫폼">6. 실행 환경 &amp; 플랫폼</h2>
 <h3 id="터미널-백엔드-6개">터미널 백엔드 (6개)</h3>
-<ul>
-<li><strong>Local</strong> — 로컬 머신 직접 실행</li>
-<li><strong>Docker</strong> — 컨테이너 격리</li>
-<li><strong>SSH</strong> — 원격 서버</li>
-<li><strong>Daytona</strong> — 클라우드 개발환경</li>
-<li><strong>Modal</strong> — 서버리스 실행</li>
-<li><strong>Singularity</strong> — HPC 컨테이너</li>
-</ul>
+<table>
+<thead>
+<tr>
+<th>백엔드</th>
+<th>용도</th>
+<th>격리 수준</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><strong>Local</strong></td>
+<td>로컬 머신 직접 실행</td>
+<td>없음 (호스트 직접)</td>
+</tr>
+<tr>
+<td><strong>Docker</strong></td>
+<td>컨테이너 격리</td>
+<td>컨테이너 레벨</td>
+</tr>
+<tr>
+<td><strong>SSH</strong></td>
+<td>원격 서버 접속 실행</td>
+<td>네트워크 분리</td>
+</tr>
+<tr>
+<td><strong>Daytona</strong></td>
+<td>클라우드 개발환경</td>
+<td>VM 레벨</td>
+</tr>
+<tr>
+<td><strong>Modal</strong></td>
+<td>서버리스 함수 실행</td>
+<td>함수 레벨</td>
+</tr>
+<tr>
+<td><strong>Singularity</strong></td>
+<td>HPC 컨테이너 (학술/연구)</td>
+<td>컨테이너 레벨</td>
+</tr>
+</tbody>
+</table>
 <h3 id="메시징-플랫폼-15">메시징 플랫폼 (15+)</h3>
-<ul>
-<li>CLI, Telegram, Discord, Slack</li>
-<li>WhatsApp, Signal, Matrix, Mattermost</li>
-<li>Email, SMS, DingTalk, Feishu</li>
-<li>WeCom, BlueBubbles, Home Assistant</li>
-</ul>
+<table>
+<thead>
+<tr>
+<th>카테고리</th>
+<th>플랫폼</th>
+<th>비고</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>기본</td>
+<td>CLI, Telegram, Discord, Slack</td>
+<td>공식 1순위 지원</td>
+</tr>
+<tr>
+<td>메신저</td>
+<td>WhatsApp, Signal, Matrix, Mattermost</td>
+<td>브릿지 기반</td>
+</tr>
+<tr>
+<td>기타</td>
+<td>Email, SMS, DingTalk, Feishu</td>
+<td>아시아권 포함</td>
+</tr>
+<tr>
+<td>특수</td>
+<td>WeCom, BlueBubbles, Home Assistant</td>
+<td>IoT/엔터프라이즈</td>
+</tr>
+</tbody>
+</table>
 <h3 id="설치">설치</h3>
-<div class="codehilite"><pre><span></span><code>curl -fsSL https://raw.githubusercontent.com/NousResearch/hermes-agent/main/scripts/install.sh | bash
+<div class="codehilite"><pre><span></span><code><span class="c1"># 원라인 설치</span>
+curl<span class="w"> </span>-fsSL<span class="w"> </span>https://raw.githubusercontent.com/NousResearch/hermes-agent/main/scripts/install.sh<span class="w"> </span><span class="p">|</span><span class="w"> </span>bash
+
+<span class="c1"># 설치 후 초기 설정</span>
+hermes<span class="w"> </span>config<span class="w"> </span>--provider<span class="w"> </span>openrouter<span class="w"> </span>--model<span class="w"> </span>claude-3.5-sonnet
 </code></pre></div>
 
-<p>Linux, macOS, WSL2, Termux (Android) 지원. 최소 사양: 2코어, 8GB RAM, $5/월 VPS</p>
+<p><strong>지원 환경:</strong> Linux, macOS, WSL2, Termux (Android)</p>
+<p><strong>최소 사양:</strong> 2코어, 8GB RAM, $5/월 VPS</p>
+<p><strong>권장 사양:</strong> 4코어, 16GB RAM (대규모 스킬 라이브러리 운용 시)</p>
+<hr />
 <h2 id="7-다른-에이전트와-비교">7. 다른 에이전트와 비교</h2>
 <table>
 <thead>
@@ -587,10 +1061,22 @@ LLM 추론 + 도구 호출</p>
 <td>플러그인 기반</td>
 </tr>
 <tr>
+<td><strong>코드 품질</strong></td>
+<td>범용 (모델 의존)</td>
+<td>최상 (프론티어 모델 특화)</td>
+<td>범용</td>
+</tr>
+<tr>
 <td><strong>강점</strong></td>
 <td>자율 학습, 스킬 생태계</td>
 <td>코딩 품질, 프론티어 모델</td>
 <td>플랫폼 커버리지</td>
+</tr>
+<tr>
+<td><strong>약점</strong></td>
+<td>코딩 전문성 부족</td>
+<td>플랫폼 제한</td>
+<td>학습 능력 없음</td>
 </tr>
 <tr>
 <td><strong>GitHub Stars</strong></td>
@@ -606,59 +1092,160 @@ LLM 추론 + 도구 호출</p>
 </tr>
 </tbody>
 </table>
+<h3 id="핵심-차이-요약">핵심 차이 요약</h3>
+<ul>
+<li><strong>Hermes</strong>: "범용 자율 에이전트" -- 다양한 작업을 스스로 학습하며 개선</li>
+<li><strong>Claude Code</strong>: "코딩 전문가" -- 소프트웨어 개발에 최적화, 프론티어 모델의 코딩 능력 극대화</li>
+<li><strong>OpenClaw</strong>: "플랫폼 커넥터" -- 최대한 많은 서비스/플랫폼과 연결하는 데 집중</li>
+</ul>
+<hr />
 <h2 id="8-bip-프로젝트-관점-시사점">8. BIP 프로젝트 관점 시사점</h2>
 <h3 id="참고-가능한-개념">참고 가능한 개념</h3>
-<ul>
-<li><strong>스킬 시스템</strong> : BIP의 체크리스트 에이전트가 반복적으로 수행하는 분석 패턴을 "스킬"로 저장하면 프롬프트 토큰 절약 + 일관성 확보 가능</li>
-<li><strong>Progressive Disclosure</strong> : 현재 모든 체크리스트 항목을 한 번에 LLM에 전달하는데, 레벨별 로딩으로 토큰 최적화 가능</li>
-<li><strong>Procedural Memory</strong> : "환율 방향성 판정법", "유가 영향 분석법" 같은 반복 절차를 스킬 문서로 관리하면 방향성 오판 문제 구조적 해결</li>
-<li><strong>Cron 스케줄링</strong> : Hermes의 자연어 크론 스케줄링이 Airflow DAG보다 유연할 수 있음 (단, 엔터프라이즈 안정성은 Airflow가 우위)</li>
-</ul>
+<table>
+<thead>
+<tr>
+<th>Hermes 개념</th>
+<th>BIP 적용 가능성</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><strong>스킬 시스템</strong></td>
+<td>체크리스트 에이전트의 반복 분석 패턴을 "스킬"로 저장하면 프롬프트 토큰 절약 + 일관성 확보 가능</td>
+</tr>
+<tr>
+<td><strong>Progressive Disclosure</strong></td>
+<td>현재 모든 체크리스트 항목을 한 번에 LLM에 전달하는데, 레벨별 로딩으로 토큰 최적화 가능</td>
+</tr>
+<tr>
+<td><strong>Procedural Memory</strong></td>
+<td>"환율 방향성 판정법", "유가 영향 분석법" 같은 반복 절차를 스킬 문서로 관리하면 방향성 오판 문제 구조적 해결</td>
+</tr>
+<tr>
+<td><strong>Cron 스케줄링</strong></td>
+<td>Hermes의 자연어 크론 스케줄링이 Airflow DAG보다 유연할 수 있음 (단, 엔터프라이즈 안정성은 Airflow가 우위)</td>
+</tr>
+</tbody>
+</table>
 <h3 id="현재-bip와의-차이">현재 BIP와의 차이</h3>
-<ul>
-<li>BIP는 <strong>파이프라인 중심</strong> (Airflow DAG → 정해진 흐름), Hermes는 <strong>에이전트 중심</strong> (자율 판단)</li>
-<li>BIP의 체크리스트 에이전트는 Haiku ReAct 방식 → Hermes의 학습 루프와 유사하지만 스킬 저장/재활용 메커니즘은 없음</li>
-<li>BIP의 뉴스 다이제스트 파이프라인은 Hermes의 "반복 작업 학습" 개념과 유사 (패턴 인식 → 효율화)</li>
-<li>Hermes의 멀티 플랫폼 게이트웨이는 BIP의 텔레그램 + 이메일 구조보다 확장성이 높음</li>
-</ul>
+<table>
+<thead>
+<tr>
+<th>관점</th>
+<th>BIP</th>
+<th>Hermes</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>아키텍처</td>
+<td><strong>파이프라인 중심</strong> (Airflow DAG, 정해진 흐름)</td>
+<td><strong>에이전트 중심</strong> (자율 판단)</td>
+</tr>
+<tr>
+<td>학습</td>
+<td>Haiku ReAct 방식 (스킬 저장/재활용 없음)</td>
+<td>학습 루프 내장 (스킬 자동 생성)</td>
+</tr>
+<tr>
+<td>패턴 인식</td>
+<td>뉴스 다이제스트 파이프라인 (수동 설계)</td>
+<td>"반복 작업 학습" 자동화</td>
+</tr>
+<tr>
+<td>멀티 플랫폼</td>
+<td>텔레그램 + 이메일</td>
+<td>15+ 플랫폼 게이트웨이</td>
+</tr>
+<tr>
+<td>DB</td>
+<td>PostgreSQL (39개 테이블)</td>
+<td>SQLite (로컬 파일)</td>
+</tr>
+<tr>
+<td>감사</td>
+<td>agent_audit_log 테이블</td>
+<td>없음 (자체 구현 필요)</td>
+</tr>
+</tbody>
+</table>
 <h3 id="도입-시-고려사항">도입 시 고려사항</h3>
-<ul>
-<li>리플렉션 토큰 오버헤드 15~25% — 비용 민감한 환경에서는 부담</li>
-<li>월 API 비용 $15~$400+ — BIP 현재 ~$5/월 대비 크게 증가</li>
-<li>코딩 전문 작업은 Claude Code/Cursor가 더 적합 (Hermes 공식 인정)</li>
-<li>SQLite 기반 → PostgreSQL 중심의 BIP 인프라와 통합 시 추가 작업 필요</li>
-<li>자율 에이전트의 예측 불가능성 — BIP의 거버넌스(보안, 감사 로그) 요구사항과 충돌 가능</li>
-</ul>
+<table>
+<thead>
+<tr>
+<th>항목</th>
+<th>상세</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>리플렉션 오버헤드</td>
+<td>토큰 15~25% 추가 -- 비용 민감 환경에서 부담</td>
+</tr>
+<tr>
+<td>월 API 비용</td>
+<td>$15~$400+ -- BIP 현재 ~$5/월 대비 크게 증가</td>
+</tr>
+<tr>
+<td>코딩 전문 작업</td>
+<td>Claude Code/Cursor가 더 적합 (Hermes 공식 인정)</td>
+</tr>
+<tr>
+<td>DB 통합</td>
+<td>SQLite 기반 -- PostgreSQL 중심의 BIP 인프라와 통합 시 추가 작업 필요</td>
+</tr>
+<tr>
+<td>예측 가능성</td>
+<td>자율 에이전트의 행동이 BIP 거버넌스(보안, 감사 로그) 요구사항과 충돌 가능</td>
+</tr>
+</tbody>
+</table>
+<hr />
 <h2 id="9-웹앱--open-webui-연동">9. 웹앱 / Open WebUI 연동</h2>
-<h3 id="hermes-agent--웹-연동-최상">Hermes Agent — 웹 연동 (최상)</h3>
-<p>OpenAI 호환 API 서버를 노출하므로, <strong>아무 프론트엔드와 바로 연결</strong> 가능.</p>
+<h3 id="hermes-agent----웹-연동-최상">Hermes Agent -- 웹 연동 (최상)</h3>
+<p>OpenAI 호환 API 서버를 노출하므로, <strong>아무 프론트엔드와 바로 연결</strong> 가능하다.</p>
 <table>
 <thead>
 <tr>
 <th>방식</th>
 <th>설명</th>
+<th>난이도</th>
 </tr>
 </thead>
 <tbody>
 <tr>
 <td><strong>Open WebUI</strong></td>
-<td>공식 연동 문서 제공. OPENAI_API_BASE_URL만 설정하면 완료</td>
+<td>공식 연동 문서 제공. <code>OPENAI_API_BASE_URL</code>만 설정하면 완료</td>
+<td>쉬움</td>
 </tr>
 <tr>
 <td><strong>hermes-webui</strong></td>
-<td><a href="https://github.com/nesquena/hermes-webui">전용 웹 UI</a> — CLI과 동일한 기능을 브라우저에서</td>
+<td><a href="https://github.com/nesquena/hermes-webui">전용 웹 UI</a> -- CLI과 동일한 기능을 브라우저에서 제공</td>
+<td>쉬움</td>
 </tr>
 <tr>
 <td><strong>hermes-workspace</strong></td>
-<td><a href="https://github.com/outsourc-e/hermes-workspace">네이티브 워크스페이스</a> — 채팅+터미널+메모리+스킬 인스펙터</td>
+<td><a href="https://github.com/outsourc-e/hermes-workspace">네이티브 워크스페이스</a> -- 채팅 + 터미널 + 메모리 + 스킬 인스펙터</td>
+<td>보통</td>
 </tr>
 <tr>
 <td><strong>기타</strong></td>
 <td>LobeChat, LibreChat, NextChat, ChatBox 등 OpenAI 포맷 지원 프론트엔드 모두 가능</td>
+<td>쉬움</td>
 </tr>
 </tbody>
 </table>
-<h3 id="deep-agents--웹-연동-제한적">Deep Agents — 웹 연동 (제한적)</h3>
+<h3 id="open-webui-연동-설정-예시">Open WebUI 연동 설정 예시</h3>
+<div class="codehilite"><pre><span></span><code><span class="c1"># Hermes Agent를 OpenAI 호환 서버로 기동</span>
+hermes<span class="w"> </span>serve<span class="w"> </span>--port<span class="w"> </span><span class="m">8080</span>
+
+<span class="c1"># Open WebUI에서 설정</span>
+<span class="c1"># Settings &gt; Connections &gt; OpenAI API</span>
+<span class="c1"># Base URL: http://localhost:8080/v1</span>
+<span class="c1"># API Key: (설정한 키)</span>
+</code></pre></div>
+
+<h3 id="deep-agents----웹-연동-제한적">Deep Agents -- 웹 연동 (제한적)</h3>
 <table>
 <thead>
 <tr>
@@ -677,23 +1264,24 @@ LLM 추론 + 도구 호출</p>
 </tr>
 </tbody>
 </table>
-<p>LangChain/LangGraph 기반이라 범용 프론트엔드와 바로 붙는 구조는 아님</p>
+<p>LangChain/LangGraph 기반이라 범용 프론트엔드와 바로 붙는 구조는 아니다.</p>
+<hr />
 <h2 id="10-bip에-hermes를-도입한다면">10. BIP에 Hermes를 도입한다면?</h2>
-<h3 id="현재-bip-구조-vs-hermes-최상단-구조">현재 BIP 구조 vs Hermes 최상단 구조</h3>
-<h3 id="현재-bip">현재 BIP</h3>
-<div class="codehilite"><pre><span></span><code>Airflow (스케줄링/모니터링)
-  → BIP-Agents (LLM + MCP)
-    → checklist_agent
-    → preopen_analyzer
-    → stock_screener
-  → 텔레그램 / 이메일
+<h3 id="현재-bip-구조-vs-hermes-도입-구조">현재 BIP 구조 vs Hermes 도입 구조</h3>
+<p><strong>현재 BIP:</strong></p>
+<div class="codehilite"><pre><span></span><code><span class="n">Airflow</span><span class="w"> </span><span class="p">(</span><span class="err">스케줄링</span><span class="o">/</span><span class="err">모니터링</span><span class="p">)</span>
+<span class="w">  </span><span class="o">-&gt;</span><span class="w"> </span><span class="n">BIP</span><span class="o">-</span><span class="n">Agents</span><span class="w"> </span><span class="p">(</span><span class="n">LLM</span><span class="w"> </span><span class="o">+</span><span class="w"> </span><span class="n">MCP</span><span class="p">)</span>
+<span class="w">      </span><span class="o">-&gt;</span><span class="w"> </span><span class="n">checklist_agent</span>
+<span class="w">      </span><span class="o">-&gt;</span><span class="w"> </span><span class="n">preopen_analyzer</span>
+<span class="w">      </span><span class="o">-&gt;</span><span class="w"> </span><span class="n">stock_screener</span>
+<span class="w">  </span><span class="o">-&gt;</span><span class="w"> </span><span class="err">텔레그램</span><span class="w"> </span><span class="o">/</span><span class="w"> </span><span class="err">이메일</span>
 </code></pre></div>
 
-<h3 id="hermes-최상단">Hermes 최상단</h3>
-<div class="codehilite"><pre><span></span><code>Hermes Agent (오케스트레이션+학습+웹UI)
-  → BIP-Agents (도구로 호출)
-  → Airflow (스케줄링만)
-  → 웹 / 텔레그램 / Slack
+<p><strong>Hermes 최상단:</strong></p>
+<div class="codehilite"><pre><span></span><code><span class="n">Hermes</span><span class="w"> </span><span class="n">Agent</span><span class="w"> </span><span class="p">(</span><span class="err">오케스트레이션</span><span class="w"> </span><span class="o">+</span><span class="w"> </span><span class="err">학습</span><span class="w"> </span><span class="o">+</span><span class="w"> </span><span class="err">웹</span><span class="w"> </span><span class="n">UI</span><span class="p">)</span>
+<span class="w">  </span><span class="o">-&gt;</span><span class="w"> </span><span class="n">BIP</span><span class="o">-</span><span class="n">Agents</span><span class="w"> </span><span class="p">(</span><span class="err">도구로</span><span class="w"> </span><span class="err">호출</span><span class="p">)</span>
+<span class="w">  </span><span class="o">-&gt;</span><span class="w"> </span><span class="n">Airflow</span><span class="w"> </span><span class="p">(</span><span class="err">스케줄링만</span><span class="p">)</span>
+<span class="w">  </span><span class="o">-&gt;</span><span class="w"> </span><span class="err">웹</span><span class="w"> </span><span class="o">/</span><span class="w"> </span><span class="err">텔레그램</span><span class="w"> </span><span class="o">/</span><span class="w"> </span><span class="n">Slack</span>
 </code></pre></div>
 
 <h3 id="3가지-선택지">3가지 선택지</h3>
@@ -709,58 +1297,210 @@ LLM 추론 + 도구 호출</p>
 </thead>
 <tbody>
 <tr>
-<td>A. 개념만 차용 (추천)</td>
+<td><strong>A. 개념만 차용</strong> (추천)</td>
 <td>현재 구조 유지하면서 Hermes의 좋은 아이디어를 BIP에 점진적으로 적용</td>
 <td>안정적, 기존 투자 보존, 점진적 개선</td>
 <td>웹 UI/멀티플랫폼은 직접 구현 필요</td>
 <td>낮음</td>
 </tr>
 <tr>
-<td>B. 인터페이스 레이어</td>
+<td><strong>B. 인터페이스 레이어</strong></td>
 <td>Hermes를 사용자 대화 창구로, 실제 분석은 BIP-Agents가 처리</td>
 <td>웹 UI 즉시 확보, 학습 루프 활용</td>
-<td>Hermes↔BIP 연동 개발 필요, 이중 인프라</td>
+<td>Hermes-BIP 연동 개발 필요, 이중 인프라</td>
 <td>중간</td>
 </tr>
 <tr>
-<td>C. 전면 교체</td>
+<td><strong>C. 전면 교체</strong></td>
 <td>BIP-Agents를 Hermes 프레임워크로 마이그레이션</td>
 <td>통합된 아키텍처, 학습 루프 네이티브</td>
-<td>기존 코드 폐기, 거버넌스 재구축, SQLite↔PostgreSQL</td>
+<td>기존 코드 폐기, 거버넌스 재구축, SQLite-PostgreSQL 불일치</td>
 <td>높음</td>
 </tr>
 </tbody>
 </table>
 <h3 id="옵션-a-차용-가능한-hermes-개념">옵션 A: 차용 가능한 Hermes 개념</h3>
-<ul>
-<li><strong>스킬 시스템</strong> → 체크리스트 에이전트의 반복 분석 패턴을 스킬 문서로 저장 (환율 방향성 판정, 유가 분석 등)</li>
-<li><strong>Procedural Memory</strong> → "어떻게 했는지"를 기억 — 현재 auto memory는 "무엇을" 기억</li>
-<li><strong>Progressive Disclosure</strong> → 프롬프트에 스킬 전체를 넣지 않고 레벨별 로딩으로 토큰 절약</li>
-<li><strong>웹 UI</strong> → 기존 React-FastAPI에 채팅 인터페이스 추가 (Hermes 불필요)</li>
-<li><strong>뉴스 다이제스트</strong> → 이미 BIP에서 구현 완료 (Hermes의 "반복 작업 학습"과 유사)</li>
-</ul>
+<table>
+<thead>
+<tr>
+<th>개념</th>
+<th>BIP 적용 방안</th>
+<th>구현 난이도</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><strong>스킬 시스템</strong></td>
+<td>체크리스트 에이전트의 반복 분석 패턴을 스킬 문서로 저장 (환율 방향성 판정, 유가 분석 등)</td>
+<td>낮음</td>
+</tr>
+<tr>
+<td><strong>Procedural Memory</strong></td>
+<td>"어떻게 했는지"를 기억 -- 현재 auto memory는 "무엇을" 기억</td>
+<td>중간</td>
+</tr>
+<tr>
+<td><strong>Progressive Disclosure</strong></td>
+<td>프롬프트에 스킬 전체를 넣지 않고 레벨별 로딩으로 토큰 절약</td>
+<td>낮음</td>
+</tr>
+<tr>
+<td><strong>웹 UI</strong></td>
+<td>기존 React-FastAPI에 채팅 인터페이스 추가 (Hermes 불필요)</td>
+<td>중간</td>
+</tr>
+<tr>
+<td><strong>뉴스 다이제스트</strong></td>
+<td>이미 BIP에서 구현 완료 (Hermes의 "반복 작업 학습"과 유사)</td>
+<td>완료</td>
+</tr>
+</tbody>
+</table>
 <h3 id="옵션-b-hermes를-인터페이스-레이어로-쓸-때">옵션 B: Hermes를 인터페이스 레이어로 쓸 때</h3>
-<div class="codehilite"><pre><span></span><code>사용자 ↔ Hermes (대화/웹UI/학습)
-           ↕ OpenAI 호환 API
-       BIP-Agents API (실제 분석)
-           ↕
-       Airflow + PostgreSQL + MCP
+<div class="codehilite"><pre><span></span><code><span class="err">사용자</span><span class="w">  </span><span class="o">&lt;--&gt;</span><span class="w">  </span><span class="n">Hermes</span><span class="w"> </span><span class="p">(</span><span class="err">대화</span><span class="o">/</span><span class="err">웹</span><span class="n">UI</span><span class="o">/</span><span class="err">학습</span><span class="p">)</span>
+<span class="w">                 </span><span class="o">|</span>
+<span class="w">          </span><span class="n">OpenAI</span><span class="w"> </span><span class="err">호환</span><span class="w"> </span><span class="n">API</span>
+<span class="w">                 </span><span class="o">|</span>
+<span class="w">          </span><span class="n">BIP</span><span class="o">-</span><span class="n">Agents</span><span class="w"> </span><span class="n">API</span><span class="w"> </span><span class="p">(</span><span class="err">실제</span><span class="w"> </span><span class="err">분석</span><span class="p">)</span>
+<span class="w">                 </span><span class="o">|</span>
+<span class="w">          </span><span class="n">Airflow</span><span class="w"> </span><span class="o">+</span><span class="w"> </span><span class="n">PostgreSQL</span><span class="w"> </span><span class="o">+</span><span class="w"> </span><span class="n">MCP</span>
 </code></pre></div>
 
+<p>구체적 연동 방식:</p>
 <ul>
 <li>Hermes가 BIP-Agents의 <code>/api/checklist/analyze</code>, <code>/api/screener/daily</code> 등을 도구로 호출</li>
-<li>사용자는 "오늘 시장 어때?" 같은 자연어로 질문 → Hermes가 판단해서 적절한 BIP API 호출</li>
+<li>사용자는 "오늘 시장 어때?" 같은 자연어로 질문하면 Hermes가 판단해서 적절한 BIP API 호출</li>
 <li>학습 루프로 자주 묻는 질문의 응답 패턴을 스킬로 저장</li>
+<li>Hermes의 Cron 스케줄러로 정기 리포트 생성을 트리거할 수도 있으나, Airflow의 안정성이 더 높음</li>
 </ul>
+<h3 id="옵션-c-전면-교체-비추천">옵션 C: 전면 교체 (비추천)</h3>
+<p>전면 교체 시 마이그레이션 범위:</p>
+<table>
+<thead>
+<tr>
+<th>현재 BIP 구성요소</th>
+<th>마이그레이션 작업</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Airflow DAG 43개</td>
+<td>Hermes Cron으로 재작성</td>
+</tr>
+<tr>
+<td>PostgreSQL 39개 테이블</td>
+<td>SQLite 또는 외부 DB 연동 구현</td>
+</tr>
+<tr>
+<td>agent_audit_log</td>
+<td>커스텀 감사 시스템 구축</td>
+</tr>
+<tr>
+<td>security_governance</td>
+<td>보안 정책 재구현</td>
+</tr>
+<tr>
+<td>MCP 도구</td>
+<td>Hermes Tool로 래핑</td>
+</tr>
+<tr>
+<td>텔레그램 봇</td>
+<td>Hermes Gateway 전환</td>
+</tr>
+</tbody>
+</table>
 <h3 id="hermes-도입-시-잃는-것">Hermes 도입 시 잃는 것</h3>
-<ul>
-<li><strong>Airflow 안정성</strong> — 스케줄링/재시도/모니터링 UI → Hermes cron은 이만큼 성숙하지 않음</li>
-<li><strong>PostgreSQL 인프라</strong> → Hermes는 SQLite 기반, 기존 39개 테이블과 통합 어려움</li>
-<li><strong>감사 로그/보안</strong> → agent_audit_log, security_governance 등 다시 구축 필요</li>
-<li><strong>토큰 비용</strong> → 리플렉션 오버헤드 15~25% 증가 (BIP 현재 ~$5/월 → ~$20+/월)</li>
-<li><strong>예측 가능성</strong> → 자율 에이전트의 행동이 규칙 기반보다 불확실</li>
-</ul>
+<table>
+<thead>
+<tr>
+<th>항목</th>
+<th>상세</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><strong>Airflow 안정성</strong></td>
+<td>스케줄링/재시도/모니터링 UI -- Hermes cron은 이만큼 성숙하지 않음</td>
+</tr>
+<tr>
+<td><strong>PostgreSQL 인프라</strong></td>
+<td>Hermes는 SQLite 기반, 기존 39개 테이블과 통합 어려움</td>
+</tr>
+<tr>
+<td><strong>감사 로그/보안</strong></td>
+<td><code>agent_audit_log</code>, <code>security_governance</code> 등 다시 구축 필요</td>
+</tr>
+<tr>
+<td><strong>토큰 비용</strong></td>
+<td>리플렉션 오버헤드 15~25% 증가 (BIP 현재 ~$5/월 -&gt; ~$20+/월)</td>
+</tr>
+<tr>
+<td><strong>예측 가능성</strong></td>
+<td>자율 에이전트의 행동이 규칙 기반보다 불확실</td>
+</tr>
+<tr>
+<td><strong>OpenMetadata 통합</strong></td>
+<td>OM 메타데이터/리니지와의 연동 재구축 필요</td>
+</tr>
+</tbody>
+</table>
+<hr />
 <h2 id="11-비용-구조">11. 비용 구조</h2>
+<h3 id="인프라-비용">인프라 비용</h3>
+<table>
+<thead>
+<tr>
+<th>항목</th>
+<th>수치</th>
+<th>비고</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>최소 호스팅</td>
+<td>$5/월 VPS (2코어, 8GB RAM)</td>
+<td>DigitalOcean, Vultr 등</td>
+</tr>
+<tr>
+<td>권장 호스팅</td>
+<td>$10~20/월 VPS (4코어, 16GB RAM)</td>
+<td>대규모 스킬 운용 시</td>
+</tr>
+<tr>
+<td>스토리지</td>
+<td>최소 10GB</td>
+<td>SQLite + 스킬 파일</td>
+</tr>
+</tbody>
+</table>
+<h3 id="api-비용">API 비용</h3>
+<table>
+<thead>
+<tr>
+<th>사용 패턴</th>
+<th>예상 월 비용</th>
+<th>모델</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>가벼운 사용 (하루 10~20회)</td>
+<td>$15~$30</td>
+<td>Haiku/GPT-4o-mini 급</td>
+</tr>
+<tr>
+<td>중간 사용 (하루 50~100회)</td>
+<td>$50~$150</td>
+<td>Sonnet/GPT-4o 급</td>
+</tr>
+<tr>
+<td>헤비 사용 (하루 200+회)</td>
+<td>$200~$400+</td>
+<td>Opus/o1 급</td>
+</tr>
+</tbody>
+</table>
+<h3 id="오버헤드">오버헤드</h3>
 <table>
 <thead>
 <tr>
@@ -770,33 +1510,126 @@ LLM 추론 + 도구 호출</p>
 </thead>
 <tbody>
 <tr>
-<td>최소 호스팅</td>
-<td>$5/월 VPS (2코어, 8GB RAM)</td>
-</tr>
-<tr>
-<td>월 API 비용</td>
-<td>$15~$400+ (모델/사용량 따라)</td>
-</tr>
-<tr>
-<td>리플렉션 오버헤드</td>
-<td>토큰 15~25% 추가</td>
+<td>리플렉션 토큰 오버헤드</td>
+<td>15~25% 추가 (학습 루프 때문)</td>
 </tr>
 <tr>
 <td>FTS5 검색 지연</td>
-<td>~10ms (10K+ 문서)</td>
+<td>~10ms (10K+ 문서 기준)</td>
+</tr>
+<tr>
+<td>스킬 로딩 (Level 0)</td>
+<td>&lt; 500 토큰 (118개 스킬)</td>
+</tr>
+<tr>
+<td>스킬 로딩 (Level 1)</td>
+<td>1,000~5,000 토큰 (스킬당)</td>
 </tr>
 </tbody>
 </table>
+<h3 id="bip-현재-비용과-비교">BIP 현재 비용과 비교</h3>
+<table>
+<thead>
+<tr>
+<th>항목</th>
+<th>BIP 현재</th>
+<th>Hermes 도입 시</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>인프라</td>
+<td>Docker Compose (기존 서버)</td>
+<td>추가 VPS $5~20/월</td>
+</tr>
+<tr>
+<td>API 비용</td>
+<td>~$5/월 (Haiku 위주)</td>
+<td>$20~150/월 (리플렉션 포함)</td>
+</tr>
+<tr>
+<td>총 비용</td>
+<td>~$5/월</td>
+<td>$25~170/월</td>
+</tr>
+</tbody>
+</table>
+<hr />
 <h2 id="12-참고-자료">12. 참고 자료</h2>
-<ul>
-<li><a href="https://github.com/nousresearch/hermes-agent">GitHub - NousResearch/hermes-agent</a> (69.9K stars, MIT)</li>
-<li><a href="https://hermes-agent.nousresearch.com/docs/">공식 문서</a></li>
-<li><a href="https://hermes-agent.nousresearch.com/docs/developer-guide/architecture">아키텍처 상세</a></li>
-<li><a href="https://www.nxcode.io/resources/news/hermes-agent-complete-guide-self-improving-ai-2026">Complete Guide (NxCode, 2026)</a></li>
-<li><a href="https://www.mindstudio.ai/blog/what-is-hermes-agent-openclaw-alternative">OpenClaw 비교 분석 (MindStudio)</a></li>
-<li><a href="https://dev.to/arshtechpro/hermes-agent-a-self-improving-ai-agent-that-runs-anywhere-2b7d">Self-Improving AI Agent (DEV Community)</a></li>
-</ul>
-<p>마지막 업데이트: 2026-04-13 | BIP-Pipeline 내부 조사 문서 </p>
+<table>
+<thead>
+<tr>
+<th>자료</th>
+<th>링크</th>
+<th>비고</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>GitHub 저장소</td>
+<td><a href="https://github.com/nousresearch/hermes-agent">NousResearch/hermes-agent</a></td>
+<td>69.9K stars, MIT</td>
+</tr>
+<tr>
+<td>공식 문서</td>
+<td><a href="https://hermes-agent.nousresearch.com/docs/">hermes-agent.nousresearch.com/docs</a></td>
+<td>설치/설정/API 가이드</td>
+</tr>
+<tr>
+<td>아키텍처 상세</td>
+<td><a href="https://hermes-agent.nousresearch.com/docs/developer-guide/architecture">Developer Guide - Architecture</a></td>
+<td>서브시스템 설계</td>
+</tr>
+<tr>
+<td>Complete Guide</td>
+<td><a href="https://www.nxcode.io/resources/news/hermes-agent-complete-guide-self-improving-ai-2026">NxCode, 2026</a></td>
+<td>종합 리뷰</td>
+</tr>
+<tr>
+<td>OpenClaw 비교 분석</td>
+<td><a href="https://www.mindstudio.ai/blog/what-is-hermes-agent-openclaw-alternative">MindStudio Blog</a></td>
+<td>경쟁 제품 비교</td>
+</tr>
+<tr>
+<td>Self-Improving AI Agent</td>
+<td><a href="https://dev.to/arshtechpro/hermes-agent-a-self-improving-ai-agent-that-runs-anywhere-2b7d">DEV Community</a></td>
+<td>커뮤니티 리뷰</td>
+</tr>
+<tr>
+<td>agentskills.io</td>
+<td><a href="https://agentskills.io">agentskills.io</a></td>
+<td>스킬 오픈 표준/허브</td>
+</tr>
+<tr>
+<td>Nous Research GitHub</td>
+<td><a href="https://github.com/NousResearch">github.com/NousResearch</a></td>
+<td>조직 전체 저장소</td>
+</tr>
+</tbody>
+</table>
+<hr />
+<h2 id="변경-이력">변경 이력</h2>
+<table>
+<thead>
+<tr>
+<th>날짜</th>
+<th>작성자</th>
+<th>변경 내용</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>2026-04-13</td>
+<td>yeji</td>
+<td>초안 작성 -- Hermes Agent v0.7.0 기준 조사</td>
+</tr>
+<tr>
+<td>2026-04-26</td>
+<td>yeji</td>
+<td>포맷 재정비 -- Mermaid 다이어그램 3개 추가, 테이블 정리, 목차 추가, 깨진 서식 전면 수정, 섹션별 상세 보강</td>
+</tr>
+</tbody>
+</table>
 </main>
 
 <script>
