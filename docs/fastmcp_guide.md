@@ -1,440 +1,738 @@
-# FastMCP  
-가이드
+# FastMCP 가이드
 
-MCP(Model Context Protocol)는 AI 에이전트가 외부 도구와 데이터에 접근하는 표준 프로토콜. FastMCP는 이를 Python 데코레이터 한 줄로 구현할 수 있게 해주는 프레임워크. 도구 정의 → 스키마 자동 생성 → 서버 실행까지 5분.
+> **공식 문서:** https://gofastmcp.com
 
-24.5K Stars Apache 2.0 v3.2 Anthropic 표준 Python Prefect
+---
 
-## MCP란? — 에이전트의 USB 포트
+## 1. 개요
 
-MCP 프로토콜 구조
+### MCP란?
 
-graph LR subgraph Hosts["MCP 호스트 (AI 에이전트)"] H1["Claude Desktop"] H2["LangGraph Agent"] H3["자체 앱"] end subgraph Protocol["MCP 프로토콜"] P["표준화된 인터페이스\nTools / Resources / Prompts"] end subgraph Servers["MCP 서버"] S1["DB 도구"] S2["API 래핑"] S3["파일 시스템"] S4["웹 검색"] end Hosts --> Protocol Protocol --> Servers style Protocol fill:#201810,stroke:#e09830,color:#f8b840 
+**MCP(Model Context Protocol)**는 Anthropic이 2024년 공개한 AI 도구 연결 표준이다. "AI 에이전트의 USB-C"로 불리며, 어떤 AI 에이전트든 MCP 서버에 연결하면 표준화된 방식으로 도구를 사용할 수 있다.
 
-MCP
+```mermaid
+graph LR
+    subgraph Hosts["MCP 호스트 (AI 에이전트)"]
+        H1["Claude Desktop"]
+        H2["LangGraph Agent"]
+        H3["자체 앱"]
+    end
 
-Model Context Protocol
+    subgraph Protocol["MCP 프로토콜"]
+        P["표준 인터페이스"]
+    end
 
-Anthropic이 2024년 공개한 AI 도구 연결 표준. "AI 에이전트의 USB-C"라고 불림.
+    subgraph Servers["MCP 서버"]
+        S1["DB 도구"]
+        S2["API 래핑"]
+        S3["파일 시스템"]
+        S4["웹 검색"]
+    end
 
-어떤 AI 에이전트든 MCP 서버에 연결하면 도구를 사용 가능. 프로바이더 독립적.
+    Hosts --> Protocol
+    Protocol --> Servers
+```
 
-FASTMCP
+### FastMCP란?
 
-FastMCP
+**FastMCP**는 MCP 서버를 Python 데코레이터 한 줄로 구축하는 프레임워크다.
 
-MCP 서버를 Python 데코레이터로 빠르게 구축하는 프레임워크. Prefect가 관리.
+- **Prefect**가 관리하는 오픈소스 (Apache 2.0)
+- 2024년 공식 MCP Python SDK에 편입 → v3.0에서 독립적 진화
+- 모든 언어의 MCP 서버 **70%**가 FastMCP 기반
+- 일일 **100만 회** 다운로드
 
-FastMCP 1.0은 공식 MCP Python SDK에 편입됨. v3.0에서 독립적으로 진화.
+### 3가지 기둥
 
-01설치
+| 기둥 | 역할 |
+|------|------|
+| **Servers** | Python 함수를 MCP 호환 도구/리소스/프롬프트로 변환 |
+| **Clients** | 로컬/원격 MCP 서버에 프로그래밍 방식으로 연결 |
+| **Apps** | 대화 내 대화형 UI 제공 |
 
-SHELL설치
-    
-    
-    # uv 사용 (권장)
-    uv pip install fastmcp
-    
-    # pip 사용
-    pip install fastmcp
-    
-    # LangGraph 연동용
-    pip install langchain-mcp-adapters
+### 최소 예제
 
-02Tools — 도구 정의
+```python
+from fastmcp import FastMCP
 
-개념Tool = LLM이 호출하는 함수
+mcp = FastMCP("Demo")
 
-Python 함수에 `@mcp.tool` 데코레이터를 붙이면, 타입 힌트와 docstring에서 **스키마가 자동 생성** 됩니다. JSON Schema, 검증, 에러 처리 전부 자동.
+@mcp.tool
+def add(a: int, b: int) -> int:
+    """두 수를 더합니다"""
+    return a + b
 
-PYTHON도구 정의 기본
-    
-    
-    from fastmcp import FastMCP
-    
-    mcp = FastMCP("my-server")
-    
-    @mcp.tool
-    def get_stock_price(ticker: str) -> dict:
-        """종목 현재가를 조회합니다.
-    
-        Args:
-            ticker: 종목 코드 (예: 005930)
-        """
-        price = fetch_from_api(ticker)
-        return {"ticker": ticker, "price": price}
-    
-    @mcp.tool
-    async def search_news(query: str, count: int = 5) -> list:
-        """뉴스를 검색합니다.
-    
-        Args:
-            query: 검색어
-            count: 결과 수 (기본 5)
-        """
-        results = await news_api.search(query, count)
-        return results
+if __name__ == "__main__":
+    mcp.run()
+```
 
-💡
+이것만으로 MCP 서버가 실행되고, Claude Desktop이나 LangGraph에서 `add` 도구를 호출할 수 있다.
 
-**docstring이 곧 설명** LLM은 이 docstring을 읽고 도구를 선택합니다. 잘 쓰면 LLM이 도구를 정확하게 호출하고, 못 쓰면 엉뚱한 도구를 선택합니다.
+---
 
-03Resources — 리소스 노출
+## 2. 설치
 
-PYTHON리소스 정의
-    
-    
-    # 정적 리소스
-    @mcp.resource("config://app-settings")
-    def get_settings() -> str:
-        """앱 설정을 반환합니다."""
-        return json.dumps({"version": "1.0", "env": "production"})
-    
-    # 동적 리소스 (URI 템플릿)
-    @mcp.resource("db://table/{table_name}")
-    def get_table_schema(table_name: str) -> str:
-        """테이블 스키마를 반환합니다."""
-        schema = db.get_schema(table_name)
-        return json.dumps(schema)
+```bash
+# uv 사용 (권장)
+uv pip install fastmcp
 
-ℹ
+# pip 사용
+pip install fastmcp
 
-**Tool vs Resource** Tool은 "행동"(API 호출, DB 쿼리), Resource는 "데이터"(설정, 스키마, 문서). Tool은 LLM이 호출하고, Resource는 컨텍스트로 주입됩니다.
+# LangGraph 연동용
+pip install langchain-mcp-adapters
 
-04Prompts — 프롬프트 템플릿
+# 버전 확인
+fastmcp version
+```
 
-PYTHON프롬프트 템플릿 정의
-    
-    
-    @mcp.prompt
-    def analyze_stock(ticker: str) -> str:
-        """종목 분석 프롬프트"""
-        return f"""다음 종목을 분석해주세요:
-        - 종목코드: {ticker}
-        - get_stock_price 도구로 현재가 확인
-        - search_news 도구로 관련 뉴스 검색
-        - 종합 판단 제시"""
+---
 
-05전송 모드 비교
+## 3. 아키텍처
 
-3가지 전송 모드 비교
+```mermaid
+graph TB
+    subgraph Server["FastMCP Server"]
+        TOOLS["Tools<br/>LLM이 호출하는 함수"]
+        RESOURCES["Resources<br/>LLM이 읽는 데이터"]
+        PROMPTS["Prompts<br/>재사용 메시지 템플릿"]
+        CONTEXT["Context<br/>세션/로깅/진행률"]
+    end
 
-graph TD subgraph STDIO["stdio"] S_C["클라이언트"] -->|stdin/stdout| S_S["서버\n(서브프로세스)"] end subgraph SSE["SSE (Server-Sent Events)"] E_C["클라이언트"] -->|"HTTP POST /messages"| E_S["서버"] E_S -->|"SSE /sse"| E_C end subgraph HTTP["Streamable HTTP (최신)"] H_C["클라이언트"] -->|"POST /mcp"| H_S["서버"] H_S -->|"JSON or SSE"| H_C end style STDIO fill:#0d0f18,stroke:#30c880 style SSE fill:#0d0f18,stroke:#e09830 style HTTP fill:#0d0f18,stroke:#5a7af0 
+    subgraph Transport["전송 계층"]
+        STDIO["stdio<br/>로컬 프로세스"]
+        HTTP["Streamable HTTP<br/>원격 서버"]
+        MEM["In-Memory<br/>테스트용"]
+    end
 
-항목| stdio| SSE| Streamable HTTP  
----|---|---|---  
-**통신 방식**|  stdin/stdout 파이프| HTTP POST + SSE 스트림 (2 엔드포인트)| 단일 HTTP 엔드포인트 (/mcp)  
-**적합 환경**|  로컬 데스크톱 앱| 원격 서버 (레거시)| 원격 서버 (최신 표준)  
-**성능**|  최고 (네트워크 없음)| 좋음| 좋음  
-**수평 확장**|  불가| 제한적 (long-lived 연결)| 가능 (stateless)  
-**호환성**|  Claude Desktop 등| BIP 현재 사용 중| 2026 최신 표준  
-**상태**|  유지| Deprecated (→ Streamable HTTP)| 권장  
-  
-💡
+    subgraph Clients["클라이언트"]
+        CLAUDE["Claude Desktop"]
+        LANG["LangGraph Agent"]
+        CLI["FastMCP CLI"]
+        CODE["Python Client"]
+    end
 
-**판단 기준** 서버와 클라이언트가 같은 머신이면 **stdio**. 다른 머신(Docker, 클라우드)이면 **Streamable HTTP** (또는 레거시 환경에서 SSE). BIP는 Docker 구성이라 SSE 사용 중.
+    Clients --> Transport
+    Transport --> Server
+```
 
-06SSE 서버 구성
+### 요청 처리 흐름
 
-PYTHONSSE 모드 서버 실행
-    
-    
-    from fastmcp import FastMCP
-    
-    mcp = FastMCP(
-        name="my-tools",
-        host="0.0.0.0",  # 외부 접근 허용
-        port=8000,
-    )
-    
-    @mcp.tool
-    def my_tool(query: str) -> str:
-        """도구 설명"""
-        return f"결과: {query}"
-    
-    if __name__ == "__main__":
-        mcp.run(transport="sse")
-    
-    # 실행: python server.py
-    # → http://0.0.0.0:8000/sse 에서 SSE 엔드포인트 노출
+```mermaid
+sequenceDiagram
+    participant C as Client (LLM Agent)
+    participant T as Transport
+    participant S as FastMCP Server
+    participant F as Python Function
 
-PYTHONStreamable HTTP 모드 (최신)
-    
-    
-    # Streamable HTTP는 단일 엔드포인트
-    if __name__ == "__main__":
-        mcp.run(transport="streamable-http")
-    
-    # → http://0.0.0.0:8000/mcp 에서 단일 엔드포인트 노출
-    # 클라이언트가 JSON 또는 SSE를 선택적으로 수신
+    C->>T: tool/call (name, arguments)
+    T->>S: MCP 프로토콜 파싱
+    S->>S: 스키마 검증 (Pydantic)
+    S->>F: 함수 호출
+    F-->>S: 반환값
+    S->>S: 결과 직렬화
+    S-->>T: MCP 응답
+    T-->>C: JSON 결과
+```
 
-CLICLI로 실행
-    
-    
-    # stdio 모드 (기본)
-    fastmcp run server.py
-    
-    # SSE 모드
-    fastmcp run server.py --transport sse
-    
-    # Streamable HTTP
-    fastmcp run server.py --transport streamable-http
-    
-    # 포트 지정
-    fastmcp run server.py --transport sse --port 9000
+---
 
-07LangGraph 연동
+## 4. Tools — 도구 정의
 
-LangGraph ↔ MCP 연동 아키텍처
+### 개념
 
-graph LR LG["LangGraph Agent\ncreate_react_agent"] -->|langchain-mcp-adapters| CLIENT["MultiServerMCPClient"] CLIENT -->|SSE| MCP1["MCP Server 1\nDB 도구"] CLIENT -->|SSE| MCP2["MCP Server 2\nAPI 도구"] CLIENT -->|stdio| MCP3["MCP Server 3\n로컬 도구"] style LG fill:#1a2540,stroke:#5a7af0,color:#7a9aff style CLIENT fill:#201810,stroke:#e09830,color:#f8b840 style MCP1 fill:#102820,stroke:#30c880,color:#50e898 style MCP2 fill:#102820,stroke:#30c880,color:#50e898 style MCP3 fill:#102820,stroke:#30c880,color:#50e898 
+Tool은 **LLM이 호출하는 함수**다. `@mcp.tool` 데코레이터를 붙이면 타입 힌트와 docstring에서 **스키마가 자동 생성**된다. JSON Schema, 입력 검증, 에러 처리가 전부 자동.
 
-PYTHONMultiServerMCPClient로 연결
-    
-    
-    from langchain_mcp_adapters.client import MultiServerMCPClient
-    from langgraph.prebuilt import create_react_agent
-    from langchain_anthropic import ChatAnthropic
-    
-    # 여러 MCP 서버 동시 연결 (전송 모드 혼합 가능)
-    mcp_client = MultiServerMCPClient({
-        "stock-tools": {
-            "url": "http://mcp-server:8000/sse",
-            "transport": "sse",
-        },
-        "local-tools": {
-            "command": "python",
-            "args": ["local_mcp.py"],
-            "transport": "stdio",
-        },
-    })
-    
-    # MCP 도구를 LangChain 도구로 변환
-    tools = await mcp_client.get_tools()
-    print(f"로드된 도구: {len(tools)}개")
-    
-    # LangGraph 에이전트에 도구 등록
-    llm = ChatAnthropic(model="claude-haiku-4-5-20251001")
-    agent = create_react_agent(llm, tools)
-    
-    # 실행
+### 기본 사용법
+
+```python
+@mcp.tool
+def get_weather(city: str, unit: str = "celsius") -> str:
+    """도시의 현재 날씨를 조회합니다.
+
+    Args:
+        city: 도시 이름 (한글 가능)
+        unit: 온도 단위 (celsius 또는 fahrenheit)
+    """
+    return f"{city}: 22°{unit[0].upper()}, 맑음"
+```
+
+이것만으로 LLM은:
+- `get_weather`라는 도구가 있다는 걸 알고
+- `city`(필수), `unit`(선택)이 필요하다는 걸 알고
+- 자동으로 호출할 수 있다
+
+### 타입 지원
+
+Pydantic이 지원하는 모든 타입 사용 가능:
+
+```python
+from pydantic import BaseModel
+from enum import Enum
+
+class Priority(str, Enum):
+    HIGH = "high"
+    MEDIUM = "medium"
+    LOW = "low"
+
+class TaskInput(BaseModel):
+    title: str
+    priority: Priority
+    tags: list[str] = []
+
+@mcp.tool
+def create_task(task: TaskInput) -> dict:
+    """작업을 생성합니다"""
+    return {"id": 1, "title": task.title, "priority": task.priority}
+```
+
+### 비동기 함수
+
+```python
+@mcp.tool
+async def fetch_data(url: str) -> str:
+    """외부 API에서 데이터를 가져옵니다"""
+    async with httpx.AsyncClient() as client:
+        response = await client.get(url)
+        return response.text
+```
+
+동기 함수는 자동으로 threadpool에서 실행되어 이벤트 루프를 차단하지 않는다.
+
+### 반환값 유형
+
+| 반환 타입 | 처리 |
+|---------|------|
+| `str` | 텍스트로 전송 |
+| `bytes` | Base64 인코딩 |
+| `dict` / Pydantic Model | JSON 직렬화 |
+| `Image` | 이미지 콘텐츠 |
+| `ToolResult` | 구조화된 출력 (v3.0+) |
+
+### 에러 처리
+
+```python
+from fastmcp.exceptions import ToolError
+
+@mcp.tool
+def divide(a: float, b: float) -> float:
+    """나눗셈"""
+    if b == 0:
+        raise ToolError("0으로 나눌 수 없습니다")
+    return a / b
+```
+
+### 의존성 주입 (Depends)
+
+LLM에게 노출하지 않을 파라미터를 주입:
+
+```python
+from fastmcp import Depends
+
+def get_db_session():
+    return create_session()
+
+@mcp.tool
+def query_users(name: str, db = Depends(get_db_session)) -> list:
+    """사용자를 검색합니다 (LLM은 name만 입력)"""
+    return db.query(User).filter(User.name == name).all()
+```
+
+### 파라미터 검증
+
+```python
+from pydantic import Field
+
+@mcp.tool
+def search(
+    query: str = Field(description="검색어", min_length=1),
+    limit: int = Field(default=10, ge=1, le=100, description="결과 수")
+) -> list:
+    """검색합니다"""
+    ...
+```
+
+---
+
+## 5. Resources — 데이터 노출
+
+### 개념
+
+Resource는 **LLM이 읽을 수 있는 데이터**다. Tool과 달리 "실행"이 아닌 "조회" 성격.
+
+### 기본 사용법
+
+```python
+@mcp.resource("config://app-settings")
+def get_settings() -> str:
+    """애플리케이션 설정을 제공합니다"""
+    return json.dumps({"debug": False, "version": "1.0"})
+```
+
+### 리소스 템플릿 (동적 URI)
+
+```python
+@mcp.resource("users://{user_id}/profile")
+def get_user_profile(user_id: str) -> str:
+    """사용자 프로필을 조회합니다"""
+    user = db.get_user(user_id)
+    return json.dumps({"name": user.name, "email": user.email})
+```
+
+클라이언트가 `users://123/profile`로 요청하면 `user_id="123"`으로 함수가 호출된다.
+
+### 와일드카드 (v2.2.4+)
+
+```python
+@mcp.resource("file://{path*}")
+def read_file(path: str) -> str:
+    """파일 내용을 읽습니다 (하위 경로 포함)"""
+    return Path(path).read_text()
+```
+
+`file://docs/api/guide.md` 같은 다중 경로 세그먼트도 매칭.
+
+### 정적 리소스
+
+```python
+from fastmcp.resources import FileResource
+
+mcp.add_resource(FileResource(
+    uri="file://README.md",
+    path=Path("./README.md"),
+    mime_type="text/markdown"
+))
+```
+
+---
+
+## 6. Prompts — 메시지 템플릿
+
+### 개념
+
+Prompt는 **재사용 가능한 메시지 템플릿**이다. LLM에게 구조화된 지시를 제공할 때 사용.
+
+### 기본 사용법
+
+```python
+@mcp.prompt
+def code_review(code: str, language: str = "python") -> str:
+    """코드 리뷰를 요청하는 프롬프트"""
+    return f"""다음 {language} 코드를 리뷰해주세요.
+
+```{language}
+{code}
+```
+
+포인트:
+1. 버그 또는 에러 가능성
+2. 성능 개선점
+3. 가독성"""
+```
+
+### 복수 메시지 반환
+
+```python
+from fastmcp.prompts import Message
+
+@mcp.prompt
+def debug_session(error: str) -> list[Message]:
+    """디버깅 세션을 시작합니다"""
+    return [
+        Message(role="user", content=f"이 에러를 분석해주세요: {error}"),
+        Message(role="assistant", content="네, 에러를 분석하겠습니다. 관련 코드를 보여주세요."),
+        Message(role="user", content="관련 코드는 다음과 같습니다:"),
+    ]
+```
+
+---
+
+## 7. Context — 세션 컨텍스트
+
+### 개념
+
+Context는 도구/리소스 함수 내에서 **MCP 세션 정보에 접근**하는 객체다.
+
+### 사용 방법
+
+```python
+from fastmcp import Context
+
+@mcp.tool
+async def process_data(data: str, ctx: Context) -> str:
+    """데이터를 처리합니다 (진행률 보고 포함)"""
+
+    # 로깅
+    await ctx.info("처리 시작")
+    await ctx.debug(f"데이터 크기: {len(data)}")
+
+    # 진행률 보고
+    for i in range(10):
+        await ctx.report_progress(i + 1, 10)
+        await process_chunk(data[i])
+
+    await ctx.info("처리 완료")
+    return "완료"
+```
+
+### 주요 기능
+
+| 기능 | 메서드 | 용도 |
+|------|--------|------|
+| **로깅** | `ctx.debug()`, `ctx.info()`, `ctx.warning()`, `ctx.error()` | 클라이언트에 실행 상태 전달 |
+| **진행률** | `ctx.report_progress(current, total)` | 장시간 작업 진행률 |
+| **리소스 접근** | `ctx.read_resource(uri)` | 등록된 리소스 읽기 |
+| **LLM 샘플링** | `ctx.sample(prompt)` | 클라이언트의 LLM에게 텍스트 생성 요청 |
+| **사용자 입력** | `ctx.elicit(schema)` | 대화형 사용자 입력 요청 (v3.0+) |
+| **세션 상태** | `ctx.session[key]` | 요청 간 데이터 유지 |
+
+### LLM 샘플링
+
+```python
+@mcp.tool
+async def summarize_and_translate(text: str, ctx: Context) -> str:
+    """텍스트를 요약한 후 번역합니다"""
+    summary = await ctx.sample(f"다음을 3줄로 요약해주세요:\n{text}")
+    translation = await ctx.sample(f"다음을 영어로 번역해주세요:\n{summary}")
+    return translation
+```
+
+---
+
+## 8. 전송 모드 (Transport)
+
+MCP 서버와 클라이언트 간의 통신 방식.
+
+| 모드 | 용도 | 명령어 |
+|------|------|--------|
+| **stdio** | 로컬 프로세스, Claude Desktop 연동 | `mcp.run(transport="stdio")` |
+| **Streamable HTTP** | 원격 서버, 프로덕션 | `mcp.run(transport="streamable-http", port=8000)` |
+| **SSE** (레거시) | HTTP 서버 (하위 호환) | `mcp.run(transport="sse")` |
+| **In-Memory** | 테스트, 같은 프로세스 | `Client(server)` 직접 전달 |
+
+### stdio 실행
+
+```bash
+# CLI로 실행
+fastmcp run my_server.py
+
+# Python 코드에서
+if __name__ == "__main__":
+    mcp.run()  # 기본값이 stdio
+```
+
+### HTTP 실행
+
+```bash
+# CLI로 실행
+fastmcp run my_server.py --transport streamable-http --port 8000
+
+# Python 코드에서
+mcp.run(transport="streamable-http", host="0.0.0.0", port=8000)
+```
+
+### Claude Desktop 연동
+
+```json
+{
+  "mcpServers": {
+    "my-server": {
+      "command": "fastmcp",
+      "args": ["run", "/path/to/my_server.py"]
+    }
+  }
+}
+```
+
+---
+
+## 9. Client — 서버 연결
+
+### 기본 사용법
+
+```python
+from fastmcp import Client
+
+client = Client("http://localhost:8000/mcp")
+
+async with client:
+    # 도구 목록 조회
+    tools = await client.list_tools()
+
+    # 도구 호출
+    result = await client.call_tool("add", {"a": 1, "b": 2})
+    print(result)  # 3
+
+    # 리소스 읽기
+    data = await client.read_resource("config://app-settings")
+
+    # 프롬프트 렌더링
+    messages = await client.get_prompt("code_review", {"code": "x = 1"})
+```
+
+### 연결 방식
+
+```python
+# 인메모리 (테스트용)
+client = Client(mcp_server_instance)
+
+# stdio (서브프로세스)
+client = Client("my_server.py")
+
+# HTTP (원격)
+client = Client("http://api.example.com/mcp")
+```
+
+---
+
+## 10. 서버 합성 (Composition)
+
+여러 MCP 서버를 하나로 합치는 기능.
+
+### mount()
+
+```python
+from fastmcp import FastMCP
+
+# 개별 서버 정의
+weather_server = FastMCP("Weather")
+db_server = FastMCP("Database")
+
+@weather_server.tool
+def get_weather(city: str) -> str:
+    return f"{city}: 맑음"
+
+@db_server.tool
+def query(sql: str) -> str:
+    return "결과"
+
+# 합성
+app = FastMCP("Main")
+app.mount("weather", weather_server)
+app.mount("db", db_server)
+
+# weather_get_weather, db_query로 접근 가능
+```
+
+### 네임스페이싱 (v3.0+)
+
+mount 시 자동으로 접두사가 붙어 이름 충돌 방지:
+- 도구: `weather_get_weather`
+- 리소스: `data://weather/forecast`
+
+### 외부 서버 마운트
+
+```python
+from fastmcp import Client
+
+# 원격 HTTP 서버를 프록시로 마운트
+external = Client("http://api.example.com/mcp")
+app.mount("external", external)
+```
+
+---
+
+## 11. Docker 설치
+
+### Dockerfile
+
+```dockerfile
+FROM python:3.12-slim
+
+WORKDIR /app
+
+COPY requirements.txt .
+RUN pip install --no-cache-dir -r requirements.txt
+
+COPY . .
+
+EXPOSE 8000
+
+CMD ["fastmcp", "run", "server.py", "--transport", "streamable-http", "--host", "0.0.0.0", "--port", "8000"]
+```
+
+### docker-compose.yml
+
+```yaml
+version: '3.8'
+
+services:
+  mcp-server:
+    build: .
+    container_name: mcp-server
+    ports:
+      - "8000:8000"
+    environment:
+      - DATABASE_URL=postgresql://user:pw@db:5432/mydb
+      - OPENAI_API_KEY=${OPENAI_API_KEY}
+    volumes:
+      - ./server.py:/app/server.py
+    restart: unless-stopped
+
+  # Oracle DB 연결 시
+  mcp-server-oracle:
+    build: .
+    container_name: mcp-oracle
+    ports:
+      - "8001:8000"
+    environment:
+      - ORACLE_DSN=host:1521/service
+      - ORACLE_USER=reader
+      - ORACLE_PASSWORD=${ORACLE_PASSWORD}
+```
+
+---
+
+## 12. LangGraph 연동
+
+### langchain-mcp-adapters
+
+```python
+from langchain_mcp_adapters.client import MultiServerMCPClient
+from langgraph.prebuilt import create_react_agent
+from langchain_openai import ChatOpenAI
+
+# MCP 서버 연결
+async with MultiServerMCPClient({
+    "db": {
+        "url": "http://localhost:8000/mcp",
+        "transport": "streamable_http"
+    },
+    "search": {
+        "command": "fastmcp",
+        "args": ["run", "search_server.py"],
+        "transport": "stdio"
+    }
+}) as client:
+
+    # MCP 도구를 LangGraph Agent에 연결
+    tools = client.get_tools()
+    agent = create_react_agent(ChatOpenAI(model="gpt-4.1-mini"), tools)
+
     result = await agent.ainvoke({
-        "messages": [{"role": "user",
-                      "content": "삼성전자 현재가 알려줘"}]
+        "messages": [{"role": "user", "content": "매출 상위 5개 팀을 알려줘"}]
     })
-    
-    # 정리 (SSE 연결 해제)
-    await mcp_client.close()
+```
 
-⚠️
+### 아키텍처
 
-**MultiServerMCPClient는 stateless** 각 도구 호출마다 새 세션을 생성합니다. SSE 연결은 반드시 `mcp_client.close()`로 정리하세요. BIP에서는 try/finally로 보장.
+```mermaid
+graph TB
+    USER[사용자] --> AGENT[LangGraph Agent]
+    AGENT --> MCP_CLIENT[MCP Client Adapter]
 
-팁전송 모드 혼합
+    MCP_CLIENT --> S1[DB MCP Server<br/>HTTP :8000]
+    MCP_CLIENT --> S2[Search MCP Server<br/>stdio]
+    MCP_CLIENT --> S3[File MCP Server<br/>stdio]
 
-`MultiServerMCPClient`는 서버마다 다른 전송 모드를 지정할 수 있습니다. 원격 서버는 SSE, 로컬 도구는 stdio로 혼합하면 에이전트가 **모든 도구를 동일하게** 사용합니다.
+    S1 --> DB[(Database)]
+    S2 --> API[Search API]
+    S3 --> FS[File System]
+```
 
-08FastMCP 클라이언트 (서버 없이 테스트)
+---
 
-PYTHONFastMCP Client로 직접 호출
-    
-    
-    from fastmcp import Client
-    
-    # URL로 원격 서버 연결
-    async with Client("http://localhost:8000/sse") as client:
-        # 도구 목록 조회
-        tools = await client.list_tools()
-        print(f"사용 가능한 도구: {[t.name for t in tools]}")
-    
-        # 도구 호출
-        result = await client.call_tool(
-            "get_stock_price",
-            {"ticker": "005930"}
-        )
-        print(result)
-    
-        # 리소스 조회
-        resource = await client.read_resource("config://app-settings")
-        print(resource)
+## 13. 실전 예시: DB 조회 MCP 서버
 
-09Docker 배포
+```python
+from fastmcp import FastMCP, Context
+import oracledb
 
-DOCKERFILEMCP 서버 Dockerfile
-    
-    
-    FROM python:3.13-slim
-    
-    WORKDIR /app
-    COPY requirements.txt .
-    RUN pip install --no-cache-dir -r requirements.txt
-    
-    COPY *.py .
-    
-    EXPOSE 8000
-    CMD ["python", "server.py"]
+mcp = FastMCP("DB Query Server")
 
-DOCKERdocker-compose.yml (에이전트 서버와 함께)
-    
-    
-    services:
-      mcp-server:
-        build: ./mcp-server
-        ports: ["8000:8000"]
-        environment:
-          - DATABASE_URL=postgresql://user:pass@postgres:5432/db
-          - KIS_APP_KEY=${KIS_APP_KEY}      # 외부 API 키
-          - MCP_TRANSPORT=sse
-          - MCP_HOST=0.0.0.0
-          - MCP_PORT=8000
-    
-      agent-server:
-        build: ./agent
-        ports: ["8100:8100"]
-        environment:
-          - MCP_SERVER_URL=http://mcp-server:8000/sse
-          - ANTHROPIC_API_KEY=${ANTHROPIC_API_KEY}
-        depends_on: [mcp-server]
-
-10디버깅 & MCP Inspector
-
-CLIMCP Inspector 실행
-    
-    
-    # Inspector 실행 (웹 UI 자동 열림)
-    fastmcp dev server.py
-    
-    # → http://127.0.0.1:6274 에서 웹 인터페이스
-    # - Connect 클릭
-    # - Tools 탭: 등록된 도구 목록 + 테스트
-    # - Resources 탭: 리소스 조회 테스트
-    # - Prompts 탭: 프롬프트 테스트
-
-💡
-
-**Inspector는 개발 필수 도구** 도구를 만들 때마다 Inspector에서 먼저 테스트하세요. 스키마가 의도대로 생성되었는지, 응답 형식이 맞는지 시각적으로 확인 가능.
-
-11MCP 서버 설계 패턴
-
-패턴 A
-
-단일 서버 — 모든 도구를 하나에
-
-소규모 프로젝트, 도구 10~20개. 배포 단순. BIP 초기에 이 패턴.
-
-패턴 B
-
-도메인별 분리 — 서버 여러 개
-
-DB 도구 서버 + API 도구 서버 + 검색 서버. 독립 스케일링 가능.
-
-패턴 C
-
-모듈 분리 + 단일 서버
-
-파일은 분리(db.py, api.py)하지만 하나의 FastMCP에 등록. BIP 현재 패턴.
-
-패턴 D
-
-Gateway 패턴
-
-MCP 서버가 FastAPI 뒤에 위치. 인증/로깅을 API Gateway에서 처리.
-
-ℹ
-
-**BIP의 선택: 패턴 C** 7개 파일(server.py, realtime.py, db.py, dart.py, krx.py, news.py, context.py)로 모듈 분리하되, 하나의 FastMCP 인스턴스에 44개 도구 등록. 배포는 Docker 컨테이너 1개.
-
-12BIP MCP 서버 실전 사례
-
-## bip-stock-mcp — 44개 도구의 실제 구성
-
-BIP MCP 서버 내부 구조
-
-graph TD MCP["FastMCP\nbip-stock-mcp"] --> SV["server.py\n도구 등록 (44개)"] SV --> RT["realtime.py\n한투 API\n시세/수급/예상체결"] SV --> DB_M["db.py\nPostgreSQL\n투자자동향/반도체/지표"] SV --> DART["dart.py\nDART API\n공시/재무제표"] SV --> KRX["krx.py\nKRX\n거래정보/지수"] SV --> NEWS["news.py\n네이버/웹\n뉴스 검색"] SV --> CTX["context.py\nget_indicator_context\n90일 통계"] style MCP fill:#201810,stroke:#e09830,color:#f8b840 style RT fill:#102820,stroke:#30c880,color:#50e898 style DB_M fill:#1a2540,stroke:#5a7af0,color:#7a9aff 
-
-PYTHONBIP server.py 실제 구조
-    
-    
-    from fastmcp import FastMCP
-    
-    # 모듈에서 함수 import
-    from realtime import (
-        get_realtime_stock_price, get_realtime_index,
-        get_realtime_investor, get_preopen_price, ...
+def get_connection():
+    return oracledb.connect(
+        user="reader",
+        password="pw",
+        dsn="host:1521/service"
     )
-    from db import fetch_investor_flow, fetch_semiconductor_prices
-    from dart import get_disclosure_list, get_financial_statement
-    from news import search_naver_news, search_web
-    from context import get_indicator_context
-    
-    mcp = FastMCP(
-        name="bip-stock-mcp",
-        host="0.0.0.0",
-        port=8000,
-    )
-    
-    # 실시간 시세 (한투 API)
-    @mcp.tool
-    async def realtime_stock_price(code: str) -> dict:
-        """종목 현재가 조회 (한투 API, 6자리 코드)."""
-        return await get_realtime_stock_price(code)
-    
-    @mcp.tool
-    async def realtime_index(index_name: str = "KOSPI") -> dict:
-        """KOSPI/KOSDAQ 지수 조회."""
-        return await get_realtime_index(index_name)
-    
-    # ... 44개 도구 등록
-    
-    if __name__ == "__main__":
-        mcp.run(transport="sse")
 
-### 도구 카테고리별 분포
+@mcp.tool
+async def query_table(
+    table_name: str,
+    columns: list[str] = None,
+    where: str = None,
+    limit: int = 100,
+    ctx: Context = None,
+) -> list[dict]:
+    """테이블 데이터를 조회합니다.
 
-카테고리| 파일| 도구 수| 데이터 소스  
----|---|---|---  
-**실시간 시세**|  realtime.py| 11| 한투 API (KIS)  
-**DB 조회**|  db.py| 8| PostgreSQL  
-**공시/재무**|  dart.py| 5| DART API  
-**거래 정보**|  krx.py| 4| KRX  
-**뉴스 검색**|  news.py| 3| 네이버/웹  
-**지표 맥락**|  context.py| 1| DB (90일 통계)  
-**글로벌**|  realtime.py| 6| yfinance, Upbit  
-**장전 분석**|  realtime.py| 3| 한투 API  
-**섹터**|  realtime.py| 3| KRX/DB  
-**합계**| **44개**|   
-  
-💡
+    Args:
+        table_name: 조회할 테이블명
+        columns: 조회할 컬럼 목록 (없으면 전체)
+        where: WHERE 조건절
+        limit: 최대 행 수
+    """
+    cols = ", ".join(columns) if columns else "*"
+    sql = f"SELECT {cols} FROM {table_name}"
+    if where:
+        sql += f" WHERE {where}"
+    sql += f" FETCH FIRST {limit} ROWS ONLY"
 
-**BIP 운영 팁**
+    if ctx:
+        await ctx.info(f"실행 SQL: {sql}")
 
-  * 외부 API 토큰은 **파일 캐시** 로 컨테이너 재시작 대비 (한투 KIS 토큰 22시간 유효)
-  * 각 도구는 **자체 에러 핸들링** — API 실패 시 `{"error": "..."}` 반환, 서버 전체 크래시 방지
-  * 도구 이름은 **LLM이 이해하기 쉽게** — `realtime_stock_price`, `night_futures_ewy`
-  * 비동기 함수(`async def`) 필수 — I/O 바운드 작업이 대부분이라 동시 호출 성능
+    conn = get_connection()
+    cursor = conn.cursor()
+    cursor.execute(sql)
 
+    col_names = [desc[0] for desc in cursor.description]
+    rows = [dict(zip(col_names, row)) for row in cursor.fetchall()]
 
+    cursor.close()
+    conn.close()
+    return rows
 
-13참고 자료
+@mcp.resource("schema://{table_name}")
+def get_table_schema(table_name: str) -> str:
+    """테이블 스키마를 조회합니다"""
+    conn = get_connection()
+    cursor = conn.cursor()
+    cursor.execute(f"""
+        SELECT column_name, data_type, nullable
+        FROM all_tab_columns
+        WHERE table_name = UPPER(:1)
+        ORDER BY column_id
+    """, [table_name])
 
-[GitHub — FastMCP](<https://github.com/jlowin/fastmcp>) (24.5K stars, Apache 2.0)
+    columns = [{"name": r[0], "type": r[1], "nullable": r[2]} for r in cursor.fetchall()]
+    cursor.close()
+    conn.close()
+    return json.dumps(columns, indent=2)
 
-[FastMCP 공식 문서](<https://gofastmcp.com>)
+if __name__ == "__main__":
+    mcp.run(transport="streamable-http", host="0.0.0.0", port=8000)
+```
 
-[MCP 공식 사이트 (Anthropic)](<https://modelcontextprotocol.io>)
+---
 
-[langchain-mcp-adapters (LangChain ↔ MCP)](<https://github.com/langchain-ai/langchain-mcp-adapters>)
+## 14. 주의사항 및 한계
 
-[MCP 전송 프로토콜 비교 (MCPcat)](<https://mcpcat.io/guides/comparing-stdio-sse-streamablehttp/>)
+| 항목 | 내용 |
+|------|------|
+| **보안** | Tool에서 SQL을 직접 실행하면 인젝션 위험. 파라미터 바인딩 필수 |
+| **상태 관리** | Context는 요청마다 새로 생성됨. 세션 간 상태는 `ctx.session` 사용 |
+| **동기 함수** | threadpool에서 실행되지만 CPU 집약 작업은 별도 프로세스 권장 |
+| **타임아웃** | 기본 타임아웃 없음. `@mcp.tool(timeout=30)` 명시 권장 |
+| **인증** | MCP 프로토콜 자체에 인증 없음. HTTP 전송 시 별도 미들웨어 필요 |
+| **프로덕션** | Streamable HTTP 모드에서 리버스 프록시 (nginx) 뒤에 배치 권장 |
 
-[FastMCP + LangGraph 원격 서버 구축 (Medium)](<https://medium.com/@anoopninangeorge/building-a-remote-mcp-server-a-mcp-client-with-fastmcp-langchain-langgraph-17cf0e8d043b>)
+---
 
-[FastMCP 튜토리얼 (Firecrawl)](<https://www.firecrawl.dev/blog/fastmcp-tutorial-building-mcp-servers-python>)
+## 15. 참고
 
-[LangGraph 기술 가이드](<langgraph_technical_guide.html>)
+| 항목 | URL |
+|------|-----|
+| 공식 문서 | https://gofastmcp.com |
+| GitHub | https://github.com/jlowin/fastmcp |
+| MCP 스펙 | https://spec.modelcontextprotocol.io |
+| langchain-mcp-adapters | https://github.com/langchain-ai/langchain-mcp-adapters |
+| Claude Desktop MCP 설정 | https://modelcontextprotocol.io/quickstart/user |
 
-[LangGraph 사내 환경 구축 가이드](<langgraph_enterprise_guide.html>)
+---
 
-fastmcp.guide · v3.2 기준 · 2026.04.14
+## 변경 이력
 
-Apache 2.0 · Prefect / Anthropic MCP
+| 날짜 | 내용 |
+|------|------|
+| 2026-04-26 | 공식 문서 기반 전면 재작성 (v3.2) |

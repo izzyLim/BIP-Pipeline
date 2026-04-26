@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>FastMCP</title>
+<title>FastMCP 가이드</title>
 <script src="https://cdn.jsdelivr.net/npm/mermaid@11/dist/mermaid.min.js"></script>
 <style>
   /* ── 테마 변수 ── */
@@ -279,7 +279,7 @@
 
 <aside class="sidebar">
   <div class="sidebar-header">
-    <div class="sidebar-title">FastMCP</div>
+    <div class="sidebar-title">FastMCP 가이드</div>
     <div class="sidebar-controls">
       <button class="theme-btn" onclick="setTheme('dark')" id="btn-dark">🌙 Dark</button>
       <button class="theme-btn" onclick="setTheme('light')" id="btn-light">☀️ Light</button>
@@ -288,463 +288,848 @@
   </div>
   <nav class="toc">
 <ul>
-<li class="toc-h2"><a href="#mcp란--에이전트의-usb-포트">MCP란? — 에이전트의 USB 포트</a></li>
-<li class="toc-h2"><a href="#bip-stock-mcp--44개-도구의-실제-구성">bip-stock-mcp — 44개 도구의 실제 구성</a></li>
-  <li class="toc-h3"><a href="#도구-카테고리별-분포">도구 카테고리별 분포</a></li>
+<li class="toc-h2"><a href="#1-개요">1. 개요</a></li>
+  <li class="toc-h3"><a href="#mcp란">MCP란?</a></li>
+  <li class="toc-h3"><a href="#fastmcp란">FastMCP란?</a></li>
+  <li class="toc-h3"><a href="#3가지-기둥">3가지 기둥</a></li>
+  <li class="toc-h3"><a href="#최소-예제">최소 예제</a></li>
+<li class="toc-h2"><a href="#2-설치">2. 설치</a></li>
+<li class="toc-h2"><a href="#3-아키텍처">3. 아키텍처</a></li>
+  <li class="toc-h3"><a href="#요청-처리-흐름">요청 처리 흐름</a></li>
+<li class="toc-h2"><a href="#4-tools--도구-정의">4. Tools — 도구 정의</a></li>
+  <li class="toc-h3"><a href="#개념">개념</a></li>
+  <li class="toc-h3"><a href="#기본-사용법">기본 사용법</a></li>
+  <li class="toc-h3"><a href="#타입-지원">타입 지원</a></li>
+  <li class="toc-h3"><a href="#비동기-함수">비동기 함수</a></li>
+  <li class="toc-h3"><a href="#반환값-유형">반환값 유형</a></li>
+  <li class="toc-h3"><a href="#에러-처리">에러 처리</a></li>
+  <li class="toc-h3"><a href="#의존성-주입-depends">의존성 주입 (Depends)</a></li>
+  <li class="toc-h3"><a href="#파라미터-검증">파라미터 검증</a></li>
+<li class="toc-h2"><a href="#5-resources--데이터-노출">5. Resources — 데이터 노출</a></li>
+  <li class="toc-h3"><a href="#개념_1">개념</a></li>
+  <li class="toc-h3"><a href="#기본-사용법_1">기본 사용법</a></li>
+  <li class="toc-h3"><a href="#리소스-템플릿-동적-uri">리소스 템플릿 (동적 URI)</a></li>
+  <li class="toc-h3"><a href="#와일드카드-v224">와일드카드 (v2.2.4+)</a></li>
+  <li class="toc-h3"><a href="#정적-리소스">정적 리소스</a></li>
+<li class="toc-h2"><a href="#6-prompts--메시지-템플릿">6. Prompts — 메시지 템플릿</a></li>
+  <li class="toc-h3"><a href="#개념_2">개념</a></li>
+  <li class="toc-h3"><a href="#기본-사용법_2">기본 사용법</a></li>
+<li class="toc-h2"><a href="#7-context--세션-컨텍스트">7. Context — 세션 컨텍스트</a></li>
+  <li class="toc-h3"><a href="#개념_3">개념</a></li>
+  <li class="toc-h3"><a href="#사용-방법">사용 방법</a></li>
+  <li class="toc-h3"><a href="#주요-기능">주요 기능</a></li>
+  <li class="toc-h3"><a href="#llm-샘플링">LLM 샘플링</a></li>
+<li class="toc-h2"><a href="#8-전송-모드-transport">8. 전송 모드 (Transport)</a></li>
+  <li class="toc-h3"><a href="#stdio-실행">stdio 실행</a></li>
+  <li class="toc-h3"><a href="#http-실행">HTTP 실행</a></li>
+  <li class="toc-h3"><a href="#claude-desktop-연동">Claude Desktop 연동</a></li>
+<li class="toc-h2"><a href="#9-client--서버-연결">9. Client — 서버 연결</a></li>
+  <li class="toc-h3"><a href="#기본-사용법_3">기본 사용법</a></li>
+  <li class="toc-h3"><a href="#연결-방식">연결 방식</a></li>
+<li class="toc-h2"><a href="#10-서버-합성-composition">10. 서버 합성 (Composition)</a></li>
+  <li class="toc-h3"><a href="#mount">mount()</a></li>
+  <li class="toc-h3"><a href="#네임스페이싱-v30">네임스페이싱 (v3.0+)</a></li>
+  <li class="toc-h3"><a href="#외부-서버-마운트">외부 서버 마운트</a></li>
+<li class="toc-h2"><a href="#11-docker-설치">11. Docker 설치</a></li>
+  <li class="toc-h3"><a href="#dockerfile">Dockerfile</a></li>
+  <li class="toc-h3"><a href="#docker-composeyml">docker-compose.yml</a></li>
+<li class="toc-h2"><a href="#12-langgraph-연동">12. LangGraph 연동</a></li>
+  <li class="toc-h3"><a href="#langchain-mcp-adapters">langchain-mcp-adapters</a></li>
+  <li class="toc-h3"><a href="#아키텍처">아키텍처</a></li>
+<li class="toc-h2"><a href="#13-실전-예시-db-조회-mcp-서버">13. 실전 예시: DB 조회 MCP 서버</a></li>
+<li class="toc-h2"><a href="#14-주의사항-및-한계">14. 주의사항 및 한계</a></li>
+<li class="toc-h2"><a href="#15-참고">15. 참고</a></li>
+<li class="toc-h2"><a href="#변경-이력">변경 이력</a></li>
 </ul>
 </nav>
 </aside>
 
 <main class="content">
-<h1 id="fastmcp">FastMCP</h1>
-<p>가이드</p>
-<p>MCP(Model Context Protocol)는 AI 에이전트가 외부 도구와 데이터에 접근하는 표준 프로토콜. FastMCP는 이를 Python 데코레이터 한 줄로 구현할 수 있게 해주는 프레임워크. 도구 정의 → 스키마 자동 생성 → 서버 실행까지 5분.</p>
-<p>24.5K Stars Apache 2.0 v3.2 Anthropic 표준 Python Prefect</p>
-<h2 id="mcp란--에이전트의-usb-포트">MCP란? — 에이전트의 USB 포트</h2>
-<p>MCP 프로토콜 구조</p>
-<p>graph LR subgraph Hosts["MCP 호스트 (AI 에이전트)"] H1["Claude Desktop"] H2["LangGraph Agent"] H3["자체 앱"] end subgraph Protocol["MCP 프로토콜"] P["표준화된 인터페이스\nTools / Resources / Prompts"] end subgraph Servers["MCP 서버"] S1["DB 도구"] S2["API 래핑"] S3["파일 시스템"] S4["웹 검색"] end Hosts --&gt; Protocol Protocol --&gt; Servers style Protocol fill:#201810,stroke:#e09830,color:#f8b840 </p>
-<p>MCP</p>
-<p>Model Context Protocol</p>
-<p>Anthropic이 2024년 공개한 AI 도구 연결 표준. "AI 에이전트의 USB-C"라고 불림.</p>
-<p>어떤 AI 에이전트든 MCP 서버에 연결하면 도구를 사용 가능. 프로바이더 독립적.</p>
-<p>FASTMCP</p>
-<p>FastMCP</p>
-<p>MCP 서버를 Python 데코레이터로 빠르게 구축하는 프레임워크. Prefect가 관리.</p>
-<p>FastMCP 1.0은 공식 MCP Python SDK에 편입됨. v3.0에서 독립적으로 진화.</p>
-<p>01설치</p>
-<p>SHELL설치</p>
-<div class="codehilite"><pre><span></span><code># uv 사용 (권장)
-uv pip install fastmcp
+<h1 id="fastmcp-가이드">FastMCP 가이드</h1>
+<blockquote>
+<p><strong>공식 문서:</strong> https://gofastmcp.com</p>
+</blockquote>
+<hr />
+<h2 id="1-개요">1. 개요</h2>
+<h3 id="mcp란">MCP란?</h3>
+<p><strong>MCP(Model Context Protocol)</strong>는 Anthropic이 2024년 공개한 AI 도구 연결 표준이다. "AI 에이전트의 USB-C"로 불리며, 어떤 AI 에이전트든 MCP 서버에 연결하면 표준화된 방식으로 도구를 사용할 수 있다.</p>
+<div class="mermaid">
+graph LR
+    subgraph Hosts["MCP 호스트 (AI 에이전트)"]
+        H1["Claude Desktop"]
+        H2["LangGraph Agent"]
+        H3["자체 앱"]
+    end
 
-# pip 사용
-pip install fastmcp
+    subgraph Protocol["MCP 프로토콜"]
+        P["표준 인터페이스"]
+    end
 
-# LangGraph 연동용
-pip install langchain-mcp-adapters
-</code></pre></div>
+    subgraph Servers["MCP 서버"]
+        S1["DB 도구"]
+        S2["API 래핑"]
+        S3["파일 시스템"]
+        S4["웹 검색"]
+    end
 
-<p>02Tools — 도구 정의</p>
-<p>개념Tool = LLM이 호출하는 함수</p>
-<p>Python 함수에 <code>@mcp.tool</code> 데코레이터를 붙이면, 타입 힌트와 docstring에서 <strong>스키마가 자동 생성</strong> 됩니다. JSON Schema, 검증, 에러 처리 전부 자동.</p>
-<p>PYTHON도구 정의 기본</p>
+    Hosts --> Protocol
+    Protocol --> Servers
+    style Hosts fill:#4f8fea22,stroke:#4f8fea,stroke-width:2px,color:#e6edf3
+    style Protocol fill:#6c5ce722,stroke:#6c5ce7,stroke-width:2px,color:#e6edf3
+    style Servers fill:#00b89422,stroke:#00b894,stroke-width:2px,color:#e6edf3
+</div>
+
+<h3 id="fastmcp란">FastMCP란?</h3>
+<p><strong>FastMCP</strong>는 MCP 서버를 Python 데코레이터 한 줄로 구축하는 프레임워크다.</p>
+<ul>
+<li><strong>Prefect</strong>가 관리하는 오픈소스 (Apache 2.0)</li>
+<li>2024년 공식 MCP Python SDK에 편입 → v3.0에서 독립적 진화</li>
+<li>모든 언어의 MCP 서버 <strong>70%</strong>가 FastMCP 기반</li>
+<li>일일 <strong>100만 회</strong> 다운로드</li>
+</ul>
+<h3 id="3가지-기둥">3가지 기둥</h3>
+<table>
+<thead>
+<tr>
+<th>기둥</th>
+<th>역할</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><strong>Servers</strong></td>
+<td>Python 함수를 MCP 호환 도구/리소스/프롬프트로 변환</td>
+</tr>
+<tr>
+<td><strong>Clients</strong></td>
+<td>로컬/원격 MCP 서버에 프로그래밍 방식으로 연결</td>
+</tr>
+<tr>
+<td><strong>Apps</strong></td>
+<td>대화 내 대화형 UI 제공</td>
+</tr>
+</tbody>
+</table>
+<h3 id="최소-예제">최소 예제</h3>
 <div class="codehilite"><pre><span></span><code><span class="kn">from</span><span class="w"> </span><span class="nn">fastmcp</span><span class="w"> </span><span class="kn">import</span> <span class="n">FastMCP</span>
 
-<span class="n">mcp</span> <span class="o">=</span> <span class="n">FastMCP</span><span class="p">(</span><span class="s2">&quot;my-server&quot;</span><span class="p">)</span>
+<span class="n">mcp</span> <span class="o">=</span> <span class="n">FastMCP</span><span class="p">(</span><span class="s2">&quot;Demo&quot;</span><span class="p">)</span>
 
 <span class="nd">@mcp</span><span class="o">.</span><span class="n">tool</span>
-<span class="k">def</span><span class="w"> </span><span class="nf">get_stock_price</span><span class="p">(</span><span class="n">ticker</span><span class="p">:</span> <span class="nb">str</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">dict</span><span class="p">:</span>
-<span class="w">    </span><span class="sd">&quot;&quot;&quot;종목 현재가를 조회합니다.</span>
+<span class="k">def</span><span class="w"> </span><span class="nf">add</span><span class="p">(</span><span class="n">a</span><span class="p">:</span> <span class="nb">int</span><span class="p">,</span> <span class="n">b</span><span class="p">:</span> <span class="nb">int</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">int</span><span class="p">:</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;두 수를 더합니다&quot;&quot;&quot;</span>
+    <span class="k">return</span> <span class="n">a</span> <span class="o">+</span> <span class="n">b</span>
+
+<span class="k">if</span> <span class="vm">__name__</span> <span class="o">==</span> <span class="s2">&quot;__main__&quot;</span><span class="p">:</span>
+    <span class="n">mcp</span><span class="o">.</span><span class="n">run</span><span class="p">()</span>
+</code></pre></div>
+
+<p>이것만으로 MCP 서버가 실행되고, Claude Desktop이나 LangGraph에서 <code>add</code> 도구를 호출할 수 있다.</p>
+<hr />
+<h2 id="2-설치">2. 설치</h2>
+<div class="codehilite"><pre><span></span><code><span class="c1"># uv 사용 (권장)</span>
+uv<span class="w"> </span>pip<span class="w"> </span>install<span class="w"> </span>fastmcp
+
+<span class="c1"># pip 사용</span>
+pip<span class="w"> </span>install<span class="w"> </span>fastmcp
+
+<span class="c1"># LangGraph 연동용</span>
+pip<span class="w"> </span>install<span class="w"> </span>langchain-mcp-adapters
+
+<span class="c1"># 버전 확인</span>
+fastmcp<span class="w"> </span>version
+</code></pre></div>
+
+<hr />
+<h2 id="3-아키텍처">3. 아키텍처</h2>
+<div class="mermaid">
+graph TB
+    subgraph Server["FastMCP Server"]
+        TOOLS["Tools\nLLM이 호출하는 함수"]
+        RESOURCES["Resources\nLLM이 읽는 데이터"]
+        PROMPTS["Prompts\n재사용 메시지 템플릿"]
+        CONTEXT["Context\n세션/로깅/진행률"]
+    end
+
+    subgraph Transport["전송 계층"]
+        STDIO["stdio\n로컬 프로세스"]
+        HTTP["Streamable HTTP\n원격 서버"]
+        MEM["In-Memory\n테스트용"]
+    end
+
+    subgraph Clients["클라이언트"]
+        CLAUDE["Claude Desktop"]
+        LANG["LangGraph Agent"]
+        CLI["FastMCP CLI"]
+        CODE["Python Client"]
+    end
+
+    Clients --> Transport
+    Transport --> Server
+    style Server fill:#4f8fea22,stroke:#4f8fea,stroke-width:2px,color:#e6edf3
+    style Transport fill:#6c5ce722,stroke:#6c5ce7,stroke-width:2px,color:#e6edf3
+    style Clients fill:#00b89422,stroke:#00b894,stroke-width:2px,color:#e6edf3
+</div>
+
+<h3 id="요청-처리-흐름">요청 처리 흐름</h3>
+<div class="mermaid">
+sequenceDiagram
+    participant C as Client (LLM Agent)
+    participant T as Transport
+    participant S as FastMCP Server
+    participant F as Python Function
+
+    C->>T: tool/call (name, arguments)
+    T->>S: MCP 프로토콜 파싱
+    S->>S: 스키마 검증 (Pydantic)
+    S->>F: 함수 호출
+    F-->>S: 반환값
+    S->>S: 결과 직렬화
+    S-->>T: MCP 응답
+    T-->>C: JSON 결과
+</div>
+
+<hr />
+<h2 id="4-tools--도구-정의">4. Tools — 도구 정의</h2>
+<h3 id="개념">개념</h3>
+<p>Tool은 <strong>LLM이 호출하는 함수</strong>다. <code>@mcp.tool</code> 데코레이터를 붙이면 타입 힌트와 docstring에서 <strong>스키마가 자동 생성</strong>된다. JSON Schema, 입력 검증, 에러 처리가 전부 자동.</p>
+<h3 id="기본-사용법">기본 사용법</h3>
+<div class="codehilite"><pre><span></span><code><span class="nd">@mcp</span><span class="o">.</span><span class="n">tool</span>
+<span class="k">def</span><span class="w"> </span><span class="nf">get_weather</span><span class="p">(</span><span class="n">city</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="n">unit</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="s2">&quot;celsius&quot;</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">str</span><span class="p">:</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;도시의 현재 날씨를 조회합니다.</span>
 
 <span class="sd">    Args:</span>
-<span class="sd">        ticker: 종목 코드 (예: 005930)</span>
+<span class="sd">        city: 도시 이름 (한글 가능)</span>
+<span class="sd">        unit: 온도 단위 (celsius 또는 fahrenheit)</span>
 <span class="sd">    &quot;&quot;&quot;</span>
-    <span class="n">price</span> <span class="o">=</span> <span class="n">fetch_from_api</span><span class="p">(</span><span class="n">ticker</span><span class="p">)</span>
-    <span class="k">return</span> <span class="p">{</span><span class="s2">&quot;ticker&quot;</span><span class="p">:</span> <span class="n">ticker</span><span class="p">,</span> <span class="s2">&quot;price&quot;</span><span class="p">:</span> <span class="n">price</span><span class="p">}</span>
+    <span class="k">return</span> <span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="n">city</span><span class="si">}</span><span class="s2">: 22°</span><span class="si">{</span><span class="n">unit</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="o">.</span><span class="n">upper</span><span class="p">()</span><span class="si">}</span><span class="s2">, 맑음&quot;</span>
+</code></pre></div>
+
+<p>이것만으로 LLM은:
+- <code>get_weather</code>라는 도구가 있다는 걸 알고
+- <code>city</code>(필수), <code>unit</code>(선택)이 필요하다는 걸 알고
+- 자동으로 호출할 수 있다</p>
+<h3 id="타입-지원">타입 지원</h3>
+<p>Pydantic이 지원하는 모든 타입 사용 가능:</p>
+<div class="codehilite"><pre><span></span><code><span class="kn">from</span><span class="w"> </span><span class="nn">pydantic</span><span class="w"> </span><span class="kn">import</span> <span class="n">BaseModel</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">enum</span><span class="w"> </span><span class="kn">import</span> <span class="n">Enum</span>
+
+<span class="k">class</span><span class="w"> </span><span class="nc">Priority</span><span class="p">(</span><span class="nb">str</span><span class="p">,</span> <span class="n">Enum</span><span class="p">):</span>
+    <span class="n">HIGH</span> <span class="o">=</span> <span class="s2">&quot;high&quot;</span>
+    <span class="n">MEDIUM</span> <span class="o">=</span> <span class="s2">&quot;medium&quot;</span>
+    <span class="n">LOW</span> <span class="o">=</span> <span class="s2">&quot;low&quot;</span>
+
+<span class="k">class</span><span class="w"> </span><span class="nc">TaskInput</span><span class="p">(</span><span class="n">BaseModel</span><span class="p">):</span>
+    <span class="n">title</span><span class="p">:</span> <span class="nb">str</span>
+    <span class="n">priority</span><span class="p">:</span> <span class="n">Priority</span>
+    <span class="n">tags</span><span class="p">:</span> <span class="nb">list</span><span class="p">[</span><span class="nb">str</span><span class="p">]</span> <span class="o">=</span> <span class="p">[]</span>
 
 <span class="nd">@mcp</span><span class="o">.</span><span class="n">tool</span>
-<span class="k">async</span> <span class="k">def</span><span class="w"> </span><span class="nf">search_news</span><span class="p">(</span><span class="n">query</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="n">count</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="mi">5</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">list</span><span class="p">:</span>
-<span class="w">    </span><span class="sd">&quot;&quot;&quot;뉴스를 검색합니다.</span>
+<span class="k">def</span><span class="w"> </span><span class="nf">create_task</span><span class="p">(</span><span class="n">task</span><span class="p">:</span> <span class="n">TaskInput</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">dict</span><span class="p">:</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;작업을 생성합니다&quot;&quot;&quot;</span>
+    <span class="k">return</span> <span class="p">{</span><span class="s2">&quot;id&quot;</span><span class="p">:</span> <span class="mi">1</span><span class="p">,</span> <span class="s2">&quot;title&quot;</span><span class="p">:</span> <span class="n">task</span><span class="o">.</span><span class="n">title</span><span class="p">,</span> <span class="s2">&quot;priority&quot;</span><span class="p">:</span> <span class="n">task</span><span class="o">.</span><span class="n">priority</span><span class="p">}</span>
+</code></pre></div>
+
+<h3 id="비동기-함수">비동기 함수</h3>
+<div class="codehilite"><pre><span></span><code><span class="nd">@mcp</span><span class="o">.</span><span class="n">tool</span>
+<span class="k">async</span> <span class="k">def</span><span class="w"> </span><span class="nf">fetch_data</span><span class="p">(</span><span class="n">url</span><span class="p">:</span> <span class="nb">str</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">str</span><span class="p">:</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;외부 API에서 데이터를 가져옵니다&quot;&quot;&quot;</span>
+    <span class="k">async</span> <span class="k">with</span> <span class="n">httpx</span><span class="o">.</span><span class="n">AsyncClient</span><span class="p">()</span> <span class="k">as</span> <span class="n">client</span><span class="p">:</span>
+        <span class="n">response</span> <span class="o">=</span> <span class="k">await</span> <span class="n">client</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="n">url</span><span class="p">)</span>
+        <span class="k">return</span> <span class="n">response</span><span class="o">.</span><span class="n">text</span>
+</code></pre></div>
+
+<p>동기 함수는 자동으로 threadpool에서 실행되어 이벤트 루프를 차단하지 않는다.</p>
+<h3 id="반환값-유형">반환값 유형</h3>
+<table>
+<thead>
+<tr>
+<th>반환 타입</th>
+<th>처리</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>str</code></td>
+<td>텍스트로 전송</td>
+</tr>
+<tr>
+<td><code>bytes</code></td>
+<td>Base64 인코딩</td>
+</tr>
+<tr>
+<td><code>dict</code> / Pydantic Model</td>
+<td>JSON 직렬화</td>
+</tr>
+<tr>
+<td><code>Image</code></td>
+<td>이미지 콘텐츠</td>
+</tr>
+<tr>
+<td><code>ToolResult</code></td>
+<td>구조화된 출력 (v3.0+)</td>
+</tr>
+</tbody>
+</table>
+<h3 id="에러-처리">에러 처리</h3>
+<div class="codehilite"><pre><span></span><code><span class="kn">from</span><span class="w"> </span><span class="nn">fastmcp.exceptions</span><span class="w"> </span><span class="kn">import</span> <span class="n">ToolError</span>
+
+<span class="nd">@mcp</span><span class="o">.</span><span class="n">tool</span>
+<span class="k">def</span><span class="w"> </span><span class="nf">divide</span><span class="p">(</span><span class="n">a</span><span class="p">:</span> <span class="nb">float</span><span class="p">,</span> <span class="n">b</span><span class="p">:</span> <span class="nb">float</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">float</span><span class="p">:</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;나눗셈&quot;&quot;&quot;</span>
+    <span class="k">if</span> <span class="n">b</span> <span class="o">==</span> <span class="mi">0</span><span class="p">:</span>
+        <span class="k">raise</span> <span class="n">ToolError</span><span class="p">(</span><span class="s2">&quot;0으로 나눌 수 없습니다&quot;</span><span class="p">)</span>
+    <span class="k">return</span> <span class="n">a</span> <span class="o">/</span> <span class="n">b</span>
+</code></pre></div>
+
+<h3 id="의존성-주입-depends">의존성 주입 (Depends)</h3>
+<p>LLM에게 노출하지 않을 파라미터를 주입:</p>
+<div class="codehilite"><pre><span></span><code><span class="kn">from</span><span class="w"> </span><span class="nn">fastmcp</span><span class="w"> </span><span class="kn">import</span> <span class="n">Depends</span>
+
+<span class="k">def</span><span class="w"> </span><span class="nf">get_db_session</span><span class="p">():</span>
+    <span class="k">return</span> <span class="n">create_session</span><span class="p">()</span>
+
+<span class="nd">@mcp</span><span class="o">.</span><span class="n">tool</span>
+<span class="k">def</span><span class="w"> </span><span class="nf">query_users</span><span class="p">(</span><span class="n">name</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="n">db</span> <span class="o">=</span> <span class="n">Depends</span><span class="p">(</span><span class="n">get_db_session</span><span class="p">))</span> <span class="o">-&gt;</span> <span class="nb">list</span><span class="p">:</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;사용자를 검색합니다 (LLM은 name만 입력)&quot;&quot;&quot;</span>
+    <span class="k">return</span> <span class="n">db</span><span class="o">.</span><span class="n">query</span><span class="p">(</span><span class="n">User</span><span class="p">)</span><span class="o">.</span><span class="n">filter</span><span class="p">(</span><span class="n">User</span><span class="o">.</span><span class="n">name</span> <span class="o">==</span> <span class="n">name</span><span class="p">)</span><span class="o">.</span><span class="n">all</span><span class="p">()</span>
+</code></pre></div>
+
+<h3 id="파라미터-검증">파라미터 검증</h3>
+<div class="codehilite"><pre><span></span><code><span class="kn">from</span><span class="w"> </span><span class="nn">pydantic</span><span class="w"> </span><span class="kn">import</span> <span class="n">Field</span>
+
+<span class="nd">@mcp</span><span class="o">.</span><span class="n">tool</span>
+<span class="k">def</span><span class="w"> </span><span class="nf">search</span><span class="p">(</span>
+    <span class="n">query</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="n">Field</span><span class="p">(</span><span class="n">description</span><span class="o">=</span><span class="s2">&quot;검색어&quot;</span><span class="p">,</span> <span class="n">min_length</span><span class="o">=</span><span class="mi">1</span><span class="p">),</span>
+    <span class="n">limit</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="n">Field</span><span class="p">(</span><span class="n">default</span><span class="o">=</span><span class="mi">10</span><span class="p">,</span> <span class="n">ge</span><span class="o">=</span><span class="mi">1</span><span class="p">,</span> <span class="n">le</span><span class="o">=</span><span class="mi">100</span><span class="p">,</span> <span class="n">description</span><span class="o">=</span><span class="s2">&quot;결과 수&quot;</span><span class="p">)</span>
+<span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">list</span><span class="p">:</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;검색합니다&quot;&quot;&quot;</span>
+    <span class="o">...</span>
+</code></pre></div>
+
+<hr />
+<h2 id="5-resources--데이터-노출">5. Resources — 데이터 노출</h2>
+<h3 id="개념_1">개념</h3>
+<p>Resource는 <strong>LLM이 읽을 수 있는 데이터</strong>다. Tool과 달리 "실행"이 아닌 "조회" 성격.</p>
+<h3 id="기본-사용법_1">기본 사용법</h3>
+<div class="codehilite"><pre><span></span><code><span class="nd">@mcp</span><span class="o">.</span><span class="n">resource</span><span class="p">(</span><span class="s2">&quot;config://app-settings&quot;</span><span class="p">)</span>
+<span class="k">def</span><span class="w"> </span><span class="nf">get_settings</span><span class="p">()</span> <span class="o">-&gt;</span> <span class="nb">str</span><span class="p">:</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;애플리케이션 설정을 제공합니다&quot;&quot;&quot;</span>
+    <span class="k">return</span> <span class="n">json</span><span class="o">.</span><span class="n">dumps</span><span class="p">({</span><span class="s2">&quot;debug&quot;</span><span class="p">:</span> <span class="kc">False</span><span class="p">,</span> <span class="s2">&quot;version&quot;</span><span class="p">:</span> <span class="s2">&quot;1.0&quot;</span><span class="p">})</span>
+</code></pre></div>
+
+<h3 id="리소스-템플릿-동적-uri">리소스 템플릿 (동적 URI)</h3>
+<div class="codehilite"><pre><span></span><code><span class="nd">@mcp</span><span class="o">.</span><span class="n">resource</span><span class="p">(</span><span class="s2">&quot;users://</span><span class="si">{user_id}</span><span class="s2">/profile&quot;</span><span class="p">)</span>
+<span class="k">def</span><span class="w"> </span><span class="nf">get_user_profile</span><span class="p">(</span><span class="n">user_id</span><span class="p">:</span> <span class="nb">str</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">str</span><span class="p">:</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;사용자 프로필을 조회합니다&quot;&quot;&quot;</span>
+    <span class="n">user</span> <span class="o">=</span> <span class="n">db</span><span class="o">.</span><span class="n">get_user</span><span class="p">(</span><span class="n">user_id</span><span class="p">)</span>
+    <span class="k">return</span> <span class="n">json</span><span class="o">.</span><span class="n">dumps</span><span class="p">({</span><span class="s2">&quot;name&quot;</span><span class="p">:</span> <span class="n">user</span><span class="o">.</span><span class="n">name</span><span class="p">,</span> <span class="s2">&quot;email&quot;</span><span class="p">:</span> <span class="n">user</span><span class="o">.</span><span class="n">email</span><span class="p">})</span>
+</code></pre></div>
+
+<p>클라이언트가 <code>users://123/profile</code>로 요청하면 <code>user_id="123"</code>으로 함수가 호출된다.</p>
+<h3 id="와일드카드-v224">와일드카드 (v2.2.4+)</h3>
+<div class="codehilite"><pre><span></span><code><span class="nd">@mcp</span><span class="o">.</span><span class="n">resource</span><span class="p">(</span><span class="s2">&quot;file://{path*}&quot;</span><span class="p">)</span>
+<span class="k">def</span><span class="w"> </span><span class="nf">read_file</span><span class="p">(</span><span class="n">path</span><span class="p">:</span> <span class="nb">str</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">str</span><span class="p">:</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;파일 내용을 읽습니다 (하위 경로 포함)&quot;&quot;&quot;</span>
+    <span class="k">return</span> <span class="n">Path</span><span class="p">(</span><span class="n">path</span><span class="p">)</span><span class="o">.</span><span class="n">read_text</span><span class="p">()</span>
+</code></pre></div>
+
+<p><code>file://docs/api/guide.md</code> 같은 다중 경로 세그먼트도 매칭.</p>
+<h3 id="정적-리소스">정적 리소스</h3>
+<div class="codehilite"><pre><span></span><code><span class="kn">from</span><span class="w"> </span><span class="nn">fastmcp.resources</span><span class="w"> </span><span class="kn">import</span> <span class="n">FileResource</span>
+
+<span class="n">mcp</span><span class="o">.</span><span class="n">add_resource</span><span class="p">(</span><span class="n">FileResource</span><span class="p">(</span>
+    <span class="n">uri</span><span class="o">=</span><span class="s2">&quot;file://README.md&quot;</span><span class="p">,</span>
+    <span class="n">path</span><span class="o">=</span><span class="n">Path</span><span class="p">(</span><span class="s2">&quot;./README.md&quot;</span><span class="p">),</span>
+    <span class="n">mime_type</span><span class="o">=</span><span class="s2">&quot;text/markdown&quot;</span>
+<span class="p">))</span>
+</code></pre></div>
+
+<hr />
+<h2 id="6-prompts--메시지-템플릿">6. Prompts — 메시지 템플릿</h2>
+<h3 id="개념_2">개념</h3>
+<p>Prompt는 <strong>재사용 가능한 메시지 템플릿</strong>이다. LLM에게 구조화된 지시를 제공할 때 사용.</p>
+<h3 id="기본-사용법_2">기본 사용법</h3>
+<div class="codehilite"><pre><span></span><code><span class="nd">@mcp</span><span class="o">.</span><span class="n">prompt</span>
+<span class="k">def</span><span class="w"> </span><span class="nf">code_review</span><span class="p">(</span><span class="n">code</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="n">language</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="s2">&quot;python&quot;</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">str</span><span class="p">:</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;코드 리뷰를 요청하는 프롬프트&quot;&quot;&quot;</span>
+    <span class="k">return</span> <span class="sa">f</span><span class="s2">&quot;&quot;&quot;다음 </span><span class="si">{</span><span class="n">language</span><span class="si">}</span><span class="s2"> 코드를 리뷰해주세요.</span>
+
+<span class="s2">```</span><span class="si">{</span><span class="n">language</span><span class="si">}</span>
+<span class="si">{</span><span class="n">code</span><span class="si">}</span>
+</code></pre></div>
+
+<p>포인트:
+1. 버그 또는 에러 가능성
+2. 성능 개선점
+3. 가독성"""</p>
+<div class="codehilite"><pre><span></span><code><span class="c1">### 복수 메시지 반환</span>
+
+<span class="err">```</span><span class="n">python</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">fastmcp.prompts</span><span class="w"> </span><span class="kn">import</span> <span class="n">Message</span>
+
+<span class="nd">@mcp</span><span class="o">.</span><span class="n">prompt</span>
+<span class="k">def</span><span class="w"> </span><span class="nf">debug_session</span><span class="p">(</span><span class="n">error</span><span class="p">:</span> <span class="nb">str</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">list</span><span class="p">[</span><span class="n">Message</span><span class="p">]:</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;디버깅 세션을 시작합니다&quot;&quot;&quot;</span>
+    <span class="k">return</span> <span class="p">[</span>
+        <span class="n">Message</span><span class="p">(</span><span class="n">role</span><span class="o">=</span><span class="s2">&quot;user&quot;</span><span class="p">,</span> <span class="n">content</span><span class="o">=</span><span class="sa">f</span><span class="s2">&quot;이 에러를 분석해주세요: </span><span class="si">{</span><span class="n">error</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">),</span>
+        <span class="n">Message</span><span class="p">(</span><span class="n">role</span><span class="o">=</span><span class="s2">&quot;assistant&quot;</span><span class="p">,</span> <span class="n">content</span><span class="o">=</span><span class="s2">&quot;네, 에러를 분석하겠습니다. 관련 코드를 보여주세요.&quot;</span><span class="p">),</span>
+        <span class="n">Message</span><span class="p">(</span><span class="n">role</span><span class="o">=</span><span class="s2">&quot;user&quot;</span><span class="p">,</span> <span class="n">content</span><span class="o">=</span><span class="s2">&quot;관련 코드는 다음과 같습니다:&quot;</span><span class="p">),</span>
+    <span class="p">]</span>
+</code></pre></div>
+
+<hr />
+<h2 id="7-context--세션-컨텍스트">7. Context — 세션 컨텍스트</h2>
+<h3 id="개념_3">개념</h3>
+<p>Context는 도구/리소스 함수 내에서 <strong>MCP 세션 정보에 접근</strong>하는 객체다.</p>
+<h3 id="사용-방법">사용 방법</h3>
+<div class="codehilite"><pre><span></span><code><span class="kn">from</span><span class="w"> </span><span class="nn">fastmcp</span><span class="w"> </span><span class="kn">import</span> <span class="n">Context</span>
+
+<span class="nd">@mcp</span><span class="o">.</span><span class="n">tool</span>
+<span class="k">async</span> <span class="k">def</span><span class="w"> </span><span class="nf">process_data</span><span class="p">(</span><span class="n">data</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="n">ctx</span><span class="p">:</span> <span class="n">Context</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">str</span><span class="p">:</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;데이터를 처리합니다 (진행률 보고 포함)&quot;&quot;&quot;</span>
+
+    <span class="c1"># 로깅</span>
+    <span class="k">await</span> <span class="n">ctx</span><span class="o">.</span><span class="n">info</span><span class="p">(</span><span class="s2">&quot;처리 시작&quot;</span><span class="p">)</span>
+    <span class="k">await</span> <span class="n">ctx</span><span class="o">.</span><span class="n">debug</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;데이터 크기: </span><span class="si">{</span><span class="nb">len</span><span class="p">(</span><span class="n">data</span><span class="p">)</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
+
+    <span class="c1"># 진행률 보고</span>
+    <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="mi">10</span><span class="p">):</span>
+        <span class="k">await</span> <span class="n">ctx</span><span class="o">.</span><span class="n">report_progress</span><span class="p">(</span><span class="n">i</span> <span class="o">+</span> <span class="mi">1</span><span class="p">,</span> <span class="mi">10</span><span class="p">)</span>
+        <span class="k">await</span> <span class="n">process_chunk</span><span class="p">(</span><span class="n">data</span><span class="p">[</span><span class="n">i</span><span class="p">])</span>
+
+    <span class="k">await</span> <span class="n">ctx</span><span class="o">.</span><span class="n">info</span><span class="p">(</span><span class="s2">&quot;처리 완료&quot;</span><span class="p">)</span>
+    <span class="k">return</span> <span class="s2">&quot;완료&quot;</span>
+</code></pre></div>
+
+<h3 id="주요-기능">주요 기능</h3>
+<table>
+<thead>
+<tr>
+<th>기능</th>
+<th>메서드</th>
+<th>용도</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><strong>로깅</strong></td>
+<td><code>ctx.debug()</code>, <code>ctx.info()</code>, <code>ctx.warning()</code>, <code>ctx.error()</code></td>
+<td>클라이언트에 실행 상태 전달</td>
+</tr>
+<tr>
+<td><strong>진행률</strong></td>
+<td><code>ctx.report_progress(current, total)</code></td>
+<td>장시간 작업 진행률</td>
+</tr>
+<tr>
+<td><strong>리소스 접근</strong></td>
+<td><code>ctx.read_resource(uri)</code></td>
+<td>등록된 리소스 읽기</td>
+</tr>
+<tr>
+<td><strong>LLM 샘플링</strong></td>
+<td><code>ctx.sample(prompt)</code></td>
+<td>클라이언트의 LLM에게 텍스트 생성 요청</td>
+</tr>
+<tr>
+<td><strong>사용자 입력</strong></td>
+<td><code>ctx.elicit(schema)</code></td>
+<td>대화형 사용자 입력 요청 (v3.0+)</td>
+</tr>
+<tr>
+<td><strong>세션 상태</strong></td>
+<td><code>ctx.session[key]</code></td>
+<td>요청 간 데이터 유지</td>
+</tr>
+</tbody>
+</table>
+<h3 id="llm-샘플링">LLM 샘플링</h3>
+<div class="codehilite"><pre><span></span><code><span class="nd">@mcp</span><span class="o">.</span><span class="n">tool</span>
+<span class="k">async</span> <span class="k">def</span><span class="w"> </span><span class="nf">summarize_and_translate</span><span class="p">(</span><span class="n">text</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="n">ctx</span><span class="p">:</span> <span class="n">Context</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">str</span><span class="p">:</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;텍스트를 요약한 후 번역합니다&quot;&quot;&quot;</span>
+    <span class="n">summary</span> <span class="o">=</span> <span class="k">await</span> <span class="n">ctx</span><span class="o">.</span><span class="n">sample</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;다음을 3줄로 요약해주세요:</span><span class="se">\n</span><span class="si">{</span><span class="n">text</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
+    <span class="n">translation</span> <span class="o">=</span> <span class="k">await</span> <span class="n">ctx</span><span class="o">.</span><span class="n">sample</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;다음을 영어로 번역해주세요:</span><span class="se">\n</span><span class="si">{</span><span class="n">summary</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
+    <span class="k">return</span> <span class="n">translation</span>
+</code></pre></div>
+
+<hr />
+<h2 id="8-전송-모드-transport">8. 전송 모드 (Transport)</h2>
+<p>MCP 서버와 클라이언트 간의 통신 방식.</p>
+<table>
+<thead>
+<tr>
+<th>모드</th>
+<th>용도</th>
+<th>명령어</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><strong>stdio</strong></td>
+<td>로컬 프로세스, Claude Desktop 연동</td>
+<td><code>mcp.run(transport="stdio")</code></td>
+</tr>
+<tr>
+<td><strong>Streamable HTTP</strong></td>
+<td>원격 서버, 프로덕션</td>
+<td><code>mcp.run(transport="streamable-http", port=8000)</code></td>
+</tr>
+<tr>
+<td><strong>SSE</strong> (레거시)</td>
+<td>HTTP 서버 (하위 호환)</td>
+<td><code>mcp.run(transport="sse")</code></td>
+</tr>
+<tr>
+<td><strong>In-Memory</strong></td>
+<td>테스트, 같은 프로세스</td>
+<td><code>Client(server)</code> 직접 전달</td>
+</tr>
+</tbody>
+</table>
+<h3 id="stdio-실행">stdio 실행</h3>
+<div class="codehilite"><pre><span></span><code><span class="c1"># CLI로 실행</span>
+fastmcp<span class="w"> </span>run<span class="w"> </span>my_server.py
+
+<span class="c1"># Python 코드에서</span>
+<span class="k">if</span><span class="w"> </span><span class="nv">__name__</span><span class="w"> </span><span class="o">==</span><span class="w"> </span><span class="s2">&quot;__main__&quot;</span>:
+<span class="w">    </span>mcp.run<span class="o">()</span><span class="w">  </span><span class="c1"># 기본값이 stdio</span>
+</code></pre></div>
+
+<h3 id="http-실행">HTTP 실행</h3>
+<div class="codehilite"><pre><span></span><code><span class="c1"># CLI로 실행</span>
+fastmcp<span class="w"> </span>run<span class="w"> </span>my_server.py<span class="w"> </span>--transport<span class="w"> </span>streamable-http<span class="w"> </span>--port<span class="w"> </span><span class="m">8000</span>
+
+<span class="c1"># Python 코드에서</span>
+mcp.run<span class="o">(</span><span class="nv">transport</span><span class="o">=</span><span class="s2">&quot;streamable-http&quot;</span>,<span class="w"> </span><span class="nv">host</span><span class="o">=</span><span class="s2">&quot;0.0.0.0&quot;</span>,<span class="w"> </span><span class="nv">port</span><span class="o">=</span><span class="m">8000</span><span class="o">)</span>
+</code></pre></div>
+
+<h3 id="claude-desktop-연동">Claude Desktop 연동</h3>
+<div class="codehilite"><pre><span></span><code><span class="p">{</span>
+<span class="w">  </span><span class="nt">&quot;mcpServers&quot;</span><span class="p">:</span><span class="w"> </span><span class="p">{</span>
+<span class="w">    </span><span class="nt">&quot;my-server&quot;</span><span class="p">:</span><span class="w"> </span><span class="p">{</span>
+<span class="w">      </span><span class="nt">&quot;command&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;fastmcp&quot;</span><span class="p">,</span>
+<span class="w">      </span><span class="nt">&quot;args&quot;</span><span class="p">:</span><span class="w"> </span><span class="p">[</span><span class="s2">&quot;run&quot;</span><span class="p">,</span><span class="w"> </span><span class="s2">&quot;/path/to/my_server.py&quot;</span><span class="p">]</span>
+<span class="w">    </span><span class="p">}</span>
+<span class="w">  </span><span class="p">}</span>
+<span class="p">}</span>
+</code></pre></div>
+
+<hr />
+<h2 id="9-client--서버-연결">9. Client — 서버 연결</h2>
+<h3 id="기본-사용법_3">기본 사용법</h3>
+<div class="codehilite"><pre><span></span><code><span class="kn">from</span><span class="w"> </span><span class="nn">fastmcp</span><span class="w"> </span><span class="kn">import</span> <span class="n">Client</span>
+
+<span class="n">client</span> <span class="o">=</span> <span class="n">Client</span><span class="p">(</span><span class="s2">&quot;http://localhost:8000/mcp&quot;</span><span class="p">)</span>
+
+<span class="k">async</span> <span class="k">with</span> <span class="n">client</span><span class="p">:</span>
+    <span class="c1"># 도구 목록 조회</span>
+    <span class="n">tools</span> <span class="o">=</span> <span class="k">await</span> <span class="n">client</span><span class="o">.</span><span class="n">list_tools</span><span class="p">()</span>
+
+    <span class="c1"># 도구 호출</span>
+    <span class="n">result</span> <span class="o">=</span> <span class="k">await</span> <span class="n">client</span><span class="o">.</span><span class="n">call_tool</span><span class="p">(</span><span class="s2">&quot;add&quot;</span><span class="p">,</span> <span class="p">{</span><span class="s2">&quot;a&quot;</span><span class="p">:</span> <span class="mi">1</span><span class="p">,</span> <span class="s2">&quot;b&quot;</span><span class="p">:</span> <span class="mi">2</span><span class="p">})</span>
+    <span class="nb">print</span><span class="p">(</span><span class="n">result</span><span class="p">)</span>  <span class="c1"># 3</span>
+
+    <span class="c1"># 리소스 읽기</span>
+    <span class="n">data</span> <span class="o">=</span> <span class="k">await</span> <span class="n">client</span><span class="o">.</span><span class="n">read_resource</span><span class="p">(</span><span class="s2">&quot;config://app-settings&quot;</span><span class="p">)</span>
+
+    <span class="c1"># 프롬프트 렌더링</span>
+    <span class="n">messages</span> <span class="o">=</span> <span class="k">await</span> <span class="n">client</span><span class="o">.</span><span class="n">get_prompt</span><span class="p">(</span><span class="s2">&quot;code_review&quot;</span><span class="p">,</span> <span class="p">{</span><span class="s2">&quot;code&quot;</span><span class="p">:</span> <span class="s2">&quot;x = 1&quot;</span><span class="p">})</span>
+</code></pre></div>
+
+<h3 id="연결-방식">연결 방식</h3>
+<div class="codehilite"><pre><span></span><code><span class="c1"># 인메모리 (테스트용)</span>
+<span class="n">client</span> <span class="o">=</span> <span class="n">Client</span><span class="p">(</span><span class="n">mcp_server_instance</span><span class="p">)</span>
+
+<span class="c1"># stdio (서브프로세스)</span>
+<span class="n">client</span> <span class="o">=</span> <span class="n">Client</span><span class="p">(</span><span class="s2">&quot;my_server.py&quot;</span><span class="p">)</span>
+
+<span class="c1"># HTTP (원격)</span>
+<span class="n">client</span> <span class="o">=</span> <span class="n">Client</span><span class="p">(</span><span class="s2">&quot;http://api.example.com/mcp&quot;</span><span class="p">)</span>
+</code></pre></div>
+
+<hr />
+<h2 id="10-서버-합성-composition">10. 서버 합성 (Composition)</h2>
+<p>여러 MCP 서버를 하나로 합치는 기능.</p>
+<h3 id="mount">mount()</h3>
+<div class="codehilite"><pre><span></span><code><span class="kn">from</span><span class="w"> </span><span class="nn">fastmcp</span><span class="w"> </span><span class="kn">import</span> <span class="n">FastMCP</span>
+
+<span class="c1"># 개별 서버 정의</span>
+<span class="n">weather_server</span> <span class="o">=</span> <span class="n">FastMCP</span><span class="p">(</span><span class="s2">&quot;Weather&quot;</span><span class="p">)</span>
+<span class="n">db_server</span> <span class="o">=</span> <span class="n">FastMCP</span><span class="p">(</span><span class="s2">&quot;Database&quot;</span><span class="p">)</span>
+
+<span class="nd">@weather_server</span><span class="o">.</span><span class="n">tool</span>
+<span class="k">def</span><span class="w"> </span><span class="nf">get_weather</span><span class="p">(</span><span class="n">city</span><span class="p">:</span> <span class="nb">str</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">str</span><span class="p">:</span>
+    <span class="k">return</span> <span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="n">city</span><span class="si">}</span><span class="s2">: 맑음&quot;</span>
+
+<span class="nd">@db_server</span><span class="o">.</span><span class="n">tool</span>
+<span class="k">def</span><span class="w"> </span><span class="nf">query</span><span class="p">(</span><span class="n">sql</span><span class="p">:</span> <span class="nb">str</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">str</span><span class="p">:</span>
+    <span class="k">return</span> <span class="s2">&quot;결과&quot;</span>
+
+<span class="c1"># 합성</span>
+<span class="n">app</span> <span class="o">=</span> <span class="n">FastMCP</span><span class="p">(</span><span class="s2">&quot;Main&quot;</span><span class="p">)</span>
+<span class="n">app</span><span class="o">.</span><span class="n">mount</span><span class="p">(</span><span class="s2">&quot;weather&quot;</span><span class="p">,</span> <span class="n">weather_server</span><span class="p">)</span>
+<span class="n">app</span><span class="o">.</span><span class="n">mount</span><span class="p">(</span><span class="s2">&quot;db&quot;</span><span class="p">,</span> <span class="n">db_server</span><span class="p">)</span>
+
+<span class="c1"># weather_get_weather, db_query로 접근 가능</span>
+</code></pre></div>
+
+<h3 id="네임스페이싱-v30">네임스페이싱 (v3.0+)</h3>
+<p>mount 시 자동으로 접두사가 붙어 이름 충돌 방지:
+- 도구: <code>weather_get_weather</code>
+- 리소스: <code>data://weather/forecast</code></p>
+<h3 id="외부-서버-마운트">외부 서버 마운트</h3>
+<div class="codehilite"><pre><span></span><code><span class="kn">from</span><span class="w"> </span><span class="nn">fastmcp</span><span class="w"> </span><span class="kn">import</span> <span class="n">Client</span>
+
+<span class="c1"># 원격 HTTP 서버를 프록시로 마운트</span>
+<span class="n">external</span> <span class="o">=</span> <span class="n">Client</span><span class="p">(</span><span class="s2">&quot;http://api.example.com/mcp&quot;</span><span class="p">)</span>
+<span class="n">app</span><span class="o">.</span><span class="n">mount</span><span class="p">(</span><span class="s2">&quot;external&quot;</span><span class="p">,</span> <span class="n">external</span><span class="p">)</span>
+</code></pre></div>
+
+<hr />
+<h2 id="11-docker-설치">11. Docker 설치</h2>
+<h3 id="dockerfile">Dockerfile</h3>
+<div class="codehilite"><pre><span></span><code><span class="k">FROM</span><span class="w"> </span><span class="s">python:3.12-slim</span>
+
+<span class="k">WORKDIR</span><span class="w"> </span><span class="s">/app</span>
+
+<span class="k">COPY</span><span class="w"> </span>requirements.txt<span class="w"> </span>.
+<span class="k">RUN</span><span class="w"> </span>pip<span class="w"> </span>install<span class="w"> </span>--no-cache-dir<span class="w"> </span>-r<span class="w"> </span>requirements.txt
+
+<span class="k">COPY</span><span class="w"> </span>.<span class="w"> </span>.
+
+<span class="k">EXPOSE</span><span class="w"> </span><span class="s">8000</span>
+
+<span class="k">CMD</span><span class="w"> </span><span class="p">[</span><span class="s2">&quot;fastmcp&quot;</span><span class="p">,</span><span class="w"> </span><span class="s2">&quot;run&quot;</span><span class="p">,</span><span class="w"> </span><span class="s2">&quot;server.py&quot;</span><span class="p">,</span><span class="w"> </span><span class="s2">&quot;--transport&quot;</span><span class="p">,</span><span class="w"> </span><span class="s2">&quot;streamable-http&quot;</span><span class="p">,</span><span class="w"> </span><span class="s2">&quot;--host&quot;</span><span class="p">,</span><span class="w"> </span><span class="s2">&quot;0.0.0.0&quot;</span><span class="p">,</span><span class="w"> </span><span class="s2">&quot;--port&quot;</span><span class="p">,</span><span class="w"> </span><span class="s2">&quot;8000&quot;</span><span class="p">]</span>
+</code></pre></div>
+
+<h3 id="docker-composeyml">docker-compose.yml</h3>
+<div class="codehilite"><pre><span></span><code><span class="nt">version</span><span class="p">:</span><span class="w"> </span><span class="s">&#39;3.8&#39;</span>
+
+<span class="nt">services</span><span class="p">:</span>
+<span class="w">  </span><span class="nt">mcp-server</span><span class="p">:</span>
+<span class="w">    </span><span class="nt">build</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">.</span>
+<span class="w">    </span><span class="nt">container_name</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">mcp-server</span>
+<span class="w">    </span><span class="nt">ports</span><span class="p">:</span>
+<span class="w">      </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="s">&quot;8000:8000&quot;</span>
+<span class="w">    </span><span class="nt">environment</span><span class="p">:</span>
+<span class="w">      </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">DATABASE_URL=postgresql://user:pw@db:5432/mydb</span>
+<span class="w">      </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">OPENAI_API_KEY=${OPENAI_API_KEY}</span>
+<span class="w">    </span><span class="nt">volumes</span><span class="p">:</span>
+<span class="w">      </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">./server.py:/app/server.py</span>
+<span class="w">    </span><span class="nt">restart</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">unless-stopped</span>
+
+<span class="w">  </span><span class="c1"># Oracle DB 연결 시</span>
+<span class="w">  </span><span class="nt">mcp-server-oracle</span><span class="p">:</span>
+<span class="w">    </span><span class="nt">build</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">.</span>
+<span class="w">    </span><span class="nt">container_name</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">mcp-oracle</span>
+<span class="w">    </span><span class="nt">ports</span><span class="p">:</span>
+<span class="w">      </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="s">&quot;8001:8000&quot;</span>
+<span class="w">    </span><span class="nt">environment</span><span class="p">:</span>
+<span class="w">      </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">ORACLE_DSN=host:1521/service</span>
+<span class="w">      </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">ORACLE_USER=reader</span>
+<span class="w">      </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">ORACLE_PASSWORD=${ORACLE_PASSWORD}</span>
+</code></pre></div>
+
+<hr />
+<h2 id="12-langgraph-연동">12. LangGraph 연동</h2>
+<h3 id="langchain-mcp-adapters">langchain-mcp-adapters</h3>
+<div class="codehilite"><pre><span></span><code><span class="kn">from</span><span class="w"> </span><span class="nn">langchain_mcp_adapters.client</span><span class="w"> </span><span class="kn">import</span> <span class="n">MultiServerMCPClient</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">langgraph.prebuilt</span><span class="w"> </span><span class="kn">import</span> <span class="n">create_react_agent</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">langchain_openai</span><span class="w"> </span><span class="kn">import</span> <span class="n">ChatOpenAI</span>
+
+<span class="c1"># MCP 서버 연결</span>
+<span class="k">async</span> <span class="k">with</span> <span class="n">MultiServerMCPClient</span><span class="p">({</span>
+    <span class="s2">&quot;db&quot;</span><span class="p">:</span> <span class="p">{</span>
+        <span class="s2">&quot;url&quot;</span><span class="p">:</span> <span class="s2">&quot;http://localhost:8000/mcp&quot;</span><span class="p">,</span>
+        <span class="s2">&quot;transport&quot;</span><span class="p">:</span> <span class="s2">&quot;streamable_http&quot;</span>
+    <span class="p">},</span>
+    <span class="s2">&quot;search&quot;</span><span class="p">:</span> <span class="p">{</span>
+        <span class="s2">&quot;command&quot;</span><span class="p">:</span> <span class="s2">&quot;fastmcp&quot;</span><span class="p">,</span>
+        <span class="s2">&quot;args&quot;</span><span class="p">:</span> <span class="p">[</span><span class="s2">&quot;run&quot;</span><span class="p">,</span> <span class="s2">&quot;search_server.py&quot;</span><span class="p">],</span>
+        <span class="s2">&quot;transport&quot;</span><span class="p">:</span> <span class="s2">&quot;stdio&quot;</span>
+    <span class="p">}</span>
+<span class="p">})</span> <span class="k">as</span> <span class="n">client</span><span class="p">:</span>
+
+    <span class="c1"># MCP 도구를 LangGraph Agent에 연결</span>
+    <span class="n">tools</span> <span class="o">=</span> <span class="n">client</span><span class="o">.</span><span class="n">get_tools</span><span class="p">()</span>
+    <span class="n">agent</span> <span class="o">=</span> <span class="n">create_react_agent</span><span class="p">(</span><span class="n">ChatOpenAI</span><span class="p">(</span><span class="n">model</span><span class="o">=</span><span class="s2">&quot;gpt-4.1-mini&quot;</span><span class="p">),</span> <span class="n">tools</span><span class="p">)</span>
+
+    <span class="n">result</span> <span class="o">=</span> <span class="k">await</span> <span class="n">agent</span><span class="o">.</span><span class="n">ainvoke</span><span class="p">({</span>
+        <span class="s2">&quot;messages&quot;</span><span class="p">:</span> <span class="p">[{</span><span class="s2">&quot;role&quot;</span><span class="p">:</span> <span class="s2">&quot;user&quot;</span><span class="p">,</span> <span class="s2">&quot;content&quot;</span><span class="p">:</span> <span class="s2">&quot;매출 상위 5개 팀을 알려줘&quot;</span><span class="p">}]</span>
+    <span class="p">})</span>
+</code></pre></div>
+
+<h3 id="아키텍처">아키텍처</h3>
+<div class="mermaid">
+graph TB
+    USER[사용자] --> AGENT[LangGraph Agent]
+    AGENT --> MCP_CLIENT[MCP Client Adapter]
+
+    MCP_CLIENT --> S1[DB MCP Server\nHTTP :8000]
+    MCP_CLIENT --> S2[Search MCP Server\nstdio]
+    MCP_CLIENT --> S3[File MCP Server\nstdio]
+
+    S1 --> DB[(Database)]
+    S2 --> API[Search API]
+    S3 --> FS[File System]
+</div>
+
+<hr />
+<h2 id="13-실전-예시-db-조회-mcp-서버">13. 실전 예시: DB 조회 MCP 서버</h2>
+<div class="codehilite"><pre><span></span><code><span class="kn">from</span><span class="w"> </span><span class="nn">fastmcp</span><span class="w"> </span><span class="kn">import</span> <span class="n">FastMCP</span><span class="p">,</span> <span class="n">Context</span>
+<span class="kn">import</span><span class="w"> </span><span class="nn">oracledb</span>
+
+<span class="n">mcp</span> <span class="o">=</span> <span class="n">FastMCP</span><span class="p">(</span><span class="s2">&quot;DB Query Server&quot;</span><span class="p">)</span>
+
+<span class="k">def</span><span class="w"> </span><span class="nf">get_connection</span><span class="p">():</span>
+    <span class="k">return</span> <span class="n">oracledb</span><span class="o">.</span><span class="n">connect</span><span class="p">(</span>
+        <span class="n">user</span><span class="o">=</span><span class="s2">&quot;reader&quot;</span><span class="p">,</span>
+        <span class="n">password</span><span class="o">=</span><span class="s2">&quot;pw&quot;</span><span class="p">,</span>
+        <span class="n">dsn</span><span class="o">=</span><span class="s2">&quot;host:1521/service&quot;</span>
+    <span class="p">)</span>
+
+<span class="nd">@mcp</span><span class="o">.</span><span class="n">tool</span>
+<span class="k">async</span> <span class="k">def</span><span class="w"> </span><span class="nf">query_table</span><span class="p">(</span>
+    <span class="n">table_name</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span>
+    <span class="n">columns</span><span class="p">:</span> <span class="nb">list</span><span class="p">[</span><span class="nb">str</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+    <span class="n">where</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+    <span class="n">limit</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="mi">100</span><span class="p">,</span>
+    <span class="n">ctx</span><span class="p">:</span> <span class="n">Context</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+<span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">list</span><span class="p">[</span><span class="nb">dict</span><span class="p">]:</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;테이블 데이터를 조회합니다.</span>
 
 <span class="sd">    Args:</span>
-<span class="sd">        query: 검색어</span>
-<span class="sd">        count: 결과 수 (기본 5)</span>
+<span class="sd">        table_name: 조회할 테이블명</span>
+<span class="sd">        columns: 조회할 컬럼 목록 (없으면 전체)</span>
+<span class="sd">        where: WHERE 조건절</span>
+<span class="sd">        limit: 최대 행 수</span>
 <span class="sd">    &quot;&quot;&quot;</span>
-    <span class="n">results</span> <span class="o">=</span> <span class="k">await</span> <span class="n">news_api</span><span class="o">.</span><span class="n">search</span><span class="p">(</span><span class="n">query</span><span class="p">,</span> <span class="n">count</span><span class="p">)</span>
-    <span class="k">return</span> <span class="n">results</span>
+    <span class="n">cols</span> <span class="o">=</span> <span class="s2">&quot;, &quot;</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="n">columns</span><span class="p">)</span> <span class="k">if</span> <span class="n">columns</span> <span class="k">else</span> <span class="s2">&quot;*&quot;</span>
+    <span class="n">sql</span> <span class="o">=</span> <span class="sa">f</span><span class="s2">&quot;SELECT </span><span class="si">{</span><span class="n">cols</span><span class="si">}</span><span class="s2"> FROM </span><span class="si">{</span><span class="n">table_name</span><span class="si">}</span><span class="s2">&quot;</span>
+    <span class="k">if</span> <span class="n">where</span><span class="p">:</span>
+        <span class="n">sql</span> <span class="o">+=</span> <span class="sa">f</span><span class="s2">&quot; WHERE </span><span class="si">{</span><span class="n">where</span><span class="si">}</span><span class="s2">&quot;</span>
+    <span class="n">sql</span> <span class="o">+=</span> <span class="sa">f</span><span class="s2">&quot; FETCH FIRST </span><span class="si">{</span><span class="n">limit</span><span class="si">}</span><span class="s2"> ROWS ONLY&quot;</span>
+
+    <span class="k">if</span> <span class="n">ctx</span><span class="p">:</span>
+        <span class="k">await</span> <span class="n">ctx</span><span class="o">.</span><span class="n">info</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;실행 SQL: </span><span class="si">{</span><span class="n">sql</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
+
+    <span class="n">conn</span> <span class="o">=</span> <span class="n">get_connection</span><span class="p">()</span>
+    <span class="n">cursor</span> <span class="o">=</span> <span class="n">conn</span><span class="o">.</span><span class="n">cursor</span><span class="p">()</span>
+    <span class="n">cursor</span><span class="o">.</span><span class="n">execute</span><span class="p">(</span><span class="n">sql</span><span class="p">)</span>
+
+    <span class="n">col_names</span> <span class="o">=</span> <span class="p">[</span><span class="n">desc</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span> <span class="k">for</span> <span class="n">desc</span> <span class="ow">in</span> <span class="n">cursor</span><span class="o">.</span><span class="n">description</span><span class="p">]</span>
+    <span class="n">rows</span> <span class="o">=</span> <span class="p">[</span><span class="nb">dict</span><span class="p">(</span><span class="nb">zip</span><span class="p">(</span><span class="n">col_names</span><span class="p">,</span> <span class="n">row</span><span class="p">))</span> <span class="k">for</span> <span class="n">row</span> <span class="ow">in</span> <span class="n">cursor</span><span class="o">.</span><span class="n">fetchall</span><span class="p">()]</span>
+
+    <span class="n">cursor</span><span class="o">.</span><span class="n">close</span><span class="p">()</span>
+    <span class="n">conn</span><span class="o">.</span><span class="n">close</span><span class="p">()</span>
+    <span class="k">return</span> <span class="n">rows</span>
+
+<span class="nd">@mcp</span><span class="o">.</span><span class="n">resource</span><span class="p">(</span><span class="s2">&quot;schema://</span><span class="si">{table_name}</span><span class="s2">&quot;</span><span class="p">)</span>
+<span class="k">def</span><span class="w"> </span><span class="nf">get_table_schema</span><span class="p">(</span><span class="n">table_name</span><span class="p">:</span> <span class="nb">str</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">str</span><span class="p">:</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;테이블 스키마를 조회합니다&quot;&quot;&quot;</span>
+    <span class="n">conn</span> <span class="o">=</span> <span class="n">get_connection</span><span class="p">()</span>
+    <span class="n">cursor</span> <span class="o">=</span> <span class="n">conn</span><span class="o">.</span><span class="n">cursor</span><span class="p">()</span>
+    <span class="n">cursor</span><span class="o">.</span><span class="n">execute</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;&quot;&quot;</span>
+<span class="s2">        SELECT column_name, data_type, nullable</span>
+<span class="s2">        FROM all_tab_columns</span>
+<span class="s2">        WHERE table_name = UPPER(:1)</span>
+<span class="s2">        ORDER BY column_id</span>
+<span class="s2">    &quot;&quot;&quot;</span><span class="p">,</span> <span class="p">[</span><span class="n">table_name</span><span class="p">])</span>
+
+    <span class="n">columns</span> <span class="o">=</span> <span class="p">[{</span><span class="s2">&quot;name&quot;</span><span class="p">:</span> <span class="n">r</span><span class="p">[</span><span class="mi">0</span><span class="p">],</span> <span class="s2">&quot;type&quot;</span><span class="p">:</span> <span class="n">r</span><span class="p">[</span><span class="mi">1</span><span class="p">],</span> <span class="s2">&quot;nullable&quot;</span><span class="p">:</span> <span class="n">r</span><span class="p">[</span><span class="mi">2</span><span class="p">]}</span> <span class="k">for</span> <span class="n">r</span> <span class="ow">in</span> <span class="n">cursor</span><span class="o">.</span><span class="n">fetchall</span><span class="p">()]</span>
+    <span class="n">cursor</span><span class="o">.</span><span class="n">close</span><span class="p">()</span>
+    <span class="n">conn</span><span class="o">.</span><span class="n">close</span><span class="p">()</span>
+    <span class="k">return</span> <span class="n">json</span><span class="o">.</span><span class="n">dumps</span><span class="p">(</span><span class="n">columns</span><span class="p">,</span> <span class="n">indent</span><span class="o">=</span><span class="mi">2</span><span class="p">)</span>
+
+<span class="k">if</span> <span class="vm">__name__</span> <span class="o">==</span> <span class="s2">&quot;__main__&quot;</span><span class="p">:</span>
+    <span class="n">mcp</span><span class="o">.</span><span class="n">run</span><span class="p">(</span><span class="n">transport</span><span class="o">=</span><span class="s2">&quot;streamable-http&quot;</span><span class="p">,</span> <span class="n">host</span><span class="o">=</span><span class="s2">&quot;0.0.0.0&quot;</span><span class="p">,</span> <span class="n">port</span><span class="o">=</span><span class="mi">8000</span><span class="p">)</span>
 </code></pre></div>
 
-<p>💡</p>
-<p><strong>docstring이 곧 설명</strong> LLM은 이 docstring을 읽고 도구를 선택합니다. 잘 쓰면 LLM이 도구를 정확하게 호출하고, 못 쓰면 엉뚱한 도구를 선택합니다.</p>
-<p>03Resources — 리소스 노출</p>
-<p>PYTHON리소스 정의</p>
-<div class="codehilite"><pre><span></span><code><span class="err">#</span><span class="w"> </span><span class="n">정적</span><span class="w"> </span><span class="n">리소스</span>
-<span class="nv">@mcp</span><span class="p">.</span><span class="n">resource</span><span class="p">(</span><span class="ss">&quot;config://app-settings&quot;</span><span class="p">)</span>
-<span class="n">def</span><span class="w"> </span><span class="n">get_settings</span><span class="p">()</span><span class="w"> </span><span class="o">-&gt;</span><span class="w"> </span><span class="nf">str</span><span class="err">:</span>
-<span class="w">    </span><span class="ss">&quot;&quot;&quot;앱 설정을 반환합니다.&quot;&quot;&quot;</span>
-<span class="w">    </span><span class="k">return</span><span class="w"> </span><span class="n">json</span><span class="p">.</span><span class="n">dumps</span><span class="p">(</span><span class="err">{</span><span class="ss">&quot;version&quot;</span><span class="err">:</span><span class="w"> </span><span class="ss">&quot;1.0&quot;</span><span class="p">,</span><span class="w"> </span><span class="ss">&quot;env&quot;</span><span class="err">:</span><span class="w"> </span><span class="ss">&quot;production&quot;</span><span class="err">}</span><span class="p">)</span>
-
-<span class="err">#</span><span class="w"> </span><span class="n">동적</span><span class="w"> </span><span class="n">리소스</span><span class="w"> </span><span class="p">(</span><span class="n">URI</span><span class="w"> </span><span class="n">템플릿</span><span class="p">)</span>
-<span class="nv">@mcp</span><span class="p">.</span><span class="n">resource</span><span class="p">(</span><span class="ss">&quot;db://table/{table_name}&quot;</span><span class="p">)</span>
-<span class="n">def</span><span class="w"> </span><span class="n">get_table_schema</span><span class="p">(</span><span class="nl">table_name</span><span class="p">:</span><span class="w"> </span><span class="nf">str</span><span class="p">)</span><span class="w"> </span><span class="o">-&gt;</span><span class="w"> </span><span class="nf">str</span><span class="err">:</span>
-<span class="w">    </span><span class="ss">&quot;&quot;&quot;테이블 스키마를 반환합니다.&quot;&quot;&quot;</span>
-<span class="w">    </span><span class="k">schema</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">db</span><span class="p">.</span><span class="n">get_schema</span><span class="p">(</span><span class="n">table_name</span><span class="p">)</span>
-<span class="w">    </span><span class="k">return</span><span class="w"> </span><span class="n">json</span><span class="p">.</span><span class="n">dumps</span><span class="p">(</span><span class="k">schema</span><span class="p">)</span>
-</code></pre></div>
-
-<p>ℹ</p>
-<p><strong>Tool vs Resource</strong> Tool은 "행동"(API 호출, DB 쿼리), Resource는 "데이터"(설정, 스키마, 문서). Tool은 LLM이 호출하고, Resource는 컨텍스트로 주입됩니다.</p>
-<p>04Prompts — 프롬프트 템플릿</p>
-<p>PYTHON프롬프트 템플릿 정의</p>
-<div class="codehilite"><pre><span></span><code><span class="nv">@mcp</span><span class="p">.</span><span class="n">prompt</span>
-<span class="n">def</span><span class="w"> </span><span class="n">analyze_stock</span><span class="p">(</span><span class="nl">ticker</span><span class="p">:</span><span class="w"> </span><span class="nf">str</span><span class="p">)</span><span class="w"> </span><span class="o">-&gt;</span><span class="w"> </span><span class="nf">str</span><span class="err">:</span>
-<span class="w">    </span><span class="ss">&quot;&quot;&quot;종목 분석 프롬프트&quot;&quot;&quot;</span>
-<span class="w">    </span><span class="k">return</span><span class="w"> </span><span class="n">f</span><span class="ss">&quot;&quot;&quot;다음 종목을 분석해주세요:</span>
-<span class="ss">    - 종목코드: {ticker}</span>
-<span class="ss">    - get_stock_price 도구로 현재가 확인</span>
-<span class="ss">    - search_news 도구로 관련 뉴스 검색</span>
-<span class="ss">    - 종합 판단 제시&quot;&quot;&quot;</span>
-</code></pre></div>
-
-<p>05전송 모드 비교</p>
-<p>3가지 전송 모드 비교</p>
-<p>graph TD subgraph STDIO["stdio"] S_C["클라이언트"] --&gt;|stdin/stdout| S_S["서버\n(서브프로세스)"] end subgraph SSE["SSE (Server-Sent Events)"] E_C["클라이언트"] --&gt;|"HTTP POST /messages"| E_S["서버"] E_S --&gt;|"SSE /sse"| E_C end subgraph HTTP["Streamable HTTP (최신)"] H_C["클라이언트"] --&gt;|"POST /mcp"| H_S["서버"] H_S --&gt;|"JSON or SSE"| H_C end style STDIO fill:#0d0f18,stroke:#30c880 style SSE fill:#0d0f18,stroke:#e09830 style HTTP fill:#0d0f18,stroke:#5a7af0 </p>
+<hr />
+<h2 id="14-주의사항-및-한계">14. 주의사항 및 한계</h2>
 <table>
 <thead>
 <tr>
 <th>항목</th>
-<th>stdio</th>
-<th>SSE</th>
-<th>Streamable HTTP</th>
+<th>내용</th>
 </tr>
 </thead>
 <tbody>
 <tr>
-<td><strong>통신 방식</strong></td>
-<td>stdin/stdout 파이프</td>
-<td>HTTP POST + SSE 스트림 (2 엔드포인트)</td>
-<td>단일 HTTP 엔드포인트 (/mcp)</td>
+<td><strong>보안</strong></td>
+<td>Tool에서 SQL을 직접 실행하면 인젝션 위험. 파라미터 바인딩 필수</td>
 </tr>
 <tr>
-<td><strong>적합 환경</strong></td>
-<td>로컬 데스크톱 앱</td>
-<td>원격 서버 (레거시)</td>
-<td>원격 서버 (최신 표준)</td>
+<td><strong>상태 관리</strong></td>
+<td>Context는 요청마다 새로 생성됨. 세션 간 상태는 <code>ctx.session</code> 사용</td>
 </tr>
 <tr>
-<td><strong>성능</strong></td>
-<td>최고 (네트워크 없음)</td>
-<td>좋음</td>
-<td>좋음</td>
+<td><strong>동기 함수</strong></td>
+<td>threadpool에서 실행되지만 CPU 집약 작업은 별도 프로세스 권장</td>
 </tr>
 <tr>
-<td><strong>수평 확장</strong></td>
-<td>불가</td>
-<td>제한적 (long-lived 연결)</td>
-<td>가능 (stateless)</td>
+<td><strong>타임아웃</strong></td>
+<td>기본 타임아웃 없음. <code>@mcp.tool(timeout=30)</code> 명시 권장</td>
 </tr>
 <tr>
-<td><strong>호환성</strong></td>
-<td>Claude Desktop 등</td>
-<td>BIP 현재 사용 중</td>
-<td>2026 최신 표준</td>
+<td><strong>인증</strong></td>
+<td>MCP 프로토콜 자체에 인증 없음. HTTP 전송 시 별도 미들웨어 필요</td>
 </tr>
 <tr>
-<td><strong>상태</strong></td>
-<td>유지</td>
-<td>Deprecated (→ Streamable HTTP)</td>
-<td>권장</td>
+<td><strong>프로덕션</strong></td>
+<td>Streamable HTTP 모드에서 리버스 프록시 (nginx) 뒤에 배치 권장</td>
 </tr>
 </tbody>
 </table>
-<p>💡</p>
-<p><strong>판단 기준</strong> 서버와 클라이언트가 같은 머신이면 <strong>stdio</strong>. 다른 머신(Docker, 클라우드)이면 <strong>Streamable HTTP</strong> (또는 레거시 환경에서 SSE). BIP는 Docker 구성이라 SSE 사용 중.</p>
-<p>06SSE 서버 구성</p>
-<p>PYTHONSSE 모드 서버 실행</p>
-<div class="codehilite"><pre><span></span><code><span class="kn">from</span><span class="w"> </span><span class="nn">fastmcp</span><span class="w"> </span><span class="kn">import</span> <span class="n">FastMCP</span>
-
-<span class="n">mcp</span> <span class="o">=</span> <span class="n">FastMCP</span><span class="p">(</span>
-    <span class="n">name</span><span class="o">=</span><span class="s2">&quot;my-tools&quot;</span><span class="p">,</span>
-    <span class="n">host</span><span class="o">=</span><span class="s2">&quot;0.0.0.0&quot;</span><span class="p">,</span>  <span class="c1"># 외부 접근 허용</span>
-    <span class="n">port</span><span class="o">=</span><span class="mi">8000</span><span class="p">,</span>
-<span class="p">)</span>
-
-<span class="nd">@mcp</span><span class="o">.</span><span class="n">tool</span>
-<span class="k">def</span><span class="w"> </span><span class="nf">my_tool</span><span class="p">(</span><span class="n">query</span><span class="p">:</span> <span class="nb">str</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">str</span><span class="p">:</span>
-<span class="w">    </span><span class="sd">&quot;&quot;&quot;도구 설명&quot;&quot;&quot;</span>
-    <span class="k">return</span> <span class="sa">f</span><span class="s2">&quot;결과: </span><span class="si">{</span><span class="n">query</span><span class="si">}</span><span class="s2">&quot;</span>
-
-<span class="k">if</span> <span class="vm">__name__</span> <span class="o">==</span> <span class="s2">&quot;__main__&quot;</span><span class="p">:</span>
-    <span class="n">mcp</span><span class="o">.</span><span class="n">run</span><span class="p">(</span><span class="n">transport</span><span class="o">=</span><span class="s2">&quot;sse&quot;</span><span class="p">)</span>
-
-<span class="c1"># 실행: python server.py</span>
-<span class="c1"># → http://0.0.0.0:8000/sse 에서 SSE 엔드포인트 노출</span>
-</code></pre></div>
-
-<p>PYTHONStreamable HTTP 모드 (최신)</p>
-<div class="codehilite"><pre><span></span><code><span class="gh">#</span> Streamable HTTP는 단일 엔드포인트
-if __name__ == &quot;__main__&quot;:
-    mcp.run(transport=&quot;streamable-http&quot;)
-
-<span class="gh">#</span> → http://0.0.0.0:8000/mcp 에서 단일 엔드포인트 노출
-<span class="gh">#</span> 클라이언트가 JSON 또는 SSE를 선택적으로 수신
-</code></pre></div>
-
-<p>CLICLI로 실행</p>
-<div class="codehilite"><pre><span></span><code># stdio 모드 (기본)
-fastmcp run server.py
-
-# SSE 모드
-fastmcp run server.py --transport sse
-
-# Streamable HTTP
-fastmcp run server.py --transport streamable-http
-
-# 포트 지정
-fastmcp run server.py --transport sse --port 9000
-</code></pre></div>
-
-<p>07LangGraph 연동</p>
-<p>LangGraph ↔ MCP 연동 아키텍처</p>
-<p>graph LR LG["LangGraph Agent\ncreate_react_agent"] --&gt;|langchain-mcp-adapters| CLIENT["MultiServerMCPClient"] CLIENT --&gt;|SSE| MCP1["MCP Server 1\nDB 도구"] CLIENT --&gt;|SSE| MCP2["MCP Server 2\nAPI 도구"] CLIENT --&gt;|stdio| MCP3["MCP Server 3\n로컬 도구"] style LG fill:#1a2540,stroke:#5a7af0,color:#7a9aff style CLIENT fill:#201810,stroke:#e09830,color:#f8b840 style MCP1 fill:#102820,stroke:#30c880,color:#50e898 style MCP2 fill:#102820,stroke:#30c880,color:#50e898 style MCP3 fill:#102820,stroke:#30c880,color:#50e898 </p>
-<p>PYTHONMultiServerMCPClient로 연결</p>
-<div class="codehilite"><pre><span></span><code><span class="kn">from</span><span class="w"> </span><span class="nn">langchain_mcp_adapters.client</span><span class="w"> </span><span class="kn">import</span> <span class="n">MultiServerMCPClient</span>
-<span class="kn">from</span><span class="w"> </span><span class="nn">langgraph.prebuilt</span><span class="w"> </span><span class="kn">import</span> <span class="n">create_react_agent</span>
-<span class="kn">from</span><span class="w"> </span><span class="nn">langchain_anthropic</span><span class="w"> </span><span class="kn">import</span> <span class="n">ChatAnthropic</span>
-
-<span class="c1"># 여러 MCP 서버 동시 연결 (전송 모드 혼합 가능)</span>
-<span class="n">mcp_client</span> <span class="o">=</span> <span class="n">MultiServerMCPClient</span><span class="p">({</span>
-    <span class="s2">&quot;stock-tools&quot;</span><span class="p">:</span> <span class="p">{</span>
-        <span class="s2">&quot;url&quot;</span><span class="p">:</span> <span class="s2">&quot;http://mcp-server:8000/sse&quot;</span><span class="p">,</span>
-        <span class="s2">&quot;transport&quot;</span><span class="p">:</span> <span class="s2">&quot;sse&quot;</span><span class="p">,</span>
-    <span class="p">},</span>
-    <span class="s2">&quot;local-tools&quot;</span><span class="p">:</span> <span class="p">{</span>
-        <span class="s2">&quot;command&quot;</span><span class="p">:</span> <span class="s2">&quot;python&quot;</span><span class="p">,</span>
-        <span class="s2">&quot;args&quot;</span><span class="p">:</span> <span class="p">[</span><span class="s2">&quot;local_mcp.py&quot;</span><span class="p">],</span>
-        <span class="s2">&quot;transport&quot;</span><span class="p">:</span> <span class="s2">&quot;stdio&quot;</span><span class="p">,</span>
-    <span class="p">},</span>
-<span class="p">})</span>
-
-<span class="c1"># MCP 도구를 LangChain 도구로 변환</span>
-<span class="n">tools</span> <span class="o">=</span> <span class="k">await</span> <span class="n">mcp_client</span><span class="o">.</span><span class="n">get_tools</span><span class="p">()</span>
-<span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;로드된 도구: </span><span class="si">{</span><span class="nb">len</span><span class="p">(</span><span class="n">tools</span><span class="p">)</span><span class="si">}</span><span class="s2">개&quot;</span><span class="p">)</span>
-
-<span class="c1"># LangGraph 에이전트에 도구 등록</span>
-<span class="n">llm</span> <span class="o">=</span> <span class="n">ChatAnthropic</span><span class="p">(</span><span class="n">model</span><span class="o">=</span><span class="s2">&quot;claude-haiku-4-5-20251001&quot;</span><span class="p">)</span>
-<span class="n">agent</span> <span class="o">=</span> <span class="n">create_react_agent</span><span class="p">(</span><span class="n">llm</span><span class="p">,</span> <span class="n">tools</span><span class="p">)</span>
-
-<span class="c1"># 실행</span>
-<span class="n">result</span> <span class="o">=</span> <span class="k">await</span> <span class="n">agent</span><span class="o">.</span><span class="n">ainvoke</span><span class="p">({</span>
-    <span class="s2">&quot;messages&quot;</span><span class="p">:</span> <span class="p">[{</span><span class="s2">&quot;role&quot;</span><span class="p">:</span> <span class="s2">&quot;user&quot;</span><span class="p">,</span>
-                  <span class="s2">&quot;content&quot;</span><span class="p">:</span> <span class="s2">&quot;삼성전자 현재가 알려줘&quot;</span><span class="p">}]</span>
-<span class="p">})</span>
-
-<span class="c1"># 정리 (SSE 연결 해제)</span>
-<span class="k">await</span> <span class="n">mcp_client</span><span class="o">.</span><span class="n">close</span><span class="p">()</span>
-</code></pre></div>
-
-<p>⚠️</p>
-<p><strong>MultiServerMCPClient는 stateless</strong> 각 도구 호출마다 새 세션을 생성합니다. SSE 연결은 반드시 <code>mcp_client.close()</code>로 정리하세요. BIP에서는 try/finally로 보장.</p>
-<p>팁전송 모드 혼합</p>
-<p><code>MultiServerMCPClient</code>는 서버마다 다른 전송 모드를 지정할 수 있습니다. 원격 서버는 SSE, 로컬 도구는 stdio로 혼합하면 에이전트가 <strong>모든 도구를 동일하게</strong> 사용합니다.</p>
-<p>08FastMCP 클라이언트 (서버 없이 테스트)</p>
-<p>PYTHONFastMCP Client로 직접 호출</p>
-<div class="codehilite"><pre><span></span><code><span class="kn">from</span><span class="w"> </span><span class="nn">fastmcp</span><span class="w"> </span><span class="kn">import</span> <span class="n">Client</span>
-
-<span class="c1"># URL로 원격 서버 연결</span>
-<span class="k">async</span> <span class="k">with</span> <span class="n">Client</span><span class="p">(</span><span class="s2">&quot;http://localhost:8000/sse&quot;</span><span class="p">)</span> <span class="k">as</span> <span class="n">client</span><span class="p">:</span>
-    <span class="c1"># 도구 목록 조회</span>
-    <span class="n">tools</span> <span class="o">=</span> <span class="k">await</span> <span class="n">client</span><span class="o">.</span><span class="n">list_tools</span><span class="p">()</span>
-    <span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;사용 가능한 도구: </span><span class="si">{</span><span class="p">[</span><span class="n">t</span><span class="o">.</span><span class="n">name</span><span class="w"> </span><span class="k">for</span><span class="w"> </span><span class="n">t</span><span class="w"> </span><span class="ow">in</span><span class="w"> </span><span class="n">tools</span><span class="p">]</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
-
-    <span class="c1"># 도구 호출</span>
-    <span class="n">result</span> <span class="o">=</span> <span class="k">await</span> <span class="n">client</span><span class="o">.</span><span class="n">call_tool</span><span class="p">(</span>
-        <span class="s2">&quot;get_stock_price&quot;</span><span class="p">,</span>
-        <span class="p">{</span><span class="s2">&quot;ticker&quot;</span><span class="p">:</span> <span class="s2">&quot;005930&quot;</span><span class="p">}</span>
-    <span class="p">)</span>
-    <span class="nb">print</span><span class="p">(</span><span class="n">result</span><span class="p">)</span>
-
-    <span class="c1"># 리소스 조회</span>
-    <span class="n">resource</span> <span class="o">=</span> <span class="k">await</span> <span class="n">client</span><span class="o">.</span><span class="n">read_resource</span><span class="p">(</span><span class="s2">&quot;config://app-settings&quot;</span><span class="p">)</span>
-    <span class="nb">print</span><span class="p">(</span><span class="n">resource</span><span class="p">)</span>
-</code></pre></div>
-
-<p>09Docker 배포</p>
-<p>DOCKERFILEMCP 서버 Dockerfile</p>
-<div class="codehilite"><pre><span></span><code>FROM python:3.13-slim
-
-WORKDIR /app
-COPY requirements.txt .
-RUN pip install --no-cache-dir -r requirements.txt
-
-COPY *.py .
-
-EXPOSE 8000
-CMD [&quot;python&quot;, &quot;server.py&quot;]
-</code></pre></div>
-
-<p>DOCKERdocker-compose.yml (에이전트 서버와 함께)</p>
-<div class="codehilite"><pre><span></span><code><span class="n">services</span><span class="o">:</span>
-<span class="w">  </span><span class="n">mcp</span><span class="o">-</span><span class="n">server</span><span class="o">:</span>
-<span class="w">    </span><span class="n">build</span><span class="o">:</span><span class="w"> </span><span class="o">./</span><span class="n">mcp</span><span class="o">-</span><span class="n">server</span>
-<span class="w">    </span><span class="n">ports</span><span class="o">:</span><span class="w"> </span><span class="o">[</span><span class="s2">&quot;8000:8000&quot;</span><span class="o">]</span>
-<span class="w">    </span><span class="n">environment</span><span class="o">:</span>
-<span class="w">      </span><span class="o">-</span><span class="w"> </span><span class="n">DATABASE_URL</span><span class="o">=</span><span class="n">postgresql</span><span class="o">://</span><span class="n">user</span><span class="o">:</span><span class="n">pass</span><span class="err">@</span><span class="n">postgres</span><span class="o">:</span><span class="mi">5432</span><span class="o">/</span><span class="n">db</span>
-<span class="w">      </span><span class="o">-</span><span class="w"> </span><span class="n">KIS_APP_KEY</span><span class="o">=</span><span class="n">$</span><span class="o">{</span><span class="n">KIS_APP_KEY</span><span class="o">}</span><span class="w">      </span><span class="err">#</span><span class="w"> </span><span class="err">외부</span><span class="w"> </span><span class="n">API</span><span class="w"> </span><span class="err">키</span>
-<span class="w">      </span><span class="o">-</span><span class="w"> </span><span class="n">MCP_TRANSPORT</span><span class="o">=</span><span class="n">sse</span>
-<span class="w">      </span><span class="o">-</span><span class="w"> </span><span class="n">MCP_HOST</span><span class="o">=</span><span class="mf">0.0</span><span class="o">.</span><span class="mf">0.0</span>
-<span class="w">      </span><span class="o">-</span><span class="w"> </span><span class="n">MCP_PORT</span><span class="o">=</span><span class="mi">8000</span>
-
-<span class="w">  </span><span class="n">agent</span><span class="o">-</span><span class="n">server</span><span class="o">:</span>
-<span class="w">    </span><span class="n">build</span><span class="o">:</span><span class="w"> </span><span class="o">./</span><span class="n">agent</span>
-<span class="w">    </span><span class="n">ports</span><span class="o">:</span><span class="w"> </span><span class="o">[</span><span class="s2">&quot;8100:8100&quot;</span><span class="o">]</span>
-<span class="w">    </span><span class="n">environment</span><span class="o">:</span>
-<span class="w">      </span><span class="o">-</span><span class="w"> </span><span class="n">MCP_SERVER_URL</span><span class="o">=</span><span class="n">http</span><span class="o">://</span><span class="n">mcp</span><span class="o">-</span><span class="n">server</span><span class="o">:</span><span class="mi">8000</span><span class="o">/</span><span class="n">sse</span>
-<span class="w">      </span><span class="o">-</span><span class="w"> </span><span class="n">ANTHROPIC_API_KEY</span><span class="o">=</span><span class="n">$</span><span class="o">{</span><span class="n">ANTHROPIC_API_KEY</span><span class="o">}</span>
-<span class="w">    </span><span class="n">depends_on</span><span class="o">:</span><span class="w"> </span><span class="o">[</span><span class="n">mcp</span><span class="o">-</span><span class="n">server</span><span class="o">]</span>
-</code></pre></div>
-
-<p>10디버깅 &amp; MCP Inspector</p>
-<p>CLIMCP Inspector 실행</p>
-<div class="codehilite"><pre><span></span><code>#<span class="w"> </span><span class="nv">Inspector</span><span class="w"> </span>실행<span class="w"> </span><span class="ss">(</span>웹<span class="w"> </span><span class="nv">UI</span><span class="w"> </span>자동<span class="w"> </span>열림<span class="ss">)</span>
-<span class="nv">fastmcp</span><span class="w"> </span><span class="nv">dev</span><span class="w"> </span><span class="nv">server</span>.<span class="nv">py</span>
-
-#<span class="w"> </span>→<span class="w"> </span><span class="nv">http</span>:<span class="o">//</span><span class="mi">127</span>.<span class="mi">0</span>.<span class="mi">0</span>.<span class="mi">1</span>:<span class="mi">6274</span><span class="w"> </span>에서<span class="w"> </span>웹<span class="w"> </span>인터페이스
-#<span class="w"> </span><span class="o">-</span><span class="w"> </span><span class="k">Connect</span><span class="w"> </span>클릭
-#<span class="w"> </span><span class="o">-</span><span class="w"> </span><span class="nv">Tools</span><span class="w"> </span>탭:<span class="w"> </span>등록된<span class="w"> </span>도구<span class="w"> </span>목록<span class="w"> </span><span class="o">+</span><span class="w"> </span>테스트
-#<span class="w"> </span><span class="o">-</span><span class="w"> </span><span class="nv">Resources</span><span class="w"> </span>탭:<span class="w"> </span>리소스<span class="w"> </span>조회<span class="w"> </span>테스트
-#<span class="w"> </span><span class="o">-</span><span class="w"> </span><span class="nv">Prompts</span><span class="w"> </span>탭:<span class="w"> </span>프롬프트<span class="w"> </span>테스트
-</code></pre></div>
-
-<p>💡</p>
-<p><strong>Inspector는 개발 필수 도구</strong> 도구를 만들 때마다 Inspector에서 먼저 테스트하세요. 스키마가 의도대로 생성되었는지, 응답 형식이 맞는지 시각적으로 확인 가능.</p>
-<p>11MCP 서버 설계 패턴</p>
-<p>패턴 A</p>
-<p>단일 서버 — 모든 도구를 하나에</p>
-<p>소규모 프로젝트, 도구 10~20개. 배포 단순. BIP 초기에 이 패턴.</p>
-<p>패턴 B</p>
-<p>도메인별 분리 — 서버 여러 개</p>
-<p>DB 도구 서버 + API 도구 서버 + 검색 서버. 독립 스케일링 가능.</p>
-<p>패턴 C</p>
-<p>모듈 분리 + 단일 서버</p>
-<p>파일은 분리(db.py, api.py)하지만 하나의 FastMCP에 등록. BIP 현재 패턴.</p>
-<p>패턴 D</p>
-<p>Gateway 패턴</p>
-<p>MCP 서버가 FastAPI 뒤에 위치. 인증/로깅을 API Gateway에서 처리.</p>
-<p>ℹ</p>
-<p><strong>BIP의 선택: 패턴 C</strong> 7개 파일(server.py, realtime.py, db.py, dart.py, krx.py, news.py, context.py)로 모듈 분리하되, 하나의 FastMCP 인스턴스에 44개 도구 등록. 배포는 Docker 컨테이너 1개.</p>
-<p>12BIP MCP 서버 실전 사례</p>
-<h2 id="bip-stock-mcp--44개-도구의-실제-구성">bip-stock-mcp — 44개 도구의 실제 구성</h2>
-<p>BIP MCP 서버 내부 구조</p>
-<p>graph TD MCP["FastMCP\nbip-stock-mcp"] --&gt; SV["server.py\n도구 등록 (44개)"] SV --&gt; RT["realtime.py\n한투 API\n시세/수급/예상체결"] SV --&gt; DB_M["db.py\nPostgreSQL\n투자자동향/반도체/지표"] SV --&gt; DART["dart.py\nDART API\n공시/재무제표"] SV --&gt; KRX["krx.py\nKRX\n거래정보/지수"] SV --&gt; NEWS["news.py\n네이버/웹\n뉴스 검색"] SV --&gt; CTX["context.py\nget_indicator_context\n90일 통계"] style MCP fill:#201810,stroke:#e09830,color:#f8b840 style RT fill:#102820,stroke:#30c880,color:#50e898 style DB_M fill:#1a2540,stroke:#5a7af0,color:#7a9aff </p>
-<p>PYTHONBIP server.py 실제 구조</p>
-<div class="codehilite"><pre><span></span><code><span class="kn">from</span><span class="w"> </span><span class="nn">fastmcp</span><span class="w"> </span><span class="kn">import</span> <span class="n">FastMCP</span>
-
-<span class="c1"># 모듈에서 함수 import</span>
-<span class="kn">from</span><span class="w"> </span><span class="nn">realtime</span><span class="w"> </span><span class="kn">import</span> <span class="p">(</span>
-    <span class="n">get_realtime_stock_price</span><span class="p">,</span> <span class="n">get_realtime_index</span><span class="p">,</span>
-    <span class="n">get_realtime_investor</span><span class="p">,</span> <span class="n">get_preopen_price</span><span class="p">,</span> <span class="o">...</span>
-<span class="p">)</span>
-<span class="kn">from</span><span class="w"> </span><span class="nn">db</span><span class="w"> </span><span class="kn">import</span> <span class="n">fetch_investor_flow</span><span class="p">,</span> <span class="n">fetch_semiconductor_prices</span>
-<span class="kn">from</span><span class="w"> </span><span class="nn">dart</span><span class="w"> </span><span class="kn">import</span> <span class="n">get_disclosure_list</span><span class="p">,</span> <span class="n">get_financial_statement</span>
-<span class="kn">from</span><span class="w"> </span><span class="nn">news</span><span class="w"> </span><span class="kn">import</span> <span class="n">search_naver_news</span><span class="p">,</span> <span class="n">search_web</span>
-<span class="kn">from</span><span class="w"> </span><span class="nn">context</span><span class="w"> </span><span class="kn">import</span> <span class="n">get_indicator_context</span>
-
-<span class="n">mcp</span> <span class="o">=</span> <span class="n">FastMCP</span><span class="p">(</span>
-    <span class="n">name</span><span class="o">=</span><span class="s2">&quot;bip-stock-mcp&quot;</span><span class="p">,</span>
-    <span class="n">host</span><span class="o">=</span><span class="s2">&quot;0.0.0.0&quot;</span><span class="p">,</span>
-    <span class="n">port</span><span class="o">=</span><span class="mi">8000</span><span class="p">,</span>
-<span class="p">)</span>
-
-<span class="c1"># 실시간 시세 (한투 API)</span>
-<span class="nd">@mcp</span><span class="o">.</span><span class="n">tool</span>
-<span class="k">async</span> <span class="k">def</span><span class="w"> </span><span class="nf">realtime_stock_price</span><span class="p">(</span><span class="n">code</span><span class="p">:</span> <span class="nb">str</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">dict</span><span class="p">:</span>
-<span class="w">    </span><span class="sd">&quot;&quot;&quot;종목 현재가 조회 (한투 API, 6자리 코드).&quot;&quot;&quot;</span>
-    <span class="k">return</span> <span class="k">await</span> <span class="n">get_realtime_stock_price</span><span class="p">(</span><span class="n">code</span><span class="p">)</span>
-
-<span class="nd">@mcp</span><span class="o">.</span><span class="n">tool</span>
-<span class="k">async</span> <span class="k">def</span><span class="w"> </span><span class="nf">realtime_index</span><span class="p">(</span><span class="n">index_name</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="s2">&quot;KOSPI&quot;</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">dict</span><span class="p">:</span>
-<span class="w">    </span><span class="sd">&quot;&quot;&quot;KOSPI/KOSDAQ 지수 조회.&quot;&quot;&quot;</span>
-    <span class="k">return</span> <span class="k">await</span> <span class="n">get_realtime_index</span><span class="p">(</span><span class="n">index_name</span><span class="p">)</span>
-
-<span class="c1"># ... 44개 도구 등록</span>
-
-<span class="k">if</span> <span class="vm">__name__</span> <span class="o">==</span> <span class="s2">&quot;__main__&quot;</span><span class="p">:</span>
-    <span class="n">mcp</span><span class="o">.</span><span class="n">run</span><span class="p">(</span><span class="n">transport</span><span class="o">=</span><span class="s2">&quot;sse&quot;</span><span class="p">)</span>
-</code></pre></div>
-
-<h3 id="도구-카테고리별-분포">도구 카테고리별 분포</h3>
+<hr />
+<h2 id="15-참고">15. 참고</h2>
 <table>
 <thead>
 <tr>
-<th>카테고리</th>
-<th>파일</th>
-<th>도구 수</th>
-<th>데이터 소스</th>
+<th>항목</th>
+<th>URL</th>
 </tr>
 </thead>
 <tbody>
 <tr>
-<td><strong>실시간 시세</strong></td>
-<td>realtime.py</td>
-<td>11</td>
-<td>한투 API (KIS)</td>
+<td>공식 문서</td>
+<td>https://gofastmcp.com</td>
 </tr>
 <tr>
-<td><strong>DB 조회</strong></td>
-<td>db.py</td>
-<td>8</td>
-<td>PostgreSQL</td>
+<td>GitHub</td>
+<td>https://github.com/jlowin/fastmcp</td>
 </tr>
 <tr>
-<td><strong>공시/재무</strong></td>
-<td>dart.py</td>
-<td>5</td>
-<td>DART API</td>
+<td>MCP 스펙</td>
+<td>https://spec.modelcontextprotocol.io</td>
 </tr>
 <tr>
-<td><strong>거래 정보</strong></td>
-<td>krx.py</td>
-<td>4</td>
-<td>KRX</td>
+<td>langchain-mcp-adapters</td>
+<td>https://github.com/langchain-ai/langchain-mcp-adapters</td>
 </tr>
 <tr>
-<td><strong>뉴스 검색</strong></td>
-<td>news.py</td>
-<td>3</td>
-<td>네이버/웹</td>
-</tr>
-<tr>
-<td><strong>지표 맥락</strong></td>
-<td>context.py</td>
-<td>1</td>
-<td>DB (90일 통계)</td>
-</tr>
-<tr>
-<td><strong>글로벌</strong></td>
-<td>realtime.py</td>
-<td>6</td>
-<td>yfinance, Upbit</td>
-</tr>
-<tr>
-<td><strong>장전 분석</strong></td>
-<td>realtime.py</td>
-<td>3</td>
-<td>한투 API</td>
-</tr>
-<tr>
-<td><strong>섹터</strong></td>
-<td>realtime.py</td>
-<td>3</td>
-<td>KRX/DB</td>
-</tr>
-<tr>
-<td><strong>합계</strong></td>
-<td><strong>44개</strong></td>
-<td></td>
-<td></td>
+<td>Claude Desktop MCP 설정</td>
+<td>https://modelcontextprotocol.io/quickstart/user</td>
 </tr>
 </tbody>
 </table>
-<p>💡</p>
-<p><strong>BIP 운영 팁</strong></p>
-<ul>
-<li>외부 API 토큰은 <strong>파일 캐시</strong> 로 컨테이너 재시작 대비 (한투 KIS 토큰 22시간 유효)</li>
-<li>각 도구는 <strong>자체 에러 핸들링</strong> — API 실패 시 <code>{"error": "..."}</code> 반환, 서버 전체 크래시 방지</li>
-<li>도구 이름은 <strong>LLM이 이해하기 쉽게</strong> — <code>realtime_stock_price</code>, <code>night_futures_ewy</code></li>
-<li>비동기 함수(<code>async def</code>) 필수 — I/O 바운드 작업이 대부분이라 동시 호출 성능</li>
-</ul>
-<p>13참고 자료</p>
-<p><a href="https://github.com/jlowin/fastmcp">GitHub — FastMCP</a> (24.5K stars, Apache 2.0)</p>
-<p><a href="https://gofastmcp.com">FastMCP 공식 문서</a></p>
-<p><a href="https://modelcontextprotocol.io">MCP 공식 사이트 (Anthropic)</a></p>
-<p><a href="https://github.com/langchain-ai/langchain-mcp-adapters">langchain-mcp-adapters (LangChain ↔ MCP)</a></p>
-<p><a href="https://mcpcat.io/guides/comparing-stdio-sse-streamablehttp/">MCP 전송 프로토콜 비교 (MCPcat)</a></p>
-<p><a href="https://medium.com/@anoopninangeorge/building-a-remote-mcp-server-a-mcp-client-with-fastmcp-langchain-langgraph-17cf0e8d043b">FastMCP + LangGraph 원격 서버 구축 (Medium)</a></p>
-<p><a href="https://www.firecrawl.dev/blog/fastmcp-tutorial-building-mcp-servers-python">FastMCP 튜토리얼 (Firecrawl)</a></p>
-<p><a href="langgraph_technical_guide.html">LangGraph 기술 가이드</a></p>
-<p><a href="langgraph_enterprise_guide.html">LangGraph 사내 환경 구축 가이드</a></p>
-<p>fastmcp.guide · v3.2 기준 · 2026.04.14</p>
-<p>Apache 2.0 · Prefect / Anthropic MCP</p>
+<hr />
+<h2 id="변경-이력">변경 이력</h2>
+<table>
+<thead>
+<tr>
+<th>날짜</th>
+<th>내용</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>2026-04-26</td>
+<td>공식 문서 기반 전면 재작성 (v3.2)</td>
+</tr>
+</tbody>
+</table>
 </main>
 
 <script>
