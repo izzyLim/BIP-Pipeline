@@ -11,7 +11,71 @@
 
 WrenAI를 대체할 자체 NL2SQL 엔진을 LangGraph 기반으로 구축한다. 사내 Oracle 19c 환경 호환과 복합 쿼리(팩트-팩트 JOIN)를 동시에 만족하는 것이 목표.
 
-### 1-2. 설계 원칙
+### 1-2. 핵심 컨셉 — LLM이 SQL을 직접 쓰지 않는다
+
+기존 NL2SQL 도구들의 한계와 우리 접근법의 차이:
+
+```mermaid
+graph TB
+    subgraph WAY1["방식 1: WrenAI / LangChain SQL Agent"]
+        W1[질문] --> W2[LLM]
+        W2 -->|SQL 직접 생성| W3[SQL]
+        W3 --> W4[검증/실행]
+        W2 -.위험.-> WR1["⚠ 환각: SQL 문법 오류<br/>⚠ JOIN 경로 오선택<br/>⚠ DB 방언 혼동"]
+    end
+
+    subgraph WAY2["방식 2: Cube"]
+        C1[질문] --> C2[LLM]
+        C2 -->|API 호출| C3[Cube API]
+        C3 --> C4[Cube 내부 SQL 생성]
+        C3 -.한계.-> CR1["❌ 팩트-팩트 JOIN 불가<br/>❌ Cube 모델에 갇힘"]
+    end
+
+    subgraph WAY3["방식 3: 우리 접근 (LLM → QuerySpec → SQL)"]
+        Q1[질문] --> Q2[LLM]
+        Q2 -->|구조화된 의도만| Q3[QuerySpec<br/>Pydantic 모델]
+        Q3 --> Q4[규칙 기반<br/>변환기]
+        Q4 --> Q5[SQL]
+        Q5 --> Q6[검증/실행]
+        Q3 -.이점.-> QR1["✅ LLM은 의도만 파악<br/>✅ JOIN/방언 결정론<br/>✅ 인젝션 차단"]
+    end
+```
+
+**핵심 아이디어:**
+
+| 책임 | 누가 |
+|------|:-:|
+| 질문의 의도 파악 ("뭘 보고 싶은지") | **LLM** |
+| 구조화된 명세(QuerySpec) 생성 | **LLM** |
+| JOIN 경로 결정 | **코드 (Schema Registry)** |
+| SQL 문법 생성 | **코드 (SQL Converter)** |
+| DB 방언 처리 | **코드 (Converter)** |
+| 보안/검증 | **코드 (Validator)** |
+| 결과 → 자연어 변환 | **LLM** |
+
+LLM이 결정하는 영역을 최소화하여 **환각의 위험 표면적을 줄인다.** 논문 "Querying Databases with Function Calling" (arXiv 2502.00032)의 핵심 통찰과 일치.
+
+### 1-3. 진화 과정 (왜 이 방향인가)
+
+```mermaid
+graph LR
+    P0[BIP Phase 1<br/>WrenAI 검증] -->|100% SQL 성공<br/>PostgreSQL OK| P1
+    P1[사내 적용 시도<br/>Oracle 19c] -->|ibis-server 23ai만 지원<br/>호환 불가| P2
+    P2[Cube로 전환] -->|7개 모델 OK<br/>단순 쿼리 OK| P3
+    P3[Cube 한계 발견] -->|팩트-팩트 JOIN 불가<br/>핵심 케이스 실패| P4
+    P4[대안 재검토<br/>+ DAQUV/논문 조사] -->|Codex 검토<br/>옵션 C 선정| P5
+    P5[LangGraph 직접 구현<br/>= 현재]
+
+    style P0 fill:#90EE90
+    style P1 fill:#FFB6C1
+    style P2 fill:#FFE4B5
+    style P3 fill:#FFB6C1
+    style P5 fill:#90EE90
+```
+
+각 전환의 근거는 `nl2sql_implementation_plan_v2.md` §11에 의사결정 이력으로 기록되어 있다.
+
+### 1-4. 설계 원칙
 
 ```
 1. LLM에게 SQL을 직접 쓰게 하지 않는다.
@@ -35,7 +99,7 @@ WrenAI를 대체할 자체 NL2SQL 엔진을 LangGraph 기반으로 구축한다.
    → 복합 질문은 Agent가 분해 + 조합.
 ```
 
-### 1-3. 참고한 외부 자료
+### 1-5. 참고한 외부 자료
 
 | 자료 | 적용한 패턴 |
 |------|------|
@@ -504,3 +568,4 @@ graph TB
 | 날짜 | 내용 |
 |------|------|
 | 2026-04-26 | 초안 작성 (Cube 탈락 → LangGraph 직접 구현 결정 후 상세 설계) |
+| 2026-04-26 | §1 개요 강화 — 핵심 컨셉 다이어그램 + 진화 과정 다이어그램 추가 |
