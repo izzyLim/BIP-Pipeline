@@ -52,6 +52,8 @@ PALETTE = [
 
 def inject_mermaid_styles(code):
     """mermaid 코드에 subgraph/노드 자동 색상 style 삽입"""
+    # <br/> → \n 치환 (Mermaid v10/v11 호환)
+    code = re.sub(r'<br\s*/?>', r'\\n', code)
     lines = code.strip().split('\n')
 
     # subgraph 이름 수집
@@ -428,8 +430,12 @@ def convert(input_path, output_path):
     if (typeof mermaid !== 'undefined') {{
       mermaid.initialize({{ startOnLoad: false, theme: 'base', securityLevel: 'loose', themeVariables: getMermaidTheme(theme) }});
       document.querySelectorAll('.mermaid').forEach(el => {{
+        // 원본 코드 보존 (최초 1회만 저장)
+        if (!el.dataset.source) {{
+          el.dataset.source = el.textContent;
+        }}
         el.removeAttribute('data-processed');
-        el.innerHTML = el.textContent;
+        el.innerHTML = el.dataset.source;
       }});
       mermaid.run();
     }}
@@ -514,6 +520,10 @@ def convert(input_path, output_path):
     return theme === 'dark' ? dark : light;
   }}
 
+  // 초기 렌더링 전에 원본 코드 저장
+  document.querySelectorAll('.mermaid').forEach(el => {{
+    el.dataset.source = el.textContent;
+  }});
   mermaid.initialize({{ startOnLoad: true, theme: 'base', securityLevel: 'loose', themeVariables: getMermaidTheme(savedTheme) }});
 
   // TOC 현재 위치 하이라이트

@@ -1,0 +1,4174 @@
+<!DOCTYPE html>
+<html lang="ko" data-theme="dark">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>BIP-Pipeline: 데이터 아키텍처 리뷰 & NL2SQL 준비도</title>
+<script src="https://cdn.jsdelivr.net/npm/mermaid@11/dist/mermaid.min.js"></script>
+<style>
+  /* ── 테마 변수 ── */
+  :root[data-theme="dark"] {
+    --bg: #0d1117;
+    --bg-sidebar: #161b22;
+    --fg: #e6edf3;
+    --fg-muted: #8b949e;
+    --border: #30363d;
+    --accent: #58a6ff;
+    --accent-hover: #79c0ff;
+    --code-bg: #1e293b;
+    --code-fg: #e2e8f0;
+    --table-header: #161b22;
+    --table-even: #0d1117;
+    --table-odd: #161b22;
+    --blockquote-bg: #161b22;
+    --blockquote-border: #3b82f6;
+    --link: #58a6ff;
+    --strong: #79c0ff;
+    --card-bg: #21262d;
+  }
+  :root[data-theme="light"] {
+    --bg: #ffffff;
+    --bg-sidebar: #f6f8fa;
+    --fg: #1f2937;
+    --fg-muted: #6b7280;
+    --border: #e5e7eb;
+    --accent: #2563eb;
+    --accent-hover: #1d4ed8;
+    --code-bg: #f3f4f6;
+    --code-fg: #1e293b;
+    --table-header: #f8fafc;
+    --table-even: #ffffff;
+    --table-odd: #f9fafb;
+    --blockquote-bg: #eff6ff;
+    --blockquote-border: #3b82f6;
+    --link: #2563eb;
+    --strong: #1e40af;
+    --card-bg: #f3f4f6;
+  }
+
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+
+  body {
+    font-family: 'Pretendard', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+    background: var(--bg);
+    color: var(--fg);
+    line-height: 1.75;
+    display: flex;
+    min-height: 100vh;
+  }
+
+  /* ── 사이드바 ── */
+  .sidebar {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 280px;
+    height: 100vh;
+    background: var(--bg-sidebar);
+    border-right: 1px solid var(--border);
+    overflow-y: auto;
+    padding: 20px 0;
+    z-index: 100;
+    transition: transform 0.3s ease;
+  }
+
+  .sidebar-header {
+    padding: 0 20px 16px;
+    border-bottom: 1px solid var(--border);
+    margin-bottom: 12px;
+  }
+
+  .sidebar-title {
+    font-size: 0.95rem;
+    font-weight: 700;
+    color: var(--fg);
+    line-height: 1.3;
+  }
+
+  .sidebar-controls {
+    display: flex;
+    gap: 8px;
+    margin-top: 12px;
+  }
+
+  .theme-btn {
+    background: var(--card-bg);
+    border: 1px solid var(--border);
+    color: var(--fg-muted);
+    padding: 4px 10px;
+    border-radius: 6px;
+    font-size: 0.7rem;
+    cursor: pointer;
+    transition: all 0.2s;
+  }
+  .theme-btn:hover {
+    border-color: var(--accent);
+    color: var(--accent);
+  }
+  .theme-btn.active {
+    background: var(--accent);
+    color: #fff;
+    border-color: var(--accent);
+  }
+
+  .back-link {
+    display: block;
+    margin-top: 10px;
+    font-size: 0.75rem;
+    color: var(--fg-muted);
+    text-decoration: none;
+  }
+  .back-link:hover {
+    color: var(--accent);
+  }
+
+  /* ── TOC ── */
+  .toc {
+    padding: 0 12px;
+  }
+  .toc ul {
+    list-style: none;
+    padding: 0;
+  }
+  .toc li {
+    margin: 0;
+  }
+  .toc a {
+    display: block;
+    padding: 4px 8px;
+    color: var(--fg-muted);
+    text-decoration: none;
+    font-size: 0.78rem;
+    border-radius: 4px;
+    border-left: 2px solid transparent;
+    transition: all 0.15s;
+    line-height: 1.4;
+  }
+  .toc a:hover {
+    color: var(--accent);
+    background: var(--card-bg);
+    border-left-color: var(--accent);
+  }
+  .toc a.active {
+    color: var(--accent);
+    border-left-color: var(--accent);
+    font-weight: 600;
+  }
+  .toc-h3 a { padding-left: 20px; font-size: 0.75rem; }
+  .toc-h4 a { padding-left: 32px; font-size: 0.72rem; }
+
+  /* ── 본문 ── */
+  .content {
+    margin-left: 280px;
+    flex: 1;
+    max-width: 860px;
+    padding: 40px 48px 80px;
+  }
+
+  /* ── 모바일 ── */
+  .menu-toggle {
+    display: none;
+    position: fixed;
+    top: 12px;
+    left: 12px;
+    z-index: 200;
+    background: var(--bg-sidebar);
+    border: 1px solid var(--border);
+    color: var(--fg);
+    padding: 8px 12px;
+    border-radius: 6px;
+    cursor: pointer;
+    font-size: 1.1rem;
+  }
+
+  @media (max-width: 900px) {
+    .sidebar {
+      transform: translateX(-100%);
+    }
+    .sidebar.open {
+      transform: translateX(0);
+    }
+    .content {
+      margin-left: 0;
+      padding: 60px 20px 60px;
+    }
+    .menu-toggle {
+      display: block;
+    }
+  }
+
+  /* ── 타이포그래피 ── */
+  h1 { font-size: 1.9rem; margin: 2rem 0 1rem; padding-bottom: 0.5rem; border-bottom: 2px solid var(--accent); }
+  h2 { font-size: 1.45rem; margin: 2.5rem 0 0.8rem; padding-bottom: 0.3rem; border-bottom: 1px solid var(--border); color: var(--accent); }
+  h3 { font-size: 1.15rem; margin: 1.8rem 0 0.5rem; }
+  h4 { font-size: 1rem; margin: 1.3rem 0 0.4rem; color: var(--fg-muted); }
+  p { margin: 0.6rem 0; }
+  hr { border: none; border-top: 1px solid var(--border); margin: 2rem 0; }
+  strong { color: var(--strong); }
+  a { color: var(--link); text-decoration: none; }
+  a:hover { text-decoration: underline; }
+  ul, ol { margin: 0.5rem 0 0.5rem 1.5rem; }
+  li { margin: 0.25rem 0; }
+
+  /* ── 테이블 ── */
+  table { width: 100%; border-collapse: collapse; margin: 1rem 0; font-size: 0.85rem; }
+  th, td { border: 1px solid var(--border); padding: 0.5rem 0.75rem; text-align: left; }
+  th { background: var(--table-header); font-weight: 600; }
+  tr:nth-child(even) { background: var(--table-even); }
+  tr:nth-child(odd) { background: var(--table-odd); }
+
+  /* ── 코드 ── */
+  code {
+    background: var(--code-bg);
+    color: var(--code-fg);
+    padding: 0.15rem 0.4rem;
+    border-radius: 4px;
+    font-size: 0.82em;
+    font-family: 'JetBrains Mono', 'Fira Code', 'Cascadia Code', monospace;
+  }
+  pre {
+    background: var(--code-bg);
+    color: var(--code-fg);
+    padding: 1rem 1.2rem;
+    border-radius: 8px;
+    overflow-x: auto;
+    margin: 1rem 0;
+    border: 1px solid var(--border);
+  }
+  pre code {
+    background: none;
+    padding: 0;
+    font-size: 0.82rem;
+    line-height: 1.5;
+  }
+
+  /* ── 인용 ── */
+  blockquote {
+    border-left: 4px solid var(--blockquote-border);
+    padding: 0.6rem 1rem;
+    margin: 1rem 0;
+    background: var(--blockquote-bg);
+    border-radius: 0 6px 6px 0;
+  }
+  blockquote p { margin: 0.3rem 0; }
+
+  /* ── Mermaid ── */
+  .mermaid {
+    margin: 1.5rem 0;
+    text-align: center;
+    background: var(--card-bg);
+    padding: 1rem;
+    border-radius: 8px;
+    border: 1px solid var(--border);
+  }
+  .mermaid svg { max-width: 100%; }
+
+  /* ── Footer ── */
+  footer {
+    margin-top: 3rem;
+    padding-top: 1rem;
+    border-top: 1px solid var(--border);
+    color: var(--fg-muted);
+    font-size: 0.8rem;
+  }
+</style>
+</head>
+<body>
+
+<button class="menu-toggle" onclick="document.querySelector('.sidebar').classList.toggle('open')">☰</button>
+
+<aside class="sidebar">
+  <div class="sidebar-header">
+    <div class="sidebar-title">BIP-Pipeline: 데이터 아키텍처 리뷰 & NL2SQL 준비도</div>
+    <div class="sidebar-controls">
+      <button class="theme-btn" onclick="setTheme('dark')" id="btn-dark">🌙 Dark</button>
+      <button class="theme-btn" onclick="setTheme('light')" id="btn-light">☀️ Light</button>
+    </div>
+    <a class="back-link" href="index.html">← 문서 목록으로</a>
+  </div>
+  <nav class="toc">
+<ul>
+<li class="toc-h2"><a href="#목차">목차</a></li>
+<li class="toc-h2"><a href="#1-시스템-개요">1. 시스템 개요</a></li>
+  <li class="toc-h3"><a href="#전체-시스템-아키텍처">전체 시스템 아키텍처</a></li>
+<li class="toc-h2"><a href="#2-데이터-레이어-구조">2. 데이터 레이어 구조</a></li>
+  <li class="toc-h3"><a href="#현재-상태-as-is">현재 상태 (As-Is)</a></li>
+  <li class="toc-h3"><a href="#목표-상태-to-be">목표 상태 (To-Be)</a></li>
+  <li class="toc-h3"><a href="#전체-테이블-레이어--도메인-분류-34개">전체 테이블 레이어 · 도메인 분류 (34개)</a></li>
+<li class="toc-h2"><a href="#3-테이블-카탈로그">3. 테이블 카탈로그</a></li>
+  <li class="toc-h3"><a href="#3-1-종목-메타데이터">3-1. 종목 메타데이터</a></li>
+  <li class="toc-h3"><a href="#3-2-시세-데이터">3-2. 시세 데이터</a></li>
+  <li class="toc-h3"><a href="#3-3-컨센서스--애널리스트-추정">3-3. 컨센서스 &amp; 애널리스트 추정</a></li>
+  <li class="toc-h3"><a href="#3-4-기술적-지표">3-4. 기술적 지표</a></li>
+  <li class="toc-h3"><a href="#3-5-기업-정보-dart">3-5. 기업 정보 (DART)</a></li>
+  <li class="toc-h3"><a href="#3-5-1-미국-sec-공시-edgar--2026-04-05-추가">3-5-1. 미국 SEC 공시 (EDGAR) — 2026-04-05 추가</a></li>
+  <li class="toc-h3"><a href="#3-6-매크로--금리--감성-지수">3-6. 매크로 / 금리 / 감성 지수</a></li>
+<li class="toc-h2"><a href="#4-데이터-소스--dag-맵">4. 데이터 소스 &amp; DAG 맵</a></li>
+<li class="toc-h2"><a href="#4-2-end-to-end-데이터-플로우-소스--테이블--활용처">4-2. End-to-End 데이터 플로우 (소스 → 테이블 → 활용처)</a></li>
+  <li class="toc-h3"><a href="#전체-흐름도">전체 흐름도</a></li>
+  <li class="toc-h3"><a href="#테이블별-활용처-매핑">테이블별 활용처 매핑</a></li>
+  <li class="toc-h3"><a href="#consumer별-주요-읽기-테이블">Consumer별 주요 읽기 테이블</a></li>
+<li class="toc-h2"><a href="#4-3-openmetadata-lineage-적용-범위-및-한계">4-3. OpenMetadata Lineage 적용 범위 및 한계</a></li>
+  <li class="toc-h3"><a href="#현재-커버-범위">현재 커버 범위 (✅)</a></li>
+  <li class="toc-h3"><a href="#외부-데이터-소스-apiservice-등록">외부 데이터 소스 (apiService) 등록</a></li>
+  <li class="toc-h3"><a href="#om-lineage로-consumer-추적">OM Lineage로 Consumer 추적</a></li>
+  <li class="toc-h3"><a href="#sourcetype-태그-외부-소스-수집-방식-분류">SourceType 태그 (외부 소스 수집 방식 분류)</a></li>
+  <li class="toc-h3"><a href="#lineage-커버리지-현황-2026-04-02">Lineage 커버리지 현황 (2026-04-02)</a></li>
+<li class="toc-h2"><a href="#4-4-전체-아키텍처-다이어그램">4-4. 전체 아키텍처 다이어그램</a></li>
+  <li class="toc-h3"><a href="#om-lineage-전체-흐름">OM Lineage 전체 흐름</a></li>
+  <li class="toc-h3"><a href="#docker-서비스-구성">Docker 서비스 구성</a></li>
+<li class="toc-h2"><a href="#4-5-메타데이터-동기화-흐름">4-5. 메타데이터 동기화 흐름</a></li>
+  <li class="toc-h3"><a href="#om--db--wren-ai-동기화">OM ↔ DB ↔ Wren AI 동기화</a></li>
+  <li class="toc-h3"><a href="#동기화-스크립트-목록">동기화 스크립트 목록</a></li>
+<li class="toc-h2"><a href="#4-6-wren-ai-nl2sql-구성">4-6. Wren AI NL2SQL 구성</a></li>
+  <li class="toc-h3"><a href="#시스템-구성">시스템 구성</a></li>
+  <li class="toc-h3"><a href="#nl2sql-처리-흐름">NL2SQL 처리 흐름</a></li>
+  <li class="toc-h3"><a href="#등록된-모델-5개">등록된 모델 (5개)</a></li>
+  <li class="toc-h3"><a href="#테이블-관계-relationship">테이블 관계 (Relationship)</a></li>
+  <li class="toc-h3"><a href="#sql-pairs-29개-등록">SQL Pairs (29개 등록)</a></li>
+  <li class="toc-h3"><a href="#wren-ai-한계-및-향후-계획">Wren AI 한계 및 향후 계획</a></li>
+  <li class="toc-h3"><a href="#향후-langgraph-통합-구조-중기-계획">향후 LangGraph 통합 구조 (중기 계획)</a></li>
+<li class="toc-h2"><a href="#5-아키텍처-이슈-트래커">5. 아키텍처 이슈 트래커</a></li>
+  <li class="toc-h3"><a href="#iss-001-stock_metadata-vs-stock_info-이중-엔티티">ISS-001: stock_metadata vs stock_info 이중 엔티티</a></li>
+  <li class="toc-h3"><a href="#iss-002-timestamp-열의-시간대-의미론-혼란">ISS-002: timestamp 열의 시간대 의미론 혼란</a></li>
+  <li class="toc-h3"><a href="#iss-003-market_value-단위-불명확">ISS-003: market_value 단위 불명확</a></li>
+  <li class="toc-h3"><a href="#iss-004-매크로금리-테이블-ddl-미확인">ISS-004: 매크로/금리 테이블 DDL 미확인</a></li>
+  <li class="toc-h3"><a href="#iss-005-financial_statements-테이블-ddl-미확인">ISS-005: financial_statements 테이블 DDL 미확인</a></li>
+  <li class="toc-h3"><a href="#iss-006-consensus_estimates의-stock_code-중복-컬럼">ISS-006: consensus_estimates의 stock_code 중복 컬럼</a></li>
+  <li class="toc-h3"><a href="#iss-007-외래키-제약-없음">ISS-007: 외래키 제약 없음</a></li>
+  <li class="toc-h3"><a href="#iss-008-stock_info에-섹터업종-정보-없음">ISS-008: stock_info에 섹터/업종 정보 없음</a></li>
+  <li class="toc-h3"><a href="#iss-009-스키마-파일-분산">ISS-009: 스키마 파일 분산</a></li>
+  <li class="toc-h3"><a href="#iss-010-company_employeesavg_salary-단위-불명확">ISS-010: company_employees.avg_salary 단위 불명확</a></li>
+<li class="toc-h2"><a href="#6-nl2sql-위험-레지스트리">6. NL2SQL 위험 레지스트리</a></li>
+<li class="toc-h2"><a href="#7-비즈니스-용어집">7. 비즈니스 용어집</a></li>
+  <li class="toc-h3"><a href="#주가시세">주가/시세</a></li>
+  <li class="toc-h3"><a href="#투자지표-계산값">투자지표 (계산값)</a></li>
+  <li class="toc-h3"><a href="#컨센서스투자의견">컨센서스/투자의견</a></li>
+  <li class="toc-h3"><a href="#재무제표-dart">재무제표 (DART)</a></li>
+  <li class="toc-h3"><a href="#기술적-지표">기술적 지표</a></li>
+<li class="toc-h2"><a href="#8-join-경로-맵--fk-제약">8. Join 경로 맵 &amp; FK 제약</a></li>
+  <li class="toc-h3"><a href="#물리적-fk-현황-2026-03-28-추가-deferrable-initially-deferred">물리적 FK 현황 (2026-03-28 추가, DEFERRABLE INITIALLY DEFERRED)</a></li>
+  <li class="toc-h3"><a href="#핵심-join-관계">핵심 Join 관계</a></li>
+  <li class="toc-h3"><a href="#구체적-join-조건">구체적 JOIN 조건</a></li>
+<li class="toc-h2"><a href="#9-단위-정의">9. 단위 정의</a></li>
+<li class="toc-h2"><a href="#10-개선-로드맵">10. 개선 로드맵</a></li>
+  <li class="toc-h3"><a href="#phase-0-즉시-1-2일-코드-변경-없음">Phase 0: 즉시 (1-2일, 코드 변경 없음)</a></li>
+  <li class="toc-h3"><a href="#phase-1-단기-1-2주-스키마-수정">Phase 1: 단기 (1-2주, 스키마 수정)</a></li>
+  <li class="toc-h3"><a href="#phase-2-중기-1개월-분석-레이어">Phase 2: 중기 (1개월, 분석 레이어)</a></li>
+  <li class="toc-h3"><a href="#phase-3-nl2sql-인프라">Phase 3: NL2SQL 인프라</a></li>
+  <li class="toc-h3"><a href="#phase-4-nl2sql-고도화-향후">Phase 4: NL2SQL 고도화 (향후)</a></li>
+  <li class="toc-h3"><a href="#phase-5-ai-에이전트-고도화-2026-04-06현재">Phase 5: AI 에이전트 고도화 (2026-04-06~현재)</a></li>
+<li class="toc-h2"><a href="#11-결정-로그">11. 결정 로그</a></li>
+<li class="toc-h2"><a href="#12-openmetadata-구성">12. OpenMetadata 구성</a></li>
+  <li class="toc-h3"><a href="#서비스-구성">서비스 구성</a></li>
+  <li class="toc-h3"><a href="#lineage-시스템">Lineage 시스템</a></li>
+  <li class="toc-h3"><a href="#논리적-fk-om-메타데이터">논리적 FK (OM 메타데이터)</a></li>
+  <li class="toc-h3"><a href="#메타데이터-정비-현황-2026-04-02-기준">메타데이터 정비 현황 (2026-04-02 기준)</a></li>
+  <li class="toc-h3"><a href="#접속-정보">접속 정보</a></li>
+</ul>
+</nav>
+</aside>
+
+<main class="content">
+<h1 id="bip-pipeline-데이터-아키텍처-리뷰--nl2sql-준비도">BIP-Pipeline: 데이터 아키텍처 리뷰 &amp; NL2SQL 준비도</h1>
+<blockquote>
+<p><strong>최초 작성:</strong> 2026-03-21
+<strong>최근 업데이트:</strong> 2026-04-02 (Wren AI NL2SQL 설치, OM↔Wren AI 메타데이터 동기화, 외부 소스 lineage 완성, 전체 아키텍처 다이어그램 추가)
+<strong>작성자:</strong> Claude Code (Data Architect 역할)
+<strong>목적:</strong> 아키텍처 이슈 추적, 개선 결정 기록, NL2SQL 준비도 관리</p>
+</blockquote>
+<hr />
+<h2 id="목차">목차</h2>
+<ol>
+<li><a href="#1-시스템-개요">시스템 개요</a></li>
+<li><a href="#2-데이터-레이어-구조">데이터 레이어 구조</a></li>
+<li><a href="#3-테이블-카탈로그">테이블 카탈로그</a></li>
+<li><a href="#4-데이터-소스--dag-맵">데이터 소스 &amp; DAG 맵</a></li>
+<li><a href="#4-2-end-to-end-데이터-플로우-소스--테이블--활용처">4-2. End-to-End 데이터 플로우</a></li>
+<li><a href="#4-3-openmetadata-lineage-적용-범위-및-한계">4-3. OpenMetadata Lineage 적용 범위</a></li>
+<li><a href="#4-4-전체-아키텍처-다이어그램">4-4. 전체 아키텍처 다이어그램</a></li>
+<li><a href="#4-5-메타데이터-동기화-흐름">4-5. 메타데이터 동기화 흐름</a></li>
+<li><a href="#4-6-wren-ai-nl2sql-구성">4-6. Wren AI NL2SQL 구성</a></li>
+<li><a href="#5-아키텍처-이슈-트래커">아키텍처 이슈 트래커</a></li>
+<li><a href="#6-nl2sql-위험-레지스트리">NL2SQL 위험 레지스트리</a></li>
+<li><a href="#7-비즈니스-용어집">비즈니스 용어집</a></li>
+<li><a href="#8-join-경로-맵--fk-제약">Join 경로 맵 &amp; FK 제약</a></li>
+<li><a href="#9-단위-정의">단위 정의</a></li>
+<li><a href="#10-개선-로드맵">개선 로드맵</a></li>
+<li><a href="#11-결정-로그">결정 로그</a></li>
+<li><a href="#12-openmetadata-구성">OpenMetadata 구성</a></li>
+</ol>
+<hr />
+<h2 id="1-시스템-개요">1. 시스템 개요</h2>
+<p><strong>시스템명:</strong> BIP-Pipeline
+<strong>목적:</strong> KOSPI/KOSDAQ/미국 주식 데이터 수집 → 분석 → 모닝 브리핑
+<strong>주요 사용자:</strong> 개인 투자자 (데이터 분석, 리포트, 향후 NL2SQL 쿼리)
+<strong>인프라:</strong> Airflow (오케스트레이션) + PostgreSQL (저장) + Kafka/Spark (스트리밍, 미사용)</p>
+<h3 id="전체-시스템-아키텍처">전체 시스템 아키텍처</h3>
+<div class="mermaid">
+graph TB
+    subgraph Sources["외부 데이터 소스"]
+        S1[Naver Finance\n스크래핑]
+        S2[Yahoo Finance\nyfinance]
+        S3[DART API\n전자공시]
+        S4[KRX\n스크래핑]
+        S5[ECOS BOK API\n한국은행]
+        S6[GDELT API\n지정학]
+        S7[KIS API\n한국투자증권]
+        S8[Naver News API]
+        S9[DRAMeXchange\n스크래핑]
+    end
+
+    subgraph Airflow["Airflow (오케스트레이션)"]
+        D01[01_info 종목정보]
+        D02[02_price 시세]
+        D03[03_indicator 지표]
+        D04[04_macro 매크로]
+        D05[05_fundamental 재무]
+        D06[06_news 뉴스]
+        D07[07_portfolio 포트폴리오]
+        D09[09_analytics Gold]
+        D10[10_sync_metadata]
+        DR[morning_report 브리핑]
+    end
+
+    subgraph DB["PostgreSQL (stockdb)"]
+        L1["Raw Layer\nstock_info, stock_price_1d,\nfinancial_statements, news, ..."]
+        L2["Derived Layer\nstock_indicators,\nmarket_daily_summary"]
+        L3["Gold Layer\nanalytics_stock_daily,\nanalytics_macro_daily,\nanalytics_valuation"]
+    end
+
+    subgraph Platform["데이터 플랫폼"]
+        OM[OpenMetadata\n카탈로그 + Lineage + 용어집]
+        WR[Wren AI\nNL2SQL 시맨틱 레이어]
+    end
+
+    subgraph Consumers["소비자"]
+        EMAIL[이메일 브리핑]
+        TELE[텔레그램 봇]
+        API[FastAPI\nbip-react-api]
+    end
+
+    S1 & S2 --> D01 & D02
+    S3 --> D05
+    S4 --> D05
+    S5 --> D04
+    S6 --> D04
+    S7 --> D07
+    S8 --> D06
+    S9 --> D04
+
+    D01 & D02 --> L1
+    D03 --> L2
+    D04 & D05 & D06 & D07 --> L1
+    L1 & L2 --> D09 --> L3
+
+    L3 --> WR
+    L1 & L2 & L3 --> DR --> EMAIL & TELE
+    L3 --> API
+
+    D10 -->|설명 동기화| OM
+    D10 -->|설명 동기화| WR
+    OM -.->|lineage| D01 & D02 & D03 & D04 & D05 & D06 & D07
+
+    style Sources fill:#e1f5fe
+    style DB fill:#e8f5e9
+    style Platform fill:#fff3e0
+    style Consumers fill:#fce4ec
+    style Sources fill:#4f8fea22,stroke:#4f8fea,stroke-width:2px,color:#e6edf3
+    style Airflow fill:#6c5ce722,stroke:#6c5ce7,stroke-width:2px,color:#e6edf3
+    style DB fill:#00b89422,stroke:#00b894,stroke-width:2px,color:#e6edf3
+    style Platform fill:#e1705522,stroke:#e17055,stroke-width:2px,color:#e6edf3
+    style Consumers fill:#fdcb6e22,stroke:#fdcb6e,stroke-width:2px,color:#e6edf3
+</div>
+
+<hr />
+<h2 id="2-데이터-레이어-구조">2. 데이터 레이어 구조</h2>
+<h3 id="현재-상태-as-is">현재 상태 (As-Is)</h3>
+<div class="codehilite"><pre><span></span><code>Layer 1: Raw / Operational
+  stock_info              — 종목 메타데이터
+  stock_price_1d/1m       — OHLCV 시세 (주봉/월봉은 1d에서 계산 가능 → 폐기)
+  consensus_estimates     — 애널리스트 컨센서스
+  financial_statements    — DART 재무제표  ✅ 스키마 확인됨
+  company_*               — DART 기업정보 (배당/임원/감사 등)
+  macro_indicators        — ✅ 매크로/금리/감성 통합 테이블
+  news                    — 뉴스 기사 원문
+  risk_headlines          — GDELT 지정학 리스크 헤드라인
+  portfolio               — KIS 연동 포트폴리오 계정
+
+Layer 2: Derived / Calculated
+  stock_indicators        — 기술적 지표 (MA, MACD, RSI, BB...)
+  market_daily_summary    — 시장 breadth
+  sector_daily_performance — 섹터 수익률
+
+Layer 3: Gold / Serving     ✅ 구현완료
+  analytics_macro_daily   — 거시지표 EAV pivot (일별 1행)
+  analytics_valuation     — 종목별 밸류에이션 종합 (pre-joined)
+  analytics_stock_daily   — 시세 + 지표 + 컨센서스 와이드 테이블
+
+Layer 4: Reporting (DB 미저장)
+  모닝 브리핑             — LLM 분석 → 이메일 발송
+</code></pre></div>
+
+<h3 id="목표-상태-to-be">목표 상태 (To-Be)</h3>
+<div class="codehilite"><pre><span></span><code><span class="nx">Layer</span><span class="w"> </span><span class="mi">1</span><span class="p">:</span><span class="w"> </span><span class="nx">Raw</span><span class="w"> </span><span class="o">/</span><span class="w"> </span><span class="nx">Operational</span><span class="w">  </span><span class="p">(</span><span class="nx">현재와</span><span class="w"> </span><span class="nx">동일</span><span class="p">,</span><span class="w"> </span><span class="nx">스키마</span><span class="w"> </span><span class="nx">정리</span><span class="p">)</span>
+<span class="nx">Layer</span><span class="w"> </span><span class="mi">2</span><span class="p">:</span><span class="w"> </span><span class="nx">Derived</span><span class="w">            </span><span class="p">(</span><span class="nx">현재와</span><span class="w"> </span><span class="nx">동일</span><span class="p">)</span>
+<span class="nx">Layer</span><span class="w"> </span><span class="mi">3</span><span class="p">:</span><span class="w"> </span><span class="nx">Gold</span><span class="w"> </span><span class="o">/</span><span class="w"> </span><span class="nx">Serving</span><span class="w">     </span><span class="err">✅</span><span class="w"> </span><span class="nx">구현완료</span>
+<span class="w">  </span><span class="nx">analytics_macro_daily</span><span class="w">     </span><span class="err">—</span><span class="w"> </span><span class="nx">거시지표</span><span class="w"> </span><span class="nx">EAV</span><span class="w"> </span><span class="nx">pivot</span><span class="w"> </span><span class="p">(</span><span class="mi">437</span><span class="nx">행</span><span class="p">,</span><span class="w"> </span><span class="nx">DAG</span><span class="p">:</span><span class="w"> </span><span class="mi">09</span><span class="nx">_analytics_macro_daily</span><span class="p">)</span>
+<span class="w">  </span><span class="nx">analytics_valuation</span><span class="w">       </span><span class="err">—</span><span class="w"> </span><span class="nx">밸류에이션</span><span class="w"> </span><span class="nx">종합</span><span class="w"> </span><span class="nx">PER</span><span class="o">/</span><span class="nx">PBR</span><span class="o">/</span><span class="nx">ROE</span><span class="w"> </span><span class="o">+</span><span class="w"> </span><span class="nx">잠정실적</span><span class="p">(</span><span class="nx">preliminary</span><span class="p">)</span><span class="w"> </span><span class="o">+</span><span class="w"> </span><span class="nx">fiscal_quarter</span><span class="w"> </span><span class="nx">컬럼</span><span class="w"> </span><span class="nx">추가</span><span class="w"> </span><span class="p">(</span><span class="nx">DAG</span><span class="p">:</span><span class="w"> </span><span class="mi">09</span><span class="nx">_analytics_valuation</span><span class="p">)</span>
+<span class="w">  </span><span class="nx">analytics_stock_daily</span><span class="w">     </span><span class="err">—</span><span class="w"> </span><span class="nx">시세</span><span class="w"> </span><span class="o">+</span><span class="w"> </span><span class="nx">기술지표</span><span class="w"> </span><span class="o">+</span><span class="w"> </span><span class="nx">컨센서스</span><span class="w"> </span><span class="p">(</span><span class="mi">1</span><span class="p">,</span><span class="mi">870</span><span class="p">,</span><span class="mi">328</span><span class="nx">행</span><span class="p">,</span><span class="w"> </span><span class="nx">DAG</span><span class="p">:</span><span class="w"> </span><span class="mi">09</span><span class="nx">_analytics_stock_daily</span><span class="p">)</span>
+
+<span class="nx">Layer</span><span class="w"> </span><span class="mi">4</span><span class="p">:</span><span class="w"> </span><span class="nx">Semantic</span><span class="w">           </span><span class="err">✅</span><span class="w"> </span><span class="nx">구현완료</span>
+<span class="w">  </span><span class="nx">비즈니스</span><span class="w"> </span><span class="nx">용어집</span><span class="w"> </span><span class="p">(</span><span class="nx">OM</span><span class="w"> </span><span class="nx">Glossary</span><span class="w"> </span><span class="mi">77</span><span class="nx">개</span><span class="w"> </span><span class="nx">등록</span><span class="w"> </span><span class="nx">완료</span><span class="p">)</span>
+<span class="w">  </span><span class="nx">Join</span><span class="w"> </span><span class="nx">경로</span><span class="p">,</span><span class="w"> </span><span class="nx">단위</span><span class="w"> </span><span class="nx">정의</span><span class="p">,</span><span class="w"> </span><span class="nx">지표</span><span class="w"> </span><span class="nx">계산식</span>
+<span class="w">  </span><span class="nx">Tags</span><span class="w"> </span><span class="nx">분류</span><span class="w"> </span><span class="p">(</span><span class="nx">raw</span><span class="o">/</span><span class="nx">derived</span><span class="o">/</span><span class="nx">gold</span><span class="p">,</span><span class="w"> </span><span class="nx">도메인별</span><span class="p">)</span><span class="w"> </span><span class="err">✅</span><span class="w"> </span><span class="mi">37</span><span class="o">/</span><span class="mi">37</span><span class="w"> </span><span class="nx">완료</span>
+<span class="w">  </span><span class="nx">SourceType</span><span class="w"> </span><span class="nx">태그</span><span class="w"> </span><span class="p">(</span><span class="nx">rest</span><span class="o">-</span><span class="kn">api</span><span class="o">/</span><span class="nx">scraping</span><span class="o">/</span><span class="kn">library</span><span class="p">)</span><span class="w"> </span><span class="err">✅</span><span class="w"> </span><span class="mi">14</span><span class="w"> </span><span class="nx">apiEndpoints</span>
+
+<span class="nx">Layer</span><span class="w"> </span><span class="mi">5</span><span class="p">:</span><span class="w"> </span><span class="nx">NL2SQL</span><span class="w">            </span><span class="err">✅</span><span class="w"> </span><span class="nx">구현완료</span>
+<span class="w">  </span><span class="nx">Wren</span><span class="w"> </span><span class="nx">AI</span><span class="w"> </span><span class="p">(</span><span class="nx">시맨틱</span><span class="w"> </span><span class="nx">레이어</span><span class="w"> </span><span class="o">+</span><span class="w"> </span><span class="nx">NL2SQL</span><span class="w"> </span><span class="nx">엔진</span><span class="p">)</span>
+<span class="w">  </span><span class="mi">5</span><span class="nx">개</span><span class="w"> </span><span class="nx">모델</span><span class="w"> </span><span class="nx">등록</span><span class="w"> </span><span class="p">(</span><span class="nx">Gold</span><span class="w"> </span><span class="mi">3</span><span class="w"> </span><span class="o">+</span><span class="w"> </span><span class="nx">Raw</span><span class="w"> </span><span class="mi">2</span><span class="p">)</span>
+<span class="w">  </span><span class="mi">29</span><span class="nx">개</span><span class="w"> </span><span class="nx">SQL</span><span class="w"> </span><span class="nx">Pairs</span><span class="w"> </span><span class="p">(</span><span class="nx">자주</span><span class="w"> </span><span class="nx">묻는</span><span class="w"> </span><span class="nx">패턴</span><span class="p">)</span>
+<span class="w">  </span><span class="nx">OM</span><span class="w"> </span><span class="err">→</span><span class="w"> </span><span class="nx">Wren</span><span class="w"> </span><span class="nx">AI</span><span class="w"> </span><span class="nx">메타데이터</span><span class="w"> </span><span class="nx">자동</span><span class="w"> </span><span class="nx">동기화</span><span class="w"> </span><span class="nx">DAG</span>
+</code></pre></div>
+
+<h3 id="전체-테이블-레이어--도메인-분류-34개">전체 테이블 레이어 · 도메인 분류 (34개)</h3>
+<blockquote>
+<p>OM Tags 적용 기준표. <code>scripts/om_tag_tables.py</code>로 일괄 등록.
+<strong>Layer 태그:</strong> <code>DataLayer.raw</code> / <code>DataLayer.derived</code> / <code>DataLayer.gold</code> / <code>DataLayer.application</code>
+<strong>Domain 태그:</strong> <code>Domain.market</code> / <code>Domain.financial</code> / <code>Domain.macro</code> / <code>Domain.news</code> / <code>Domain.portfolio</code> / <code>Domain.product</code> / <code>Domain.user</code></p>
+</blockquote>
+<table>
+<thead>
+<tr>
+<th>테이블</th>
+<th>Layer</th>
+<th>Domain</th>
+<th>설명</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>stock_info</code></td>
+<td>raw</td>
+<td>market</td>
+<td>종목 마스터 (KOSPI/KOSDAQ/US)</td>
+</tr>
+<tr>
+<td><code>stock_price_1d</code></td>
+<td>raw</td>
+<td>market</td>
+<td>일봉 OHLCV + 투자자 수급</td>
+</tr>
+<tr>
+<td><code>stock_price_1m</code></td>
+<td>raw</td>
+<td>market</td>
+<td>1분봉 (watchlist 온디맨드)</td>
+</tr>
+<tr>
+<td><code>financial_statements</code></td>
+<td>raw</td>
+<td>financial</td>
+<td>DART 재무제표 (정규화 컬럼)</td>
+</tr>
+<tr>
+<td><code>company_dart_info</code></td>
+<td>raw</td>
+<td>financial</td>
+<td>DART 기업코드 매핑</td>
+</tr>
+<tr>
+<td><code>company_dividend</code></td>
+<td>raw</td>
+<td>financial</td>
+<td>배당 정보</td>
+</tr>
+<tr>
+<td><code>company_employees</code></td>
+<td>raw</td>
+<td>financial</td>
+<td>직원 현황</td>
+</tr>
+<tr>
+<td><code>company_executives</code></td>
+<td>raw</td>
+<td>financial</td>
+<td>임원 현황</td>
+</tr>
+<tr>
+<td><code>company_audit</code></td>
+<td>raw</td>
+<td>financial</td>
+<td>감사의견</td>
+</tr>
+<tr>
+<td><code>company_treasury_stock</code></td>
+<td>raw</td>
+<td>financial</td>
+<td>자기주식</td>
+</tr>
+<tr>
+<td><code>company_shareholders</code></td>
+<td>raw</td>
+<td>financial</td>
+<td>최대주주</td>
+</tr>
+<tr>
+<td><code>company_exec_compensation</code></td>
+<td>raw</td>
+<td>financial</td>
+<td>임원보수</td>
+</tr>
+<tr>
+<td><code>consensus_estimates</code></td>
+<td>raw</td>
+<td>financial</td>
+<td>애널리스트 컨센서스 (최신)</td>
+</tr>
+<tr>
+<td><code>consensus_history</code></td>
+<td>raw</td>
+<td>financial</td>
+<td>컨센서스 변경 이력</td>
+</tr>
+<tr>
+<td><code>us_financial_statements</code></td>
+<td>raw</td>
+<td>financial</td>
+<td>미국 기업 재무제표</td>
+</tr>
+<tr>
+<td><code>us_fundamentals</code></td>
+<td>raw</td>
+<td>financial</td>
+<td>미국 기업 투자지표</td>
+</tr>
+<tr>
+<td><code>macro_indicators</code></td>
+<td>raw</td>
+<td>macro</td>
+<td>매크로/금리/환율/감성 (EAV)</td>
+</tr>
+<tr>
+<td><code>risk_headlines</code></td>
+<td>raw</td>
+<td>macro</td>
+<td>GDELT 지정학 리스크 헤드라인</td>
+</tr>
+<tr>
+<td><code>news</code></td>
+<td>raw</td>
+<td>news</td>
+<td>뉴스 기사 (Naver 수집)</td>
+</tr>
+<tr>
+<td><code>news_raw</code></td>
+<td>raw</td>
+<td>news</td>
+<td>뉴스 원문</td>
+</tr>
+<tr>
+<td><code>news_article</code></td>
+<td>raw</td>
+<td>news</td>
+<td>파싱된 뉴스 기사</td>
+</tr>
+<tr>
+<td><code>portfolio_snapshot</code></td>
+<td>raw</td>
+<td>portfolio</td>
+<td>KIS API 포트폴리오 일일 스냅샷</td>
+</tr>
+<tr>
+<td><code>product_price</code></td>
+<td>raw</td>
+<td>product</td>
+<td>제품 가격 데이터</td>
+</tr>
+<tr>
+<td><code>product_release</code></td>
+<td>raw</td>
+<td>product</td>
+<td>제품 출시 이력</td>
+</tr>
+<tr>
+<td><code>stock_indicators</code></td>
+<td>derived</td>
+<td>market</td>
+<td>기술적 지표 (pandas-ta, from 1d)</td>
+</tr>
+<tr>
+<td><code>market_daily_summary</code></td>
+<td>derived</td>
+<td>market</td>
+<td>시장 breadth (ADR, 신고가 등)</td>
+</tr>
+<tr>
+<td><code>news_daily_summary</code></td>
+<td>derived</td>
+<td>news</td>
+<td>일별 뉴스 요약/감성 집계</td>
+</tr>
+<tr>
+<td><code>users</code></td>
+<td>application</td>
+<td>user</td>
+<td>서비스 사용자</td>
+</tr>
+<tr>
+<td><code>user_watchlist</code></td>
+<td>application</td>
+<td>user</td>
+<td>사용자 관심 종목</td>
+</tr>
+<tr>
+<td><code>portfolio</code></td>
+<td>application</td>
+<td>portfolio</td>
+<td>포트폴리오 계정</td>
+</tr>
+<tr>
+<td><code>holding</code></td>
+<td>application</td>
+<td>portfolio</td>
+<td>보유 종목 현황</td>
+</tr>
+<tr>
+<td><code>transaction</code></td>
+<td>application</td>
+<td>portfolio</td>
+<td>매매 거래 내역</td>
+</tr>
+<tr>
+<td><code>cash_transaction</code></td>
+<td>application</td>
+<td>portfolio</td>
+<td>현금 입출금 내역</td>
+</tr>
+</tbody>
+</table>
+<p>| <code>analytics_macro_daily</code> | gold | macro | macro_indicators EAV → pivot (일별 1행, forward-fill) ✅ 구현완료 |
+| <code>analytics_stock_daily</code> | gold | market | 시세+지표+컨센서스 와이드 테이블 ✅ 구현완료 |
+| <code>analytics_valuation</code> | gold | financial | PER/PBR/ROE pre-computed 밸류에이션 ✅ 구현완료 (7,609행) |</p>
+<hr />
+<h2 id="3-테이블-카탈로그">3. 테이블 카탈로그</h2>
+<blockquote>
+<p>상태 범례: ✅ 스키마 확인됨 | ⚠️ DDL 미확인 | ❌ 중복/폐기 예정</p>
+</blockquote>
+<h3 id="3-1-종목-메타데이터">3-1. 종목 메타데이터</h3>
+<table>
+<thead>
+<tr>
+<th>테이블</th>
+<th>상태</th>
+<th>스키마 파일</th>
+<th>설명</th>
+<th>비고</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>stock_info</code></td>
+<td>✅</td>
+<td>postgres/patch.sql</td>
+<td>종목 마스터 — ticker, 이름, 시장, 통화, 상장일, 시총</td>
+<td>운영 기준 테이블</td>
+</tr>
+<tr>
+<td><code>stock_metadata</code></td>
+<td>❌</td>
+<td>postgres/init.sql</td>
+<td>구버전 5개 미국 주식 하드코딩</td>
+<td>폐기 예정</td>
+</tr>
+<tr>
+<td><code>company_dart_info</code></td>
+<td>✅</td>
+<td>DAG 내 확인</td>
+<td>ticker ↔ corp_code(DART 10자리) 매핑</td>
+<td>FK: ticker → stock_info</td>
+</tr>
+</tbody>
+</table>
+<p><strong><code>stock_info</code> 컬럼 상세:</strong></p>
+<table>
+<thead>
+<tr>
+<th>컬럼</th>
+<th>타입</th>
+<th>설명</th>
+<th>단위/값범위</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>ticker</code></td>
+<td>VARCHAR(20)</td>
+<td>종목코드 (UNIQUE)</td>
+<td>KR: <code>005930.KS</code>, US: <code>NVDA</code></td>
+</tr>
+<tr>
+<td><code>stock_name</code></td>
+<td>VARCHAR(100)</td>
+<td>한글 종목명</td>
+<td></td>
+</tr>
+<tr>
+<td><code>stock_name_eng</code></td>
+<td>VARCHAR(100)</td>
+<td>영문 종목명</td>
+<td></td>
+</tr>
+<tr>
+<td><code>market_type</code></td>
+<td>VARCHAR(20)</td>
+<td>시장 구분</td>
+<td><code>KOSPI</code>, <code>KOSDAQ</code>, <code>NASDAQ</code>, <code>NYSE</code></td>
+</tr>
+<tr>
+<td><code>exchange_code</code></td>
+<td>VARCHAR(10)</td>
+<td>거래소 코드</td>
+<td><code>KS</code>, <code>KQ</code>, <code>NSQ</code>, <code>NYS</code></td>
+</tr>
+<tr>
+<td><code>currency_code</code></td>
+<td>VARCHAR(10)</td>
+<td>통화</td>
+<td><code>KRW</code>, <code>USD</code></td>
+</tr>
+<tr>
+<td><code>listing_date</code></td>
+<td>DATE</td>
+<td>상장일</td>
+<td></td>
+</tr>
+<tr>
+<td><code>par_value</code></td>
+<td>NUMERIC</td>
+<td>액면가</td>
+<td>원(KRW)</td>
+</tr>
+<tr>
+<td><code>total_shares</code></td>
+<td>BIGINT</td>
+<td>상장주식수</td>
+<td>주</td>
+</tr>
+<tr>
+<td><code>market_value</code></td>
+<td>NUMERIC</td>
+<td>시가총액</td>
+<td>⚠️ <strong>단위: 억원</strong> (원 아님)</td>
+</tr>
+<tr>
+<td><code>data_source</code></td>
+<td>VARCHAR(50)</td>
+<td>데이터 출처</td>
+<td><code>naver</code>, <code>krx</code>, <code>yfinance</code></td>
+</tr>
+<tr>
+<td><code>is_active</code></td>
+<td>BOOLEAN</td>
+<td>활성 여부</td>
+<td></td>
+</tr>
+<tr>
+<td><code>sector</code></td>
+<td>—</td>
+<td>섹터/업종</td>
+<td>❌ <strong>컬럼 없음 — 추가 필요</strong></td>
+</tr>
+</tbody>
+</table>
+<hr />
+<h3 id="3-2-시세-데이터">3-2. 시세 데이터</h3>
+<table>
+<thead>
+<tr>
+<th>테이블</th>
+<th>상태</th>
+<th>설명</th>
+<th>주요 제약</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>stock_price_1m</code></td>
+<td>✅</td>
+<td>1분봉 — watchlist 종목 on-demand</td>
+<td>UNIQUE(ticker, timestamp)</td>
+</tr>
+<tr>
+<td><code>stock_price_1d</code></td>
+<td>✅</td>
+<td>일봉 — 주력 시세 테이블</td>
+<td>UNIQUE(ticker, timestamp)</td>
+</tr>
+<tr>
+<td><code>stock_price_1wk</code></td>
+<td>❌</td>
+<td>주봉 — <strong>2026-03-28 DROP</strong> (1d에서 resample 계산 가능)</td>
+<td>—</td>
+</tr>
+<tr>
+<td><code>stock_price_1mo</code></td>
+<td>❌</td>
+<td>월봉 — <strong>2026-03-28 DROP</strong> (1d에서 resample 계산 가능)</td>
+<td>—</td>
+</tr>
+</tbody>
+</table>
+<p><strong>공통 컬럼 (모든 price 테이블):</strong></p>
+<table>
+<thead>
+<tr>
+<th>컬럼</th>
+<th>타입</th>
+<th>설명</th>
+<th>주의사항</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>ticker</code></td>
+<td>VARCHAR(10)</td>
+<td>종목코드</td>
+<td></td>
+</tr>
+<tr>
+<td><code>timestamp</code></td>
+<td>TIMESTAMP</td>
+<td>⚠️ UTC 기준 추정</td>
+<td>명시 없음, 확인 필요</td>
+</tr>
+<tr>
+<td><code>timestamp_ny</code></td>
+<td>TIMESTAMP</td>
+<td>뉴욕 시간</td>
+<td>미국 주식용</td>
+</tr>
+<tr>
+<td><code>timestamp_kst</code></td>
+<td>TIMESTAMP</td>
+<td>한국 시간</td>
+<td>한국 주식용</td>
+</tr>
+<tr>
+<td><code>open/high/low/close</code></td>
+<td>NUMERIC</td>
+<td>OHLCV</td>
+<td></td>
+</tr>
+<tr>
+<td><code>volume</code></td>
+<td>BIGINT</td>
+<td>거래량</td>
+<td></td>
+</tr>
+</tbody>
+</table>
+<blockquote>
+<p>⚠️ <strong>이슈:</strong> 일봉에서 3개 timestamp 컬럼은 과잉. <code>trade_date DATE</code> 컬럼 추가 권장.
+⚠️ <strong>이슈:</strong> UNIQUE 키가 <code>timestamp</code> 기준인데 KR/US 주식이 다른 timezone을 사용함.</p>
+</blockquote>
+<hr />
+<h3 id="3-3-컨센서스--애널리스트-추정">3-3. 컨센서스 &amp; 애널리스트 추정</h3>
+<p><strong><code>consensus_estimates</code> 컬럼 상세:</strong></p>
+<table>
+<thead>
+<tr>
+<th>컬럼</th>
+<th>타입</th>
+<th>설명</th>
+<th>단위/값범위</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>ticker</code></td>
+<td>VARCHAR(20)</td>
+<td>Yahoo 형식 코드</td>
+<td><code>005930.KS</code></td>
+</tr>
+<tr>
+<td><code>stock_code</code></td>
+<td>VARCHAR(10)</td>
+<td>6자리 순수 코드</td>
+<td><code>005930</code> ⚠️ ticker에서 파생 가능, 중복</td>
+</tr>
+<tr>
+<td><code>rating</code></td>
+<td>NUMERIC(3,2)</td>
+<td>투자의견 점수</td>
+<td>1.0~5.0, <strong>5=Strong Buy</strong> (높을수록 긍정)</td>
+</tr>
+<tr>
+<td><code>target_price</code></td>
+<td>BIGINT</td>
+<td>목표주가</td>
+<td><strong>원(KRW)</strong></td>
+</tr>
+<tr>
+<td><code>analyst_count</code></td>
+<td>INT</td>
+<td>추정 애널리스트 수</td>
+<td></td>
+</tr>
+<tr>
+<td><code>estimate_year</code></td>
+<td>INT</td>
+<td>추정 대상 연도</td>
+<td></td>
+</tr>
+<tr>
+<td><code>est_eps</code></td>
+<td>BIGINT</td>
+<td>예상 EPS</td>
+<td><strong>원(KRW)</strong></td>
+</tr>
+<tr>
+<td><code>est_per</code></td>
+<td>NUMERIC(10,2)</td>
+<td>예상 PER</td>
+<td>배수(x)</td>
+</tr>
+<tr>
+<td><code>est_pbr</code></td>
+<td>NUMERIC(10,2)</td>
+<td>예상 PBR</td>
+<td>배수(x)</td>
+</tr>
+<tr>
+<td><code>est_roe</code></td>
+<td>NUMERIC(10,2)</td>
+<td>예상 ROE</td>
+<td><strong>%</strong></td>
+</tr>
+<tr>
+<td><code>est_dividend</code></td>
+<td>BIGINT</td>
+<td>예상 배당금</td>
+<td><strong>원(KRW)</strong></td>
+</tr>
+<tr>
+<td><code>data_source</code></td>
+<td>VARCHAR(50)</td>
+<td>출처</td>
+<td><code>wisereport</code></td>
+</tr>
+<tr>
+<td><code>collected_at</code></td>
+<td>TIMESTAMPTZ</td>
+<td>수집 시각</td>
+<td></td>
+</tr>
+</tbody>
+</table>
+<hr />
+<h3 id="3-4-기술적-지표">3-4. 기술적 지표</h3>
+<p><strong><code>stock_indicators</code> 주요 컬럼:</strong></p>
+<table>
+<thead>
+<tr>
+<th>컬럼 그룹</th>
+<th>컬럼들</th>
+<th>설명</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>기준</td>
+<td><code>ticker</code>, <code>trade_date</code></td>
+<td>종목 + 거래일</td>
+</tr>
+<tr>
+<td>이동평균</td>
+<td><code>ma5/10/20/60/120/200</code></td>
+<td>단순이동평균</td>
+</tr>
+<tr>
+<td>EMA/MACD</td>
+<td><code>ema12/26</code>, <code>macd/signal/hist</code></td>
+<td>MACD 지표</td>
+</tr>
+<tr>
+<td>모멘텀</td>
+<td><code>rsi14</code>, <code>stoch_k/d</code></td>
+<td>RSI, 스토캐스틱</td>
+</tr>
+<tr>
+<td>볼린저밴드</td>
+<td><code>bb_upper/middle/lower</code>, <code>bb_pctb</code></td>
+<td>BB</td>
+</tr>
+<tr>
+<td>변동성</td>
+<td><code>atr14</code></td>
+<td>Average True Range</td>
+</tr>
+<tr>
+<td>시그널</td>
+<td><code>golden_cross</code>, <code>death_cross</code></td>
+<td>MA 크로스 시그널 (BOOLEAN)</td>
+</tr>
+<tr>
+<td>52주</td>
+<td><code>high_52w</code>, <code>low_52w</code>, <code>pct_from_52w_high/low</code></td>
+<td>52주 고가/저가</td>
+</tr>
+<tr>
+<td>거래량</td>
+<td><code>volume_ma20</code></td>
+<td>거래량 이동평균</td>
+</tr>
+</tbody>
+</table>
+<p><strong><code>market_daily_summary</code> 주요 컬럼:</strong></p>
+<table>
+<thead>
+<tr>
+<th>컬럼</th>
+<th>설명</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>trade_date</code></td>
+<td>거래일</td>
+</tr>
+<tr>
+<td><code>total_stocks</code></td>
+<td>전체 종목수</td>
+</tr>
+<tr>
+<td><code>advancing/declining/unchanged</code></td>
+<td>상승/하락/보합 종목수</td>
+</tr>
+<tr>
+<td><code>advance_decline_ratio</code></td>
+<td>ADR</td>
+</tr>
+<tr>
+<td><code>new_high_52w/new_low_52w</code></td>
+<td>52주 신고가/신저가 종목수</td>
+</tr>
+<tr>
+<td><code>above_ma20/50/200</code></td>
+<td>MA 위 종목 비율</td>
+</tr>
+<tr>
+<td><code>rsi_overbought/oversold</code></td>
+<td>RSI 과매수/과매도 종목수</td>
+</tr>
+</tbody>
+</table>
+<hr />
+<h3 id="3-5-기업-정보-dart">3-5. 기업 정보 (DART)</h3>
+<table>
+<thead>
+<tr>
+<th>테이블</th>
+<th>설명</th>
+<th>고유키</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>company_dividend</code></td>
+<td>배당 정보</td>
+<td>(ticker, fiscal_year, stock_type)</td>
+</tr>
+<tr>
+<td><code>company_employees</code></td>
+<td>직원 현황</td>
+<td>(ticker, fiscal_year, department, gender, employee_type)</td>
+</tr>
+<tr>
+<td><code>company_executives</code></td>
+<td>임원 현황</td>
+<td>(ticker, fiscal_year, name, position)</td>
+</tr>
+<tr>
+<td><code>company_audit</code></td>
+<td>감사의견</td>
+<td>(ticker, fiscal_year)</td>
+</tr>
+<tr>
+<td><code>company_treasury_stock</code></td>
+<td>자기주식</td>
+<td>(ticker, fiscal_year, stock_type)</td>
+</tr>
+<tr>
+<td><code>company_shareholders</code></td>
+<td>최대주주</td>
+<td>(ticker, fiscal_year, shareholder_name)</td>
+</tr>
+<tr>
+<td><code>company_exec_compensation</code></td>
+<td>임원보수(5억↑)</td>
+<td>(ticker, fiscal_year, name)</td>
+</tr>
+<tr>
+<td><code>financial_statements</code></td>
+<td>DART 재무제표 (정규화 컬럼 구조)</td>
+<td>(corp_code, fiscal_year, fiscal_quarter, report_type)</td>
+</tr>
+</tbody>
+</table>
+<p><strong><code>financial_statements</code> 컬럼 상세:</strong></p>
+<table>
+<thead>
+<tr>
+<th>컬럼</th>
+<th>설명</th>
+<th>단위/값</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>corp_code</code></td>
+<td>DART 기업코드 (10자리)</td>
+<td></td>
+</tr>
+<tr>
+<td><code>ticker</code></td>
+<td>Yahoo Finance 형식 코드</td>
+<td><code>005930.KS</code></td>
+</tr>
+<tr>
+<td><code>fiscal_year</code></td>
+<td>회계연도</td>
+<td>정수 (2024)</td>
+</tr>
+<tr>
+<td><code>fiscal_quarter</code></td>
+<td>분기</td>
+<td>1=Q1, 2=반기, 3=Q3, 4=연간</td>
+</tr>
+<tr>
+<td><code>report_type</code></td>
+<td>보고서 유형</td>
+<td><code>annual</code>, <code>Q1</code>, <code>half</code>, <code>Q3</code></td>
+</tr>
+<tr>
+<td><code>revenue</code></td>
+<td>매출액</td>
+<td>원(KRW)</td>
+</tr>
+<tr>
+<td><code>cost_of_sales</code></td>
+<td>매출원가</td>
+<td>원(KRW)</td>
+</tr>
+<tr>
+<td><code>gross_profit</code></td>
+<td>매출총이익</td>
+<td>원(KRW)</td>
+</tr>
+<tr>
+<td><code>operating_expense</code></td>
+<td>판관비</td>
+<td>원(KRW)</td>
+</tr>
+<tr>
+<td><code>operating_profit</code></td>
+<td>영업이익</td>
+<td>원(KRW)</td>
+</tr>
+<tr>
+<td><code>net_income</code></td>
+<td>당기순이익</td>
+<td>원(KRW)</td>
+</tr>
+<tr>
+<td><code>total_assets</code></td>
+<td>자산총계</td>
+<td>원(KRW)</td>
+</tr>
+<tr>
+<td><code>total_liabilities</code></td>
+<td>부채총계</td>
+<td>원(KRW)</td>
+</tr>
+<tr>
+<td><code>total_equity</code></td>
+<td>자본총계</td>
+<td>원(KRW)</td>
+</tr>
+<tr>
+<td><code>cash_from_operating</code></td>
+<td>영업활동 현금흐름</td>
+<td>원(KRW)</td>
+</tr>
+<tr>
+<td><code>cash_from_investing</code></td>
+<td>투자활동 현금흐름</td>
+<td>원(KRW)</td>
+</tr>
+<tr>
+<td><code>cash_from_financing</code></td>
+<td>재무활동 현금흐름</td>
+<td>원(KRW)</td>
+</tr>
+</tbody>
+</table>
+<blockquote>
+<p><strong>참고:</strong> 구 DART API RAW 방식(<code>sj_div</code>/<code>account_nm</code> 구분)과 달리 정규화된 컬럼 구조. CFS(연결) 우선, 없으면 OFS(별도) 사용.</p>
+<p>⚠️ <strong>공통 이슈:</strong> 모든 company_* 테이블이 <code>ticker</code>와 <code>corp_code</code>를 함께 보유. FK 물리적 제약은 2026-03-28 추가됨.
+<code>corp_code</code> = DART 10자리 기업코드. <code>company_dart_info</code>를 통해 <code>ticker</code>와 매핑.</p>
+</blockquote>
+<hr />
+<h3 id="3-5-1-미국-sec-공시-edgar--2026-04-05-추가">3-5-1. 미국 SEC 공시 (EDGAR) — 2026-04-05 추가</h3>
+<table>
+<thead>
+<tr>
+<th>테이블</th>
+<th>설명</th>
+<th>고유키</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>sec_filings</code></td>
+<td>SEC EDGAR 공시 (8-K/10-K/10-Q/4 및 /A)</td>
+<td><code>accession_no</code> UNIQUE</td>
+</tr>
+<tr>
+<td><code>us_cik_mapping</code></td>
+<td>미국 ticker ↔ CIK(10자리 zero-padded) 매핑</td>
+<td><code>ticker</code> PK</td>
+</tr>
+</tbody>
+</table>
+<p><strong><code>sec_filings</code> 주요 컬럼:</strong></p>
+<table>
+<thead>
+<tr>
+<th>컬럼</th>
+<th>타입</th>
+<th>설명</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>ticker</code></td>
+<td>varchar(20)</td>
+<td><code>stock_info.ticker</code>와 조인</td>
+</tr>
+<tr>
+<td><code>cik</code></td>
+<td>varchar(10)</td>
+<td>SEC CIK</td>
+</tr>
+<tr>
+<td><code>accession_no</code></td>
+<td>varchar(30) UNIQUE</td>
+<td>SEC 공시 고유 ID</td>
+</tr>
+<tr>
+<td><code>form_type</code></td>
+<td>varchar(20)</td>
+<td>8-K, 10-K, 10-Q, 4 및 수정본(/A)</td>
+</tr>
+<tr>
+<td><code>filing_date</code></td>
+<td>date</td>
+<td>SEC 제출일</td>
+</tr>
+<tr>
+<td><code>accepted_dt</code></td>
+<td>timestamptz</td>
+<td>SEC 접수 시각</td>
+</tr>
+<tr>
+<td><code>description</code></td>
+<td>text</td>
+<td>primaryDocDescription (nullable)</td>
+</tr>
+<tr>
+<td><code>filing_url</code></td>
+<td>text</td>
+<td>SEC Archives 원본 URL</td>
+</tr>
+<tr>
+<td><code>ingest_source</code></td>
+<td>varchar(30)</td>
+<td><code>submissions_hot</code> / <code>submissions_nightly</code> (내부 운영용)</td>
+</tr>
+<tr>
+<td><code>alert_decision</code></td>
+<td>varchar(30)</td>
+<td><code>suppressed_backfill</code> 등 (내부 운영용, 알림 경로 비활성)</td>
+</tr>
+<tr>
+<td><code>telegram_sent_at</code></td>
+<td>timestamptz</td>
+<td>(내부 운영용)</td>
+</tr>
+</tbody>
+</table>
+<p><strong>인덱스:</strong> <code>(ticker, filing_date DESC)</code> — ticker 기반 UI 조회 최적화.</p>
+<p><strong>수집 파이프라인 (Stage 06):</strong>
+- <code>06a_sec_edgar_hot</code> — 평일 10분 주기. hot universe(시총 상위 100 ∪ watchlist(US) ∪ holding(US) ≈ 108개)에 대해 <code>submissions/CIK{cik}.json</code> 폴링. 당일 공시가 nightly 이전에도 UI에 노출되도록 보장.
+- <code>06b_sec_edgar_reconcile</code> — 매일 23:00 ET(03:00 UTC). us_cik_mapping 전체 6,151 CIK full reconcile. 신규 보충분은 <code>alert_decision='suppressed_backfill'</code>로 마킹.</p>
+<p><strong>UPSERT 정책:</strong> <code>ON CONFLICT (accession_no) DO UPDATE SET ... = COALESCE(EXCLUDED.*, sec_filings.*)</code> — hot/nightly 경로가 서로의 필드를 보강만 하고 덮어쓰지 않음.</p>
+<p><strong>TARGET_FORMS:</strong> <code>8-K, 10-K, 10-Q, 4, 8-K/A, 10-K/A, 10-Q/A, 4/A</code></p>
+<p><strong>알림 경로:</strong> 검토 후 <strong>비활성화</strong>. 8-K/Form 4 알림 노이즈 대비 가치가 낮다고 판단하여 UI 표시 전용(Option A)으로 결정. 내부 필드(<code>ingest_source</code>, <code>alert_decision</code>, <code>telegram_sent_at</code>, <code>alerted_at</code>)는 UI 응답에서 제외할 것.</p>
+<p><strong>UI 개발 요청서:</strong> <code>docs/us_filings_ui_request.md</code> — <code>GET /api/fundamental/filings/{ticker}</code> 엔드포인트 + 미국주식 기업정보 탭 공시 내역 UI.</p>
+<hr />
+<h3 id="3-6-매크로--금리--감성-지수">3-6. 매크로 / 금리 / 감성 지수</h3>
+<blockquote>
+<p>✅ 모든 매크로 데이터는 <code>macro_indicators</code> 단일 테이블에 통합 저장됨 (확인: 2026-03-28)</p>
+</blockquote>
+<p><strong><code>macro_indicators</code> 스키마:</strong></p>
+<table>
+<thead>
+<tr>
+<th>컬럼</th>
+<th>타입</th>
+<th>설명</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>indicator_date</code></td>
+<td>DATE</td>
+<td>지표 날짜</td>
+</tr>
+<tr>
+<td><code>region</code></td>
+<td>VARCHAR</td>
+<td>지역 (<code>North America</code>, <code>South Korea</code>, <code>China</code>, <code>Europe</code>, <code>Japan</code>, ...)</td>
+</tr>
+<tr>
+<td><code>indicator_type</code></td>
+<td>VARCHAR</td>
+<td>지표 유형 (아래 목록)</td>
+</tr>
+<tr>
+<td><code>value</code></td>
+<td>NUMERIC</td>
+<td>지표 값</td>
+</tr>
+<tr>
+<td><code>created_at</code></td>
+<td>TIMESTAMP</td>
+<td>수집 시각</td>
+</tr>
+</tbody>
+</table>
+<p>UNIQUE: <code>(indicator_date, region, indicator_type)</code></p>
+<p><strong>저장되는 indicator_type 유형:</strong></p>
+<table>
+<thead>
+<tr>
+<th>카테고리</th>
+<th>indicator_type 예시</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>시장 변동성</td>
+<td><code>vix</code>, <code>vvix</code></td>
+</tr>
+<tr>
+<td>환율</td>
+<td><code>exchange_rate</code> (KRW/USD 등)</td>
+</tr>
+<tr>
+<td>원자재</td>
+<td><code>gold</code>, <code>oil_wti</code>, <code>copper</code></td>
+</tr>
+<tr>
+<td>채권/금리</td>
+<td><code>us_10y</code>, <code>us_2y</code>, <code>kr_10y</code>, <code>base_rate</code>, <code>cd91</code>, <code>cofix</code></td>
+</tr>
+<tr>
+<td>주요 지수</td>
+<td><code>sp500</code>, <code>nasdaq</code>, <code>kospi</code>, <code>kosdaq</code></td>
+</tr>
+<tr>
+<td>경제지표</td>
+<td><code>cpi</code>, <code>gdp_growth</code>, <code>m2</code>, <code>export</code>, <code>import</code></td>
+</tr>
+<tr>
+<td>KRX 투자자동향</td>
+<td><code>institutional_net</code>, <code>foreign_net</code>, <code>retail_net</code></td>
+</tr>
+<tr>
+<td>GDELT 지정학</td>
+<td><code>geopolitical_risk_*</code>, <code>news_tension_*</code></td>
+</tr>
+<tr>
+<td>뉴스 감성</td>
+<td><code>news_sentiment_geopolitical</code>, <code>news_sentiment_economic</code>, <code>news_sentiment_overall</code></td>
+</tr>
+<tr>
+<td>반도체 가격</td>
+<td><code>dram_4gb</code>, <code>nand_128gb</code> 등</td>
+</tr>
+</tbody>
+</table>
+<blockquote>
+<p>⚠️ <code>sector_daily_performance</code> 는 별도 테이블로 KRX 섹터 지수 저장 (DAG: <code>05_kr_sectors_daily</code>)</p>
+</blockquote>
+<p><strong><code>risk_headlines</code> 테이블:</strong>
+- GDELT 기반 지정학 리스크 헤드라인 저장
+- 컬럼: <code>event_date</code>, <code>headline</code>, <code>url</code>, <code>tone</code>, <code>event_code</code>, <code>country_code</code>, <code>goldstein_scale</code>, <code>avg_tone</code></p>
+<p><strong><code>monitor_checklist</code> 테이블:</strong>
+- 모닝리포트 체크리스트 원문 저장 (날짜별 1건)
+- 컬럼: <code>checklist_date(UNIQUE)</code>, <code>checklist_text</code>
+- BIP-Agents 에이전트가 원문 기반으로 실시간 분석</p>
+<p><strong><code>monitor_alerts</code> 테이블:</strong>
+- 이상치 알림 발송 이력
+- 컬럼: <code>alert_date</code>, <code>alert_time</code>, <code>level</code>, <code>category</code>, <code>title</code>, <code>description</code>, <code>data(JSONB)</code></p>
+<p><strong><code>indicator_context_snapshot</code> 테이블 (2026-04-05 추가):</strong>
+- BIP-Agents 체크리스트 모니터링 에이전트용 지표 시장 맥락 사전 계산
+- 일별 스냅샷: min/max/avg/median/stddev, p10~p95, avg_5d/20d, volatility_20d_pct, trend_label
+- 컬럼: <code>snapshot_date</code>, <code>indicator_type</code>, <code>region</code>, <code>family</code>, <code>direction</code>, 이외 20여개
+- PK: <code>(snapshot_date, indicator_type, region)</code>
+- 소스: <code>macro_indicators</code> (매일 17:00 KST에 사전 계산)
+- 참고: <code>docs/checklist_agent_architecture.md</code></p>
+<p><strong><code>news_digest</code> 테이블 (2026-04-13 추가):</strong>
+- 4시간마다 네이버 뉴스 수집 → Haiku 요약(이슈 3~5개, 중요도/방향/섹터) → 저장
+- <code>collected_at</code>, <code>queries</code>(jsonb), <code>raw_count</code>, <code>digest</code>(text), <code>raw_items</code>(jsonb)
+- 모닝리포트에서 최근 48시간 다이제스트를 통합하여 LLM 컨텍스트에 주입
+- 주말 포함 수집 → 월요일 모닝리포트에 주말 이슈 반영</p>
+<p><strong><code>agent_audit_log</code> 테이블:</strong>
+- 모든 AI 에이전트(리포트/체크리스트/preopen/NL2SQL) LLM 호출 통합 감사
+- 2026-04-05: <code>market_monitor_checklist</code>, <code>market_monitor_preopen</code> 감사 경로 연결됨</p>
+<hr />
+<h2 id="4-데이터-소스--dag-맵">4. 데이터 소스 &amp; DAG 맵</h2>
+<table>
+<thead>
+<tr>
+<th>Stage</th>
+<th>DAG ID</th>
+<th>소스</th>
+<th>출력 테이블</th>
+<th>주기</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>01</td>
+<td><code>01_kr_info_daily</code>, <code>01_ny_info_daily</code></td>
+<td>Naver Mobile/Securities</td>
+<td><code>stock_info</code></td>
+<td>평일</td>
+</tr>
+<tr>
+<td>02</td>
+<td><code>02_daily_loader</code>, <code>02_kr_daily_loader</code></td>
+<td>Yahoo Finance / Naver</td>
+<td><code>stock_price_1d</code></td>
+<td>평일</td>
+</tr>
+<tr>
+<td>02</td>
+<td><code>02_price_us_historical_manual</code></td>
+<td>Yahoo Finance</td>
+<td><code>stock_price_1d</code></td>
+<td>수동 (1wk/1mo 제거됨)</td>
+</tr>
+<tr>
+<td>02</td>
+<td><code>02_kr_after_hours</code></td>
+<td>Naver Securities</td>
+<td><code>stock_price_1d</code></td>
+<td>평일 장후</td>
+</tr>
+<tr>
+<td>03</td>
+<td><code>dag_daily_indicators</code>, <code>dag_kr_daily_indicators</code></td>
+<td>pandas-ta (from price)</td>
+<td><code>stock_indicators</code>, <code>market_daily_summary</code></td>
+<td>평일</td>
+</tr>
+<tr>
+<td>04</td>
+<td><code>04_macro_global_hourly</code></td>
+<td>yfinance</td>
+<td><code>macro_indicators</code></td>
+<td>시간별</td>
+</tr>
+<tr>
+<td>04</td>
+<td><code>04_geopolitical_indices</code></td>
+<td>GDELT / IMF / WB</td>
+<td><code>macro_indicators</code></td>
+<td>주간</td>
+</tr>
+<tr>
+<td>04</td>
+<td><code>04_gdelt_events</code></td>
+<td>GDELT API</td>
+<td><code>macro_indicators</code>, <code>risk_headlines</code></td>
+<td>일간</td>
+</tr>
+<tr>
+<td>04</td>
+<td><code>04_semiconductor_prices</code></td>
+<td>WSTS/SEMI 프록시</td>
+<td><code>macro_indicators</code></td>
+<td>주간</td>
+</tr>
+<tr>
+<td>05</td>
+<td><code>05_kr_ecos_weekly</code></td>
+<td>ECOS BOK API</td>
+<td><code>macro_indicators</code></td>
+<td>주간</td>
+</tr>
+<tr>
+<td>05</td>
+<td><code>05_kr_rates_daily</code></td>
+<td>Naver Finance</td>
+<td><code>macro_indicators</code></td>
+<td>일간</td>
+</tr>
+<tr>
+<td>05</td>
+<td><code>05_kr_sectors_daily</code></td>
+<td>KRX</td>
+<td><code>sector_daily_performance</code></td>
+<td>일간</td>
+</tr>
+<tr>
+<td>05</td>
+<td><code>05_kr_financial_stmt_weekly</code></td>
+<td>DART API</td>
+<td><code>financial_statements</code>, <code>company_dart_info</code></td>
+<td>주간</td>
+</tr>
+<tr>
+<td>05</td>
+<td><code>05_kr_financial_stmt_manual</code></td>
+<td>DART API</td>
+<td><code>financial_statements</code></td>
+<td>수동 (5년치)</td>
+</tr>
+<tr>
+<td>05</td>
+<td><code>05_kr_investor_trend</code></td>
+<td>KRX</td>
+<td><code>macro_indicators</code></td>
+<td>일간</td>
+</tr>
+<tr>
+<td>06</td>
+<td><code>06_news_sentiment_daily</code></td>
+<td>Google News RSS</td>
+<td><code>macro_indicators</code></td>
+<td>평일 22:00</td>
+</tr>
+<tr>
+<td>06</td>
+<td><code>06_naver_news_*</code></td>
+<td>Naver News API</td>
+<td><code>news</code></td>
+<td>일간</td>
+</tr>
+<tr>
+<td>06</td>
+<td><code>06a_sec_edgar_hot</code></td>
+<td>SEC EDGAR submissions API</td>
+<td><code>sec_filings</code></td>
+<td>평일 10분 주기 (hot 108종목)</td>
+</tr>
+<tr>
+<td>06</td>
+<td><code>06b_sec_edgar_reconcile</code></td>
+<td>SEC EDGAR submissions API</td>
+<td><code>sec_filings</code></td>
+<td>매일 23:00 ET (전체 6,151 CIK)</td>
+</tr>
+<tr>
+<td>07</td>
+<td><code>07_portfolio_snapshot_daily</code></td>
+<td>KIS API (한국투자증권)</td>
+<td><code>portfolio_snapshot</code></td>
+<td>평일 07:00</td>
+</tr>
+<tr>
+<td>08</td>
+<td><code>08_company_info_annual</code></td>
+<td>DART 사업보고서</td>
+<td><code>company_dividend</code>, <code>company_employees</code>, <code>company_executives</code>, <code>company_audit</code>, <code>company_treasury_stock</code>, <code>company_shareholders</code>, <code>company_exec_compensation</code></td>
+<td>연간/수동</td>
+</tr>
+<tr>
+<td>보고</td>
+<td><code>morning_report</code></td>
+<td>DB + OpenAI/Anthropic</td>
+<td>이메일 + 텔레그램 (체크리스트)</td>
+<td>평일 08:10</td>
+</tr>
+<tr>
+<td>모니터</td>
+<td><code>market_monitor_checklist_parse</code></td>
+<td>HTML 파싱 + BIP-Agents API</td>
+<td><code>monitor_checklist</code>, <code>agent_audit_log</code> + 텔레그램</td>
+<td>평일 08:25</td>
+</tr>
+<tr>
+<td>모니터</td>
+<td><code>market_monitor_preopen</code></td>
+<td>KIS API 예상 체결가 + BIP-Agents</td>
+<td><code>agent_audit_log</code> + 텔레그램</td>
+<td>평일 08:40</td>
+</tr>
+<tr>
+<td>모니터</td>
+<td><code>market_monitor_intraday</code></td>
+<td>네이버/Upbit + BIP-Agents API</td>
+<td><code>monitor_alerts</code>, <code>agent_audit_log</code> + 텔레그램</td>
+<td>평일 09:00~15:50 (10분)</td>
+</tr>
+<tr>
+<td>모니터</td>
+<td><code>market_monitor_close</code></td>
+<td>BIP-Agents API (체크리스트 복기)</td>
+<td><code>agent_audit_log</code> + 텔레그램</td>
+<td>평일 15:35</td>
+</tr>
+<tr>
+<td>뉴스</td>
+<td><code>news_digest_collector</code></td>
+<td>Naver News API + Haiku 요약</td>
+<td><code>news_digest</code></td>
+<td>4시간마다 (주말 포함)</td>
+</tr>
+<tr>
+<td>분석</td>
+<td><code>10_indicator_context_snapshot_daily</code></td>
+<td><code>macro_indicators</code></td>
+<td><code>indicator_context_snapshot</code></td>
+<td>평일 17:00</td>
+</tr>
+<tr>
+<td>테스트</td>
+<td><code>morning_report_test_sonnet</code></td>
+<td>Sonnet 4.6</td>
+<td>본인 이메일/DM만</td>
+<td>평일 08:20</td>
+</tr>
+<tr>
+<td>테스트</td>
+<td><code>morning_report_test_gpt</code></td>
+<td>GPT-5.4</td>
+<td>본인 이메일/DM만</td>
+<td>평일 08:30</td>
+</tr>
+</tbody>
+</table>
+<blockquote>
+<p>모든 DAG는 완료 시 <code>utils/lineage.py</code>의 <code>register_table_lineage_async()</code>를 통해 OpenMetadata에 lineage를 자동 등록함.</p>
+</blockquote>
+<hr />
+<h2 id="4-2-end-to-end-데이터-플로우-소스--테이블--활용처">4-2. End-to-End 데이터 플로우 (소스 → 테이블 → 활용처)</h2>
+<blockquote>
+<p>수집/적재(upstream)뿐 아니라 테이블이 <strong>어디서 읽히는지(downstream)</strong>까지 포함한 전체 플로우.</p>
+</blockquote>
+<h3 id="전체-흐름도">전체 흐름도</h3>
+<div class="codehilite"><pre><span></span><code><span class="k">[외부 소스]          [수집 DAG]         [Raw/Derived 테이블]    [Gold 테이블]        [활용처 (Consumers)]</span>
+<span class="na">────────────────────────────────────────────────────────────────────────────────────────────────────────</span>
+<span class="na">Naver/Yahoo         01~02 DAG    →    stock_info              ─┐</span>
+<span class="w">                                      </span><span class="na">stock_price_1d           │</span>
+<span class="w">                                                               </span><span class="na">├──→ analytics_stock_daily ──→ 모닝 브리핑</span>
+<span class="na">pandas-ta           03 DAG       →    stock_indicators         │                            FastAPI (BIP-React)</span>
+<span class="w">                                      </span><span class="na">market_daily_summary   ──┘                            NL2SQL (예정)</span>
+
+<span class="na">yfinance/GDELT      04~06 DAG    →    macro_indicators       ──→ analytics_macro_daily  ──→ 모닝 브리핑</span>
+<span class="na">ECOS/KRX/News                         risk_headlines                                        NL2SQL (예정)</span>
+
+<span class="na">DART API            05 DAG       →    financial_statements   ─┐</span>
+<span class="w">                                      </span><span class="na">company_dart_info       │</span>
+<span class="w">                                      </span><span class="na">company_*              ─┴──→ analytics_valuation  ──→ FastAPI (BIP-React)</span>
+<span class="na">Naver WiseReport    06 DAG       →    consensus_estimates                                   NL2SQL (예정)</span>
+
+<span class="na">Naver News API      06 DAG       →    news                   ──────────────────────────→ 모닝 브리핑</span>
+<span class="w">                                      </span><span class="na">news_article                                          (LLM RAG 컨텍스트)</span>
+
+<span class="na">KIS API (한투)       07 DAG       →    portfolio_snapshot     ──────────────────────────→ FastAPI (BIP-React)</span>
+<span class="w">                                      </span><span class="na">portfolio / holding                                   bip-agents</span>
+<span class="w">                                      </span><span class="na">transaction</span>
+
+<span class="na">DART 사업보고서       08 DAG       →    company_dividend       ──────────────────────────→ FastAPI (BIP-React)</span>
+<span class="w">                                      </span><span class="na">company_employees</span>
+<span class="w">                                      </span><span class="na">company_executives</span>
+</code></pre></div>
+
+<h3 id="테이블별-활용처-매핑">테이블별 활용처 매핑</h3>
+<table>
+<thead>
+<tr>
+<th>테이블</th>
+<th>Layer</th>
+<th>주요 Consumer</th>
+<th>비고</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>stock_info</code></td>
+<td>raw</td>
+<td>모닝 브리핑, FastAPI, analytics_* Gold</td>
+<td>종목 메타(이름/섹터) 모든 곳에서 JOIN</td>
+</tr>
+<tr>
+<td><code>stock_price_1d</code></td>
+<td>raw</td>
+<td>analytics_stock_daily, 모닝 브리핑, FastAPI</td>
+<td>Gold 적재 후에는 Gold 우선 사용 예정</td>
+</tr>
+<tr>
+<td><code>stock_indicators</code></td>
+<td>derived</td>
+<td>analytics_stock_daily</td>
+<td>Gold 적재 후 직접 조회 대신 Gold 사용</td>
+</tr>
+<tr>
+<td><code>macro_indicators</code></td>
+<td>raw</td>
+<td>analytics_macro_daily, 모닝 브리핑</td>
+<td>EAV → Gold pivot으로 조회 단순화</td>
+</tr>
+<tr>
+<td><code>financial_statements</code></td>
+<td>raw</td>
+<td>analytics_valuation, FastAPI</td>
+<td>DART 연간 재무 데이터</td>
+</tr>
+<tr>
+<td><code>consensus_estimates</code></td>
+<td>raw</td>
+<td>analytics_stock_daily, analytics_valuation, FastAPI</td>
+<td>애널리스트 추정치</td>
+</tr>
+<tr>
+<td><code>news</code> / <code>news_article</code></td>
+<td>raw</td>
+<td>모닝 브리핑 (LLM RAG)</td>
+<td>뉴스 감성 분석 컨텍스트</td>
+</tr>
+<tr>
+<td><code>portfolio_snapshot</code></td>
+<td>raw</td>
+<td>FastAPI, bip-agents</td>
+<td>실시간 포트폴리오 현황</td>
+</tr>
+<tr>
+<td><code>analytics_stock_daily</code></td>
+<td><strong>gold</strong></td>
+<td>모닝 브리핑, FastAPI, NL2SQL (예정)</td>
+<td>시세+지표+컨센서스 pre-joined</td>
+</tr>
+<tr>
+<td><code>analytics_macro_daily</code></td>
+<td><strong>gold</strong></td>
+<td>모닝 브리핑, NL2SQL (예정)</td>
+<td>거시지표 pivot, 조회 단순화</td>
+</tr>
+<tr>
+<td><code>analytics_valuation</code></td>
+<td><strong>gold</strong></td>
+<td>FastAPI, NL2SQL (예정)</td>
+<td>PER/PBR/ROE pre-computed</td>
+</tr>
+</tbody>
+</table>
+<h3 id="consumer별-주요-읽기-테이블">Consumer별 주요 읽기 테이블</h3>
+<table>
+<thead>
+<tr>
+<th>Consumer</th>
+<th>주요 읽기 테이블</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><strong>모닝 브리핑 DAG</strong></td>
+<td><code>stock_price_1d</code>, <code>stock_info</code>, <code>macro_indicators</code>, <code>news</code>, <code>analytics_macro_daily</code></td>
+</tr>
+<tr>
+<td><strong>FastAPI (BIP-React)</strong></td>
+<td><code>stock_info</code>, <code>stock_price_1d</code>, <code>financial_statements</code>, <code>consensus_estimates</code>, <code>analytics_valuation</code>, <code>portfolio_snapshot</code>, <code>company_*</code></td>
+</tr>
+<tr>
+<td><strong>bip-agents (LangGraph)</strong></td>
+<td><code>portfolio_snapshot</code>, <code>holding</code>, <code>analytics_stock_daily</code>, <code>analytics_macro_daily</code></td>
+</tr>
+<tr>
+<td><strong>NL2SQL / Wren AI (예정)</strong></td>
+<td><code>analytics_stock_daily</code>, <code>analytics_valuation</code>, <code>analytics_macro_daily</code>, <code>stock_info</code></td>
+</tr>
+</tbody>
+</table>
+<hr />
+<h2 id="4-3-openmetadata-lineage-적용-범위-및-한계">4-3. OpenMetadata Lineage 적용 범위 및 한계</h2>
+<h3 id="현재-커버-범위">현재 커버 범위 (✅)</h3>
+<p>전체 리니지 체인:</p>
+<div class="codehilite"><pre><span></span><code>apiService (외부 API) → pipeline (DAG) → table (stockdb) → consumer pipeline
+</code></pre></div>
+
+<table>
+<thead>
+<tr>
+<th>레이어</th>
+<th>구현 방법</th>
+<th>상태</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><strong>apiService → pipeline</strong></td>
+<td><code>scripts/om_register_data_sources.py</code></td>
+<td>✅ 구현 완료</td>
+</tr>
+<tr>
+<td><strong>pipeline → table</strong></td>
+<td><code>utils/lineage.py</code> <code>register_table_lineage_async()</code></td>
+<td>✅ 22개 DAG</td>
+</tr>
+<tr>
+<td><strong>table → consumer pipeline</strong></td>
+<td><code>register_table_lineage_async(target_table=None, source_tables=[...])</code></td>
+<td>✅ <code>morning_report</code> 등록</td>
+</tr>
+</tbody>
+</table>
+<p>예: <code>naver-finance</code> → <code>02_price_kr_ohlcv_daily</code> → <code>stock_price_1d</code> → <code>morning_report</code></p>
+<h3 id="외부-데이터-소스-apiservice-등록">외부 데이터 소스 (apiService) 등록</h3>
+<p><code>scripts/om_register_data_sources.py</code>로 9개 외부 소스를 OM에 <code>apiService</code>로 등록:</p>
+<table>
+<thead>
+<tr>
+<th>서비스명</th>
+<th>displayName</th>
+<th>연결 DAG 수</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>yahoo-finance</code></td>
+<td>Yahoo Finance (yfinance)</td>
+<td>5개</td>
+</tr>
+<tr>
+<td><code>naver-finance</code></td>
+<td>Naver Finance / WiseReport</td>
+<td>5개</td>
+</tr>
+<tr>
+<td><code>dart-api</code></td>
+<td>DART API (전자공시시스템)</td>
+<td>4개</td>
+</tr>
+<tr>
+<td><code>krx-api</code></td>
+<td>KRX (한국거래소)</td>
+<td>3개</td>
+</tr>
+<tr>
+<td><code>ecos-bok-api</code></td>
+<td>ECOS BOK API (한국은행)</td>
+<td>3개</td>
+</tr>
+<tr>
+<td><code>gdelt-api</code></td>
+<td>GDELT (Global Database of Events)</td>
+<td>4개</td>
+</tr>
+<tr>
+<td><code>kis-api</code></td>
+<td>KIS API (한국투자증권)</td>
+<td>1개</td>
+</tr>
+<tr>
+<td><code>naver-news-api</code></td>
+<td>Naver News API</td>
+<td>3개</td>
+</tr>
+<tr>
+<td><code>semiconductor-market-data</code></td>
+<td>반도체 시장 가격 (DRAM/NAND)</td>
+<td>1개</td>
+</tr>
+</tbody>
+</table>
+<p><strong>실행 방법:</strong></p>
+<div class="codehilite"><pre><span></span><code><span class="c1"># Airflow ingestion 먼저 실행 (pipeline 엔티티 생성)</span>
+docker<span class="w"> </span><span class="nb">exec</span><span class="w"> </span>openmetadata-ingestion<span class="w"> </span>metadata<span class="w"> </span>ingest<span class="w"> </span>-c<span class="w"> </span>/connectors/bip_airflow.yaml
+
+<span class="c1"># 외부 소스 등록</span>
+<span class="nb">set</span><span class="w"> </span>-a<span class="w"> </span><span class="o">&amp;&amp;</span><span class="w"> </span><span class="nb">source</span><span class="w"> </span>.env<span class="w"> </span><span class="o">&amp;&amp;</span><span class="w"> </span><span class="nb">set</span><span class="w"> </span>+a
+<span class="nv">OM_HOST</span><span class="o">=</span>http://localhost:8585<span class="w"> </span><span class="nv">OM_BOT_TOKEN</span><span class="o">=</span><span class="nv">$OM_BOT_TOKEN</span><span class="w"> </span><span class="se">\</span>
+<span class="w">    </span>python<span class="w"> </span>scripts/om_register_data_sources.py
+
+<span class="c1"># Dry-run (미리 보기)</span>
+python<span class="w"> </span>scripts/om_register_data_sources.py<span class="w"> </span>--dry-run
+</code></pre></div>
+
+<h3 id="om-lineage로-consumer-추적">OM Lineage로 Consumer 추적</h3>
+<table>
+<thead>
+<tr>
+<th>Consumer 유형</th>
+<th>OM 지원 여부</th>
+<th>구현 방법</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><strong>Airflow DAG (읽기 전용)</strong></td>
+<td>✅ 완료</td>
+<td><code>register_table_lineage_async(target=None, source_tables=[...])</code> — pipeline을 종착점으로 등록</td>
+</tr>
+<tr>
+<td><strong>FastAPI (REST API)</strong></td>
+<td>⚠️ 제한적</td>
+<td>OM에 Dashboard Service로 등록하거나, 별도 커스텀 lineage API 활용</td>
+</tr>
+<tr>
+<td><strong>bip-agents (LangGraph)</strong></td>
+<td>⚠️ 제한적</td>
+<td>별도 repo라 자동 추적 어려움. 수동 등록 가능</td>
+</tr>
+<tr>
+<td><strong>Wren AI (NL2SQL)</strong></td>
+<td>⚠️ 제한적</td>
+<td>Wren Engine이 OM과 직접 통합 없음. 메타데이터 공유 수준</td>
+</tr>
+</tbody>
+</table>
+<p><strong>중기 (FastAPI lineage):</strong>
+OM에 <code>bip-react-api</code> Dashboard Service를 생성하고,
+FastAPI 시작 시 <code>table → dashboard</code> lineage를 한 번 등록하는 스크립트 추가.</p>
+<p><strong>현실적 결론:</strong>
+OM lineage는 <strong>파이프라인(DAG) 간 데이터 흐름 추적</strong>에는 매우 효과적이나,
+<strong>애플리케이션 레벨 consumer</strong>(API, 에이전트) 추적은 수동 등록이 필요하고 유지보수 부담이 있다.</p>
+<h3 id="sourcetype-태그-외부-소스-수집-방식-분류">SourceType 태그 (외부 소스 수집 방식 분류)</h3>
+<p>apiEndpoint 엔티티에 <code>SourceType</code> 태그를 적용하여 데이터 수집 안정성을 분류:</p>
+<table>
+<thead>
+<tr>
+<th>SourceType 태그</th>
+<th>설명</th>
+<th>소스</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>rest-api</code></td>
+<td>공식 인증키 기반, 안정적</td>
+<td>DART, ECOS, GDELT, KIS, Naver News</td>
+</tr>
+<tr>
+<td><code>scraping</code></td>
+<td>웹 스크래핑, 구조 변경 시 깨질 수 있음</td>
+<td>Naver Finance, KRX, DRAMeXchange</td>
+</tr>
+<tr>
+<td><code>library</code></td>
+<td>Python 라이브러리 경유 (비공식 API)</td>
+<td>yfinance</td>
+</tr>
+</tbody>
+</table>
+<h3 id="lineage-커버리지-현황-2026-04-02">Lineage 커버리지 현황 (2026-04-02)</h3>
+<div class="codehilite"><pre><span></span><code><span class="n">Pipeline</span><span class="o">:</span><span class="w"> </span><span class="mi">43</span><span class="err">개</span><span class="w"> </span><span class="err">중</span><span class="w"> </span><span class="n">upstream</span><span class="w"> </span><span class="mi">39</span><span class="err">개</span><span class="o">,</span><span class="w"> </span><span class="n">downstream</span><span class="w"> </span><span class="mi">37</span><span class="err">개</span><span class="w"> </span><span class="err">연결</span>
+<span class="n">Table</span><span class="o">:</span><span class="w">    </span><span class="mi">39</span><span class="err">개</span><span class="w"> </span><span class="err">중</span><span class="w"> </span><span class="n">upstream</span><span class="w"> </span><span class="mi">26</span><span class="err">개</span><span class="w"> </span><span class="err">연결</span>
+<span class="w">          </span><span class="o">(</span><span class="err">미연결</span><span class="w"> </span><span class="mi">14</span><span class="err">개</span><span class="o">:</span><span class="w"> </span><span class="err">앱</span><span class="w"> </span><span class="err">전용</span><span class="w"> </span><span class="err">테이블</span><span class="w"> </span><span class="n">users</span><span class="o">/</span><span class="n">portfolio</span><span class="w"> </span><span class="err">등</span><span class="w"> </span><span class="err">→</span><span class="w"> </span><span class="n">FastAPI</span><span class="w"> </span><span class="n">lineage</span><span class="w"> </span><span class="err">시</span><span class="w"> </span><span class="err">해결</span><span class="o">)</span>
+</code></pre></div>
+
+<hr />
+<h2 id="4-4-전체-아키텍처-다이어그램">4-4. 전체 아키텍처 다이어그램</h2>
+<h3 id="om-lineage-전체-흐름">OM Lineage 전체 흐름</h3>
+<div class="mermaid">
+graph LR
+    subgraph API["외부 API (apiEndpoint)"]
+        YF[Yahoo Finance]
+        NF[Naver Finance]
+        DA[DART API]
+        KR[KRX]
+        EC[ECOS BOK]
+        GD[GDELT]
+        KI[KIS API]
+        NN[Naver News]
+        SM[DRAMeXchange]
+    end
+
+    subgraph DAG["Airflow DAG (pipeline)"]
+        P01[01_info_*]
+        P02[02_price_*]
+        P03[03_indicator_*]
+        P04[04_macro_*]
+        P05[05_kr_*]
+        P06[06_news_*]
+        P07[07_portfolio_*]
+        P09[09_analytics_*]
+    end
+
+    subgraph Table["PostgreSQL (table)"]
+        T_SI[stock_info]
+        T_SP[stock_price_1d]
+        T_IN[stock_indicators]
+        T_MA[macro_indicators]
+        T_FS[financial_statements]
+        T_NE[news]
+        T_PO[portfolio_snapshot]
+        T_AS[analytics_stock_daily]
+        T_AM[analytics_macro_daily]
+        T_AV[analytics_valuation]
+    end
+
+    subgraph Consumer["Consumer (pipeline)"]
+        MR[morning_report]
+        ML[morning_pulse_langgraph]
+    end
+
+    NF --> P01 & P02
+    YF --> P02
+    DA --> P05
+    KR --> P05
+    EC --> P05
+    GD --> P04
+    KI --> P07
+    NN --> P06
+    SM --> P04
+
+    P01 --> T_SI
+    P02 --> T_SP
+    P03 --> T_IN
+    P04 --> T_MA
+    P05 --> T_FS
+    P06 --> T_NE
+    P07 --> T_PO
+    T_SI & T_SP & T_IN & T_MA & T_FS --> P09
+    P09 --> T_AS & T_AM & T_AV
+
+    T_SI & T_SP & T_MA & T_NE & T_AS & T_AM --> MR & ML
+
+    style API fill:#e3f2fd
+    style DAG fill:#f3e5f5
+    style Table fill:#e8f5e9
+    style Consumer fill:#fff8e1
+    style API fill:#4f8fea22,stroke:#4f8fea,stroke-width:2px,color:#e6edf3
+    style DAG fill:#6c5ce722,stroke:#6c5ce7,stroke-width:2px,color:#e6edf3
+    style Table fill:#00b89422,stroke:#00b894,stroke-width:2px,color:#e6edf3
+    style Consumer fill:#e1705522,stroke:#e17055,stroke-width:2px,color:#e6edf3
+</div>
+
+<h3 id="docker-서비스-구성">Docker 서비스 구성</h3>
+<div class="mermaid">
+graph TB
+    subgraph Network["stock-network (Docker Bridge)"]
+        subgraph Core["코어 서비스"]
+            PG[(PostgreSQL\n:5432)]
+            AF[Airflow\n:8080]
+        end
+
+        subgraph Metadata["메타데이터 플랫폼"]
+            OM_S[OM Server\n:8585]
+            OM_I[OM Ingestion\n:8083]
+            ES[Elasticsearch\n:9200]
+        end
+
+        subgraph NL2SQL["Wren AI (NL2SQL)"]
+            WE[Wren Engine\n:8080 internal]
+            WA[Wren AI Service\n:5555]
+            WU[Wren UI\n:3000]
+            QD[Qdrant\n:6333]
+            IB[Ibis Server\n:8000]
+        end
+
+        subgraph Streaming["스트리밍 (미사용)"]
+            KA[Kafka :9093]
+            ZK[Zookeeper :2181]
+        end
+    end
+
+    AF -->|SQL| PG
+    OM_I -->|ingestion| PG
+    OM_I -->|ingestion| AF
+    WE -->|query| PG
+    IB -->|connect| PG
+    WA -->|embed| QD
+    WA -->|SQL gen| WE
+    WU -->|API| WA
+    WU -->|MDL| WE
+
+    style Core fill:#c8e6c9
+    style Metadata fill:#ffe0b2
+    style NL2SQL fill:#bbdefb
+    style Streaming fill:#f5f5f5
+    style Network fill:#4f8fea22,stroke:#4f8fea,stroke-width:2px,color:#e6edf3
+    style Core fill:#6c5ce722,stroke:#6c5ce7,stroke-width:2px,color:#e6edf3
+    style Metadata fill:#00b89422,stroke:#00b894,stroke-width:2px,color:#e6edf3
+    style NL2SQL fill:#e1705522,stroke:#e17055,stroke-width:2px,color:#e6edf3
+    style Streaming fill:#fdcb6e22,stroke:#fdcb6e,stroke-width:2px,color:#e6edf3
+</div>
+
+<hr />
+<h2 id="4-5-메타데이터-동기화-흐름">4-5. 메타데이터 동기화 흐름</h2>
+<h3 id="om--db--wren-ai-동기화">OM ↔ DB ↔ Wren AI 동기화</h3>
+<p>OpenMetadata를 메타데이터 원천(Source of Truth)으로 사용하고,
+DB COMMENT와 Wren AI 모델에 자동 동기화합니다.</p>
+<div class="mermaid">
+flowchart LR
+    OM["OpenMetadata\n(원천)"]
+    DB["PostgreSQL\nCOMMENT ON"]
+    WR["Wren AI\nModel Description"]
+    QD["Qdrant\nEmbedding Index"]
+
+    OM -->|om_sync_comments.py| DB
+    OM -->|om_sync_wrenai.py| WR
+    WR -->|deploy| QD
+
+    subgraph DAG["Airflow DAG: 10_sync_metadata_daily"]
+        T1[sync_om_to_db] --> T2[sync_om_to_wrenai]
+    end
+
+    DAG -->|매일 09:00 KST| OM
+
+    style OM fill:#ffe0b2,stroke:#e65100
+    style DB fill:#c8e6c9
+    style WR fill:#bbdefb
+    style QD fill:#e1bee7
+    style DAG fill:#4f8fea22,stroke:#4f8fea,stroke-width:2px,color:#e6edf3
+</div>
+
+<h3 id="동기화-스크립트-목록">동기화 스크립트 목록</h3>
+<table>
+<thead>
+<tr>
+<th>스크립트</th>
+<th>역할</th>
+<th>실행 방법</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>scripts/om_sync_comments.py</code></td>
+<td>OM → DB COMMENT (35 tables, 453 columns)</td>
+<td>DAG 자동 / 수동</td>
+</tr>
+<tr>
+<td><code>scripts/om_sync_wrenai.py</code></td>
+<td>OM → Wren AI model description + Deploy</td>
+<td>DAG 자동 / 수동</td>
+</tr>
+<tr>
+<td><code>scripts/om_register_data_sources.py</code></td>
+<td>외부 API → OM apiEndpoint + lineage (9 services, 31 edges)</td>
+<td>수동 (1회)</td>
+</tr>
+<tr>
+<td><code>scripts/om_tag_tables.py</code></td>
+<td>OM 테이블 태그 일괄 등록 (DataLayer, Domain)</td>
+<td>수동 (1회)</td>
+</tr>
+<tr>
+<td><code>scripts/om_enrich_metadata.py</code></td>
+<td>OM 테이블/컬럼 설명 일괄 등록</td>
+<td>수동 (1회)</td>
+</tr>
+<tr>
+<td><code>scripts/om_link_columns.py</code></td>
+<td>OM 컬럼 ↔ 용어집 링크</td>
+<td>수동 (1회)</td>
+</tr>
+<tr>
+<td><code>scripts/om_build_glossary.py</code></td>
+<td>OM 용어집 생성 (77개 투자 용어)</td>
+<td>수동 (1회)</td>
+</tr>
+</tbody>
+</table>
+<hr />
+<h2 id="4-6-wren-ai-nl2sql-구성">4-6. Wren AI NL2SQL 구성</h2>
+<h3 id="시스템-구성">시스템 구성</h3>
+<div class="codehilite"><pre><span></span><code>docker-compose.wrenai.yml로 배포
+UI: http://localhost:3000
+</code></pre></div>
+
+<table>
+<thead>
+<tr>
+<th>서비스</th>
+<th>이미지</th>
+<th>역할</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>wren-engine</td>
+<td><code>0.22.0</code></td>
+<td>SQL 실행 엔진 (MDL 기반)</td>
+</tr>
+<tr>
+<td>wren-ai-service</td>
+<td><code>0.29.0</code></td>
+<td>NL2SQL 엔진 (LiteLLM + RAG)</td>
+</tr>
+<tr>
+<td>wren-ui</td>
+<td><code>0.32.2</code></td>
+<td>웹 인터페이스</td>
+</tr>
+<tr>
+<td>qdrant</td>
+<td><code>v1.11.0</code></td>
+<td>벡터 DB (임베딩 저장)</td>
+</tr>
+<tr>
+<td>ibis-server</td>
+<td><code>0.22.0</code></td>
+<td>데이터 소스 커넥터</td>
+</tr>
+</tbody>
+</table>
+<h3 id="nl2sql-처리-흐름">NL2SQL 처리 흐름</h3>
+<div class="mermaid">
+sequenceDiagram
+    participant U as 사용자
+    participant UI as Wren UI
+    participant AI as AI Service
+    participant QD as Qdrant
+    participant EN as Wren Engine
+    participant PG as PostgreSQL
+
+    U->>UI: "하이닉스 최근 주가"
+    UI->>AI: POST /v1/asks
+    AI->>QD: 스키마/SQL Pairs 검색 (RAG)
+    QD-->>AI: 유사 패턴 반환
+    AI->>AI: LLM (gpt-4o-mini)\nSQL 생성
+    AI->>EN: SQL 검증
+    EN->>PG: SQL 실행
+    PG-->>EN: 결과
+    EN-->>AI: 결과
+    AI-->>UI: SQL + 결과 + 자연어 응답
+    UI-->>U: 테이블/차트 표시
+</div>
+
+<h3 id="등록된-모델-5개">등록된 모델 (5개)</h3>
+<table>
+<thead>
+<tr>
+<th>모델</th>
+<th>소스 테이블</th>
+<th>용도</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>public_stock_info</code></td>
+<td>stock_info</td>
+<td>종목 마스터 (ticker, name, market)</td>
+</tr>
+<tr>
+<td><code>public_stock_price_1d</code></td>
+<td>stock_price_1d</td>
+<td>일봉 시세 (OHLCV + 수급)</td>
+</tr>
+<tr>
+<td><code>public_analytics_stock_daily</code></td>
+<td>analytics_stock_daily</td>
+<td>Gold: 시세+지표+컨센서스 와이드</td>
+</tr>
+<tr>
+<td><code>public_analytics_macro_daily</code></td>
+<td>analytics_macro_daily</td>
+<td>Gold: 매크로 지표 피벗</td>
+</tr>
+<tr>
+<td><code>public_analytics_valuation</code></td>
+<td>analytics_valuation</td>
+<td>Gold: 밸류에이션 종합</td>
+</tr>
+</tbody>
+</table>
+<h3 id="테이블-관계-relationship">테이블 관계 (Relationship)</h3>
+<div class="mermaid">
+erDiagram
+    stock_info ||--o{ stock_price_1d : "ticker"
+    stock_info ||--o{ analytics_stock_daily : "ticker"
+    stock_info ||--o{ analytics_valuation : "ticker"
+    stock_price_1d ||--o{ analytics_valuation : "ticker"
+
+    stock_info {
+        varchar ticker PK
+        varchar stock_name
+        varchar market_type
+        decimal market_value
+    }
+    analytics_stock_daily {
+        varchar ticker FK
+        date trade_date
+        decimal close
+        decimal rsi14
+        decimal macd
+    }
+    analytics_valuation {
+        varchar ticker FK
+        int fiscal_year
+        decimal per_actual
+        decimal roe_actual
+    }
+</div>
+
+<h3 id="sql-pairs-29개-등록">SQL Pairs (29개 등록)</h3>
+<p>자주 사용되는 질문-SQL 패턴을 사전 등록하여 RAG 검색 정확도 향상:</p>
+<table>
+<thead>
+<tr>
+<th>카테고리</th>
+<th>수량</th>
+<th>예시 질문</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>종목 검색/주가</td>
+<td>7개</td>
+<td>"하이닉스 주가", "삼성전자 최근 한달 주가"</td>
+</tr>
+<tr>
+<td>기술지표</td>
+<td>3개</td>
+<td>"RSI 과매도 종목", "골든크로스 발생 종목"</td>
+</tr>
+<tr>
+<td>밸류에이션</td>
+<td>5개</td>
+<td>"PER 낮은 종목", "ROE 20% 이상 종목"</td>
+</tr>
+<tr>
+<td>매크로</td>
+<td>5개</td>
+<td>"오늘 환율", "VIX 추이", "기준금리"</td>
+</tr>
+<tr>
+<td>수급</td>
+<td>2개</td>
+<td>"외국인 순매수", "기관 순매수"</td>
+</tr>
+<tr>
+<td>복합 질문</td>
+<td>4개</td>
+<td>"저PER 고ROE", "거래량 급증", "52주 신저가"</td>
+</tr>
+<tr>
+<td>비교/섹터</td>
+<td>3개</td>
+<td>"삼성 vs 하이닉스", "반도체 관련주"</td>
+</tr>
+</tbody>
+</table>
+<h3 id="wren-ai-한계-및-향후-계획">Wren AI 한계 및 향후 계획</h3>
+<table>
+<thead>
+<tr>
+<th>한계</th>
+<th>영향</th>
+<th>해결 방향</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>1질문 = 1쿼리만 생성</td>
+<td>복합 질문 불가</td>
+<td>LangGraph 에이전트 통합</td>
+</tr>
+<tr>
+<td>OM 용어집/태그 활용 불가</td>
+<td>도메인 지식 제한적</td>
+<td>LangGraph에서 OM API 직접 조회</td>
+</tr>
+<tr>
+<td>ETF/보통주 구분 없음</td>
+<td>검색 노이즈</td>
+<td>Instructions 또는 is_etf 컬럼 추가</td>
+</tr>
+<tr>
+<td>종목코드 추측</td>
+<td>잘못된 ticker 매핑</td>
+<td>SQL Pairs + ILIKE 패턴 학습</td>
+</tr>
+</tbody>
+</table>
+<h3 id="향후-langgraph-통합-구조-중기-계획">향후 LangGraph 통합 구조 (중기 계획)</h3>
+<div class="mermaid">
+flowchart TB
+    U[사용자 질문]
+
+    subgraph Agent["LangGraph 에이전트"]
+        A1[엔티티 해석\nDB에서 종목 조회]
+        A2[의도 분류\n주가? 재무? 매크로?]
+        A3[SQL 생성\nWren AI API 호출]
+        A4[추가 조회\n관련 지표/뉴스]
+        A5[응답 생성\nLLM 종합 분석]
+    end
+
+    subgraph Tools["도구"]
+        T1[Wren AI API\nNL2SQL 엔진]
+        T2[OM API\n용어집/메타데이터]
+        T3[PostgreSQL\n직접 쿼리]
+    end
+
+    U --> A1 --> A2 --> A3 --> A4 --> A5
+    A1 -->|ILIKE 조회| T3
+    A2 -->|도메인 컨텍스트| T2
+    A3 -->|SQL 생성| T1
+    A4 -->|추가 데이터| T3
+
+    A5 -->|자연어 응답| U
+
+    style Agent fill:#e8eaf6
+    style Tools fill:#e0f2f1
+    style Agent fill:#4f8fea22,stroke:#4f8fea,stroke-width:2px,color:#e6edf3
+    style Tools fill:#6c5ce722,stroke:#6c5ce7,stroke-width:2px,color:#e6edf3
+</div>
+
+<hr />
+<h2 id="5-아키텍처-이슈-트래커">5. 아키텍처 이슈 트래커</h2>
+<blockquote>
+<p>상태: 🔴 미해결 | 🟡 진행중 | ✅ 해결됨</p>
+</blockquote>
+<h3 id="iss-001-stock_metadata-vs-stock_info-이중-엔티티">ISS-001: <code>stock_metadata</code> vs <code>stock_info</code> 이중 엔티티</h3>
+<ul>
+<li><strong>심각도:</strong> 🔴 High</li>
+<li><strong>상태:</strong> 🔴 미해결</li>
+<li><strong>설명:</strong> <code>init.sql</code>의 <code>stock_metadata</code>(구버전 5개 하드코딩)와 <code>patch.sql</code>의 <code>stock_info</code>(운영 테이블)가 공존. NL2SQL이 어느 테이블을 사용해야 할지 모름.</li>
+<li><strong>권고:</strong> <code>stock_metadata</code>를 <code>stock_info</code>로의 VIEW로 대체하거나 DROP.</li>
+<li><strong>영향 범위:</strong> NL2SQL 정확도, 스키마 혼란</li>
+</ul>
+<h3 id="iss-002-timestamp-열의-시간대-의미론-혼란">ISS-002: <code>timestamp</code> 열의 시간대 의미론 혼란</h3>
+<ul>
+<li><strong>심각도:</strong> 🔴 High</li>
+<li><strong>상태:</strong> 🔴 미해결</li>
+<li><strong>설명:</strong> <code>stock_price_1d</code>에 <code>timestamp</code>, <code>timestamp_ny</code>, <code>timestamp_kst</code> 3개 컬럼. 일봉 데이터에 3개 timestamp는 과잉이며, 기준 시간대가 코드 없이는 불명확.</li>
+<li><strong>권고:</strong> 일봉에 <code>trade_date DATE</code> 컬럼 추가. <code>timestamp</code> → <code>timestamp_utc</code>로 명칭 변경 (또는 COMMENT 추가).</li>
+<li><strong>영향 범위:</strong> "오늘 종가", "최근 5거래일" 같은 쿼리의 NL2SQL 오류</li>
+</ul>
+<h3 id="iss-003-market_value-단위-불명확">ISS-003: <code>market_value</code> 단위 불명확</h3>
+<ul>
+<li><strong>심각도:</strong> 🔴 High</li>
+<li><strong>상태:</strong> 🔴 미해결</li>
+<li><strong>설명:</strong> <code>stock_info.market_value</code>의 단위가 억원인데 컬럼명이나 COMMENT에 표기 없음. 과거 PER/PBR 계산 오류의 원인.</li>
+<li><strong>권고:</strong> <code>COMMENT ON COLUMN stock_info.market_value IS '시가총액. 단위: 억원(×1억원). PER 계산 시 ×100,000,000 변환 필요';</code></li>
+<li><strong>영향 범위:</strong> 모든 valuation 계산</li>
+</ul>
+<h3 id="iss-004-매크로금리-테이블-ddl-미확인">ISS-004: 매크로/금리 테이블 DDL 미확인</h3>
+<ul>
+<li><strong>심각도:</strong> 🟠 Medium-High</li>
+<li><strong>상태:</strong> ✅ 해결됨 (2026-03-28)</li>
+<li><strong>설명:</strong> 모든 매크로/금리/감성 데이터는 <code>macro_indicators</code> 단일 테이블에 통합 저장됨. 컬럼: <code>indicator_date</code>, <code>region</code>, <code>indicator_type</code>, <code>value</code>, <code>created_at</code>. UNIQUE: <code>(indicator_date, region, indicator_type)</code>.</li>
+<li><strong>저장 데이터 유형 (indicator_type 값):</strong> VIX, 환율(exchange_rate), 원자재, 채권수익률, 기준금리(base_rate), 뉴스 감성지수(news_sentiment_<em>), GDELT 위험지수(geopolitical_risk_</em>), 반도체 가격, EV 배터리 가격 등</li>
+<li><strong>영향 범위:</strong> 해결됨 — 섹션 3-6 업데이트 참조</li>
+</ul>
+<h3 id="iss-005-financial_statements-테이블-ddl-미확인">ISS-005: <code>financial_statements</code> 테이블 DDL 미확인</h3>
+<ul>
+<li><strong>심각도:</strong> 🟠 Medium-High</li>
+<li><strong>상태:</strong> ✅ 해결됨 (2026-03-28)</li>
+<li><strong>설명:</strong> <code>dag_financial_statements.py</code> INSERT 구문에서 확인. 주요 컬럼: <code>corp_code</code>, <code>ticker</code>, <code>fiscal_year</code>, <code>fiscal_quarter</code>, <code>report_type</code> (annual/Q1/half/Q3), <code>revenue</code>, <code>cost_of_sales</code>, <code>gross_profit</code>, <code>operating_expense</code>, <code>operating_profit</code>, <code>net_income</code>, <code>total_assets</code>, <code>current_assets</code>, <code>non_current_assets</code>, <code>total_liabilities</code>, <code>current_liabilities</code>, <code>non_current_liabilities</code>, <code>total_equity</code>, <code>cash_from_operating</code>, <code>cash_from_investing</code>, <code>cash_from_financing</code>, <code>updated_at</code>. UNIQUE: <code>(corp_code, fiscal_year, fiscal_quarter, report_type)</code>.</li>
+<li><strong>참고:</strong> 이 테이블은 구 DART API RAW 스키마(<code>sj_div</code> 방식)와 달리 정규화된 컬럼 구조. 비즈니스 용어집 섹션 업데이트 필요.</li>
+<li><strong>영향 범위:</strong> 해결됨</li>
+</ul>
+<h3 id="iss-006-consensus_estimates의-stock_code-중복-컬럼">ISS-006: <code>consensus_estimates</code>의 <code>stock_code</code> 중복 컬럼</h3>
+<ul>
+<li><strong>심각도:</strong> 🟡 Medium</li>
+<li><strong>상태:</strong> 🔴 미해결</li>
+<li><strong>설명:</strong> <code>ticker</code>(<code>005930.KS</code>)와 <code>stock_code</code>(<code>005930</code>)가 파생 관계인데 둘 다 저장. join 시 어느 컬럼을 사용해야 할지 혼란.</li>
+<li><strong>권고:</strong> <code>stock_code</code>를 GENERATED ALWAYS AS (<code>SPLIT_PART(ticker, '.', 1)</code>) 으로 변경하거나 제거.</li>
+<li><strong>영향 범위:</strong> stock_info와 consensus_estimates join 조건 혼란</li>
+</ul>
+<h3 id="iss-007-외래키-제약-없음">ISS-007: 외래키 제약 없음</h3>
+<ul>
+<li><strong>심각도:</strong> 🟡 Medium</li>
+<li><strong>상태:</strong> ✅ 해결됨 (2026-03-28)</li>
+<li><strong>설명:</strong> 14개 물리적 FK가 PostgreSQL에 추가됨 (<code>DEFERRABLE INITIALLY DEFERRED</code> — 벌크 INSERT 안전). OM에 논리적 FK도 등록 (메타데이터 재수집으로 반영). 섹션 8 참조.</li>
+<li><strong>주의:</strong> <code>holding</code> 테이블의 FK는 위반 데이터 6건으로 미적용. 데이터 정리 후 추가 예정.</li>
+<li><strong>영향 범위:</strong> 해결됨</li>
+</ul>
+<h3 id="iss-008-stock_info에-섹터업종-정보-없음">ISS-008: <code>stock_info</code>에 섹터/업종 정보 없음</h3>
+<ul>
+<li><strong>심각도:</strong> 🟡 Medium</li>
+<li><strong>상태:</strong> 🔴 미해결</li>
+<li><strong>설명:</strong> "반도체 섹터 평균 PER", "IT 업종 상위 종목" 같은 쿼리가 불가. <code>sector_daily_performance</code>에는 섹터별 수익률이 있지만 개별 종목과 섹터를 연결하는 컬럼이 없음.</li>
+<li><strong>권고:</strong> <code>stock_info</code>에 <code>sector VARCHAR(100)</code>, <code>industry VARCHAR(100)</code> 추가. 출처: KRX 또는 GICS 분류.</li>
+<li><strong>영향 범위:</strong> 섹터 기반 분석 쿼리 전면 불가</li>
+</ul>
+<h3 id="iss-009-스키마-파일-분산">ISS-009: 스키마 파일 분산</h3>
+<ul>
+<li><strong>심각도:</strong> 🟢 Low</li>
+<li><strong>상태:</strong> 🔴 미해결</li>
+<li><strong>설명:</strong> DDL이 <code>/postgres/init.sql</code>, <code>/postgres/patch.sql</code>, <code>/airflow/dags/indicators/schema.sql</code>, 각 DAG 파일 내부 등에 분산. 전체 스키마를 한 곳에서 파악 불가.</li>
+<li><strong>권고:</strong> 모든 DDL을 <code>/postgres/</code> 디렉터리로 중앙화. 파일별 역할 분리 (e.g., <code>01_core.sql</code>, <code>02_market.sql</code>, <code>03_fundamentals.sql</code>).</li>
+<li><strong>영향 범위:</strong> 유지보수성, 신규 개발자 온보딩</li>
+</ul>
+<h3 id="iss-010-company_employeesavg_salary-단위-불명확">ISS-010: <code>company_employees.avg_salary</code> 단위 불명확</h3>
+<ul>
+<li><strong>심각도:</strong> 🟢 Low</li>
+<li><strong>상태:</strong> 🔴 미해결</li>
+<li><strong>설명:</strong> 컬럼 타입은 BIGINT, 주석은 <code>평균급여 (천원)</code>인데 실제 단위가 천원인지 원인지 확인 필요.</li>
+<li><strong>권고:</strong> COMMENT 추가로 단위 명시.</li>
+</ul>
+<hr />
+<h2 id="6-nl2sql-위험-레지스트리">6. NL2SQL 위험 레지스트리</h2>
+<blockquote>
+<p>LLM이 자연어를 SQL로 변환할 때 발생할 수 있는 오류 패턴</p>
+</blockquote>
+<table>
+<thead>
+<tr>
+<th>ID</th>
+<th>자연어 쿼리 예시</th>
+<th>위험</th>
+<th>잘못된 SQL 패턴</th>
+<th>올바른 처리</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>NL-001</td>
+<td>"삼성전자 정보 알려줘"</td>
+<td>🔴</td>
+<td><code>FROM stock_metadata</code> (구버전)</td>
+<td><code>FROM stock_info</code></td>
+</tr>
+<tr>
+<td>NL-002</td>
+<td>"오늘 종가 상위 10종목"</td>
+<td>🔴</td>
+<td><code>WHERE timestamp = CURRENT_DATE</code></td>
+<td><code>WHERE trade_date = CURRENT_DATE</code> (미구현) 또는 <code>DATE(timestamp) = ...</code></td>
+</tr>
+<tr>
+<td>NL-003</td>
+<td>"시총 1조 이상 종목"</td>
+<td>🔴</td>
+<td><code>WHERE market_value &gt;= 1000000000000</code></td>
+<td><code>WHERE market_value &gt;= 10000</code> (억원 단위)</td>
+</tr>
+<tr>
+<td>NL-004</td>
+<td>"투자의견 좋은 종목"</td>
+<td>🟠</td>
+<td><code>WHERE rating = 1</code> (1=좋다고 오해)</td>
+<td><code>WHERE rating &gt;= 4</code> (4~5=Buy/Strong Buy)</td>
+</tr>
+<tr>
+<td>NL-005</td>
+<td>"삼성전자 자본총계"</td>
+<td>✅</td>
+<td>~~<code>FROM financial_statements WHERE account='자본총계'</code>~~</td>
+<td><code>SELECT total_equity FROM financial_statements WHERE ticker='005930.KS'</code> (정규화 컬럼 직접 조회)</td>
+</tr>
+<tr>
+<td>NL-006</td>
+<td>"컨센서스 PER로 삼성전자 찾기"</td>
+<td>🟠</td>
+<td><code>WHERE stock_code='005930'</code> join <code>ticker='005930'</code></td>
+<td>ticker 포맷 통일 필요</td>
+</tr>
+<tr>
+<td>NL-007</td>
+<td>"반도체 섹터 평균 수익률"</td>
+<td>🟠</td>
+<td>섹터 컬럼 없어 불가</td>
+<td>ISS-008 해결 후 가능</td>
+</tr>
+<tr>
+<td>NL-008</td>
+<td>"최근 52주 신고가 종목"</td>
+<td>🟡</td>
+<td><code>FROM stock_price_1d</code> 집계</td>
+<td><code>FROM stock_indicators WHERE pct_from_52w_high &gt; -5</code></td>
+</tr>
+<tr>
+<td>NL-009</td>
+<td>"VIX 최근 추이"</td>
+<td>✅</td>
+<td>~~테이블 불명~~</td>
+<td><code>FROM macro_indicators WHERE indicator_type='vix' ORDER BY indicator_date DESC</code></td>
+</tr>
+<tr>
+<td>NL-010</td>
+<td>"작년 영업이익 성장률"</td>
+<td>🟡</td>
+<td><code>FROM financial_statements</code> 연도 조건 불명확</td>
+<td><code>WHERE report_type='annual' AND fiscal_year IN (...)</code> — <code>report_type</code> 컬럼 사용</td>
+</tr>
+</tbody>
+</table>
+<hr />
+<h2 id="7-비즈니스-용어집">7. 비즈니스 용어집</h2>
+<blockquote>
+<p>NL2SQL 및 인간 분석가를 위한 비즈니스 용어 → DB 매핑</p>
+</blockquote>
+<h3 id="주가시세">주가/시세</h3>
+<table>
+<thead>
+<tr>
+<th>용어</th>
+<th>테이블</th>
+<th>컬럼</th>
+<th>단위/조건</th>
+<th>주의사항</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>종가</td>
+<td><code>stock_price_1d</code></td>
+<td><code>close</code></td>
+<td>원(KR), USD(US)</td>
+<td></td>
+</tr>
+<tr>
+<td>시가</td>
+<td><code>stock_price_1d</code></td>
+<td><code>open</code></td>
+<td></td>
+<td></td>
+</tr>
+<tr>
+<td>고가/저가</td>
+<td><code>stock_price_1d</code></td>
+<td><code>high/low</code></td>
+<td></td>
+<td></td>
+</tr>
+<tr>
+<td>거래량</td>
+<td><code>stock_price_1d</code></td>
+<td><code>volume</code></td>
+<td>주</td>
+<td></td>
+</tr>
+<tr>
+<td>거래일</td>
+<td><code>stock_price_1d</code></td>
+<td><code>timestamp</code></td>
+<td>UTC → DATE 변환 필요</td>
+<td><code>trade_date</code> 컬럼 추가 예정</td>
+</tr>
+</tbody>
+</table>
+<h3 id="투자지표-계산값">투자지표 (계산값)</h3>
+<table>
+<thead>
+<tr>
+<th>용어</th>
+<th>계산식</th>
+<th>단위</th>
+<th>데이터 소스</th>
+<th>주의사항</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>시가총액</td>
+<td><code>stock_info.market_value × 100,000,000</code></td>
+<td>원(KRW)</td>
+<td>Naver</td>
+<td>market_value는 억원 단위</td>
+</tr>
+<tr>
+<td>PER (실제)</td>
+<td><code>시가총액 ÷ 순이익</code></td>
+<td>배수(x)</td>
+<td>계산 필요</td>
+<td>연간 순이익 기준</td>
+</tr>
+<tr>
+<td>PBR (실제)</td>
+<td><code>시가총액 ÷ 자본총계</code></td>
+<td>배수(x)</td>
+<td>계산 필요</td>
+<td>BS 기준 자본총계</td>
+</tr>
+<tr>
+<td>예상 PER</td>
+<td><code>consensus_estimates.est_per</code></td>
+<td>배수(x)</td>
+<td>WiseReport</td>
+<td>애널리스트 추정치</td>
+</tr>
+<tr>
+<td>예상 PBR</td>
+<td><code>consensus_estimates.est_pbr</code></td>
+<td>배수(x)</td>
+<td>WiseReport</td>
+<td>애널리스트 추정치</td>
+</tr>
+<tr>
+<td>배당수익률</td>
+<td><code>cash_dividend_per_share ÷ 종가 × 100</code></td>
+<td>%</td>
+<td>DART + price</td>
+<td></td>
+</tr>
+</tbody>
+</table>
+<h3 id="컨센서스투자의견">컨센서스/투자의견</h3>
+<table>
+<thead>
+<tr>
+<th>용어</th>
+<th>테이블</th>
+<th>컬럼</th>
+<th>값 범위</th>
+<th>주의사항</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>투자의견</td>
+<td><code>consensus_estimates</code></td>
+<td><code>rating</code></td>
+<td>1.0~5.0</td>
+<td><strong>5=Strong Buy, 1=Sell</strong> (높을수록 긍정)</td>
+</tr>
+<tr>
+<td>목표주가</td>
+<td><code>consensus_estimates</code></td>
+<td><code>target_price</code></td>
+<td></td>
+<td>단위: 원(KRW)</td>
+</tr>
+<tr>
+<td>추정기관수</td>
+<td><code>consensus_estimates</code></td>
+<td><code>analyst_count</code></td>
+<td></td>
+<td></td>
+</tr>
+<tr>
+<td>예상 EPS</td>
+<td><code>consensus_estimates</code></td>
+<td><code>est_eps</code></td>
+<td></td>
+<td>단위: 원(KRW)</td>
+</tr>
+<tr>
+<td>예상 배당금</td>
+<td><code>consensus_estimates</code></td>
+<td><code>est_dividend</code></td>
+<td></td>
+<td>단위: 원(KRW)</td>
+</tr>
+</tbody>
+</table>
+<h3 id="재무제표-dart">재무제표 (DART)</h3>
+<blockquote>
+<p>✅ <code>financial_statements</code> 테이블은 정규화된 컬럼 구조 사용 (<code>sj_div</code> 방식 아님)</p>
+</blockquote>
+<table>
+<thead>
+<tr>
+<th>용어</th>
+<th>테이블</th>
+<th>컬럼</th>
+<th>비고</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>자산총계</td>
+<td><code>financial_statements</code></td>
+<td><code>total_assets</code></td>
+<td>연결 기준</td>
+</tr>
+<tr>
+<td>자본총계</td>
+<td><code>financial_statements</code></td>
+<td><code>total_equity</code></td>
+<td></td>
+</tr>
+<tr>
+<td>부채총계</td>
+<td><code>financial_statements</code></td>
+<td><code>total_liabilities</code></td>
+<td></td>
+</tr>
+<tr>
+<td>매출액</td>
+<td><code>financial_statements</code></td>
+<td><code>revenue</code></td>
+<td></td>
+</tr>
+<tr>
+<td>매출총이익</td>
+<td><code>financial_statements</code></td>
+<td><code>gross_profit</code></td>
+<td></td>
+</tr>
+<tr>
+<td>영업이익</td>
+<td><code>financial_statements</code></td>
+<td><code>operating_profit</code></td>
+<td></td>
+</tr>
+<tr>
+<td>당기순이익</td>
+<td><code>financial_statements</code></td>
+<td><code>net_income</code></td>
+<td></td>
+</tr>
+<tr>
+<td>영업활동현금흐름</td>
+<td><code>financial_statements</code></td>
+<td><code>cash_from_operating</code></td>
+<td></td>
+</tr>
+<tr>
+<td>연간 데이터 필터</td>
+<td><code>financial_statements</code></td>
+<td><code>report_type = 'annual'</code></td>
+<td></td>
+</tr>
+<tr>
+<td>분기 데이터 필터</td>
+<td><code>financial_statements</code></td>
+<td><code>report_type IN ('Q1','half','Q3')</code></td>
+<td></td>
+</tr>
+</tbody>
+</table>
+<blockquote>
+<p>✅ CFS(연결재무제표) 우선 수집, 없을 경우 OFS(별도). 수집 시 이미 처리됨.
+<strong>NL2SQL 주의:</strong> 구 <code>sj_div='BS'</code> 스타일 조건은 이 테이블에서 불필요.</p>
+</blockquote>
+<h3 id="기술적-지표">기술적 지표</h3>
+<table>
+<thead>
+<tr>
+<th>용어</th>
+<th>테이블</th>
+<th>컬럼</th>
+<th>설명</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>골든크로스</td>
+<td><code>stock_indicators</code></td>
+<td><code>golden_cross = TRUE</code></td>
+<td>MA50이 MA200을 상향돌파</td>
+</tr>
+<tr>
+<td>데드크로스</td>
+<td><code>stock_indicators</code></td>
+<td><code>death_cross = TRUE</code></td>
+<td>MA50이 MA200을 하향돌파</td>
+</tr>
+<tr>
+<td>RSI 과매수</td>
+<td><code>stock_indicators</code></td>
+<td><code>rsi14 &gt;= 70</code></td>
+<td></td>
+</tr>
+<tr>
+<td>RSI 과매도</td>
+<td><code>stock_indicators</code></td>
+<td><code>rsi14 &lt;= 30</code></td>
+<td></td>
+</tr>
+<tr>
+<td>52주 신고가 근접</td>
+<td><code>stock_indicators</code></td>
+<td><code>pct_from_52w_high &gt;= -5</code></td>
+<td>52주 고가 대비 -5% 이내</td>
+</tr>
+<tr>
+<td>볼린저밴드 상단돌파</td>
+<td><code>stock_indicators</code></td>
+<td><code>bb_pctb &gt;= 1.0</code></td>
+<td></td>
+</tr>
+</tbody>
+</table>
+<hr />
+<h2 id="8-join-경로-맵--fk-제약">8. Join 경로 맵 &amp; FK 제약</h2>
+<h3 id="물리적-fk-현황-2026-03-28-추가-deferrable-initially-deferred">물리적 FK 현황 (2026-03-28 추가, DEFERRABLE INITIALLY DEFERRED)</h3>
+<table>
+<thead>
+<tr>
+<th>참조 테이블</th>
+<th>컬럼</th>
+<th>→</th>
+<th>기준 테이블</th>
+<th>컬럼</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>stock_price_1d</code></td>
+<td><code>ticker</code></td>
+<td>→</td>
+<td><code>stock_info</code></td>
+<td><code>ticker</code></td>
+</tr>
+<tr>
+<td><code>stock_price_1m</code></td>
+<td><code>ticker</code></td>
+<td>→</td>
+<td><code>stock_info</code></td>
+<td><code>ticker</code></td>
+</tr>
+<tr>
+<td><code>stock_indicators</code></td>
+<td><code>ticker</code></td>
+<td>→</td>
+<td><code>stock_info</code></td>
+<td><code>ticker</code></td>
+</tr>
+<tr>
+<td><code>consensus_estimates</code></td>
+<td><code>ticker</code></td>
+<td>→</td>
+<td><code>stock_info</code></td>
+<td><code>ticker</code></td>
+</tr>
+<tr>
+<td><code>company_dart_info</code></td>
+<td><code>ticker</code></td>
+<td>→</td>
+<td><code>stock_info</code></td>
+<td><code>ticker</code></td>
+</tr>
+<tr>
+<td><code>financial_statements</code></td>
+<td><code>corp_code</code></td>
+<td>→</td>
+<td><code>company_dart_info</code></td>
+<td><code>corp_code</code></td>
+</tr>
+<tr>
+<td><code>company_dividend</code></td>
+<td><code>ticker</code></td>
+<td>→</td>
+<td><code>stock_info</code></td>
+<td><code>ticker</code></td>
+</tr>
+<tr>
+<td><code>company_employees</code></td>
+<td><code>ticker</code></td>
+<td>→</td>
+<td><code>stock_info</code></td>
+<td><code>ticker</code></td>
+</tr>
+<tr>
+<td><code>company_executives</code></td>
+<td><code>ticker</code></td>
+<td>→</td>
+<td><code>stock_info</code></td>
+<td><code>ticker</code></td>
+</tr>
+<tr>
+<td><code>company_audit</code></td>
+<td><code>ticker</code></td>
+<td>→</td>
+<td><code>stock_info</code></td>
+<td><code>ticker</code></td>
+</tr>
+<tr>
+<td><code>company_shareholders</code></td>
+<td><code>ticker</code></td>
+<td>→</td>
+<td><code>stock_info</code></td>
+<td><code>ticker</code></td>
+</tr>
+<tr>
+<td><code>company_exec_compensation</code></td>
+<td><code>ticker</code></td>
+<td>→</td>
+<td><code>stock_info</code></td>
+<td><code>ticker</code></td>
+</tr>
+</tbody>
+</table>
+<blockquote>
+<p>⚠️ <code>holding</code> 테이블: 위반 데이터 6건으로 FK 미추가. 데이터 정리 후 추가 예정.</p>
+</blockquote>
+<h3 id="핵심-join-관계">핵심 Join 관계</h3>
+<div class="codehilite"><pre><span></span><code>stock_info (ticker) ──┬── stock_price_1d (ticker)  [1wk/1mo는 2026-03-28 DROP]
+                      │       └── stock_indicators (ticker, trade_date)
+                      │
+                      ├── consensus_estimates (ticker)
+                      │
+                      ├── company_dart_info (ticker)
+                      │       └── financial_statements (corp_code)
+                      │       └── company_dividend (ticker OR corp_code)
+                      │       └── company_employees (ticker)
+                      │       └── company_executives (ticker)
+                      │       └── company_audit (ticker)
+                      │       └── company_shareholders (ticker)
+                      │       └── company_exec_compensation (ticker)
+                      │
+                      └── sector_daily_performance (sector) ── ⚠️ 컬럼 없음
+</code></pre></div>
+
+<h3 id="구체적-join-조건">구체적 JOIN 조건</h3>
+<div class="codehilite"><pre><span></span><code><span class="c1">-- 1. 종목 정보 + 시세</span>
+<span class="k">SELECT</span><span class="w"> </span><span class="n">si</span><span class="p">.</span><span class="n">stock_name</span><span class="p">,</span><span class="w"> </span><span class="n">sp</span><span class="p">.</span><span class="k">close</span><span class="p">,</span><span class="w"> </span><span class="n">sp</span><span class="p">.</span><span class="n">volume</span>
+<span class="k">FROM</span><span class="w"> </span><span class="n">stock_info</span><span class="w"> </span><span class="n">si</span>
+<span class="k">JOIN</span><span class="w"> </span><span class="n">stock_price_1d</span><span class="w"> </span><span class="n">sp</span><span class="w"> </span><span class="k">ON</span><span class="w"> </span><span class="n">si</span><span class="p">.</span><span class="n">ticker</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">sp</span><span class="p">.</span><span class="n">ticker</span>
+
+<span class="c1">-- 2. 종목 + 컨센서스</span>
+<span class="k">SELECT</span><span class="w"> </span><span class="n">si</span><span class="p">.</span><span class="n">stock_name</span><span class="p">,</span><span class="w"> </span><span class="n">ce</span><span class="p">.</span><span class="n">rating</span><span class="p">,</span><span class="w"> </span><span class="n">ce</span><span class="p">.</span><span class="n">target_price</span>
+<span class="k">FROM</span><span class="w"> </span><span class="n">stock_info</span><span class="w"> </span><span class="n">si</span>
+<span class="k">JOIN</span><span class="w"> </span><span class="n">consensus_estimates</span><span class="w"> </span><span class="n">ce</span><span class="w"> </span><span class="k">ON</span><span class="w"> </span><span class="n">si</span><span class="p">.</span><span class="n">ticker</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">ce</span><span class="p">.</span><span class="n">ticker</span>
+
+<span class="c1">-- 3. 종목 + 기술적 지표</span>
+<span class="k">SELECT</span><span class="w"> </span><span class="n">si</span><span class="p">.</span><span class="n">stock_name</span><span class="p">,</span><span class="w"> </span><span class="n">ind</span><span class="p">.</span><span class="n">rsi14</span><span class="p">,</span><span class="w"> </span><span class="n">ind</span><span class="p">.</span><span class="n">golden_cross</span>
+<span class="k">FROM</span><span class="w"> </span><span class="n">stock_info</span><span class="w"> </span><span class="n">si</span>
+<span class="k">JOIN</span><span class="w"> </span><span class="n">stock_indicators</span><span class="w"> </span><span class="n">ind</span><span class="w"> </span><span class="k">ON</span><span class="w"> </span><span class="n">si</span><span class="p">.</span><span class="n">ticker</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">ind</span><span class="p">.</span><span class="n">ticker</span>
+
+<span class="c1">-- 4. 종목 + 재무제표 (DART corp_code를 통한 간접 연결)</span>
+<span class="k">SELECT</span><span class="w"> </span><span class="n">si</span><span class="p">.</span><span class="n">stock_name</span><span class="p">,</span><span class="w"> </span><span class="n">fs</span><span class="p">.</span><span class="n">account_nm</span><span class="p">,</span><span class="w"> </span><span class="n">fs</span><span class="p">.</span><span class="n">thstrm_amount</span>
+<span class="k">FROM</span><span class="w"> </span><span class="n">stock_info</span><span class="w"> </span><span class="n">si</span>
+<span class="k">JOIN</span><span class="w"> </span><span class="n">company_dart_info</span><span class="w"> </span><span class="n">cdi</span><span class="w"> </span><span class="k">ON</span><span class="w"> </span><span class="n">si</span><span class="p">.</span><span class="n">ticker</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">cdi</span><span class="p">.</span><span class="n">ticker</span>
+<span class="k">JOIN</span><span class="w"> </span><span class="n">financial_statements</span><span class="w"> </span><span class="n">fs</span><span class="w"> </span><span class="k">ON</span><span class="w"> </span><span class="n">cdi</span><span class="p">.</span><span class="n">corp_code</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">fs</span><span class="p">.</span><span class="n">corp_code</span>
+<span class="k">WHERE</span><span class="w"> </span><span class="n">fs</span><span class="p">.</span><span class="n">sj_div</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s1">&#39;IS&#39;</span><span class="w">  </span><span class="c1">-- 손익계산서</span>
+<span class="w">  </span><span class="k">AND</span><span class="w"> </span><span class="n">fs</span><span class="p">.</span><span class="n">fs_div</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s1">&#39;CFS&#39;</span><span class="w">  </span><span class="c1">-- 연결재무제표</span>
+
+<span class="c1">-- 5. 시세 + 기술적 지표 (동일 ticker + 날짜)</span>
+<span class="k">SELECT</span><span class="w"> </span><span class="n">sp</span><span class="p">.</span><span class="k">close</span><span class="p">,</span><span class="w"> </span><span class="n">ind</span><span class="p">.</span><span class="n">rsi14</span><span class="p">,</span><span class="w"> </span><span class="n">ind</span><span class="p">.</span><span class="n">ma20</span>
+<span class="k">FROM</span><span class="w"> </span><span class="n">stock_price_1d</span><span class="w"> </span><span class="n">sp</span>
+<span class="k">JOIN</span><span class="w"> </span><span class="n">stock_indicators</span><span class="w"> </span><span class="n">ind</span><span class="w"> </span><span class="k">ON</span><span class="w"> </span><span class="n">sp</span><span class="p">.</span><span class="n">ticker</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">ind</span><span class="p">.</span><span class="n">ticker</span>
+<span class="w">    </span><span class="k">AND</span><span class="w"> </span><span class="nb">DATE</span><span class="p">(</span><span class="n">sp</span><span class="p">.</span><span class="k">timestamp</span><span class="p">)</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">ind</span><span class="p">.</span><span class="n">trade_date</span>
+</code></pre></div>
+
+<hr />
+<h2 id="9-단위-정의">9. 단위 정의</h2>
+<blockquote>
+<p>모든 금액/비율 컬럼의 단위를 명확히 정의</p>
+</blockquote>
+<table>
+<thead>
+<tr>
+<th>테이블</th>
+<th>컬럼</th>
+<th>단위</th>
+<th>변환식</th>
+<th>비고</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>stock_info</code></td>
+<td><code>market_value</code></td>
+<td><strong>억원</strong></td>
+<td>× 100,000,000 = 원</td>
+<td>⚠️ 자주 혼동</td>
+</tr>
+<tr>
+<td><code>stock_info</code></td>
+<td><code>par_value</code></td>
+<td>원(KRW)</td>
+<td></td>
+<td></td>
+</tr>
+<tr>
+<td><code>consensus_estimates</code></td>
+<td><code>target_price</code></td>
+<td>원(KRW)</td>
+<td></td>
+<td></td>
+</tr>
+<tr>
+<td><code>consensus_estimates</code></td>
+<td><code>est_eps</code></td>
+<td>원(KRW)</td>
+<td></td>
+<td></td>
+</tr>
+<tr>
+<td><code>consensus_estimates</code></td>
+<td><code>est_dividend</code></td>
+<td>원(KRW)</td>
+<td></td>
+<td></td>
+</tr>
+<tr>
+<td><code>consensus_estimates</code></td>
+<td><code>est_per</code></td>
+<td>배수(x)</td>
+<td></td>
+<td></td>
+</tr>
+<tr>
+<td><code>consensus_estimates</code></td>
+<td><code>est_pbr</code></td>
+<td>배수(x)</td>
+<td></td>
+<td></td>
+</tr>
+<tr>
+<td><code>consensus_estimates</code></td>
+<td><code>est_roe</code></td>
+<td>%</td>
+<td></td>
+<td></td>
+</tr>
+<tr>
+<td><code>company_dividend</code></td>
+<td><code>cash_dividend_per_share</code></td>
+<td>원(KRW)</td>
+<td></td>
+<td></td>
+</tr>
+<tr>
+<td><code>company_dividend</code></td>
+<td><code>dividend_yield</code></td>
+<td>%</td>
+<td></td>
+<td></td>
+</tr>
+<tr>
+<td><code>company_dividend</code></td>
+<td><code>payout_ratio</code></td>
+<td>%</td>
+<td></td>
+<td></td>
+</tr>
+<tr>
+<td><code>company_employees</code></td>
+<td><code>avg_salary</code></td>
+<td>천원 (추정)</td>
+<td>× 1,000 = 원</td>
+<td>⚠️ 확인 필요</td>
+</tr>
+<tr>
+<td><code>company_exec_compensation</code></td>
+<td><code>total_compensation</code></td>
+<td>원(KRW)</td>
+<td></td>
+<td></td>
+</tr>
+<tr>
+<td><code>stock_indicators</code></td>
+<td><code>pct_from_52w_high/low</code></td>
+<td>%</td>
+<td></td>
+<td>음수 = 고가 대비 하락률</td>
+</tr>
+<tr>
+<td><code>stock_indicators</code></td>
+<td><code>bb_pctb</code></td>
+<td>비율</td>
+<td>0~1 = 밴드 내, &gt;1 = 상단초과</td>
+<td></td>
+</tr>
+</tbody>
+</table>
+<hr />
+<h2 id="10-개선-로드맵">10. 개선 로드맵</h2>
+<h3 id="phase-0-즉시-1-2일-코드-변경-없음">Phase 0: 즉시 (1-2일, 코드 변경 없음)</h3>
+<table>
+<thead>
+<tr>
+<th>#</th>
+<th>작업</th>
+<th>담당</th>
+<th>상태</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>0-1</td>
+<td>모든 금액 컬럼에 COMMENT 추가 (단위 명시)</td>
+<td>DB</td>
+<td>🔴 미시작 — OM 메타데이터로 대체 예정</td>
+</tr>
+<tr>
+<td>0-2</td>
+<td>매크로/금리 DAG 파일에서 DDL 확인</td>
+<td>아키텍처</td>
+<td>✅ 완료 (2026-03-28) — <code>macro_indicators</code> 통합 테이블 확인</td>
+</tr>
+<tr>
+<td>0-3</td>
+<td><code>financial_statements</code> DDL 확인 및 이 문서에 추가</td>
+<td>아키텍처</td>
+<td>✅ 완료 (2026-03-28) — 정규화 컬럼 구조 문서화</td>
+</tr>
+<tr>
+<td>0-4</td>
+<td><code>stock_metadata</code> 현재 상태 확인 (DB에 실제 존재 여부)</td>
+<td>DB</td>
+<td>🔴 미시작</td>
+</tr>
+</tbody>
+</table>
+<h3 id="phase-1-단기-1-2주-스키마-수정">Phase 1: 단기 (1-2주, 스키마 수정)</h3>
+<table>
+<thead>
+<tr>
+<th>#</th>
+<th>작업</th>
+<th>담당</th>
+<th>상태</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>1-1</td>
+<td><code>stock_metadata</code> → VIEW로 대체 또는 DROP</td>
+<td>DB</td>
+<td>🔴 미시작</td>
+</tr>
+<tr>
+<td>1-2</td>
+<td><code>stock_price_1d</code>에 <code>trade_date DATE</code> 컬럼 추가</td>
+<td>DB</td>
+<td>🔴 미시작</td>
+</tr>
+<tr>
+<td>1-3</td>
+<td><code>stock_info</code>에 <code>sector</code>, <code>industry</code> 컬럼 추가</td>
+<td>DB</td>
+<td>🔴 미시작</td>
+</tr>
+<tr>
+<td>1-4</td>
+<td>모든 DDL을 <code>/postgres/</code> 디렉터리로 중앙화</td>
+<td>코드</td>
+<td>🔴 미시작</td>
+</tr>
+<tr>
+<td>1-5</td>
+<td><code>consensus_estimates.stock_code</code> 중복 제거</td>
+<td>DB</td>
+<td>🔴 미시작</td>
+</tr>
+</tbody>
+</table>
+<h3 id="phase-2-중기-1개월-분석-레이어">Phase 2: 중기 (1개월, 분석 레이어)</h3>
+<table>
+<thead>
+<tr>
+<th>#</th>
+<th>작업</th>
+<th>담당</th>
+<th>상태</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>2-1</td>
+<td>Gold layer 테이블 생성 (analytics_stock/macro/valuation)</td>
+<td>DB</td>
+<td>✅ 완료 (2026-04-01)</td>
+</tr>
+<tr>
+<td>2-2</td>
+<td>Gold DAG 스케줄 최적화 (KR/US 분리, hourly macro)</td>
+<td>DAG</td>
+<td>✅ 완료 (2026-04-01)</td>
+</tr>
+<tr>
+<td>2-3</td>
+<td>논리적 FK 문서화 및 OM 등록</td>
+<td>아키텍처</td>
+<td>✅ 완료 (2026-03-28)</td>
+</tr>
+<tr>
+<td>2-4</td>
+<td>외부 API 소스 OM lineage 등록 (9 services, 31 edges)</td>
+<td>아키텍처</td>
+<td>✅ 완료 (2026-04-02)</td>
+</tr>
+<tr>
+<td>2-5</td>
+<td>OM 메타데이터 정비 (설명/Glossary/Tags 37/37)</td>
+<td>아키텍처</td>
+<td>✅ 완료 (2026-03-29)</td>
+</tr>
+<tr>
+<td>2-6</td>
+<td>OM → DB COMMENT 동기화 (453 columns)</td>
+<td>인프라</td>
+<td>✅ 완료 (2026-04-02)</td>
+</tr>
+<tr>
+<td>2-7</td>
+<td><code>sp500_sectors</code> 미사용 테이블 삭제</td>
+<td>DB</td>
+<td>✅ 완료 (2026-04-02)</td>
+</tr>
+</tbody>
+</table>
+<h3 id="phase-3-nl2sql-인프라">Phase 3: NL2SQL 인프라</h3>
+<table>
+<thead>
+<tr>
+<th>#</th>
+<th>작업</th>
+<th>담당</th>
+<th>상태</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>3-1</td>
+<td>OpenMetadata 카탈로그 도입</td>
+<td>인프라</td>
+<td>✅ 완료 (2026-03-28)</td>
+</tr>
+<tr>
+<td>3-2</td>
+<td>Wren AI 설치 (Docker, 5개 서비스)</td>
+<td>인프라</td>
+<td>✅ 완료 (2026-04-02)</td>
+</tr>
+<tr>
+<td>3-3</td>
+<td>OM → Wren AI 메타데이터 동기화 + DAG 자동화</td>
+<td>인프라</td>
+<td>✅ 완료 (2026-04-02)</td>
+</tr>
+<tr>
+<td>3-4</td>
+<td>SQL Pairs 41개 등록 (테스트-개선 사이클)</td>
+<td>AI</td>
+<td>✅ 완료 (2026-04-03)</td>
+</tr>
+<tr>
+<td>3-5</td>
+<td>SourceType 태그 적용 (rest-api/scraping/library)</td>
+<td>아키텍처</td>
+<td>✅ 완료 (2026-04-02)</td>
+</tr>
+<tr>
+<td>3-6</td>
+<td>Gold 컬럼 설명 100% + 계산 힌트 보강</td>
+<td>AI</td>
+<td>✅ 완료 (2026-04-03)</td>
+</tr>
+<tr>
+<td>3-7</td>
+<td>NL2SQL 품질 테스트 2회 수행 (A등급 58%→77%)</td>
+<td>QA</td>
+<td>✅ 완료 (2026-04-03)</td>
+</tr>
+</tbody>
+</table>
+<h3 id="phase-4-nl2sql-고도화-향후">Phase 4: NL2SQL 고도화 (향후)</h3>
+<table>
+<thead>
+<tr>
+<th>#</th>
+<th>작업</th>
+<th>담당</th>
+<th>상태</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>4-1</td>
+<td>LangGraph 에이전트 + Wren AI API 통합</td>
+<td>AI</td>
+<td>🔴 미시작</td>
+</tr>
+<tr>
+<td>4-2</td>
+<td>LangGraph에서 OM 용어집/메타데이터 활용</td>
+<td>AI</td>
+<td>🔴 미시작</td>
+</tr>
+<tr>
+<td>4-3</td>
+<td>FastAPI lineage 등록 (Dashboard Service)</td>
+<td>아키텍처</td>
+<td>🔴 미시작</td>
+</tr>
+<tr>
+<td>4-4</td>
+<td>데이터 품질 자동 검증 DAG</td>
+<td>DAG</td>
+<td>🔴 미시작</td>
+</tr>
+<tr>
+<td>4-5</td>
+<td>Wren AI Calculated Fields (MDL 비즈니스 지표)</td>
+<td>AI</td>
+<td>🔴 미시작</td>
+</tr>
+</tbody>
+</table>
+<h3 id="phase-5-ai-에이전트-고도화-2026-04-06현재">Phase 5: AI 에이전트 고도화 (2026-04-06~현재)</h3>
+<table>
+<thead>
+<tr>
+<th>#</th>
+<th>작업</th>
+<th>담당</th>
+<th>상태</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>5-1</td>
+<td>체크리스트 에이전트 Phase 5 — LLM + MCP 직접 호출로 전환</td>
+<td>AI</td>
+<td>✅ 완료 (2026-04-06)</td>
+</tr>
+<tr>
+<td>5-2</td>
+<td>모닝리포트 운영 모델 Sonnet 전환 (3종 비교 결과)</td>
+<td>AI</td>
+<td>✅ 완료 (2026-04-07)</td>
+</tr>
+<tr>
+<td>5-3</td>
+<td>프롬프트 날짜 실제 거래일 기반으로 변경</td>
+<td>AI</td>
+<td>✅ 완료 (2026-04-07)</td>
+</tr>
+<tr>
+<td>5-4</td>
+<td>잠정실적 수집 파이프라인 (DART 공시 파싱)</td>
+<td>DAG</td>
+<td>✅ 완료 (2026-04-08)</td>
+</tr>
+<tr>
+<td>5-5</td>
+<td>analytics_valuation에 fiscal_quarter 추가 + preliminary 데이터 타입</td>
+<td>DB</td>
+<td>✅ 완료 (2026-04-08)</td>
+</tr>
+<tr>
+<td>5-6</td>
+<td>종목 추천 에이전트 Phase 1 (deterministic 스크리닝 + 스코어링)</td>
+<td>AI</td>
+<td>✅ 완료 (2026-04-09)</td>
+</tr>
+<tr>
+<td>5-7</td>
+<td>종목 추천 에이전트 Phase 2 (Bull/Bear 토론 + Manager 판정)</td>
+<td>AI</td>
+<td>✅ 완료 (2026-04-11)</td>
+</tr>
+<tr>
+<td>5-8</td>
+<td>종목 추천 Shadow mode + 백테스트</td>
+<td>AI</td>
+<td>🔴 미시작</td>
+</tr>
+<tr>
+<td>5-9</td>
+<td>stock_info.sector 데이터 보강 (현재 NULL)</td>
+<td>DAG</td>
+<td>🔴 미시작</td>
+</tr>
+</tbody>
+</table>
+<hr />
+<h2 id="11-결정-로그">11. 결정 로그</h2>
+<blockquote>
+<p>아키텍처 결정 및 그 이유를 기록</p>
+</blockquote>
+<table>
+<thead>
+<tr>
+<th>날짜</th>
+<th>결정</th>
+<th>이유</th>
+<th>대안</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>2026-03-21</td>
+<td><code>ticker</code> 포맷을 Yahoo Finance 형식으로 통일 (<code>005930.KS</code>)</td>
+<td>Yahoo Finance API 연동 용이</td>
+<td>KRX 6자리 코드 단독 사용</td>
+</tr>
+<tr>
+<td>2026-03-21</td>
+<td>일봉에 <code>timestamp_ny</code>, <code>timestamp_kst</code> 동시 저장</td>
+<td>한국/미국 주식 동일 테이블 처리</td>
+<td>시장별 별도 테이블</td>
+</tr>
+<tr>
+<td>2026-03-21</td>
+<td>DART 재무제표 CFS 우선, OFS 대체</td>
+<td>연결 기준이 분석에 더 의미있음</td>
+<td>OFS 단독 사용</td>
+</tr>
+<tr>
+<td>2026-03-21</td>
+<td>컨센서스 출처를 WiseReport(Naver) 단일 소스로</td>
+<td>수집 안정성</td>
+<td>Bloomberg/Fn가이드 직접 연동</td>
+</tr>
+<tr>
+<td>2026-03-28</td>
+<td><code>financial_statements</code>를 정규화 컬럼 구조로 설계</td>
+<td>NL2SQL 친화성, <code>sj_div</code> 방식은 EAV 패턴으로 NL2SQL에 불리</td>
+<td>RAW DART API 그대로 저장</td>
+</tr>
+<tr>
+<td>2026-03-28</td>
+<td>모든 매크로/금리/감성 데이터를 <code>macro_indicators</code> 단일 테이블로 통합</td>
+<td>EAV 패턴으로 지표 종류 유연하게 확장 가능</td>
+<td>지표별 별도 테이블</td>
+</tr>
+<tr>
+<td>2026-03-28</td>
+<td>Lineage를 SQL 파싱 대신 DAG 코드 내 명시적 등록 방식으로</td>
+<td>모든 DAG가 PythonOperator 사용 — SQL 파싱 불가</td>
+<td>OpenLineage SQL 자동 추적</td>
+</tr>
+<tr>
+<td>2026-03-28</td>
+<td>FK를 <code>DEFERRABLE INITIALLY DEFERRED</code>로 추가</td>
+<td>벌크 INSERT 중 일시적 순서 위반 허용</td>
+<td>즉시 FK 검증 (bulk insert 불가)</td>
+</tr>
+<tr>
+<td>2026-03-28</td>
+<td>OpenMetadata v1.12.3 도입 (메타데이터 카탈로그)</td>
+<td>NL2SQL 시맨틱 레이어, lineage 시각화, 컬럼 설명 관리</td>
+<td>DataHub, Amundsen</td>
+</tr>
+<tr>
+<td>2026-03-28</td>
+<td><code>stock_price_1wk</code>, <code>stock_price_1mo</code> 테이블 DROP (218만/51만 행)</td>
+<td>1d 데이터에서 pandas resample로 언제든 재계산 가능. 별도 수집/저장 불필요</td>
+<td>유지</td>
+</tr>
+<tr>
+<td>2026-03-28</td>
+<td>OM Glossary에 투자 도메인 용어 77개 등록 완료</td>
+<td>NL2SQL 시맨틱 레이어 기초. 비즈니스 용어 ↔ DB 컬럼 연결</td>
+<td>Tags만 사용</td>
+</tr>
+<tr>
+<td>2026-03-28</td>
+<td>Lineage를 22개 DAG 전체에 register_table_lineage_async()로 명시적 등록</td>
+<td>모든 DAG가 PythonOperator — SQL 파싱 자동 추적 불가</td>
+<td>OpenLineage</td>
+</tr>
+<tr>
+<td>2026-04-01</td>
+<td>Gold layer 3개 테이블 구현 (analytics_stock/macro/valuation)</td>
+<td>NL2SQL 친화적 pre-joined 와이드 테이블. 복잡한 JOIN/단위변환 제거</td>
+<td>뷰(VIEW) 사용</td>
+</tr>
+<tr>
+<td>2026-04-01</td>
+<td>Gold DAG KR/US 분리 (09_analytics_stock_daily_kr/us)</td>
+<td>한국장(17:30 KST) / 미국장(07:30 KST) 마감 후 각각 실행</td>
+<td>단일 DAG</td>
+</tr>
+<tr>
+<td>2026-04-01</td>
+<td>analytics_valuation NUMERIC(8,4) overflow guard 추가</td>
+<td>ROE/부채비율 등 극단값 overflow 방지 (<code>ABS(...) &lt;= 9999</code>)</td>
+<td>DDL에서 NUMERIC 자릿수 확대</td>
+</tr>
+<tr>
+<td>2026-04-01</td>
+<td>read-only DAG consumer lineage 지원 (target_table=None)</td>
+<td>morning_report처럼 테이블을 읽기만 하는 DAG의 lineage 추적</td>
+<td>lineage 미등록</td>
+</tr>
+<tr>
+<td>2026-04-02</td>
+<td>외부 API 소스를 OM apiEndpoint로 등록 (9 services, 14 endpoints, 31 edges)</td>
+<td>전체 lineage 체인 완성: apiEndpoint → pipeline → table → consumer</td>
+<td>apiService 직접 사용 (UI 미표시)</td>
+</tr>
+<tr>
+<td>2026-04-02</td>
+<td>SourceType 태그 도입 (rest-api/scraping/library)</td>
+<td>데이터 수집 안정성 분류. scraping 소스 모니터링 강화</td>
+<td>설명에 텍스트로 기재</td>
+</tr>
+<tr>
+<td>2026-04-02</td>
+<td><code>sp500_sectors</code> 테이블 삭제</td>
+<td>수집 DAG 없고 어디서도 참조하지 않는 미사용 테이블</td>
+<td>유지</td>
+</tr>
+<tr>
+<td>2026-04-02</td>
+<td>OM을 메타데이터 원천으로, DB COMMENT + Wren AI에 동기화</td>
+<td>OM UI/API에서 편집 → DAG로 DB/Wren AI 자동 반영. 이원화 방지</td>
+<td>DB COMMENT를 원천으로 사용</td>
+</tr>
+<tr>
+<td>2026-04-02</td>
+<td>Wren AI 설치 (Docker, gpt-4o-mini)</td>
+<td>NL2SQL 시맨틱 레이어. Gold 테이블 기반 자연어 쿼리</td>
+<td>Vanna AI, LangChain SQL Agent</td>
+</tr>
+<tr>
+<td>2026-04-02</td>
+<td>Wren AI SQL Pairs 29개 등록</td>
+<td>RAG 기반 유사 패턴 검색으로 SQL 생성 정확도 향상</td>
+<td>Instructions만 사용</td>
+</tr>
+<tr>
+<td>2026-04-02</td>
+<td>Wren AI는 1질문=1SQL 한계 → 복합질문은 LangGraph 통합 (향후)</td>
+<td>Wren AI를 SQL 생성 도구로, LangGraph가 오케스트레이션</td>
+<td>Wren AI 단독 사용</td>
+</tr>
+<tr>
+<td>2026-04-03</td>
+<td>Gold 컬럼 설명 115개 추가 + 계산 힌트 27개 보강</td>
+<td>컬럼 커버리지 31%→99%. 이격도/괴리율 등 계산 유도 성공 확인</td>
+<td>설명 없이 LLM 추측에 의존</td>
+</tr>
+<tr>
+<td>2026-04-03</td>
+<td>NL2SQL 품질을 5차원×3등급 프레임워크로 정량 평가</td>
+<td>실행/의미/결과/효율/의도 5개 차원. A/B/F 등급. 자동 체크 10개</td>
+<td>주관적 평가</td>
+</tr>
+<tr>
+<td>2026-04-03</td>
+<td>테스트→SQL Pair 추가 사이클 검증 (29→41개, A등급 58%→77%)</td>
+<td>실패 패턴을 SQL Pair로 즉시 해결. Instructions 남발 대신 SQL Pair 우선</td>
+<td>모든 규칙을 Instructions에</td>
+</tr>
+<tr>
+<td>2026-04-06</td>
+<td>체크리스트 에이전트 Phase 5: 4단계 파이프라인→LLM+MCP 직접 호출</td>
+<td>키워드 파서가 LLM 출력 형식 변화에 취약. 새 항목마다 코드 수정 필요</td>
+<td>4단계 파이프라인(parser/collector/signal/explainer) 유지</td>
+</tr>
+<tr>
+<td>2026-04-06</td>
+<td>체크리스트 DB 저장을 report_builder에서 직접 (HTML 파싱 제거)</td>
+<td>HTML 사후 파싱이 형식 의존적 — <code>□</code>→<code>- [ ]</code> 변경 시 전체 실패</td>
+<td>HTML에서 사후 파싱</td>
+</tr>
+<tr>
+<td>2026-04-06</td>
+<td>모든 알림 DAG retries: 0 적용</td>
+<td>발송 후 후속 코드 예외 시 재시도로 중복 메시지 발송 (preopen 2번 도착 실제 발생)</td>
+<td>retries: 1~2 (기존)</td>
+</tr>
+<tr>
+<td>2026-04-07</td>
+<td>모닝리포트 운영 모델 Sonnet 4.6으로 변경</td>
+<td>3종 비교(Opus/Sonnet/GPT) 결과 Sonnet이 분석 깊이/비용 최우수. Opus $0.49→Sonnet $0.10</td>
+<td>Opus 유지</td>
+</tr>
+<tr>
+<td>2026-04-07</td>
+<td>프롬프트 날짜 "어제/오늘 새벽"→실제 거래일(korea_date/us_date)</td>
+<td>미국 휴장(Good Friday)에 3일 전 EWY로 "갭 하락 유력" 오판</td>
+<td>상대 표현("어제") 유지</td>
+</tr>
+<tr>
+<td>2026-04-07</td>
+<td>S&amp;P500/NASDAQ 지수 조회를 지수별 독립 최신 날짜로 변경</td>
+<td>KOSPI 기준 날짜로 JOIN → 미국 휴장 시 0 반환</td>
+<td>KOSPI MAX(date) 공통 사용</td>
+</tr>
+<tr>
+<td>2026-04-07</td>
+<td>EWY/global_index 응답에 data_date 필드 추가</td>
+<td>휴장 시 데이터 시점 불명확 → LLM이 stale 데이터를 최신으로 오인</td>
+<td>data_date 없이 반환</td>
+</tr>
+<tr>
+<td>2026-04-07</td>
+<td>환율 조회 South Korea 기준 직접 최신 (region 독립)</td>
+<td>다른 region이 먼저 적재 → KR 없는 날짜 기준 조회 → 빈 결과</td>
+<td>MAX(date) 전체 region 기준</td>
+</tr>
+<tr>
+<td>2026-04-08</td>
+<td>잠정실적 수집 파이프라인 (05_kr_preliminary_earnings DAG)</td>
+<td>DART 재무제표 API에 잠정실적 미반영. 공시문서 파싱으로 매출/영업이익 조기 확보</td>
+<td>XBRL 재무제표 업로드 대기</td>
+</tr>
+<tr>
+<td>2026-04-08</td>
+<td>analytics_valuation에 fiscal_quarter 컬럼 추가 + PK 변경</td>
+<td>잠정실적은 분기 데이터인데 기존 테이블은 연간만. 분기 구분 필요</td>
+<td>별도 테이블 분리</td>
+</tr>
+<tr>
+<td>2026-04-08</td>
+<td>API overview에서 Q4 자동 계산 (연간 - Q1~Q3)</td>
+<td>DART에 Q4 보고서 없어서 최근 분기 항상 Q3로 표시</td>
+<td>Q4 별도 적재</td>
+</tr>
+<tr>
+<td>2026-04-09</td>
+<td>종목 추천 에이전트 Phase 1 (deterministic 스크리닝 + 4카테고리 스코어링)</td>
+<td>단순 숫자 필터링만으로는 신뢰성 부족. TradingAgents 참고</td>
+<td>단순 스크리닝만</td>
+</tr>
+<tr>
+<td>2026-04-11</td>
+<td>종목 추천 에이전트 Phase 2 (Bull/Bear 토론 + Manager 판정)</td>
+<td>Phase 1 스크리닝 → 상위 5개만 토론. 등급은 deterministic(Phase1 스코어 + 방향)</td>
+<td>LLM이 등급 직접 결정</td>
+</tr>
+<tr>
+<td>2026-04-11</td>
+<td>종목 추천 VCP 돌파 프리셋 추가 (완전정배열 + 거래량 200%+)</td>
+<td>모멘텀 투자자가 선호하는 패턴. 기존 6개 프리셋에 추가</td>
+<td>프리셋 6개만 유지</td>
+</tr>
+<tr>
+<td>2026-04-11</td>
+<td>종목 추천 Phase 2 병렬화 (asyncio.gather)</td>
+<td>5종목 순차 15분 → 병렬 2분으로 단축</td>
+<td>순차 실행</td>
+</tr>
+<tr>
+<td>2026-04-03</td>
+<td>계산 폴백 Instruction 1개 추가 (컬럼 없으면 계산식 유도)</td>
+<td>이격도, PSR, 실질금리 등 DB 컬럼 없는 파생 지표 SQL 생성</td>
+<td>매번 SQL Pair 개별 등록</td>
+</tr>
+</tbody>
+</table>
+<hr />
+<hr />
+<h2 id="12-openmetadata-구성">12. OpenMetadata 구성</h2>
+<blockquote>
+<p>설치 완료: 2026-03-28 | 버전: 1.12.3</p>
+</blockquote>
+<h3 id="서비스-구성">서비스 구성</h3>
+<table>
+<thead>
+<tr>
+<th>서비스 이름</th>
+<th>유형</th>
+<th>설명</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>bip-postgres</code></td>
+<td>Database Service (PostgreSQL)</td>
+<td>stockdb 39개 테이블 메타데이터</td>
+</tr>
+<tr>
+<td><code>bip-airflow</code></td>
+<td>Pipeline Service (Airflow)</td>
+<td>43개 DAG pipeline</td>
+</tr>
+<tr>
+<td><code>yahoo-finance</code></td>
+<td>API Service (Rest)</td>
+<td>yfinance 주식 시세/기본정보</td>
+</tr>
+<tr>
+<td><code>naver-finance</code></td>
+<td>API Service (Rest)</td>
+<td>한국 주식 시세/컨센서스 스크래핑</td>
+</tr>
+<tr>
+<td><code>dart-api</code></td>
+<td>API Service (Rest)</td>
+<td>재무제표/기업코드</td>
+</tr>
+<tr>
+<td><code>krx-api</code></td>
+<td>API Service (Rest)</td>
+<td>섹터/투자자동향 스크래핑</td>
+</tr>
+<tr>
+<td><code>ecos-bok-api</code></td>
+<td>API Service (Rest)</td>
+<td>거시경제 지표</td>
+</tr>
+<tr>
+<td><code>gdelt-api</code></td>
+<td>API Service (Rest)</td>
+<td>지정학 이벤트/리스크</td>
+</tr>
+<tr>
+<td><code>kis-api</code></td>
+<td>API Service (Rest)</td>
+<td>포트폴리오 스냅샷</td>
+</tr>
+<tr>
+<td><code>naver-news-api</code></td>
+<td>API Service (Rest)</td>
+<td>뉴스 검색</td>
+</tr>
+<tr>
+<td><code>semiconductor-market</code></td>
+<td>API Service (Rest)</td>
+<td>DRAM/NAND 가격 스크래핑</td>
+</tr>
+</tbody>
+</table>
+<h3 id="lineage-시스템">Lineage 시스템</h3>
+<p><strong>구현 방식:</strong> DAG 완료 시 <code>utils/lineage.py</code>의 <code>register_table_lineage_async()</code> 명시적 호출</p>
+<p><strong>등록 패턴:</strong></p>
+<div class="codehilite"><pre><span></span><code><span class="c1"># 쓰기 DAG: source → pipeline → target</span>
+<span class="n">register_table_lineage_async</span><span class="p">(</span>
+    <span class="s2">&quot;stock_indicators&quot;</span><span class="p">,</span>
+    <span class="n">source_tables</span><span class="o">=</span><span class="p">[</span><span class="s2">&quot;stock_price_1d&quot;</span><span class="p">,</span> <span class="s2">&quot;stock_info&quot;</span><span class="p">]</span>
+<span class="p">)</span>
+
+<span class="c1"># 읽기 전용 DAG (consumer): source → pipeline (종착점)</span>
+<span class="n">register_table_lineage_async</span><span class="p">(</span>
+    <span class="n">target_table</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
+    <span class="n">source_tables</span><span class="o">=</span><span class="p">[</span><span class="s2">&quot;stock_info&quot;</span><span class="p">,</span> <span class="s2">&quot;stock_price_1d&quot;</span><span class="p">,</span> <span class="s2">&quot;news&quot;</span><span class="p">]</span>
+<span class="p">)</span>
+</code></pre></div>
+
+<p><strong>환경변수 (airflow/.env):</strong></p>
+<div class="codehilite"><pre><span></span><code>OM_HOST=http://openmetadata-server:8585
+OM_BOT_TOKEN=&lt;ingestion-bot JWT&gt;
+OM_SERVICE_PIPELINE=bip-airflow
+OM_SERVICE_DB=bip-postgres
+OM_DB_NAME=stockdb
+OM_DB_SCHEMA=public
+</code></pre></div>
+
+<h3 id="논리적-fk-om-메타데이터">논리적 FK (OM 메타데이터)</h3>
+<p>물리적 FK와 동일한 14개 관계가 OM에도 논리적 FK로 등록됨 (메타데이터 재수집으로 반영).
+OM UI: <strong>Explore → Tables → stockdb.public.{table} → Schema 탭</strong>에서 확인.</p>
+<h3 id="메타데이터-정비-현황-2026-04-02-기준">메타데이터 정비 현황 (2026-04-02 기준)</h3>
+<table>
+<thead>
+<tr>
+<th>항목</th>
+<th>상태</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>테이블 발견 (39개)</td>
+<td>✅ 완료</td>
+</tr>
+<tr>
+<td>물리적 FK 반영</td>
+<td>✅ 완료</td>
+</tr>
+<tr>
+<td>논리적 FK 반영</td>
+<td>✅ 완료</td>
+</tr>
+<tr>
+<td>테이블 설명 (Description)</td>
+<td>✅ 완료 — 39개 테이블 (<code>scripts/om_enrich_metadata.py</code>)</td>
+</tr>
+<tr>
+<td>컬럼 설명 (단위 포함)</td>
+<td>✅ 완료 — 453개 컬럼 (<code>scripts/om_enrich_metadata.py</code>)</td>
+</tr>
+<tr>
+<td>용어집 (Glossary)</td>
+<td>✅ 완료 — 77개 용어 등록 (<code>scripts/om_build_glossary.py</code>)</td>
+</tr>
+<tr>
+<td>컬럼-용어 매핑 (Glossary Term)</td>
+<td>✅ 완료 — 주요 컬럼 (<code>scripts/om_link_columns.py</code>)</td>
+</tr>
+<tr>
+<td>Lineage — DAG ↔ Table</td>
+<td>✅ 완료 — 43개 pipeline, 67개 edge</td>
+</tr>
+<tr>
+<td>Lineage — 외부 API → DAG</td>
+<td>✅ 완료 — 9 services, 14 endpoints, 31 edges</td>
+</tr>
+<tr>
+<td>Lineage — Consumer (읽기 전용)</td>
+<td>✅ 완료 — morning_report, morning_pulse_langgraph</td>
+</tr>
+<tr>
+<td>태그 — DataLayer / Domain</td>
+<td>✅ 완료 — 37/37 테이블</td>
+</tr>
+<tr>
+<td>태그 — SourceType</td>
+<td>✅ 완료 — 14 apiEndpoints (rest-api/scraping/library)</td>
+</tr>
+<tr>
+<td>DB COMMENT 동기화</td>
+<td>✅ 완료 — 35 tables, 453 columns (DAG 자동화)</td>
+</tr>
+<tr>
+<td>Wren AI 동기화</td>
+<td>✅ 완료 — 5 models, 53 columns (DAG 자동화)</td>
+</tr>
+<tr>
+<td>프로파일러 (통계)</td>
+<td>✅ 완료 (1,416 레코드, 2026-03-27)</td>
+</tr>
+</tbody>
+</table>
+<p><strong>Glossary 카테고리 구성 (77개):</strong>
+| 카테고리 | 용어 수 | 예시 |
+|----------|---------|------|
+| investment-terms.price | 12개 | ohlcv, close-price, trading-volume, after-hours ... |
+| investment-terms.valuation | 14개 | per, pbr, roe, roa, operating-margin, revenue-growth ... |
+| investment-terms.technical | 12개 | ma, ema, rsi, macd, bollinger-band, golden-cross ... |
+| investment-terms.fundamental | 9개 | revenue, operating-profit, net-income, total-equity ... |
+| investment-terms.financial | 10개 | total-assets, total-liabilities, cashflow, shares-outstanding ... |
+| investment-terms.market | 8개 | market-cap, kospi, kosdaq, sector, advance-decline ... |
+| investment-terms.consensus | 7개 | analyst-rating, target-price, eps-estimate, investor-trend ... |
+| investment-terms.macro | 5개 | vix, exchange-rate, interest-rate, gdp, cpi |</p>
+<h3 id="접속-정보">접속 정보</h3>
+<ul>
+<li><strong>OM UI:</strong> <code>http://localhost:8585</code></li>
+<li><strong>Profiler YAML:</strong> <code>openmetadata/connectors/bip_profiler.yaml</code></li>
+<li><strong>Ingestion YAML:</strong> <code>openmetadata/connectors/ingest.yaml</code></li>
+</ul>
+<hr />
+<p><em>이 문서는 아키텍처 변경 시마다 업데이트되어야 합니다.</em>
+<em>이슈 해결 시 해당 섹션의 상태를 ✅로 변경하고 결정 로그에 기록하세요.</em></p>
+</main>
+
+<script>
+  // 테마 전환
+  function setTheme(theme) {
+    document.documentElement.setAttribute('data-theme', theme);
+    localStorage.setItem('doc-theme', theme);
+    document.getElementById('btn-dark').classList.toggle('active', theme === 'dark');
+    document.getElementById('btn-light').classList.toggle('active', theme === 'light');
+    // Mermaid 재렌더링
+    if (typeof mermaid !== 'undefined') {
+      mermaid.initialize({ startOnLoad: false, theme: 'base', securityLevel: 'loose', themeVariables: getMermaidTheme(theme) });
+      document.querySelectorAll('.mermaid').forEach(el => {
+        // 원본 코드 보존 (최초 1회만 저장)
+        if (!el.dataset.source) {
+          el.dataset.source = el.textContent;
+        }
+        el.removeAttribute('data-processed');
+        el.innerHTML = el.dataset.source;
+      });
+      mermaid.run();
+    }
+  }
+
+  // 저장된 테마 로드
+  const savedTheme = localStorage.getItem('doc-theme') || 'dark';
+  setTheme(savedTheme);
+
+  // Mermaid 초기화
+  function getMermaidTheme(theme) {
+    const dark = {
+      primaryColor: '#3d7be0',
+      primaryTextColor: '#ffffff',
+      primaryBorderColor: '#5a9cf0',
+      secondaryColor: '#7c5cbf',
+      secondaryTextColor: '#ffffff',
+      secondaryBorderColor: '#a29bfe',
+      tertiaryColor: '#00997a',
+      tertiaryTextColor: '#ffffff',
+      tertiaryBorderColor: '#55efc4',
+      noteTextColor: '#f0f0f0',
+      noteBkgColor: '#2d3436',
+      noteBorderColor: '#636e72',
+      lineColor: '#8b949e',
+      textColor: '#e6edf3',
+      mainBkg: '#1e3050',
+      nodeBorder: '#5a9cf0',
+      clusterBkg: '#1a1e2e',
+      clusterBorder: '#4a5568',
+      titleColor: '#79c0ff',
+      edgeLabelBackground: '#21262d',
+      actorBkg: '#3d7be0',
+      actorTextColor: '#ffffff',
+      actorBorder: '#5a9cf0',
+      signalColor: '#8b949e',
+      labelBoxBkgColor: '#21262d',
+      labelBoxBorderColor: '#4a5568',
+      labelTextColor: '#e6edf3',
+      loopTextColor: '#e6edf3',
+      activationBorderColor: '#5a9cf0',
+      activationBkgColor: '#1e3050',
+      sequenceNumberColor: '#ffffff',
+      pie1: '#4f8fea', pie2: '#6c5ce7', pie3: '#00b894', pie4: '#e17055',
+      pie5: '#fdcb6e', pie6: '#00cec9', pie7: '#e84393', pie8: '#0984e3'
+    };
+    const light = {
+      primaryColor: '#4f8fea',
+      primaryTextColor: '#1a1a2e',
+      primaryBorderColor: '#3a7bd5',
+      secondaryColor: '#a29bfe',
+      secondaryTextColor: '#1a1a2e',
+      secondaryBorderColor: '#6c5ce7',
+      tertiaryColor: '#55efc4',
+      tertiaryTextColor: '#1a1a2e',
+      tertiaryBorderColor: '#00b894',
+      noteTextColor: '#2d3436',
+      noteBkgColor: '#ffeaa7',
+      noteBorderColor: '#fdcb6e',
+      lineColor: '#636e72',
+      textColor: '#2d3436',
+      mainBkg: '#dfe6e9',
+      nodeBorder: '#3a7bd5',
+      clusterBkg: '#f0f3f5',
+      clusterBorder: '#b2bec3',
+      titleColor: '#2d3436',
+      edgeLabelBackground: '#ffffff',
+      actorBkg: '#4f8fea',
+      actorTextColor: '#ffffff',
+      actorBorder: '#3a7bd5',
+      signalColor: '#636e72',
+      labelBoxBkgColor: '#ffffff',
+      labelBoxBorderColor: '#b2bec3',
+      labelTextColor: '#2d3436',
+      loopTextColor: '#2d3436',
+      activationBorderColor: '#3a7bd5',
+      activationBkgColor: '#dfe6e9',
+      sequenceNumberColor: '#ffffff',
+      pie1: '#4f8fea', pie2: '#6c5ce7', pie3: '#00b894', pie4: '#e17055',
+      pie5: '#fdcb6e', pie6: '#00cec9', pie7: '#e84393', pie8: '#0984e3'
+    };
+    return theme === 'dark' ? dark : light;
+  }
+
+  // 초기 렌더링 전에 원본 코드 저장
+  document.querySelectorAll('.mermaid').forEach(el => {
+    el.dataset.source = el.textContent;
+  });
+  mermaid.initialize({ startOnLoad: true, theme: 'base', securityLevel: 'loose', themeVariables: getMermaidTheme(savedTheme) });
+
+  // TOC 현재 위치 하이라이트
+  const tocLinks = document.querySelectorAll('.toc a');
+  const headings = [];
+  tocLinks.forEach(link => {
+    const id = link.getAttribute('href').slice(1);
+    const el = document.getElementById(id);
+    if (el) headings.push({ el, link });
+  });
+
+  function updateActiveToc() {
+    let current = null;
+    for (const h of headings) {
+      if (h.el.getBoundingClientRect().top <= 100) current = h;
+    }
+    tocLinks.forEach(l => l.classList.remove('active'));
+    if (current) current.link.classList.add('active');
+  }
+
+  window.addEventListener('scroll', updateActiveToc, { passive: true });
+  updateActiveToc();
+
+  // 모바일: 링크 클릭 시 사이드바 닫기
+  tocLinks.forEach(link => {
+    link.addEventListener('click', () => {
+      if (window.innerWidth <= 900) {
+        document.querySelector('.sidebar').classList.remove('open');
+      }
+    });
+  });
+</script>
+
+</body>
+</html>

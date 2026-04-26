@@ -388,13 +388,13 @@ ORA-00942: table or view does not exist
 <div class="mermaid">
 graph LR
     subgraph Before["기존 (WrenAI 올인원)"]
-        W[WrenAI<br/>데이터 연결 + 시맨틱 + SQL 생성 + Chat]
+        W[WrenAI\n데이터 연결 + 시맨틱 + SQL 생성 + Chat]
     end
 
     subgraph After["전환 (역할 분리)"]
-        C[Cube.js<br/>데이터 연결 + 시맨틱]
-        A[LangGraph Agent<br/>SQL 생성 + Chat]
-        O[OpenMetadata<br/>메타 허브]
+        C[Cube.js\n데이터 연결 + 시맨틱]
+        A[LangGraph Agent\nSQL 생성 + Chat]
+        O[OpenMetadata\n메타 허브]
     end
 
     Before -->|"Oracle 19c 비호환"| After
@@ -516,8 +516,8 @@ OpenMetadata Oracle Connector
 <div class="mermaid">
 graph TB
     USER[사용자 질문]
-    USER --> API[FastAPI<br/>Chat / REST API]
-    API --> AGENT[LangGraph Agent<br/>오케스트레이션]
+    USER --> API[FastAPI\nChat / REST API]
+    API --> AGENT[LangGraph Agent\n오케스트레이션]
 
     AGENT --> IC{Intent 판단}
     IC -->|정형 KPI| CUBE_T[Cube API Tool]
@@ -525,11 +525,11 @@ graph TB
     IC -->|비정형 검색| RAG_T[RAG Tool]
     IC -->|외부 시스템| MCP_T[MCP Tools]
 
-    CUBE_T --> CUBE[Cube.js<br/>Semantic Layer<br/>:4000]
-    OM_T --> OM[OpenMetadata<br/>메타 허브<br/>:8585]
+    CUBE_T --> CUBE[Cube.js\nSemantic Layer\n:4000]
+    OM_T --> OM[OpenMetadata\n메타 허브\n:8585]
     RAG_T --> VDB[(Vector DB)]
 
-    CUBE --> ORA[(Oracle 19c<br/>사내 DB)]
+    CUBE --> ORA[(Oracle 19c\n사내 DB)]
     OM --> ORA
 
     AGENT --> SYNTH[Result Synthesizer]
@@ -983,19 +983,19 @@ graph TB
 graph TB
     subgraph Infra["인프라"]
         ORA[(Oracle 19c)]
-        PG[(PostgreSQL<br/>OM 저장소)]
-        ES[(Elasticsearch<br/>OM 검색)]
+        PG[(PostgreSQL\nOM 저장소)]
+        ES[(Elasticsearch\nOM 검색)]
     end
 
     subgraph Platform["플랫폼"]
-        OM[OpenMetadata<br/>메타 허브]
-        CUBE[Cube.js<br/>Semantic Layer]
+        OM[OpenMetadata\n메타 허브]
+        CUBE[Cube.js\nSemantic Layer]
     end
 
     subgraph AI["AI/Agent"]
-        LG[LangGraph<br/>Agent]
-        LLM[GPT-4.1-mini<br/>또는 사내 LLM]
-        VDB[(Vector DB<br/>RAG)]
+        LG[LangGraph\nAgent]
+        LLM[GPT-4.1-mini\n또는 사내 LLM]
+        VDB[(Vector DB\nRAG)]
     end
 
     subgraph Interface["인터페이스"]
@@ -1100,8 +1100,12 @@ graph TB
     if (typeof mermaid !== 'undefined') {
       mermaid.initialize({ startOnLoad: false, theme: 'base', securityLevel: 'loose', themeVariables: getMermaidTheme(theme) });
       document.querySelectorAll('.mermaid').forEach(el => {
+        // 원본 코드 보존 (최초 1회만 저장)
+        if (!el.dataset.source) {
+          el.dataset.source = el.textContent;
+        }
         el.removeAttribute('data-processed');
-        el.innerHTML = el.textContent;
+        el.innerHTML = el.dataset.source;
       });
       mermaid.run();
     }
@@ -1186,6 +1190,10 @@ graph TB
     return theme === 'dark' ? dark : light;
   }
 
+  // 초기 렌더링 전에 원본 코드 저장
+  document.querySelectorAll('.mermaid').forEach(el => {
+    el.dataset.source = el.textContent;
+  });
   mermaid.initialize({ startOnLoad: true, theme: 'base', securityLevel: 'loose', themeVariables: getMermaidTheme(savedTheme) });
 
   // TOC 현재 위치 하이라이트

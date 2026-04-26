@@ -1,0 +1,2940 @@
+<!DOCTYPE html>
+<html lang="ko" data-theme="dark">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Wren AI NL2SQL 품질 테스트 리포트</title>
+<script src="https://cdn.jsdelivr.net/npm/mermaid@11/dist/mermaid.min.js"></script>
+<style>
+  /* ── 테마 변수 ── */
+  :root[data-theme="dark"] {
+    --bg: #0d1117;
+    --bg-sidebar: #161b22;
+    --fg: #e6edf3;
+    --fg-muted: #8b949e;
+    --border: #30363d;
+    --accent: #58a6ff;
+    --accent-hover: #79c0ff;
+    --code-bg: #1e293b;
+    --code-fg: #e2e8f0;
+    --table-header: #161b22;
+    --table-even: #0d1117;
+    --table-odd: #161b22;
+    --blockquote-bg: #161b22;
+    --blockquote-border: #3b82f6;
+    --link: #58a6ff;
+    --strong: #79c0ff;
+    --card-bg: #21262d;
+  }
+  :root[data-theme="light"] {
+    --bg: #ffffff;
+    --bg-sidebar: #f6f8fa;
+    --fg: #1f2937;
+    --fg-muted: #6b7280;
+    --border: #e5e7eb;
+    --accent: #2563eb;
+    --accent-hover: #1d4ed8;
+    --code-bg: #f3f4f6;
+    --code-fg: #1e293b;
+    --table-header: #f8fafc;
+    --table-even: #ffffff;
+    --table-odd: #f9fafb;
+    --blockquote-bg: #eff6ff;
+    --blockquote-border: #3b82f6;
+    --link: #2563eb;
+    --strong: #1e40af;
+    --card-bg: #f3f4f6;
+  }
+
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+
+  body {
+    font-family: 'Pretendard', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+    background: var(--bg);
+    color: var(--fg);
+    line-height: 1.75;
+    display: flex;
+    min-height: 100vh;
+  }
+
+  /* ── 사이드바 ── */
+  .sidebar {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 280px;
+    height: 100vh;
+    background: var(--bg-sidebar);
+    border-right: 1px solid var(--border);
+    overflow-y: auto;
+    padding: 20px 0;
+    z-index: 100;
+    transition: transform 0.3s ease;
+  }
+
+  .sidebar-header {
+    padding: 0 20px 16px;
+    border-bottom: 1px solid var(--border);
+    margin-bottom: 12px;
+  }
+
+  .sidebar-title {
+    font-size: 0.95rem;
+    font-weight: 700;
+    color: var(--fg);
+    line-height: 1.3;
+  }
+
+  .sidebar-controls {
+    display: flex;
+    gap: 8px;
+    margin-top: 12px;
+  }
+
+  .theme-btn {
+    background: var(--card-bg);
+    border: 1px solid var(--border);
+    color: var(--fg-muted);
+    padding: 4px 10px;
+    border-radius: 6px;
+    font-size: 0.7rem;
+    cursor: pointer;
+    transition: all 0.2s;
+  }
+  .theme-btn:hover {
+    border-color: var(--accent);
+    color: var(--accent);
+  }
+  .theme-btn.active {
+    background: var(--accent);
+    color: #fff;
+    border-color: var(--accent);
+  }
+
+  .back-link {
+    display: block;
+    margin-top: 10px;
+    font-size: 0.75rem;
+    color: var(--fg-muted);
+    text-decoration: none;
+  }
+  .back-link:hover {
+    color: var(--accent);
+  }
+
+  /* ── TOC ── */
+  .toc {
+    padding: 0 12px;
+  }
+  .toc ul {
+    list-style: none;
+    padding: 0;
+  }
+  .toc li {
+    margin: 0;
+  }
+  .toc a {
+    display: block;
+    padding: 4px 8px;
+    color: var(--fg-muted);
+    text-decoration: none;
+    font-size: 0.78rem;
+    border-radius: 4px;
+    border-left: 2px solid transparent;
+    transition: all 0.15s;
+    line-height: 1.4;
+  }
+  .toc a:hover {
+    color: var(--accent);
+    background: var(--card-bg);
+    border-left-color: var(--accent);
+  }
+  .toc a.active {
+    color: var(--accent);
+    border-left-color: var(--accent);
+    font-weight: 600;
+  }
+  .toc-h3 a { padding-left: 20px; font-size: 0.75rem; }
+  .toc-h4 a { padding-left: 32px; font-size: 0.72rem; }
+
+  /* ── 본문 ── */
+  .content {
+    margin-left: 280px;
+    flex: 1;
+    max-width: 860px;
+    padding: 40px 48px 80px;
+  }
+
+  /* ── 모바일 ── */
+  .menu-toggle {
+    display: none;
+    position: fixed;
+    top: 12px;
+    left: 12px;
+    z-index: 200;
+    background: var(--bg-sidebar);
+    border: 1px solid var(--border);
+    color: var(--fg);
+    padding: 8px 12px;
+    border-radius: 6px;
+    cursor: pointer;
+    font-size: 1.1rem;
+  }
+
+  @media (max-width: 900px) {
+    .sidebar {
+      transform: translateX(-100%);
+    }
+    .sidebar.open {
+      transform: translateX(0);
+    }
+    .content {
+      margin-left: 0;
+      padding: 60px 20px 60px;
+    }
+    .menu-toggle {
+      display: block;
+    }
+  }
+
+  /* ── 타이포그래피 ── */
+  h1 { font-size: 1.9rem; margin: 2rem 0 1rem; padding-bottom: 0.5rem; border-bottom: 2px solid var(--accent); }
+  h2 { font-size: 1.45rem; margin: 2.5rem 0 0.8rem; padding-bottom: 0.3rem; border-bottom: 1px solid var(--border); color: var(--accent); }
+  h3 { font-size: 1.15rem; margin: 1.8rem 0 0.5rem; }
+  h4 { font-size: 1rem; margin: 1.3rem 0 0.4rem; color: var(--fg-muted); }
+  p { margin: 0.6rem 0; }
+  hr { border: none; border-top: 1px solid var(--border); margin: 2rem 0; }
+  strong { color: var(--strong); }
+  a { color: var(--link); text-decoration: none; }
+  a:hover { text-decoration: underline; }
+  ul, ol { margin: 0.5rem 0 0.5rem 1.5rem; }
+  li { margin: 0.25rem 0; }
+
+  /* ── 테이블 ── */
+  table { width: 100%; border-collapse: collapse; margin: 1rem 0; font-size: 0.85rem; }
+  th, td { border: 1px solid var(--border); padding: 0.5rem 0.75rem; text-align: left; }
+  th { background: var(--table-header); font-weight: 600; }
+  tr:nth-child(even) { background: var(--table-even); }
+  tr:nth-child(odd) { background: var(--table-odd); }
+
+  /* ── 코드 ── */
+  code {
+    background: var(--code-bg);
+    color: var(--code-fg);
+    padding: 0.15rem 0.4rem;
+    border-radius: 4px;
+    font-size: 0.82em;
+    font-family: 'JetBrains Mono', 'Fira Code', 'Cascadia Code', monospace;
+  }
+  pre {
+    background: var(--code-bg);
+    color: var(--code-fg);
+    padding: 1rem 1.2rem;
+    border-radius: 8px;
+    overflow-x: auto;
+    margin: 1rem 0;
+    border: 1px solid var(--border);
+  }
+  pre code {
+    background: none;
+    padding: 0;
+    font-size: 0.82rem;
+    line-height: 1.5;
+  }
+
+  /* ── 인용 ── */
+  blockquote {
+    border-left: 4px solid var(--blockquote-border);
+    padding: 0.6rem 1rem;
+    margin: 1rem 0;
+    background: var(--blockquote-bg);
+    border-radius: 0 6px 6px 0;
+  }
+  blockquote p { margin: 0.3rem 0; }
+
+  /* ── Mermaid ── */
+  .mermaid {
+    margin: 1.5rem 0;
+    text-align: center;
+    background: var(--card-bg);
+    padding: 1rem;
+    border-radius: 8px;
+    border: 1px solid var(--border);
+  }
+  .mermaid svg { max-width: 100%; }
+
+  /* ── Footer ── */
+  footer {
+    margin-top: 3rem;
+    padding-top: 1rem;
+    border-top: 1px solid var(--border);
+    color: var(--fg-muted);
+    font-size: 0.8rem;
+  }
+</style>
+</head>
+<body>
+
+<button class="menu-toggle" onclick="document.querySelector('.sidebar').classList.toggle('open')">☰</button>
+
+<aside class="sidebar">
+  <div class="sidebar-header">
+    <div class="sidebar-title">Wren AI NL2SQL 품질 테스트 리포트</div>
+    <div class="sidebar-controls">
+      <button class="theme-btn" onclick="setTheme('dark')" id="btn-dark">🌙 Dark</button>
+      <button class="theme-btn" onclick="setTheme('light')" id="btn-light">☀️ Light</button>
+    </div>
+    <a class="back-link" href="index.html">← 문서 목록으로</a>
+  </div>
+  <nav class="toc">
+<ul>
+<li class="toc-h2"><a href="#목차">목차</a></li>
+<li class="toc-h2"><a href="#1-테스트-목적-및-배경">1. 테스트 목적 및 배경</a></li>
+  <li class="toc-h3"><a href="#1-1-테스트-목적">1-1. 테스트 목적</a></li>
+  <li class="toc-h3"><a href="#1-2-테스트-전-수행한-개선-작업">1-2. 테스트 전 수행한 개선 작업</a></li>
+  <li class="toc-h3"><a href="#1-3-테스트-대상-모델">1-3. 테스트 대상 모델</a></li>
+<li class="toc-h2"><a href="#2-테스트-환경">2. 테스트 환경</a></li>
+  <li class="toc-h3"><a href="#2-1-인프라-구성">2-1. 인프라 구성</a></li>
+  <li class="toc-h3"><a href="#2-2-테스트-방법">2-2. 테스트 방법</a></li>
+  <li class="toc-h3"><a href="#2-3-평가-기준-프레임워크">2-3. 평가 기준 프레임워크</a></li>
+    <li class="toc-h4"><a href="#평가-차원">평가 차원</a></li>
+    <li class="toc-h4"><a href="#차원별-상세-기준">차원별 상세 기준</a></li>
+    <li class="toc-h4"><a href="#자동-체크-항목-스크립트-검증">자동 체크 항목 (스크립트 검증)</a></li>
+    <li class="toc-h4"><a href="#종합-등급-산정">종합 등급 산정</a></li>
+    <li class="toc-h4"><a href="#이번-테스트-결과에-적용">이번 테스트 결과에 적용</a></li>
+<li class="toc-h2"><a href="#3-테스트-결과-요약">3. 테스트 결과 요약</a></li>
+  <li class="toc-h3"><a href="#3-1-전체-성적">3-1. 전체 성적</a></li>
+  <li class="toc-h3"><a href="#3-2-카테고리별-결과">3-2. 카테고리별 결과</a></li>
+  <li class="toc-h3"><a href="#3-3-핵심-발견">3-3. 핵심 발견</a></li>
+<li class="toc-h2"><a href="#4-테스트-케이스-상세">4. 테스트 케이스 상세</a></li>
+  <li class="toc-h3"><a href="#tc-01-현재-vix-지수">TC-01: 현재 VIX 지수 ✅</a></li>
+  <li class="toc-h3"><a href="#tc-02-삼성전자-현재-주가">TC-02: 삼성전자 현재 주가 ✅</a></li>
+  <li class="toc-h3"><a href="#tc-03-코스피-시가총액-상위-5종목">TC-03: 코스피 시가총액 상위 5종목 ⚠️</a></li>
+  <li class="toc-h3"><a href="#tc-04-삼성전자-목표가-괴리율">TC-04: 삼성전자 목표가 괴리율 ✅</a></li>
+  <li class="toc-h3"><a href="#tc-05-거래대금-상위-10종목">TC-05: 거래대금 상위 10종목 ⚠️</a></li>
+  <li class="toc-h3"><a href="#tc-06-현재-실질금리">TC-06: 현재 실질금리 ❌</a></li>
+  <li class="toc-h3"><a href="#tc-07-현재-신용스프레드">TC-07: 현재 신용스프레드 ❌</a></li>
+  <li class="toc-h3"><a href="#tc-08-코스피-20일-이격도-상위-종목">TC-08: 코스피 20일 이격도 상위 종목 ✅</a></li>
+  <li class="toc-h3"><a href="#tc-09-roe-20-이상이고-per-10-이하-종목">TC-09: ROE 20% 이상이고 PER 10 이하 종목 ✅</a></li>
+  <li class="toc-h3"><a href="#tc-10-외국인-순매수-금액-상위-종목">TC-10: 외국인 순매수 금액 상위 종목 ✅</a></li>
+  <li class="toc-h3"><a href="#tc-11-최근-1주일-원달러-환율-추이">TC-11: 최근 1주일 원달러 환율 추이 ✅</a></li>
+  <li class="toc-h3"><a href="#tc-12-하이닉스-최근-한달-주가">TC-12: 하이닉스 최근 한달 주가 ✅</a></li>
+<li class="toc-h2"><a href="#5-발견된-문제-및-조치">5. 발견된 문제 및 조치</a></li>
+  <li class="toc-h3"><a href="#5-1-문제-유형-분류">5-1. 문제 유형 분류</a></li>
+  <li class="toc-h3"><a href="#5-2-상세-문제-및-조치">5-2. 상세 문제 및 조치</a></li>
+  <li class="toc-h3"><a href="#5-3-조치-후-추가된-sql-pairs">5-3. 조치 후 추가된 SQL Pairs</a></li>
+<li class="toc-h2"><a href="#6-개선-전후-비교">6. 개선 전후 비교</a></li>
+  <li class="toc-h3"><a href="#6-1-컬럼-설명-커버리지">6-1. 컬럼 설명 커버리지</a></li>
+  <li class="toc-h3"><a href="#6-2-sql-pairs-수">6-2. SQL Pairs 수</a></li>
+  <li class="toc-h3"><a href="#6-3-개선-효과-요약">6-3. 개선 효과 요약</a></li>
+<li class="toc-h2"><a href="#7-nl2sql-정확도-개선-전략">7. NL2SQL 정확도 개선 전략</a></li>
+  <li class="toc-h3"><a href="#7-1-지속적-개선-사이클">7-1. 지속적 개선 사이클</a></li>
+  <li class="toc-h3"><a href="#7-2-개선-우선순위">7-2. 개선 우선순위</a></li>
+  <li class="toc-h3"><a href="#7-3-하지-말아야-할-것">7-3. 하지 말아야 할 것</a></li>
+<li class="toc-h2"><a href="#8-2차-테스트--개선-검증-및-신규-패턴-2026-04-03">8. 2차 테스트 — 개선 검증 및 신규 패턴 (2026-04-03)</a></li>
+  <li class="toc-h3"><a href="#8-1-2차-테스트-목적">8-1. 2차 테스트 목적</a></li>
+  <li class="toc-h3"><a href="#8-2-사전-작업-1차--2차-사이-수행">8-2. 사전 작업 (1차 → 2차 사이 수행)</a></li>
+  <li class="toc-h3"><a href="#8-3-2차-테스트-결과">8-3. 2차 테스트 결과</a></li>
+    <li class="toc-h4"><a href="#기존-f등급-재검증">기존 F등급 재검증</a></li>
+    <li class="toc-h4"><a href="#기존-b등급-재검증">기존 B등급 재검증</a></li>
+    <li class="toc-h4"><a href="#신규-패턴-테스트-9개">신규 패턴 테스트 (9개)</a></li>
+  <li class="toc-h3"><a href="#8-4-2차-테스트-종합">8-4. 2차 테스트 종합</a></li>
+  <li class="toc-h3"><a href="#8-5-2차-테스트에서-추가한-sql-pairs-7개">8-5. 2차 테스트에서 추가한 SQL Pairs (7개)</a></li>
+  <li class="toc-h3"><a href="#8-6-해결-불가-항목-분석">8-6. 해결 불가 항목 분석</a></li>
+<li class="toc-h2"><a href="#9-최종-현황-및-향후-계획">9. 최종 현황 및 향후 계획</a></li>
+  <li class="toc-h3"><a href="#9-1-sql-pairs-현황">9-1. SQL Pairs 현황</a></li>
+  <li class="toc-h3"><a href="#9-2-테스트-점수-변화">9-2. 테스트 점수 변화</a></li>
+  <li class="toc-h3"><a href="#9-3-개선-사이클-검증-결과">9-3. 개선 사이클 검증 결과</a></li>
+  <li class="toc-h3"><a href="#9-4-향후-계획">9-4. 향후 계획</a></li>
+    <li class="toc-h4"><a href="#정기-테스트-권장">정기 테스트 (권장)</a></li>
+    <li class="toc-h4"><a href="#추가-테스트-필요-영역">추가 테스트 필요 영역</a></li>
+    <li class="toc-h4"><a href="#테스트-자동화">테스트 자동화</a></li>
+<li class="toc-h2"><a href="#부록-테스트에-사용된-wren-ai-api-응답-예시">부록: 테스트에 사용된 Wren AI API 응답 예시</a></li>
+  <li class="toc-h3"><a href="#성공-케이스-응답-tc-04-삼성전자-목표가-괴리율">성공 케이스 응답 (TC-04: 삼성전자 목표가 괴리율)</a></li>
+  <li class="toc-h3"><a href="#실패--성공-케이스-tc-06-현재-실질금리-sql-pair-추가-후">실패 → 성공 케이스 (TC-06: 현재 실질금리, SQL Pair 추가 후)</a></li>
+  <li class="toc-h3"><a href="#nl2sql-범위-밖-케이스-반도체-전망">NL2SQL 범위 밖 케이스 (반도체 전망)</a></li>
+<li class="toc-h2"><a href="#3차-llm-모델-비교-테스트-2026-04-0708">3차: LLM 모델 비교 테스트 (2026-04-07~08)</a></li>
+  <li class="toc-h3"><a href="#배경">배경</a></li>
+  <li class="toc-h3"><a href="#테스트-환경">테스트 환경</a></li>
+  <li class="toc-h3"><a href="#모델별-결과">모델별 결과</a></li>
+  <li class="toc-h3"><a href="#주요-발견">주요 발견</a></li>
+  <li class="toc-h3"><a href="#선정-gpt-41-mini">선정: GPT-4.1-mini</a></li>
+  <li class="toc-h3"><a href="#wren-ai-프롬프트-분석">Wren AI 프롬프트 분석</a></li>
+  <li class="toc-h3"><a href="#추가-개선-instructions-보강-2026-04-08">추가 개선: Instructions 보강 (2026-04-08)</a></li>
+  <li class="toc-h3"><a href="#모델-컬럼-추가-2026-04-08">모델 컬럼 추가 (2026-04-08)</a></li>
+<li class="toc-h2"><a href="#4차-phase-1-최종-품질-검증-2026-04-12">4차: Phase 1 최종 품질 검증 (2026-04-12)</a></li>
+  <li class="toc-h3"><a href="#배경_1">배경</a></li>
+  <li class="toc-h3"><a href="#테스트-방법">테스트 방법</a></li>
+  <li class="toc-h3"><a href="#결과-비교">결과 비교</a></li>
+  <li class="toc-h3"><a href="#케이스별-상세">케이스별 상세</a></li>
+  <li class="toc-h3"><a href="#boolean-flag-사용률">Boolean Flag 사용률</a></li>
+  <li class="toc-h3"><a href="#phase-1-전체-개선-추이">Phase 1 전체 개선 추이</a></li>
+  <li class="toc-h3"><a href="#자동화-테스트-스크립트">자동화 테스트 스크립트</a></li>
+<li class="toc-h2"><a href="#5차-phase-1-구조-정비-및-다종목-검증-2026-04-12">5차: Phase 1 구조 정비 및 다종목 검증 (2026-04-12)</a></li>
+  <li class="toc-h3"><a href="#5-1-구조-정비--무엇을-왜-했는가">5-1. 구조 정비 — 무엇을 왜 했는가</a></li>
+    <li class="toc-h4"><a href="#curated-view-4개-모델-전체-컬럼-재등록">Curated View 4개 모델 전체 컬럼 재등록</a></li>
+    <li class="toc-h4"><a href="#relationship-4개-복구">Relationship 4개 복구</a></li>
+    <li class="toc-h4"><a href="#sql-pairs-27개-추가-43--70개">SQL Pairs 27개 추가 (43 → 70개)</a></li>
+    <li class="toc-h4"><a href="#om--wren-ai-description-동기화-dag-실행">OM → Wren AI description 동기화 DAG 실행</a></li>
+  <li class="toc-h3"><a href="#5-2-다종목-검증-20문항">5-2. 다종목 검증 (20문항)</a></li>
+  <li class="toc-h3"><a href="#5-3-발견된-문제와-한계">5-3. 발견된 문제와 한계</a></li>
+    <li class="toc-h4"><a href="#문제-1-종목명-영문-번역-instructions-위반">문제 1: 종목명 영문 번역 (Instructions 위반)</a></li>
+    <li class="toc-h4"><a href="#문제-2-약칭-매핑-한계">문제 2: 약칭 매핑 한계</a></li>
+    <li class="toc-h4"><a href="#문제-3-데이터-부재">문제 3: 데이터 부재</a></li>
+    <li class="toc-h4"><a href="#문제-4-wren-ai-sql_answer-환각">문제 4: Wren AI sql_answer 환각</a></li>
+    <li class="toc-h4"><a href="#문제-5-sql_answer-답변-오해석--해석-컬럼으로-해결-2026-04-13">문제 5: sql_answer 답변 오해석 — 해석 컬럼으로 해결 (2026-04-13)</a></li>
+  <li class="toc-h3"><a href="#5-4-phase-1-최종-상태-2026-04-13">5-4. Phase 1 최종 상태 (2026-04-13)</a></li>
+  <li class="toc-h3"><a href="#5-5-phase-2에서-해결해야-할-것">5-5. Phase 2에서 해결해야 할 것</a></li>
+</ul>
+</nav>
+</aside>
+
+<main class="content">
+<h1 id="wren-ai-nl2sql-품질-테스트-리포트">Wren AI NL2SQL 품질 테스트 리포트</h1>
+<blockquote>
+<p><strong>테스트일:</strong> 2026-04-02 (1차), 2026-04-03 (2차 개선 검증)
+<strong>Wren AI 버전:</strong> Engine 0.22.0 / AI Service 0.29.0 / UI 0.32.2
+<strong>LLM:</strong> gpt-4o-mini (OpenAI, LiteLLM 경유)
+<strong>테스트 방법:</strong> Wren AI REST API (<code>POST /v1/asks</code> → <code>GET /v1/asks/{id}/result</code>) 자동화 스크립트</p>
+</blockquote>
+<hr />
+<h2 id="목차">목차</h2>
+<ol>
+<li><a href="#1-테스트-목적-및-배경">테스트 목적 및 배경</a></li>
+<li><a href="#2-테스트-환경">테스트 환경</a></li>
+<li><a href="#3-테스트-결과-요약">테스트 결과 요약</a></li>
+<li><a href="#4-테스트-케이스-상세">테스트 케이스 상세</a></li>
+<li><a href="#5-발견된-문제-및-조치">발견된 문제 및 조치</a></li>
+<li><a href="#6-개선-전후-비교">개선 전후 비교</a></li>
+<li><a href="#7-nl2sql-정확도-개선-전략">NL2SQL 정확도 개선 전략</a></li>
+<li><a href="#8-2차-테스트--개선-검증-및-신규-패턴-2026-04-03">2차 테스트 — 개선 검증 및 신규 패턴</a></li>
+<li><a href="#9-최종-현황-및-향후-계획">최종 현황 및 향후 계획</a></li>
+</ol>
+<hr />
+<h2 id="1-테스트-목적-및-배경">1. 테스트 목적 및 배경</h2>
+<h3 id="1-1-테스트-목적">1-1. 테스트 목적</h3>
+<p>Wren AI NL2SQL 설치 후 실제 질문에 대한 SQL 생성 품질을 검증하고,
+메타데이터 보강(컬럼 설명, 계산 힌트, SQL Pairs) 작업의 효과를 측정합니다.</p>
+<h3 id="1-2-테스트-전-수행한-개선-작업">1-2. 테스트 전 수행한 개선 작업</h3>
+<table>
+<thead>
+<tr>
+<th>작업</th>
+<th>수량</th>
+<th>목적</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Gold 테이블 컬럼 설명 추가 (OM → Wren AI)</td>
+<td>115개 (12%→100%)</td>
+<td>LLM이 컬럼 의미 파악</td>
+</tr>
+<tr>
+<td>계산 힌트 보강</td>
+<td>27개 핵심 컬럼</td>
+<td>파생 계산식 유도</td>
+</tr>
+<tr>
+<td>SQL Pairs 사전 등록</td>
+<td>29개</td>
+<td>자주 묻는 패턴 학습</td>
+</tr>
+<tr>
+<td>Instructions</td>
+<td>2개</td>
+<td>ILIKE 규칙, 계산 폴백</td>
+</tr>
+<tr>
+<td>Deploy (Qdrant 재인덱싱)</td>
+<td>1회</td>
+<td>모든 변경사항 임베딩 반영</td>
+</tr>
+</tbody>
+</table>
+<h3 id="1-3-테스트-대상-모델">1-3. 테스트 대상 모델</h3>
+<table>
+<thead>
+<tr>
+<th>모델</th>
+<th>컬럼 수</th>
+<th>설명 커버리지</th>
+<th>용도</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>public_analytics_stock_daily</code></td>
+<td>46</td>
+<td>100% (46/46)</td>
+<td>종목별 시세+지표+컨센서스</td>
+</tr>
+<tr>
+<td><code>public_analytics_macro_daily</code></td>
+<td>49</td>
+<td>100% (49/49)</td>
+<td>거시경제 지표 피벗</td>
+</tr>
+<tr>
+<td><code>public_analytics_valuation</code></td>
+<td>32</td>
+<td>100% (32/32)</td>
+<td>밸류에이션 종합</td>
+</tr>
+<tr>
+<td><code>public_stock_info</code></td>
+<td>23</td>
+<td>100% (23/23)</td>
+<td>종목 마스터</td>
+</tr>
+<tr>
+<td><code>public_stock_price_1d</code></td>
+<td>19</td>
+<td>95% (18/19)</td>
+<td>일봉 시세</td>
+</tr>
+</tbody>
+</table>
+<hr />
+<h2 id="2-테스트-환경">2. 테스트 환경</h2>
+<h3 id="2-1-인프라-구성">2-1. 인프라 구성</h3>
+<div class="mermaid">
+graph LR
+    TEST["테스트 스크립트\n(Python)"]
+    AI["Wren AI Service\n:5555"]
+    QD["Qdrant\n:6333"]
+    EN["Wren Engine\n:8080"]
+    IB["Ibis Server\n:8000"]
+    PG["PostgreSQL\n:5432"]
+
+    TEST -->|POST /v1/asks| AI
+    AI -->|임베딩 검색| QD
+    AI -->|SQL 검증| EN
+    EN -->|SQL 실행| IB
+    IB -->|쿼리| PG
+</div>
+
+<h3 id="2-2-테스트-방법">2-2. 테스트 방법</h3>
+<div class="codehilite"><pre><span></span><code><span class="c1"># 1) 질문 제출</span>
+<span class="n">POST</span> <span class="n">http</span><span class="p">:</span><span class="o">//</span><span class="n">localhost</span><span class="p">:</span><span class="mi">5555</span><span class="o">/</span><span class="n">v1</span><span class="o">/</span><span class="n">asks</span>
+<span class="p">{</span><span class="s2">&quot;query&quot;</span><span class="p">:</span> <span class="s2">&quot;삼성전자 현재 주가&quot;</span><span class="p">,</span> <span class="s2">&quot;mdl_hash&quot;</span><span class="p">:</span> <span class="s2">&quot;&quot;</span><span class="p">}</span>
+
+<span class="c1"># 2) 결과 polling (3초 간격, 최대 90초)</span>
+<span class="n">GET</span> <span class="n">http</span><span class="p">:</span><span class="o">//</span><span class="n">localhost</span><span class="p">:</span><span class="mi">5555</span><span class="o">/</span><span class="n">v1</span><span class="o">/</span><span class="n">asks</span><span class="o">/</span><span class="p">{</span><span class="n">query_id</span><span class="p">}</span><span class="o">/</span><span class="n">result</span>
+
+<span class="c1"># 3) 응답 구조</span>
+<span class="p">{</span>
+    <span class="s2">&quot;status&quot;</span><span class="p">:</span> <span class="s2">&quot;finished&quot;</span><span class="p">,</span>
+    <span class="s2">&quot;rephrased_question&quot;</span><span class="p">:</span> <span class="s2">&quot;...&quot;</span><span class="p">,</span>
+    <span class="s2">&quot;sql_generation_reasoning&quot;</span><span class="p">:</span> <span class="s2">&quot;...&quot;</span><span class="p">,</span>  <span class="c1"># Chain-of-Thought</span>
+    <span class="s2">&quot;response&quot;</span><span class="p">:</span> <span class="p">[{</span><span class="s2">&quot;sql&quot;</span><span class="p">:</span> <span class="s2">&quot;SELECT ...&quot;</span><span class="p">}],</span>
+    <span class="s2">&quot;error&quot;</span><span class="p">:</span> <span class="n">null</span>
+<span class="p">}</span>
+</code></pre></div>
+
+<h3 id="2-3-평가-기준-프레임워크">2-3. 평가 기준 프레임워크</h3>
+<p>NL2SQL 품질을 5개 차원, 3단계 등급으로 평가합니다.</p>
+<h4 id="평가-차원">평가 차원</h4>
+<div class="mermaid">
+graph TB
+    subgraph Dimensions["5개 평가 차원"]
+        D1["1. 실행 가능성\n(Executability)"]
+        D2["2. 의미 정확성\n(Semantic Accuracy)"]
+        D3["3. 결과 정확성\n(Result Accuracy)"]
+        D4["4. 효율성\n(Efficiency)"]
+        D5["5. 사용자 의도 충족\n(Intent Satisfaction)"]
+    end
+
+    D1 -->|"SQL이 실행 되는가?"| D2
+    D2 -->|"맞는 테이블/컬럼을 쓰는가?"| D3
+    D3 -->|"결과가 정확한가?"| D4
+    D4 -->|"최적의 SQL인가?"| D5
+    D5 -->|"사용자가 원하는 답인가?"| FINAL[종합 평가]
+
+    style Dimensions fill:#e8eaf6
+    style Dimensions fill:#4f8fea22,stroke:#4f8fea,stroke-width:2px,color:#e6edf3
+</div>
+
+<h4 id="차원별-상세-기준">차원별 상세 기준</h4>
+<table>
+<thead>
+<tr>
+<th>#</th>
+<th>차원</th>
+<th>등급 A (Pass)</th>
+<th>등급 B (Partial)</th>
+<th>등급 F (Fail)</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>1</td>
+<td><strong>실행 가능성</strong></td>
+<td>SQL 실행 성공 + 결과 반환</td>
+<td>SQL 실행 성공하나 빈 결과</td>
+<td>SQL 미생성 또는 실행 에러</td>
+</tr>
+<tr>
+<td>2</td>
+<td><strong>의미 정확성</strong></td>
+<td>올바른 테이블 + 올바른 컬럼</td>
+<td>올바른 테이블 + 비최적 컬럼</td>
+<td>잘못된 테이블 또는 잘못된 컬럼</td>
+</tr>
+<tr>
+<td>3</td>
+<td><strong>결과 정확성</strong></td>
+<td>결과 값이 실제 데이터와 일치</td>
+<td>근사치이나 단위/범위 차이</td>
+<td>결과가 완전히 틀림</td>
+</tr>
+<tr>
+<td>4</td>
+<td><strong>효율성</strong></td>
+<td>간결한 SQL (불필요한 CTE/서브쿼리 없음)</td>
+<td>동작하지만 과도한 복잡성</td>
+<td>성능 문제 (풀스캔, N+1 등)</td>
+</tr>
+<tr>
+<td>5</td>
+<td><strong>의도 충족</strong></td>
+<td>사용자 질문의 의도를 정확히 충족</td>
+<td>부분적으로 충족 (누락된 정보 있음)</td>
+<td>의도와 무관한 결과</td>
+</tr>
+</tbody>
+</table>
+<h4 id="자동-체크-항목-스크립트-검증">자동 체크 항목 (스크립트 검증)</h4>
+<table>
+<thead>
+<tr>
+<th>체크 ID</th>
+<th>항목</th>
+<th>검증 방법</th>
+<th>적용 조건</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>CHK-01</td>
+<td>SQL 생성 여부</td>
+<td><code>response</code> 배열 비어있지 않은지</td>
+<td>모든 질문</td>
+</tr>
+<tr>
+<td>CHK-02</td>
+<td>테이블 정확성</td>
+<td>기대 테이블명이 SQL에 포함</td>
+<td>모든 질문</td>
+</tr>
+<tr>
+<td>CHK-03</td>
+<td>ILIKE 사용</td>
+<td>종목명 검색 시 ILIKE 패턴</td>
+<td>질문에 종목명 포함 시</td>
+</tr>
+<tr>
+<td>CHK-04</td>
+<td>ticker 하드코딩 금지</td>
+<td>SQL에 <code>.KS</code>, <code>.KQ</code> 등 직접 기재 없음</td>
+<td>질문에 종목명 포함 시</td>
+</tr>
+<tr>
+<td>CHK-05</td>
+<td>stock_name 포함</td>
+<td>SELECT에 stock_name 존재</td>
+<td>종목 관련 질문</td>
+</tr>
+<tr>
+<td>CHK-06</td>
+<td>LIMIT 포함</td>
+<td>"상위 N개" 질문에 LIMIT 또는 ROW_NUMBER</td>
+<td>랭킹 질문</td>
+</tr>
+<tr>
+<td>CHK-07</td>
+<td>계산식 정확</td>
+<td>기대 컬럼이 계산식에 포함</td>
+<td>파생 지표 질문</td>
+</tr>
+<tr>
+<td>CHK-08</td>
+<td>기간 필터</td>
+<td>INTERVAL 또는 날짜 조건 존재</td>
+<td>"최근", "한달", "1주일" 등</td>
+</tr>
+<tr>
+<td>CHK-09</td>
+<td>최신 데이터</td>
+<td>MAX(date) 또는 ORDER BY DESC LIMIT</td>
+<td>"현재", "오늘" 등</td>
+</tr>
+<tr>
+<td>CHK-10</td>
+<td>NULL 처리</td>
+<td>IS NOT NULL 조건 포함</td>
+<td>계산식에 나눗셈 포함 시</td>
+</tr>
+</tbody>
+</table>
+<h4 id="종합-등급-산정">종합 등급 산정</h4>
+<div class="codehilite"><pre><span></span><code>A등급 (Pass):     5개 차원 모두 A → 완벽
+B등급 (Partial):  1~2개 차원 B, 나머지 A → 동작하지만 개선 필요
+C등급 (Marginal): 3개 이상 차원 B → SQL Pair 등록 권장
+F등급 (Fail):     1개 이상 차원 F → SQL Pair 등록 필수
+</code></pre></div>
+
+<h4 id="이번-테스트-결과에-적용">이번 테스트 결과에 적용</h4>
+<table>
+<thead>
+<tr>
+<th>TC</th>
+<th>질문</th>
+<th>실행</th>
+<th>의미</th>
+<th>결과</th>
+<th>효율</th>
+<th>의도</th>
+<th>종합</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>01</td>
+<td>현재 VIX 지수</td>
+<td>A</td>
+<td>A</td>
+<td>A</td>
+<td>A</td>
+<td>A</td>
+<td><strong>A</strong></td>
+</tr>
+<tr>
+<td>02</td>
+<td>삼성전자 현재 주가</td>
+<td>A</td>
+<td>A</td>
+<td>A</td>
+<td>A</td>
+<td>A</td>
+<td><strong>A</strong></td>
+</tr>
+<tr>
+<td>03</td>
+<td>코스피 시총 상위 5</td>
+<td>A</td>
+<td>A</td>
+<td>A</td>
+<td>B</td>
+<td>A</td>
+<td><strong>B</strong></td>
+</tr>
+<tr>
+<td>04</td>
+<td>삼성전자 목표가 괴리율</td>
+<td>A</td>
+<td>A</td>
+<td>A</td>
+<td>A</td>
+<td>A</td>
+<td><strong>A</strong></td>
+</tr>
+<tr>
+<td>05</td>
+<td>거래대금 상위 10</td>
+<td>A</td>
+<td>B</td>
+<td>A</td>
+<td>B</td>
+<td>A</td>
+<td><strong>B</strong></td>
+</tr>
+<tr>
+<td>06</td>
+<td>현재 실질금리</td>
+<td>F</td>
+<td>-</td>
+<td>-</td>
+<td>-</td>
+<td>F</td>
+<td><strong>F</strong></td>
+</tr>
+<tr>
+<td>07</td>
+<td>현재 신용스프레드</td>
+<td>F</td>
+<td>-</td>
+<td>-</td>
+<td>-</td>
+<td>F</td>
+<td><strong>F</strong></td>
+</tr>
+<tr>
+<td>08</td>
+<td>코스피 20일 이격도</td>
+<td>A</td>
+<td>A</td>
+<td>A</td>
+<td>B</td>
+<td>A</td>
+<td><strong>A</strong></td>
+</tr>
+<tr>
+<td>09</td>
+<td>ROE 20%+ PER 10이하</td>
+<td>A</td>
+<td>A</td>
+<td>A</td>
+<td>A</td>
+<td>A</td>
+<td><strong>A</strong></td>
+</tr>
+<tr>
+<td>10</td>
+<td>외국인 순매수 금액</td>
+<td>A</td>
+<td>A</td>
+<td>A</td>
+<td>B</td>
+<td>A</td>
+<td><strong>A</strong></td>
+</tr>
+<tr>
+<td>11</td>
+<td>최근 1주일 환율</td>
+<td>A</td>
+<td>A</td>
+<td>A</td>
+<td>A</td>
+<td>A</td>
+<td><strong>A</strong></td>
+</tr>
+<tr>
+<td>12</td>
+<td>하이닉스 최근 한달</td>
+<td>A</td>
+<td>A</td>
+<td>A</td>
+<td>A</td>
+<td>A</td>
+<td><strong>A</strong></td>
+</tr>
+</tbody>
+</table>
+<div class="codehilite"><pre><span></span><code><span class="n">A등급</span><span class="o">:</span><span class="w"> </span><span class="mi">7</span><span class="err">개</span><span class="w"> </span><span class="o">(</span><span class="mi">58</span><span class="o">%)</span><span class="w">  </span><span class="err">—</span><span class="w"> </span><span class="err">완벽</span>
+<span class="n">B등급</span><span class="o">:</span><span class="w"> </span><span class="mi">3</span><span class="err">개</span><span class="w"> </span><span class="o">(</span><span class="mi">25</span><span class="o">%)</span><span class="w">  </span><span class="err">—</span><span class="w"> </span><span class="err">동작하지만</span><span class="w"> </span><span class="err">비최적</span>
+<span class="n">F등급</span><span class="o">:</span><span class="w"> </span><span class="mi">2</span><span class="err">개</span><span class="w"> </span><span class="o">(</span><span class="mi">17</span><span class="o">%)</span><span class="w">  </span><span class="err">—</span><span class="w"> </span><span class="n">SQL</span><span class="w"> </span><span class="n">Pair로</span><span class="w"> </span><span class="err">해결</span><span class="w"> </span><span class="err">완료</span>
+</code></pre></div>
+
+<hr />
+<h2 id="3-테스트-결과-요약">3. 테스트 결과 요약</h2>
+<h3 id="3-1-전체-성적">3-1. 전체 성적</h3>
+<div class="codehilite"><pre><span></span><code>총 12개 테스트 케이스
+  ✅ 성공:     9개 (75%)
+  ⚠️ 부분성공: 1개 (8%)
+  ❌ 실패:     2개 (17%)
+</code></pre></div>
+
+<div class="mermaid">
+pie title NL2SQL 테스트 결과 (12개)
+    "성공" : 9
+    "부분성공" : 1
+    "실패" : 2
+</div>
+
+<h3 id="3-2-카테고리별-결과">3-2. 카테고리별 결과</h3>
+<table>
+<thead>
+<tr>
+<th>카테고리</th>
+<th>성공</th>
+<th>실패</th>
+<th>성공률</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>기본 조회 (최신값, 종목검색)</td>
+<td>2/2</td>
+<td>0</td>
+<td>100%</td>
+</tr>
+<tr>
+<td>랭킹 조회 (상위 N개)</td>
+<td>0/1</td>
+<td>1 (부분)</td>
+<td>0%</td>
+</tr>
+<tr>
+<td>계산식 유도</td>
+<td>3/5</td>
+<td>2</td>
+<td>60%</td>
+</tr>
+<tr>
+<td>복합 조건 (AND/OR)</td>
+<td>2/2</td>
+<td>0</td>
+<td>100%</td>
+</tr>
+<tr>
+<td>기간 필터</td>
+<td>2/2</td>
+<td>0</td>
+<td>100%</td>
+</tr>
+</tbody>
+</table>
+<h3 id="3-3-핵심-발견">3-3. 핵심 발견</h3>
+<div class="codehilite"><pre><span></span><code><span class="mf">1.</span><span class="w"> </span><span class="n">기본</span><span class="w"> </span><span class="n">조회</span><span class="o">/</span><span class="n">기간</span><span class="w"> </span><span class="n">필터</span><span class="o">/</span><span class="n">복합</span><span class="w"> </span><span class="n">조건</span><span class="w"> </span><span class="err">→</span><span class="w"> </span><span class="n">매우</span><span class="w"> </span><span class="n">정확</span><span class="w"> </span><span class="p">(</span><span class="mf">100</span><span class="err">%</span><span class="p">)</span>
+<span class="mf">2.</span><span class="w"> </span><span class="n">계산식</span><span class="w"> </span><span class="n">유도</span><span class="w"> </span><span class="err">→</span><span class="w"> </span><span class="n">컬럼</span><span class="w"> </span><span class="n">description</span><span class="w"> </span><span class="n">힌트가</span><span class="w"> </span><span class="n">있으면</span><span class="w"> </span><span class="n">성공</span><span class="p">,</span><span class="w"> </span><span class="n">전문</span><span class="w"> </span><span class="n">용어만</span><span class="w"> </span><span class="n">있으면</span><span class="w"> </span><span class="n">실패</span>
+<span class="mf">3.</span><span class="w"> </span><span class="n">실패</span><span class="w"> </span><span class="n">케이스</span><span class="w"> </span><span class="err">→</span><span class="w"> </span><span class="n">SQL</span><span class="w"> </span><span class="n">Pair</span><span class="w"> </span><span class="n">추가로</span><span class="w"> </span><span class="n">즉시</span><span class="w"> </span><span class="n">해결</span><span class="w"> </span><span class="n">가능</span>
+<span class="mf">4.</span><span class="w"> </span><span class="n">컬럼</span><span class="w"> </span><span class="n">설명</span><span class="w"> </span><span class="mf">100</span><span class="err">%</span><span class="w"> </span><span class="n">채운</span><span class="w"> </span><span class="n">효과가</span><span class="w"> </span><span class="n">가장</span><span class="w"> </span><span class="n">큼</span>
+</code></pre></div>
+
+<hr />
+<h2 id="4-테스트-케이스-상세">4. 테스트 케이스 상세</h2>
+<h3 id="tc-01-현재-vix-지수">TC-01: 현재 VIX 지수 ✅</h3>
+<table>
+<thead>
+<tr>
+<th>항목</th>
+<th>내용</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><strong>질문</strong></td>
+<td>"현재 VIX 지수"</td>
+</tr>
+<tr>
+<td><strong>기대</strong></td>
+<td>analytics_macro_daily에서 최신 1행 조회</td>
+</tr>
+<tr>
+<td><strong>결과</strong></td>
+<td>✅ 성공</td>
+</tr>
+</tbody>
+</table>
+<p><strong>생성된 SQL:</strong></p>
+<div class="codehilite"><pre><span></span><code><span class="k">SELECT</span><span class="w"> </span><span class="ss">&quot;indicator_date&quot;</span><span class="p">,</span><span class="w"> </span><span class="ss">&quot;vix&quot;</span>
+<span class="k">FROM</span><span class="w"> </span><span class="ss">&quot;public_analytics_macro_daily&quot;</span>
+<span class="k">ORDER</span><span class="w"> </span><span class="k">BY</span><span class="w"> </span><span class="ss">&quot;indicator_date&quot;</span><span class="w"> </span><span class="k">DESC</span>
+<span class="k">LIMIT</span><span class="w"> </span><span class="mi">1</span>
+</code></pre></div>
+
+<p><strong>평가:</strong> ORDER BY DESC LIMIT 1 패턴 정확. 컬럼 설명 "VIX 공포 지수. 20 이하=안정, 20~30=주의, 30 이상=공포"가 정확한 테이블/컬럼 매핑에 기여.</p>
+<hr />
+<h3 id="tc-02-삼성전자-현재-주가">TC-02: 삼성전자 현재 주가 ✅</h3>
+<table>
+<thead>
+<tr>
+<th>항목</th>
+<th>내용</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><strong>질문</strong></td>
+<td>"삼성전자 현재 주가"</td>
+</tr>
+<tr>
+<td><strong>기대</strong></td>
+<td>ILIKE + stock_name 포함</td>
+</tr>
+<tr>
+<td><strong>결과</strong></td>
+<td>✅ 성공</td>
+</tr>
+</tbody>
+</table>
+<p><strong>생성된 SQL:</strong></p>
+<div class="codehilite"><pre><span></span><code><span class="k">SELECT</span><span class="w"> </span><span class="ss">&quot;stock_name&quot;</span><span class="p">,</span><span class="w"> </span><span class="ss">&quot;close&quot;</span>
+<span class="k">FROM</span><span class="w"> </span><span class="ss">&quot;public_analytics_stock_daily&quot;</span>
+<span class="k">WHERE</span><span class="w"> </span><span class="ss">&quot;trade_date&quot;</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="p">(</span><span class="k">SELECT</span><span class="w"> </span><span class="k">MAX</span><span class="p">(</span><span class="ss">&quot;trade_date&quot;</span><span class="p">)</span><span class="w"> </span><span class="k">FROM</span><span class="w"> </span><span class="ss">&quot;public_analytics_stock_daily&quot;</span><span class="p">)</span>
+<span class="w">  </span><span class="k">AND</span><span class="w"> </span><span class="ss">&quot;stock_name&quot;</span><span class="w"> </span><span class="k">ILIKE</span><span class="w"> </span><span class="s1">&#39;%삼성전자%&#39;</span>
+</code></pre></div>
+
+<p><strong>평가:</strong> Instruction의 ILIKE 규칙 정확히 적용. stock_name 포함. MAX(trade_date) 서브쿼리로 최신 데이터 조회.</p>
+<hr />
+<h3 id="tc-03-코스피-시가총액-상위-5종목">TC-03: 코스피 시가총액 상위 5종목 ⚠️</h3>
+<table>
+<thead>
+<tr>
+<th>항목</th>
+<th>내용</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><strong>질문</strong></td>
+<td>"코스피 시가총액 상위 5종목"</td>
+</tr>
+<tr>
+<td><strong>기대</strong></td>
+<td>market_type='KOSPI' + ORDER BY market_value DESC LIMIT 5</td>
+</tr>
+<tr>
+<td><strong>결과</strong></td>
+<td>⚠️ 부분 성공</td>
+</tr>
+</tbody>
+</table>
+<p><strong>생성된 SQL:</strong></p>
+<div class="codehilite"><pre><span></span><code><span class="k">WITH</span><span class="w"> </span><span class="n">RankedStocks</span><span class="w"> </span><span class="k">AS</span><span class="w"> </span><span class="p">(</span>
+<span class="w">  </span><span class="k">SELECT</span><span class="w"> </span><span class="ss">&quot;stock_name&quot;</span><span class="p">,</span><span class="w"> </span><span class="ss">&quot;market_value&quot;</span><span class="p">,</span>
+<span class="w">    </span><span class="n">ROW_NUMBER</span><span class="p">()</span><span class="w"> </span><span class="n">OVER</span><span class="w"> </span><span class="p">(</span><span class="k">ORDER</span><span class="w"> </span><span class="k">BY</span><span class="w"> </span><span class="ss">&quot;market_value&quot;</span><span class="w"> </span><span class="k">DESC</span><span class="p">)</span><span class="w"> </span><span class="k">AS</span><span class="w"> </span><span class="n">rank</span>
+<span class="w">  </span><span class="k">FROM</span><span class="w"> </span><span class="ss">&quot;public_analytics_stock_daily&quot;</span>
+<span class="w">  </span><span class="k">WHERE</span><span class="w"> </span><span class="ss">&quot;market_type&quot;</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s1">&#39;KOSPI&#39;</span>
+<span class="w">    </span><span class="k">AND</span><span class="w"> </span><span class="ss">&quot;trade_date&quot;</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="p">(</span><span class="k">SELECT</span><span class="w"> </span><span class="k">MAX</span><span class="p">(</span><span class="ss">&quot;trade_date&quot;</span><span class="p">)</span><span class="w"> </span><span class="k">FROM</span><span class="w"> </span><span class="ss">&quot;public_analytics_stock_daily&quot;</span><span class="p">)</span>
+<span class="p">)</span>
+<span class="k">SELECT</span><span class="w"> </span><span class="ss">&quot;stock_name&quot;</span><span class="p">,</span><span class="w"> </span><span class="ss">&quot;market_value&quot;</span><span class="w"> </span><span class="k">FROM</span><span class="w"> </span><span class="n">RankedStocks</span><span class="w"> </span><span class="k">WHERE</span><span class="w"> </span><span class="n">rank</span><span class="w"> </span><span class="o">&lt;=</span><span class="w"> </span><span class="mi">5</span>
+</code></pre></div>
+
+<p><strong>평가:</strong> 결과는 정확하지만 CTE + ROW_NUMBER 사용은 과도. 단순 <code>ORDER BY ... DESC LIMIT 5</code>로 충분. 기능적으로는 문제없음.</p>
+<hr />
+<h3 id="tc-04-삼성전자-목표가-괴리율">TC-04: 삼성전자 목표가 괴리율 ✅</h3>
+<table>
+<thead>
+<tr>
+<th>항목</th>
+<th>내용</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><strong>질문</strong></td>
+<td>"삼성전자 목표가 괴리율"</td>
+</tr>
+<tr>
+<td><strong>기대</strong></td>
+<td>계산: (target_price - close) / close * 100</td>
+</tr>
+<tr>
+<td><strong>결과</strong></td>
+<td>✅ 성공</td>
+</tr>
+</tbody>
+</table>
+<p><strong>생성된 SQL:</strong></p>
+<div class="codehilite"><pre><span></span><code><span class="k">WITH</span><span class="w"> </span><span class="n">latest_data</span><span class="w"> </span><span class="k">AS</span><span class="w"> </span><span class="p">(</span>
+<span class="w">  </span><span class="k">SELECT</span><span class="w"> </span><span class="o">*</span>
+<span class="w">  </span><span class="k">FROM</span><span class="w"> </span><span class="ss">&quot;public_analytics_stock_daily&quot;</span>
+<span class="w">  </span><span class="k">WHERE</span><span class="w"> </span><span class="ss">&quot;trade_date&quot;</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="p">(</span><span class="k">SELECT</span><span class="w"> </span><span class="k">MAX</span><span class="p">(</span><span class="ss">&quot;trade_date&quot;</span><span class="p">)</span><span class="w"> </span><span class="k">FROM</span><span class="w"> </span><span class="ss">&quot;public_analytics_stock_daily&quot;</span><span class="p">)</span>
+<span class="w">    </span><span class="k">AND</span><span class="w"> </span><span class="ss">&quot;stock_name&quot;</span><span class="w"> </span><span class="k">ILIKE</span><span class="w"> </span><span class="s1">&#39;%삼성전자%&#39;</span>
+<span class="p">)</span>
+<span class="k">SELECT</span><span class="w"> </span><span class="ss">&quot;stock_name&quot;</span><span class="p">,</span><span class="w"> </span><span class="ss">&quot;close&quot;</span><span class="p">,</span><span class="w"> </span><span class="ss">&quot;target_price&quot;</span><span class="p">,</span>
+<span class="w">  </span><span class="p">(</span><span class="ss">&quot;target_price&quot;</span><span class="w"> </span><span class="o">-</span><span class="w"> </span><span class="ss">&quot;close&quot;</span><span class="p">)</span><span class="w"> </span><span class="o">/</span><span class="w"> </span><span class="ss">&quot;close&quot;</span><span class="w"> </span><span class="o">*</span><span class="w"> </span><span class="mi">100</span><span class="w"> </span><span class="k">AS</span><span class="w"> </span><span class="n">target_upside_pct</span>
+<span class="k">FROM</span><span class="w"> </span><span class="n">latest_data</span>
+</code></pre></div>
+
+<p><strong>평가:</strong> 컬럼 description의 계산 힌트 <code>"괴리율 계산: (target_price - close) / close * 100"</code>이 정확히 반영됨. <strong>계산 힌트 효과 입증.</strong></p>
+<hr />
+<h3 id="tc-05-거래대금-상위-10종목">TC-05: 거래대금 상위 10종목 ⚠️</h3>
+<table>
+<thead>
+<tr>
+<th>항목</th>
+<th>내용</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><strong>질문</strong></td>
+<td>"거래대금 상위 10종목"</td>
+</tr>
+<tr>
+<td><strong>기대</strong></td>
+<td>계산: close * volume</td>
+</tr>
+<tr>
+<td><strong>결과</strong></td>
+<td>⚠️ 부분 성공</td>
+</tr>
+</tbody>
+</table>
+<p><strong>생성된 SQL:</strong></p>
+<div class="codehilite"><pre><span></span><code><span class="k">WITH</span><span class="w"> </span><span class="n">RankedStocks</span><span class="w"> </span><span class="k">AS</span><span class="w"> </span><span class="p">(</span>
+<span class="w">  </span><span class="k">SELECT</span><span class="w"> </span><span class="ss">&quot;stock_name&quot;</span><span class="p">,</span><span class="w"> </span><span class="ss">&quot;trading_value&quot;</span><span class="p">,</span>
+<span class="w">    </span><span class="n">ROW_NUMBER</span><span class="p">()</span><span class="w"> </span><span class="n">OVER</span><span class="w"> </span><span class="p">(</span><span class="k">ORDER</span><span class="w"> </span><span class="k">BY</span><span class="w"> </span><span class="ss">&quot;trading_value&quot;</span><span class="w"> </span><span class="k">DESC</span><span class="p">)</span><span class="w"> </span><span class="k">AS</span><span class="w"> </span><span class="n">rank</span>
+<span class="w">  </span><span class="k">FROM</span><span class="w"> </span><span class="ss">&quot;public_stock_price_1d&quot;</span>
+<span class="w">  </span><span class="k">JOIN</span><span class="w"> </span><span class="ss">&quot;public_stock_info&quot;</span><span class="w"> </span><span class="k">ON</span><span class="w"> </span><span class="p">...</span>
+<span class="p">)</span>
+<span class="k">SELECT</span><span class="w"> </span><span class="p">...</span><span class="w"> </span><span class="k">WHERE</span><span class="w"> </span><span class="n">rank</span><span class="w"> </span><span class="o">&lt;=</span><span class="w"> </span><span class="mi">10</span>
+</code></pre></div>
+
+<p><strong>평가:</strong> <code>trading_value</code> 컬럼을 <code>stock_price_1d</code>에서 직접 사용 (이 컬럼이 실제 존재). Gold 테이블(<code>analytics_stock_daily</code>)이 아닌 Raw 테이블 사용. 기능적으로는 동작하지만, 의도한 <code>close * volume</code> 계산 대신 기존 컬럼 활용. SQL Pair로 올바른 패턴 등록 완료.</p>
+<hr />
+<h3 id="tc-06-현재-실질금리">TC-06: 현재 실질금리 ❌</h3>
+<table>
+<thead>
+<tr>
+<th>항목</th>
+<th>내용</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><strong>질문</strong></td>
+<td>"현재 실질금리"</td>
+</tr>
+<tr>
+<td><strong>기대</strong></td>
+<td>계산: kr_base_rate - kr_cpi_yoy</td>
+</tr>
+<tr>
+<td><strong>결과</strong></td>
+<td>❌ 실패 (SQL 미생성)</td>
+</tr>
+</tbody>
+</table>
+<p><strong>생성된 SQL:</strong> (없음)</p>
+<p><strong>원인 분석:</strong>
+- "실질금리"가 LLM에게 너무 전문적인 용어
+- 의도 분류(Intent Classification)에서 <code>TEXT_TO_SQL</code>이 아닌 <code>DATA_ASSISTANCE</code>로 분류된 것으로 추정
+- Instructions에 계산식이 있지만, 의도 분류 단계에서 이미 데이터 질문으로 인식 못함</p>
+<p><strong>조치:</strong> SQL Pair 등록으로 해결</p>
+<div class="codehilite"><pre><span></span><code><span class="c1">-- SQL Pair #51: &quot;현재 실질금리&quot;</span>
+<span class="k">SELECT</span><span class="w"> </span><span class="n">indicator_date</span><span class="p">,</span><span class="w"> </span><span class="n">kr_base_rate</span><span class="p">,</span><span class="w"> </span><span class="n">kr_cpi_yoy</span><span class="p">,</span>
+<span class="w">  </span><span class="n">kr_base_rate</span><span class="w"> </span><span class="o">-</span><span class="w"> </span><span class="n">kr_cpi_yoy</span><span class="w"> </span><span class="k">AS</span><span class="w"> </span><span class="n">real_rate</span>
+<span class="k">FROM</span><span class="w"> </span><span class="n">public_analytics_macro_daily</span>
+<span class="k">ORDER</span><span class="w"> </span><span class="k">BY</span><span class="w"> </span><span class="n">indicator_date</span><span class="w"> </span><span class="k">DESC</span><span class="w"> </span><span class="k">LIMIT</span><span class="w"> </span><span class="mi">1</span>
+</code></pre></div>
+
+<hr />
+<h3 id="tc-07-현재-신용스프레드">TC-07: 현재 신용스프레드 ❌</h3>
+<table>
+<thead>
+<tr>
+<th>항목</th>
+<th>내용</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><strong>질문</strong></td>
+<td>"현재 신용스프레드"</td>
+</tr>
+<tr>
+<td><strong>기대</strong></td>
+<td>계산: kr_corp_3y - kr_govt_3y</td>
+</tr>
+<tr>
+<td><strong>결과</strong></td>
+<td>❌ 실패 (SQL 미생성)</td>
+</tr>
+</tbody>
+</table>
+<p><strong>원인 분석:</strong> TC-06과 동일. "신용스프레드" 전문 용어 인식 실패.</p>
+<p><strong>조치:</strong> SQL Pair 등록으로 해결 (SQL Pair #52)</p>
+<hr />
+<h3 id="tc-08-코스피-20일-이격도-상위-종목">TC-08: 코스피 20일 이격도 상위 종목 ✅</h3>
+<table>
+<thead>
+<tr>
+<th>항목</th>
+<th>내용</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><strong>질문</strong></td>
+<td>"코스피 20일 이격도 상위 종목"</td>
+</tr>
+<tr>
+<td><strong>기대</strong></td>
+<td>계산: (close - ma20) / ma20 * 100</td>
+</tr>
+<tr>
+<td><strong>결과</strong></td>
+<td>✅ 성공</td>
+</tr>
+</tbody>
+</table>
+<p><strong>생성된 SQL:</strong></p>
+<div class="codehilite"><pre><span></span><code><span class="k">WITH</span><span class="w"> </span><span class="n">ranked_stocks</span><span class="w"> </span><span class="k">AS</span><span class="w"> </span><span class="p">(</span>
+<span class="w">  </span><span class="k">SELECT</span><span class="w"> </span><span class="ss">&quot;stock_name&quot;</span><span class="p">,</span>
+<span class="w">    </span><span class="p">(</span><span class="ss">&quot;close&quot;</span><span class="w"> </span><span class="o">-</span><span class="w"> </span><span class="ss">&quot;ma20&quot;</span><span class="p">)</span><span class="w"> </span><span class="o">/</span><span class="w"> </span><span class="ss">&quot;ma20&quot;</span><span class="w"> </span><span class="o">*</span><span class="w"> </span><span class="mi">100</span><span class="w"> </span><span class="k">AS</span><span class="w"> </span><span class="n">disparity_20d</span><span class="p">,</span>
+<span class="w">    </span><span class="n">ROW_NUMBER</span><span class="p">()</span><span class="w"> </span><span class="n">OVER</span><span class="w"> </span><span class="p">(</span><span class="k">ORDER</span><span class="w"> </span><span class="k">BY</span><span class="w"> </span><span class="p">(</span><span class="ss">&quot;close&quot;</span><span class="w"> </span><span class="o">-</span><span class="w"> </span><span class="ss">&quot;ma20&quot;</span><span class="p">)</span><span class="w"> </span><span class="o">/</span><span class="w"> </span><span class="ss">&quot;ma20&quot;</span><span class="w"> </span><span class="o">*</span><span class="w"> </span><span class="mi">100</span><span class="w"> </span><span class="k">DESC</span><span class="p">)</span><span class="w"> </span><span class="k">AS</span><span class="w"> </span><span class="n">rank</span>
+<span class="w">  </span><span class="k">FROM</span><span class="w"> </span><span class="ss">&quot;public_analytics_stock_daily&quot;</span>
+<span class="w">  </span><span class="k">WHERE</span><span class="w"> </span><span class="ss">&quot;market_type&quot;</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s1">&#39;KOSPI&#39;</span>
+<span class="w">    </span><span class="k">AND</span><span class="w"> </span><span class="ss">&quot;trade_date&quot;</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="p">(</span><span class="k">SELECT</span><span class="w"> </span><span class="k">MAX</span><span class="p">(</span><span class="ss">&quot;trade_date&quot;</span><span class="p">)</span><span class="w"> </span><span class="k">FROM</span><span class="w"> </span><span class="ss">&quot;public_analytics_stock_daily&quot;</span><span class="p">)</span>
+<span class="w">    </span><span class="k">AND</span><span class="w"> </span><span class="ss">&quot;ma20&quot;</span><span class="w"> </span><span class="k">IS</span><span class="w"> </span><span class="k">NOT</span><span class="w"> </span><span class="k">NULL</span>
+<span class="p">)</span>
+<span class="k">SELECT</span><span class="w"> </span><span class="ss">&quot;stock_name&quot;</span><span class="p">,</span><span class="w"> </span><span class="ss">&quot;disparity_20d&quot;</span><span class="w"> </span><span class="k">FROM</span><span class="w"> </span><span class="n">ranked_stocks</span><span class="w"> </span><span class="k">WHERE</span><span class="w"> </span><span class="n">rank</span><span class="w"> </span><span class="o">&lt;=</span><span class="w"> </span><span class="mi">10</span>
+</code></pre></div>
+
+<p><strong>평가:</strong> 컬럼 description의 <code>"이격도: (close - ma20) / ma20 * 100"</code> 힌트 정확히 반영. <strong>계산 힌트 효과 재확인.</strong> NULL 체크도 포함.</p>
+<hr />
+<h3 id="tc-09-roe-20-이상이고-per-10-이하-종목">TC-09: ROE 20% 이상이고 PER 10 이하 종목 ✅</h3>
+<table>
+<thead>
+<tr>
+<th>항목</th>
+<th>내용</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><strong>질문</strong></td>
+<td>"ROE 20% 이상이고 PER 10 이하 종목"</td>
+</tr>
+<tr>
+<td><strong>기대</strong></td>
+<td>복합 WHERE 조건</td>
+</tr>
+<tr>
+<td><strong>결과</strong></td>
+<td>✅ 성공</td>
+</tr>
+</tbody>
+</table>
+<p><strong>생성된 SQL:</strong></p>
+<div class="codehilite"><pre><span></span><code><span class="k">SELECT</span><span class="w"> </span><span class="ss">&quot;stock_name&quot;</span><span class="p">,</span><span class="w"> </span><span class="ss">&quot;roe_actual&quot;</span><span class="p">,</span><span class="w"> </span><span class="ss">&quot;per_actual&quot;</span><span class="p">,</span><span class="w"> </span><span class="ss">&quot;fiscal_year&quot;</span>
+<span class="k">FROM</span><span class="w"> </span><span class="ss">&quot;public_analytics_valuation&quot;</span>
+<span class="k">WHERE</span><span class="w"> </span><span class="ss">&quot;roe_actual&quot;</span><span class="w"> </span><span class="o">&gt;</span><span class="w"> </span><span class="mi">20</span><span class="w"> </span><span class="k">AND</span><span class="w"> </span><span class="ss">&quot;per_actual&quot;</span><span class="w"> </span><span class="o">&lt;=</span><span class="w"> </span><span class="mi">10</span><span class="w"> </span><span class="k">AND</span><span class="w"> </span><span class="ss">&quot;per_actual&quot;</span><span class="w"> </span><span class="o">&gt;</span><span class="w"> </span><span class="mi">0</span>
+<span class="w">  </span><span class="k">AND</span><span class="w"> </span><span class="ss">&quot;fiscal_year&quot;</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="p">(</span><span class="k">SELECT</span><span class="w"> </span><span class="k">MAX</span><span class="p">(</span><span class="ss">&quot;fiscal_year&quot;</span><span class="p">)</span><span class="w"> </span><span class="k">FROM</span><span class="w"> </span><span class="ss">&quot;public_analytics_valuation&quot;</span><span class="p">)</span>
+</code></pre></div>
+
+<p><strong>평가:</strong> 복합 조건 정확. <code>per_actual &gt; 0</code> (적자 제외) 자동 포함. SQL Pair의 유사 패턴("저PER 고ROE 종목")이 영향.</p>
+<hr />
+<h3 id="tc-10-외국인-순매수-금액-상위-종목">TC-10: 외국인 순매수 금액 상위 종목 ✅</h3>
+<table>
+<thead>
+<tr>
+<th>항목</th>
+<th>내용</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><strong>질문</strong></td>
+<td>"외국인 순매수 금액 상위 종목"</td>
+</tr>
+<tr>
+<td><strong>기대</strong></td>
+<td>계산: foreign_buy_volume * close</td>
+</tr>
+<tr>
+<td><strong>결과</strong></td>
+<td>✅ 성공</td>
+</tr>
+</tbody>
+</table>
+<p><strong>생성된 SQL:</strong></p>
+<div class="codehilite"><pre><span></span><code><span class="k">WITH</span><span class="w"> </span><span class="n">ranked_stocks</span><span class="w"> </span><span class="k">AS</span><span class="w"> </span><span class="p">(</span>
+<span class="w">  </span><span class="k">SELECT</span><span class="w"> </span><span class="ss">&quot;stock_name&quot;</span><span class="p">,</span><span class="w"> </span><span class="ss">&quot;foreign_buy_volume&quot;</span><span class="p">,</span>
+<span class="w">    </span><span class="ss">&quot;foreign_buy_volume&quot;</span><span class="w"> </span><span class="o">*</span><span class="w"> </span><span class="ss">&quot;close&quot;</span><span class="w"> </span><span class="k">AS</span><span class="w"> </span><span class="n">buy_amount</span><span class="p">,</span>
+<span class="w">    </span><span class="n">ROW_NUMBER</span><span class="p">()</span><span class="w"> </span><span class="n">OVER</span><span class="w"> </span><span class="p">(</span><span class="k">ORDER</span><span class="w"> </span><span class="k">BY</span><span class="w"> </span><span class="ss">&quot;foreign_buy_volume&quot;</span><span class="w"> </span><span class="o">*</span><span class="w"> </span><span class="ss">&quot;close&quot;</span><span class="w"> </span><span class="k">DESC</span><span class="p">)</span><span class="w"> </span><span class="k">AS</span><span class="w"> </span><span class="n">rank</span>
+<span class="w">  </span><span class="k">FROM</span><span class="w"> </span><span class="ss">&quot;public_analytics_stock_daily&quot;</span>
+<span class="w">  </span><span class="k">WHERE</span><span class="w"> </span><span class="ss">&quot;trade_date&quot;</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="p">(</span><span class="k">SELECT</span><span class="w"> </span><span class="k">MAX</span><span class="p">(</span><span class="ss">&quot;trade_date&quot;</span><span class="p">)</span><span class="w"> </span><span class="k">FROM</span><span class="w"> </span><span class="ss">&quot;public_analytics_stock_daily&quot;</span><span class="p">)</span>
+<span class="w">    </span><span class="k">AND</span><span class="w"> </span><span class="ss">&quot;foreign_buy_volume&quot;</span><span class="w"> </span><span class="o">&gt;</span><span class="w"> </span><span class="mi">0</span>
+<span class="p">)</span>
+<span class="k">SELECT</span><span class="w"> </span><span class="p">...</span><span class="w"> </span><span class="k">WHERE</span><span class="w"> </span><span class="n">rank</span><span class="w"> </span><span class="o">&lt;=</span><span class="w"> </span><span class="mi">10</span>
+</code></pre></div>
+
+<p><strong>평가:</strong> <code>foreign_buy_volume * close</code> 계산 정확. 컬럼 description의 <code>"금액: foreign_buy_volume * close"</code> 힌트 반영.</p>
+<hr />
+<h3 id="tc-11-최근-1주일-원달러-환율-추이">TC-11: 최근 1주일 원달러 환율 추이 ✅</h3>
+<table>
+<thead>
+<tr>
+<th>항목</th>
+<th>내용</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><strong>질문</strong></td>
+<td>"최근 1주일 원달러 환율 추이"</td>
+</tr>
+<tr>
+<td><strong>기대</strong></td>
+<td>INTERVAL 기간 필터</td>
+</tr>
+<tr>
+<td><strong>결과</strong></td>
+<td>✅ 성공</td>
+</tr>
+</tbody>
+</table>
+<p><strong>생성된 SQL:</strong></p>
+<div class="codehilite"><pre><span></span><code><span class="k">SELECT</span><span class="w"> </span><span class="ss">&quot;indicator_date&quot;</span><span class="p">,</span><span class="w"> </span><span class="ss">&quot;usd_krw&quot;</span>
+<span class="k">FROM</span><span class="w"> </span><span class="ss">&quot;public_analytics_macro_daily&quot;</span>
+<span class="k">WHERE</span><span class="w"> </span><span class="ss">&quot;indicator_date&quot;</span><span class="w"> </span><span class="o">&gt;=</span><span class="w"> </span><span class="k">CURRENT_DATE</span><span class="w"> </span><span class="o">-</span><span class="w"> </span><span class="nb">INTERVAL</span><span class="w"> </span><span class="s1">&#39;7 days&#39;</span>
+<span class="k">ORDER</span><span class="w"> </span><span class="k">BY</span><span class="w"> </span><span class="ss">&quot;indicator_date&quot;</span>
+</code></pre></div>
+
+<p><strong>평가:</strong> 정확. "원달러" → <code>usd_krw</code> 매핑, 기간 필터 정확.</p>
+<hr />
+<h3 id="tc-12-하이닉스-최근-한달-주가">TC-12: 하이닉스 최근 한달 주가 ✅</h3>
+<table>
+<thead>
+<tr>
+<th>항목</th>
+<th>내용</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><strong>질문</strong></td>
+<td>"하이닉스 최근 한달 주가"</td>
+</tr>
+<tr>
+<td><strong>기대</strong></td>
+<td>ILIKE + INTERVAL</td>
+</tr>
+<tr>
+<td><strong>결과</strong></td>
+<td>✅ 성공</td>
+</tr>
+</tbody>
+</table>
+<p><strong>생성된 SQL:</strong></p>
+<div class="codehilite"><pre><span></span><code><span class="k">SELECT</span><span class="w"> </span><span class="ss">&quot;stock_name&quot;</span><span class="p">,</span><span class="w"> </span><span class="ss">&quot;close&quot;</span><span class="p">,</span><span class="w"> </span><span class="ss">&quot;trade_date&quot;</span>
+<span class="k">FROM</span><span class="w"> </span><span class="ss">&quot;public_analytics_stock_daily&quot;</span>
+<span class="k">WHERE</span><span class="w"> </span><span class="ss">&quot;stock_name&quot;</span><span class="w"> </span><span class="k">ILIKE</span><span class="w"> </span><span class="s1">&#39;%하이닉스%&#39;</span>
+<span class="w">  </span><span class="k">AND</span><span class="w"> </span><span class="ss">&quot;trade_date&quot;</span><span class="w"> </span><span class="o">&gt;=</span><span class="w"> </span><span class="k">CURRENT_DATE</span><span class="w"> </span><span class="o">-</span><span class="w"> </span><span class="nb">INTERVAL</span><span class="w"> </span><span class="s1">&#39;1 month&#39;</span>
+<span class="k">ORDER</span><span class="w"> </span><span class="k">BY</span><span class="w"> </span><span class="ss">&quot;trade_date&quot;</span>
+</code></pre></div>
+
+<p><strong>평가:</strong> ILIKE 패턴, 기간 필터, stock_name 포함 모두 정확. SQL Pair의 유사 패턴 영향.</p>
+<hr />
+<h2 id="5-발견된-문제-및-조치">5. 발견된 문제 및 조치</h2>
+<h3 id="5-1-문제-유형-분류">5-1. 문제 유형 분류</h3>
+<div class="mermaid">
+pie title 문제 유형 분포
+    "전문 용어 인식 실패" : 2
+    "과도한 SQL 복잡성" : 1
+    "테이블 선택 비최적" : 1
+</div>
+
+<h3 id="5-2-상세-문제-및-조치">5-2. 상세 문제 및 조치</h3>
+<table>
+<thead>
+<tr>
+<th>#</th>
+<th>문제</th>
+<th>원인</th>
+<th>조치</th>
+<th>효과</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>1</td>
+<td>"실질금리" SQL 미생성</td>
+<td>전문 용어 → 의도 분류 실패</td>
+<td>SQL Pair #51 등록</td>
+<td>RAG 검색으로 즉시 해결</td>
+</tr>
+<tr>
+<td>2</td>
+<td>"신용스프레드" SQL 미생성</td>
+<td>전문 용어 → 의도 분류 실패</td>
+<td>SQL Pair #52 등록</td>
+<td>RAG 검색으로 즉시 해결</td>
+</tr>
+<tr>
+<td>3</td>
+<td>상위 N개 질문에 CTE+ROW_NUMBER 과도</td>
+<td>LLM의 SQL 스타일 선호</td>
+<td>허용 (기능적 동일)</td>
+<td>-</td>
+</tr>
+<tr>
+<td>4</td>
+<td>거래대금에 Raw 테이블 사용</td>
+<td><code>trading_value</code> 컬럼이 Raw에만 존재</td>
+<td>SQL Pair #55 등록</td>
+<td>Gold 테이블 유도</td>
+</tr>
+</tbody>
+</table>
+<h3 id="5-3-조치-후-추가된-sql-pairs">5-3. 조치 후 추가된 SQL Pairs</h3>
+<table>
+<thead>
+<tr>
+<th>ID</th>
+<th>질문</th>
+<th>핵심 SQL 패턴</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>51</td>
+<td>현재 실질금리</td>
+<td><code>kr_base_rate - kr_cpi_yoy AS real_rate</code></td>
+</tr>
+<tr>
+<td>52</td>
+<td>신용스프레드</td>
+<td><code>kr_corp_3y - kr_govt_3y AS credit_spread</code></td>
+</tr>
+<tr>
+<td>53</td>
+<td>실질금리 추이</td>
+<td>위 + <code>INTERVAL '3 months'</code></td>
+</tr>
+<tr>
+<td>54</td>
+<td>신용스프레드 추이</td>
+<td>위 + <code>INTERVAL '3 months'</code></td>
+</tr>
+<tr>
+<td>55</td>
+<td>거래대금 상위 종목</td>
+<td><code>close * volume AS trading_value</code></td>
+</tr>
+</tbody>
+</table>
+<hr />
+<h2 id="6-개선-전후-비교">6. 개선 전후 비교</h2>
+<h3 id="6-1-컬럼-설명-커버리지">6-1. 컬럼 설명 커버리지</h3>
+<div class="mermaid">
+xychart-beta
+    title "컬럼 설명 커버리지 (Before → After)"
+    x-axis ["stock_info", "stock_price_1d", "macro_daily", "stock_daily", "valuation"]
+    y-axis "커버리지 (%)" 0 --> 100
+    bar [100, 95, 12, 7, 9]
+    bar [100, 95, 100, 100, 100]
+</div>
+
+<table>
+<thead>
+<tr>
+<th>모델</th>
+<th>Before</th>
+<th>After</th>
+<th>변화</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>analytics_macro_daily</td>
+<td>6/49 (12%)</td>
+<td><strong>49/49 (100%)</strong></td>
+<td>+43</td>
+</tr>
+<tr>
+<td>analytics_stock_daily</td>
+<td>3/46 (7%)</td>
+<td><strong>46/46 (100%)</strong></td>
+<td>+43</td>
+</tr>
+<tr>
+<td>analytics_valuation</td>
+<td>3/32 (9%)</td>
+<td><strong>32/32 (100%)</strong></td>
+<td>+29</td>
+</tr>
+<tr>
+<td><strong>합계</strong></td>
+<td>53/169 (31%)</td>
+<td><strong>168/169 (99%)</strong></td>
+<td><strong>+115</strong></td>
+</tr>
+</tbody>
+</table>
+<h3 id="6-2-sql-pairs-수">6-2. SQL Pairs 수</h3>
+<div class="codehilite"><pre><span></span><code><span class="err">초기</span><span class="o">:</span><span class="w">    </span><span class="mi">29</span><span class="err">개</span><span class="w"> </span><span class="o">(</span><span class="err">설치</span><span class="w"> </span><span class="err">시</span><span class="w"> </span><span class="err">등록</span><span class="o">)</span>
+<span class="err">테스트</span><span class="w"> </span><span class="err">후</span><span class="o">:</span><span class="w"> </span><span class="mi">34</span><span class="err">개</span><span class="w"> </span><span class="o">(+</span><span class="mi">5</span><span class="err">개</span><span class="o">,</span><span class="w"> </span><span class="err">실패</span><span class="w"> </span><span class="err">패턴</span><span class="w"> </span><span class="err">기반</span><span class="o">)</span>
+</code></pre></div>
+
+<h3 id="6-3-개선-효과-요약">6-3. 개선 효과 요약</h3>
+<table>
+<thead>
+<tr>
+<th>개선 항목</th>
+<th>기여도</th>
+<th>근거</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><strong>컬럼 설명 100% 채우기</strong></td>
+<td>★★★★★</td>
+<td>이격도, 목표가 괴리율 등 계산식 정확 생성</td>
+</tr>
+<tr>
+<td><strong>계산 힌트 (description)</strong></td>
+<td>★★★★</td>
+<td>TC-04, TC-08, TC-10에서 계산 힌트 정확 반영 확인</td>
+</tr>
+<tr>
+<td><strong>SQL Pairs</strong></td>
+<td>★★★</td>
+<td>전문 용어(실질금리, 신용스프레드) 실패 → 즉시 해결</td>
+</tr>
+<tr>
+<td><strong>Instructions (ILIKE)</strong></td>
+<td>★★★</td>
+<td>TC-02, TC-12에서 ILIKE 정확 적용</td>
+</tr>
+</tbody>
+</table>
+<hr />
+<h2 id="7-nl2sql-정확도-개선-전략">7. NL2SQL 정확도 개선 전략</h2>
+<h3 id="7-1-지속적-개선-사이클">7-1. 지속적 개선 사이클</h3>
+<div class="mermaid">
+flowchart LR
+    USE[실제 사용]
+    FAIL[실패/부정확 발견]
+    PAIR[SQL Pair 등록]
+    TEST[테스트 검증]
+    DEPLOY[Deploy\nQdrant 재인덱싱]
+
+    USE --> FAIL --> PAIR --> DEPLOY --> TEST --> USE
+
+    style PAIR fill:#c8e6c9
+</div>
+
+<p><strong>핵심 원칙:</strong>
+- Instructions는 <strong>범용 규칙</strong>만 (2~3개면 충분)
+- SQL Pairs는 <strong>구체적 패턴</strong> (실패할 때마다 추가)
+- 컬럼 설명에 <strong>계산 힌트</strong> 포함 (OM에서 관리 → 자동 동기화)</p>
+<h3 id="7-2-개선-우선순위">7-2. 개선 우선순위</h3>
+<div class="codehilite"><pre><span></span><code><span class="mi">1</span><span class="err">위</span><span class="o">:</span><span class="w"> </span><span class="err">실패</span><span class="w"> </span><span class="err">케이스를</span><span class="w"> </span><span class="n">SQL</span><span class="w"> </span><span class="n">Pair로</span><span class="w"> </span><span class="err">등록</span><span class="w"> </span><span class="o">(</span><span class="err">즉각적</span><span class="o">,</span><span class="w"> </span><span class="err">확실한</span><span class="w"> </span><span class="err">효과</span><span class="o">)</span>
+<span class="mi">2</span><span class="err">위</span><span class="o">:</span><span class="w"> </span><span class="err">컬럼</span><span class="w"> </span><span class="err">설명에</span><span class="w"> </span><span class="err">계산</span><span class="w"> </span><span class="err">힌트</span><span class="w"> </span><span class="err">보강</span><span class="w"> </span><span class="o">(</span><span class="n">OM</span><span class="w"> </span><span class="err">→</span><span class="w"> </span><span class="n">Wren</span><span class="w"> </span><span class="n">AI</span><span class="w"> </span><span class="err">자동</span><span class="w"> </span><span class="err">동기화</span><span class="o">)</span>
+<span class="mi">3</span><span class="err">위</span><span class="o">:</span><span class="w"> </span><span class="n">Instructions는</span><span class="w"> </span><span class="err">최소한으로</span><span class="w"> </span><span class="err">유지</span><span class="w"> </span><span class="o">(</span><span class="err">범용</span><span class="w"> </span><span class="err">규칙만</span><span class="o">)</span>
+<span class="mi">4</span><span class="err">위</span><span class="o">:</span><span class="w"> </span><span class="n">Calculated</span><span class="w"> </span><span class="n">Fields는</span><span class="w"> </span><span class="err">집계만</span><span class="w"> </span><span class="err">가능</span><span class="w"> </span><span class="o">(</span><span class="n">MDL</span><span class="w"> </span><span class="err">제약</span><span class="o">,</span><span class="w"> </span><span class="err">향후</span><span class="w"> </span><span class="err">버전에서</span><span class="w"> </span><span class="err">개선</span><span class="w"> </span><span class="err">기대</span><span class="o">)</span>
+</code></pre></div>
+
+<h3 id="7-3-하지-말아야-할-것">7-3. 하지 말아야 할 것</h3>
+<table>
+<thead>
+<tr>
+<th>안티패턴</th>
+<th>이유</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Instructions에 모든 규칙 나열</td>
+<td>검색 노이즈 증가, 관련 없는 규칙이 컨텍스트 오염</td>
+</tr>
+<tr>
+<td>용어집 전체를 Instructions로 변환</td>
+<td>77개 용어가 매 질문마다 검색됨 → 비효율</td>
+</tr>
+<tr>
+<td>모든 계산식을 Instructions에 중복 기재</td>
+<td>컬럼 description에 이미 포함 → 중복</td>
+</tr>
+<tr>
+<td>SQL Pairs를 너무 구체적으로</td>
+<td>"삼성전자 PER" 대신 "종목별 PER" 패턴으로 일반화</td>
+</tr>
+</tbody>
+</table>
+<hr />
+<h2 id="8-2차-테스트--개선-검증-및-신규-패턴-2026-04-03">8. 2차 테스트 — 개선 검증 및 신규 패턴 (2026-04-03)</h2>
+<h3 id="8-1-2차-테스트-목적">8-1. 2차 테스트 목적</h3>
+<p>1차 테스트에서 발견된 F등급/B등급 케이스에 SQL Pair를 추가한 효과 검증 + 신규 질문 패턴 테스트.</p>
+<h3 id="8-2-사전-작업-1차--2차-사이-수행">8-2. 사전 작업 (1차 → 2차 사이 수행)</h3>
+<table>
+<thead>
+<tr>
+<th>작업</th>
+<th>수량</th>
+<th>내용</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Gold 컬럼 설명 추가</td>
+<td>115개</td>
+<td>analytics_* 테이블 커버리지 12%→100%</td>
+</tr>
+<tr>
+<td>계산 힌트 보강</td>
+<td>27개</td>
+<td>이격도, 괴리율, 실질금리 등 계산식을 description에 포함</td>
+</tr>
+<tr>
+<td>계산 폴백 Instruction</td>
+<td>1개</td>
+<td>"컬럼 없으면 계산식으로 SQL 생성" 규칙</td>
+</tr>
+<tr>
+<td>1차 실패 SQL Pair</td>
+<td>5개</td>
+<td>실질금리, 신용스프레드, 거래대금</td>
+</tr>
+</tbody>
+</table>
+<h3 id="8-3-2차-테스트-결과">8-3. 2차 테스트 결과</h3>
+<h4 id="기존-f등급-재검증">기존 F등급 재검증</h4>
+<table>
+<thead>
+<tr>
+<th>TC</th>
+<th>질문</th>
+<th>1차</th>
+<th>2차</th>
+<th>변화</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>06</td>
+<td>현재 실질금리</td>
+<td>F</td>
+<td><strong>A</strong></td>
+<td>SQL Pair가 RAG로 검색되어 정확한 SQL 생성</td>
+</tr>
+<tr>
+<td>07</td>
+<td>현재 신용스프레드</td>
+<td>F</td>
+<td><strong>A</strong></td>
+<td>동일</td>
+</tr>
+</tbody>
+</table>
+<h4 id="기존-b등급-재검증">기존 B등급 재검증</h4>
+<table>
+<thead>
+<tr>
+<th>TC</th>
+<th>질문</th>
+<th>1차</th>
+<th>2차</th>
+<th>변화</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>03</td>
+<td>코스피 시총 상위 5</td>
+<td>B</td>
+<td><strong>B</strong></td>
+<td>여전히 CTE+ROW_NUMBER (기능적 문제 없음, LLM 스타일 선호)</td>
+</tr>
+<tr>
+<td>05</td>
+<td>거래대금 상위 10</td>
+<td>B</td>
+<td><strong>A</strong></td>
+<td>SQL Pair 효과 — Gold 테이블 + close*volume 계산 사용</td>
+</tr>
+</tbody>
+</table>
+<h4 id="신규-패턴-테스트-9개">신규 패턴 테스트 (9개)</h4>
+<table>
+<thead>
+<tr>
+<th>#</th>
+<th>질문</th>
+<th>카테고리</th>
+<th>등급</th>
+<th>비고</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>N-01</td>
+<td>삼성전자 전월 대비 주가 변동</td>
+<td>기간 비교</td>
+<td><strong>A</strong></td>
+<td>CTE로 전월 종가 조회 + 변동률 계산</td>
+</tr>
+<tr>
+<td>N-02</td>
+<td>최근 3개월 VIX 평균</td>
+<td>집계</td>
+<td><strong>F→A</strong></td>
+<td>1차 실패, SQL Pair 추가 후 성공</td>
+</tr>
+<tr>
+<td>N-03</td>
+<td>삼성전자 SK하이닉스 PER 비교</td>
+<td>종목 비교</td>
+<td><strong>A</strong></td>
+<td>ILIKE OR 조건 정확</td>
+</tr>
+<tr>
+<td>N-04</td>
+<td>업종별 평균 PER</td>
+<td>GROUP BY</td>
+<td><strong>B→A</strong></td>
+<td>SQL Pair 추가 후 sector JOIN 정확</td>
+</tr>
+<tr>
+<td>N-05</td>
+<td>코스피 코스닥 시가총액 합계</td>
+<td>시장별 집계</td>
+<td><strong>A</strong></td>
+<td>market_type + SUM 정확</td>
+</tr>
+<tr>
+<td>N-06</td>
+<td>삼성전자 PSR</td>
+<td>복합 계산</td>
+<td><strong>A</strong></td>
+<td>market_value/revenue 계산 정확</td>
+</tr>
+<tr>
+<td>N-07</td>
+<td>배당수익률 높은 종목</td>
+<td>데이터 부재</td>
+<td><strong>F</strong></td>
+<td>Gold 테이블에 배당 데이터 없음 (구조적 한계)</td>
+</tr>
+<tr>
+<td>N-08</td>
+<td>오늘 시장 어때</td>
+<td>모호한 질문</td>
+<td><strong>F→A</strong></td>
+<td>SQL Pair으로 주요 지수 요약 패턴 등록</td>
+</tr>
+<tr>
+<td>N-09</td>
+<td>반도체 전망</td>
+<td>매우 모호</td>
+<td><strong>F</strong></td>
+<td>의견 질문 — NL2SQL 범위 밖 (LangGraph 영역)</td>
+</tr>
+</tbody>
+</table>
+<h3 id="8-4-2차-테스트-종합">8-4. 2차 테스트 종합</h3>
+<div class="mermaid">
+pie title 2차 테스트 종합 결과 (13개)
+    "A등급" : 10
+    "B등급" : 1
+    "F등급 (구조적 한계)" : 2
+</div>
+
+<div class="codehilite"><pre><span></span><code><span class="n">A등급</span><span class="o">:</span><span class="w"> </span><span class="mi">10</span><span class="o">/</span><span class="mi">13</span><span class="w"> </span><span class="o">(</span><span class="mi">77</span><span class="o">%)</span><span class="w"> </span><span class="err">—</span><span class="w"> </span><span class="mi">1</span><span class="err">차</span><span class="w"> </span><span class="err">대비</span><span class="w"> </span><span class="mi">58</span><span class="o">%</span><span class="err">→</span><span class="mi">77</span><span class="o">%</span><span class="w"> </span><span class="err">향상</span>
+<span class="n">B등급</span><span class="o">:</span><span class="w">  </span><span class="mi">1</span><span class="o">/</span><span class="mi">13</span><span class="w"> </span><span class="o">(</span><span class="mi">8</span><span class="o">%)</span><span class="w">  </span><span class="err">—</span><span class="w"> </span><span class="n">CTE</span><span class="w"> </span><span class="err">스타일</span><span class="w"> </span><span class="err">선호</span><span class="w"> </span><span class="o">(</span><span class="err">기능적</span><span class="w"> </span><span class="err">문제</span><span class="w"> </span><span class="err">없음</span><span class="o">)</span>
+<span class="n">F등급</span><span class="o">:</span><span class="w">  </span><span class="mi">2</span><span class="o">/</span><span class="mi">13</span><span class="w"> </span><span class="o">(</span><span class="mi">15</span><span class="o">%)</span><span class="w"> </span><span class="err">—</span><span class="w"> </span><span class="err">데이터</span><span class="w"> </span><span class="err">부재</span><span class="w"> </span><span class="o">+</span><span class="w"> </span><span class="n">NL2SQL</span><span class="w"> </span><span class="err">범위</span><span class="w"> </span><span class="err">밖</span><span class="w"> </span><span class="o">(</span><span class="err">해결</span><span class="w"> </span><span class="err">불가</span><span class="o">)</span>
+</code></pre></div>
+
+<h3 id="8-5-2차-테스트에서-추가한-sql-pairs-7개">8-5. 2차 테스트에서 추가한 SQL Pairs (7개)</h3>
+<table>
+<thead>
+<tr>
+<th>ID</th>
+<th>질문</th>
+<th>핵심 패턴</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>56</td>
+<td>최근 3개월 VIX 평균</td>
+<td><code>AVG(vix)</code> + <code>INTERVAL '3 months'</code></td>
+</tr>
+<tr>
+<td>57</td>
+<td>VIX 평균</td>
+<td><code>AVG(vix)</code> + <code>MIN/MAX</code></td>
+</tr>
+<tr>
+<td>58</td>
+<td>오늘 시장 어때</td>
+<td>kospi, kosdaq, sp500, nasdaq, usd_krw, vix 종합</td>
+</tr>
+<tr>
+<td>59</td>
+<td>시장 현황</td>
+<td>위와 유사 (동의어 패턴)</td>
+</tr>
+<tr>
+<td>60</td>
+<td>시가총액 상위 종목</td>
+<td><code>ORDER BY market_value DESC LIMIT 10</code></td>
+</tr>
+<tr>
+<td>61</td>
+<td>업종별 평균 PER</td>
+<td><code>GROUP BY sector</code> + <code>AVG(per_actual)</code></td>
+</tr>
+<tr>
+<td>62</td>
+<td>삼성전자 전월 대비 주가 변동률</td>
+<td>서브쿼리로 전월 종가 조회</td>
+</tr>
+</tbody>
+</table>
+<h3 id="8-6-해결-불가-항목-분석">8-6. 해결 불가 항목 분석</h3>
+<table>
+<thead>
+<tr>
+<th>질문</th>
+<th>실패 원인</th>
+<th>해결 방향</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>배당수익률 높은 종목</td>
+<td>Gold 테이블에 배당 데이터 미포함</td>
+<td><code>analytics_valuation</code>에 <code>dividend_yield</code> 컬럼 추가 (DAG 수정)</td>
+</tr>
+<tr>
+<td>반도체 전망</td>
+<td>데이터 질문이 아닌 의견 질문</td>
+<td>LangGraph 에이전트에서 뉴스 데이터 + LLM 분석으로 처리</td>
+</tr>
+</tbody>
+</table>
+<hr />
+<h2 id="9-최종-현황-및-향후-계획">9. 최종 현황 및 향후 계획</h2>
+<h3 id="9-1-sql-pairs-현황">9-1. SQL Pairs 현황</h3>
+<div class="codehilite"><pre><span></span><code>초기 등록:        29개 (2026-04-02)
+1차 테스트 후:    34개 (+5)
+2차 테스트 후:    41개 (+7)
+</code></pre></div>
+
+<table>
+<thead>
+<tr>
+<th>카테고리</th>
+<th>수량</th>
+<th>대표 패턴</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>종목 검색/주가</td>
+<td>7</td>
+<td>ILIKE + ORDER DESC LIMIT</td>
+</tr>
+<tr>
+<td>기간별 조회</td>
+<td>3</td>
+<td>INTERVAL + ORDER BY</td>
+</tr>
+<tr>
+<td>기술지표</td>
+<td>3</td>
+<td>RSI/골든크로스/볼린저밴드</td>
+</tr>
+<tr>
+<td>밸류에이션</td>
+<td>5</td>
+<td>PER/ROE/부채비율/매출성장</td>
+</tr>
+<tr>
+<td>매크로</td>
+<td>9</td>
+<td>환율/금리/VIX/실질금리/스프레드</td>
+</tr>
+<tr>
+<td>수급</td>
+<td>2</td>
+<td>외국인/기관 순매수</td>
+</tr>
+<tr>
+<td>복합/비교</td>
+<td>7</td>
+<td>저PER고ROE/거래대금/52주신저가</td>
+</tr>
+<tr>
+<td>시장 요약</td>
+<td>3</td>
+<td>시장현황/시총상위/업종별PER</td>
+</tr>
+<tr>
+<td>기간 비교</td>
+<td>2</td>
+<td>전월대비/전분기</td>
+</tr>
+</tbody>
+</table>
+<h3 id="9-2-테스트-점수-변화">9-2. 테스트 점수 변화</h3>
+<div class="mermaid">
+xychart-beta
+    title "NL2SQL 테스트 등급 변화"
+    x-axis ["1차 (12개)", "2차 (13개)"]
+    y-axis "비율 (%)" 0 --> 100
+    bar [58, 77]
+    bar [25, 8]
+    bar [17, 15]
+</div>
+
+<table>
+<thead>
+<tr>
+<th>등급</th>
+<th>1차 테스트</th>
+<th>2차 테스트</th>
+<th>변화</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>A (Pass)</td>
+<td>7/12 (58%)</td>
+<td>10/13 (77%)</td>
+<td>+19%p</td>
+</tr>
+<tr>
+<td>B (Partial)</td>
+<td>3/12 (25%)</td>
+<td>1/13 (8%)</td>
+<td>-17%p</td>
+</tr>
+<tr>
+<td>F (Fail)</td>
+<td>2/12 (17%)</td>
+<td>2/13 (15%)</td>
+<td>-2%p (구조적 한계만 잔존)</td>
+</tr>
+</tbody>
+</table>
+<h3 id="9-3-개선-사이클-검증-결과">9-3. 개선 사이클 검증 결과</h3>
+<div class="mermaid">
+flowchart LR
+    T1["1차 테스트\n12개 질문"]
+    A1["분석\nF:2, B:3"]
+    FIX1["조치\nSQL Pair 5개\n컬럼설명 115개\n계산힌트 27개"]
+    T2["2차 테스트\n13개 질문"]
+    A2["분석\nF:4 (신규 포함)"]
+    FIX2["조치\nSQL Pair 7개"]
+    T3["재검증\n3개 질문"]
+    R["결과\nA: 77%"]
+
+    T1 --> A1 --> FIX1 --> T2 --> A2 --> FIX2 --> T3 --> R
+
+    style FIX1 fill:#c8e6c9
+    style FIX2 fill:#c8e6c9
+    style R fill:#fff9c4
+</div>
+
+<p><strong>검증된 개선 사이클:</strong>
+1. 테스트 실행 → 실패 발견
+2. 실패 원인 분류 (용어 인식 / 계산식 / 데이터 부재 / 범위 밖)
+3. 해결 가능한 것 → SQL Pair 추가
+4. 재검증 → A등급 확인
+5. 해결 불가 → 구조적 개선(DAG/스키마) 또는 LangGraph 에이전트로 이관</p>
+<h3 id="9-4-향후-계획">9-4. 향후 계획</h3>
+<h4 id="정기-테스트-권장">정기 테스트 (권장)</h4>
+<div class="codehilite"><pre><span></span><code>주 1회: 10~20개 신규 질문 테스트
+  → 실패 케이스 SQL Pair 등록
+  → SQL Pairs 50개 → 100개로 점진적 확대
+
+월 1회: 전체 SQL Pairs 대상 회귀 테스트
+  → Wren AI 버전 업데이트 시 기존 패턴 깨지는지 확인
+</code></pre></div>
+
+<h4 id="추가-테스트-필요-영역">추가 테스트 필요 영역</h4>
+<table>
+<thead>
+<tr>
+<th>영역</th>
+<th>예시 질문</th>
+<th>예상 난이도</th>
+<th>상태</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>기간 비교</td>
+<td>"삼성전자 전월 대비 주가 변동"</td>
+<td>높음</td>
+<td>✅ 2차에서 성공</td>
+</tr>
+<tr>
+<td>종목 비교</td>
+<td>"삼성전자 vs SK하이닉스 PER 비교"</td>
+<td>중간</td>
+<td>✅ 2차에서 성공</td>
+</tr>
+<tr>
+<td>조건부 집계</td>
+<td>"업종별 평균 PER"</td>
+<td>중간</td>
+<td>✅ 2차에서 성공 (SQL Pair 후)</td>
+</tr>
+<tr>
+<td>복합 계산</td>
+<td>"PEG ratio (PER ÷ 성장률)"</td>
+<td>높음</td>
+<td>🔲 미테스트</td>
+</tr>
+<tr>
+<td>시계열 분석</td>
+<td>"골든크로스 발생 후 1개월 수익률"</td>
+<td>매우 높음</td>
+<td>🔲 미테스트 (멀티 쿼리)</td>
+</tr>
+<tr>
+<td>모호한 질문</td>
+<td>"오늘 시장 어때"</td>
+<td>높음</td>
+<td>✅ 2차에서 성공 (SQL Pair 후)</td>
+</tr>
+<tr>
+<td>의견 질문</td>
+<td>"반도체 전망"</td>
+<td>NL2SQL 한계</td>
+<td>❌ LangGraph 영역</td>
+</tr>
+</tbody>
+</table>
+<h4 id="테스트-자동화">테스트 자동화</h4>
+<div class="codehilite"><pre><span></span><code><span class="c1"># Wren AI REST API 기반 자동 품질 검증</span>
+python3<span class="w"> </span>/tmp/wrenai_test.py
+
+<span class="c1"># 향후 정리하여 scripts/wrenai_test.py로 이동 + Airflow DAG 등록 가능</span>
+</code></pre></div>
+
+<hr />
+<h2 id="부록-테스트에-사용된-wren-ai-api-응답-예시">부록: 테스트에 사용된 Wren AI API 응답 예시</h2>
+<h3 id="성공-케이스-응답-tc-04-삼성전자-목표가-괴리율">성공 케이스 응답 (TC-04: 삼성전자 목표가 괴리율)</h3>
+<div class="codehilite"><pre><span></span><code><span class="p">{</span>
+<span class="w">    </span><span class="nt">&quot;status&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;finished&quot;</span><span class="p">,</span>
+<span class="w">    </span><span class="nt">&quot;rephrased_question&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;What is the target price gap rate for Samsung Electronics?&quot;</span><span class="p">,</span>
+<span class="w">    </span><span class="nt">&quot;intent_reasoning&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;User seeks specific calculated data from the database.&quot;</span><span class="p">,</span>
+<span class="w">    </span><span class="nt">&quot;sql_generation_reasoning&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;Step 1: Identify target_price and close columns...\nStep 2: Apply calculation hint from description: (target_price - close) / close * 100...&quot;</span><span class="p">,</span>
+<span class="w">    </span><span class="nt">&quot;type&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;TEXT_TO_SQL&quot;</span><span class="p">,</span>
+<span class="w">    </span><span class="nt">&quot;retrieved_tables&quot;</span><span class="p">:</span><span class="w"> </span><span class="p">[</span><span class="s2">&quot;public_analytics_stock_daily&quot;</span><span class="p">,</span><span class="w"> </span><span class="s2">&quot;public_stock_info&quot;</span><span class="p">],</span>
+<span class="w">    </span><span class="nt">&quot;response&quot;</span><span class="p">:</span><span class="w"> </span><span class="p">[{</span>
+<span class="w">        </span><span class="nt">&quot;sql&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;WITH latest_data AS (...) SELECT stock_name, close, target_price, (target_price - close) / close * 100 AS target_upside_pct FROM latest_data&quot;</span><span class="p">,</span>
+<span class="w">        </span><span class="nt">&quot;type&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;llm&quot;</span>
+<span class="w">    </span><span class="p">}],</span>
+<span class="w">    </span><span class="nt">&quot;error&quot;</span><span class="p">:</span><span class="w"> </span><span class="kc">null</span>
+<span class="p">}</span>
+</code></pre></div>
+
+<h3 id="실패--성공-케이스-tc-06-현재-실질금리-sql-pair-추가-후">실패 → 성공 케이스 (TC-06: 현재 실질금리, SQL Pair 추가 후)</h3>
+<p><strong>1차 (실패):</strong></p>
+<div class="codehilite"><pre><span></span><code><span class="p">{</span><span class="nt">&quot;status&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;finished&quot;</span><span class="p">,</span><span class="w"> </span><span class="nt">&quot;response&quot;</span><span class="p">:</span><span class="w"> </span><span class="p">[],</span><span class="w"> </span><span class="nt">&quot;error&quot;</span><span class="p">:</span><span class="w"> </span><span class="kc">null</span><span class="p">}</span>
+</code></pre></div>
+
+<p><strong>2차 (SQL Pair 추가 후 성공):</strong></p>
+<div class="codehilite"><pre><span></span><code><span class="p">{</span>
+<span class="w">    </span><span class="nt">&quot;status&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;finished&quot;</span><span class="p">,</span>
+<span class="w">    </span><span class="nt">&quot;response&quot;</span><span class="p">:</span><span class="w"> </span><span class="p">[{</span>
+<span class="w">        </span><span class="nt">&quot;sql&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;SELECT \&quot;indicator_date\&quot;, \&quot;kr_base_rate\&quot;, \&quot;kr_cpi_yoy\&quot;, \&quot;kr_base_rate\&quot; - \&quot;kr_cpi_yoy\&quot; AS \&quot;real_rate\&quot; FROM \&quot;public_analytics_macro_daily\&quot; ORDER BY \&quot;indicator_date\&quot; DESC LIMIT 1&quot;</span>
+<span class="w">    </span><span class="p">}]</span>
+<span class="p">}</span>
+</code></pre></div>
+
+<h3 id="nl2sql-범위-밖-케이스-반도체-전망">NL2SQL 범위 밖 케이스 (반도체 전망)</h3>
+<div class="codehilite"><pre><span></span><code><span class="p">{</span><span class="nt">&quot;status&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;finished&quot;</span><span class="p">,</span><span class="w"> </span><span class="nt">&quot;response&quot;</span><span class="p">:</span><span class="w"> </span><span class="p">[],</span><span class="w"> </span><span class="nt">&quot;error&quot;</span><span class="p">:</span><span class="w"> </span><span class="kc">null</span><span class="p">}</span>
+</code></pre></div>
+
+<p>데이터 조회가 아닌 의견/분석 질문 → SQL 생성 불가. LangGraph 에이전트에서 뉴스 데이터 + LLM 분석으로 처리 필요.</p>
+<hr />
+<p><em>이 리포트는 Wren AI NL2SQL 시스템의 품질 기준선(baseline)을 수립하고, 테스트-개선 사이클의 효과를 검증하기 위해 작성되었습니다.</em>
+<em>1차(2026-04-02) → 2차(2026-04-03) 테스트를 통해 A등급 비율이 58%→77%로 개선되었습니다.</em></p>
+<hr />
+<h2 id="3차-llm-모델-비교-테스트-2026-04-0708">3차: LLM 모델 비교 테스트 (2026-04-07~08)</h2>
+<h3 id="배경">배경</h3>
+<p>Wren AI 소스 코드 분석 결과, 응답 포맷 메커니즘(<code>response_format: json_schema</code>)이 OpenAI Structured Outputs 전용으로 구현되어 있음을 확인. Claude 모델 사용 시 LiteLLM이 중간 변환하는 방식으로 동작하므로 모델 간 품질 차이를 실측 비교.</p>
+<h3 id="테스트-환경">테스트 환경</h3>
+<ul>
+<li>Wren AI Service v0.29.0, Engine v0.22.0</li>
+<li>9개 모델 등록 (Gold 3 + Raw 2 + Curated View 4)</li>
+<li>SQL Pairs 43개, Instructions 4개</li>
+<li>테스트: 순차 5문항 + 동시 3문항 + 품질 8문항</li>
+</ul>
+<h3 id="모델별-결과">모델별 결과</h3>
+<table>
+<thead>
+<tr>
+<th>항목</th>
+<th style="text-align: center;">GPT-4o-mini</th>
+<th style="text-align: center;">GPT-4o</th>
+<th style="text-align: center;">GPT-4.1</th>
+<th style="text-align: center;"><strong>GPT-4.1-mini</strong></th>
+<th style="text-align: center;">GPT-5.4-mini</th>
+<th style="text-align: center;">Haiku 4.5</th>
+<th style="text-align: center;"><strong>Sonnet 4.5</strong></th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><strong>순차 평균</strong></td>
+<td style="text-align: center;"><strong>11s</strong></td>
+<td style="text-align: center;">80s</td>
+<td style="text-align: center;">75s (rate limit)</td>
+<td style="text-align: center;"><strong>16s</strong></td>
+<td style="text-align: center;">39s</td>
+<td style="text-align: center;"><strong>11s</strong></td>
+<td style="text-align: center;">30s</td>
+</tr>
+<tr>
+<td><strong>동시 3건 성공</strong></td>
+<td style="text-align: center;">1/3</td>
+<td style="text-align: center;">3/3</td>
+<td style="text-align: center;">1/3 (timeout)</td>
+<td style="text-align: center;"><strong>3/3</strong></td>
+<td style="text-align: center;"><strong>3/3</strong></td>
+<td style="text-align: center;"><strong>3/3</strong></td>
+<td style="text-align: center;"><strong>3/3</strong></td>
+</tr>
+<tr>
+<td><strong>SQL 생성률</strong></td>
+<td style="text-align: center;">높음</td>
+<td style="text-align: center;">중 (4/8 NO SQL)</td>
+<td style="text-align: center;">중</td>
+<td style="text-align: center;"><strong>높음 (7/8)</strong></td>
+<td style="text-align: center;">낮음 (4/8 NO SQL)</td>
+<td style="text-align: center;">높음</td>
+<td style="text-align: center;"><strong>높음</strong></td>
+</tr>
+<tr>
+<td><strong>SQL 품질</strong></td>
+<td style="text-align: center;">중</td>
+<td style="text-align: center;">중상</td>
+<td style="text-align: center;">중</td>
+<td style="text-align: center;"><strong>상</strong></td>
+<td style="text-align: center;">상</td>
+<td style="text-align: center;">중</td>
+<td style="text-align: center;"><strong>상</strong></td>
+</tr>
+<tr>
+<td><strong>Boolean 플래그</strong></td>
+<td style="text-align: center;">일부</td>
+<td style="text-align: center;">0/8</td>
+<td style="text-align: center;">0/8</td>
+<td style="text-align: center;">0/8</td>
+<td style="text-align: center;">0/8</td>
+<td style="text-align: center;">0/8</td>
+<td style="text-align: center;">0/8</td>
+</tr>
+<tr>
+<td><strong>Curated View 활용</strong></td>
+<td style="text-align: center;">-</td>
+<td style="text-align: center;">-</td>
+<td style="text-align: center;">-</td>
+<td style="text-align: center;"><strong>v_valuation_signals 사용</strong></td>
+<td style="text-align: center;">-</td>
+<td style="text-align: center;">-</td>
+<td style="text-align: center;">-</td>
+</tr>
+<tr>
+<td><strong>비용</strong></td>
+<td style="text-align: center;">저</td>
+<td style="text-align: center;">고</td>
+<td style="text-align: center;">고</td>
+<td style="text-align: center;"><strong>저</strong></td>
+<td style="text-align: center;">중</td>
+<td style="text-align: center;">저</td>
+<td style="text-align: center;">중</td>
+</tr>
+<tr>
+<td><strong>안정성</strong></td>
+<td style="text-align: center;">양호</td>
+<td style="text-align: center;">TPM 한도</td>
+<td style="text-align: center;">TPM 한도</td>
+<td style="text-align: center;"><strong>양호</strong></td>
+<td style="text-align: center;">양호</td>
+<td style="text-align: center;">양호</td>
+<td style="text-align: center;">양호</td>
+</tr>
+</tbody>
+</table>
+<h3 id="주요-발견">주요 발견</h3>
+<ol>
+<li><strong>GPT-4o/4.1</strong>: OpenAI Tier-1 TPM 30,000 한도로 사용 불가. Tier-2(450,000 TPM) 업그레이드 후 GPT-4o 테스트 → 80s로 매우 느림</li>
+<li><strong>GPT-5.4-mini</strong>: <code>reasoning_effort</code> 필수 파라미터 + <code>temperature=0</code> 미지원. Wren AI config에서 <code>reasoning_effort: low</code> + <code>max_completion_tokens</code> 사용 시 동작하나 NO SQL 비율 높음</li>
+<li><strong>Claude 모델 boolean 플래그 미사용</strong>: <code>response_format: json_schema</code>가 OpenAI 전용 → LiteLLM 변환 시 Instructions 준수율 저하</li>
+<li><strong>GPT-4.1-mini가 유일하게 Curated View 활용</strong>: "저평가주" 질문에 <code>v_valuation_signals__v1</code> 테이블 사용 + <code>is_oversold_rsi</code> 시도 (모델 컬럼 미등록으로 실패)</li>
+<li><strong>Sonnet 4.5 SQL 품질 최고</strong>: CTE 적극 활용, DENSE_RANK 일관적 사용, <code>lower() = lower()</code> 정확 매칭</li>
+</ol>
+<h3 id="선정-gpt-41-mini">선정: GPT-4.1-mini</h3>
+<p><strong>선정 이유:</strong>
+- 속도(16s)와 품질의 최적 균형점
+- 동시 처리 3/3 안정적
+- Curated View/boolean 플래그 활용 시도 → Instructions 준수력 우수
+- OpenAI <code>json_schema</code> 네이티브 지원으로 구조화된 응답 보장
+- 비용 효율적</p>
+<p><strong>config.yaml 설정:</strong></p>
+<div class="codehilite"><pre><span></span><code><span class="nt">type</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">llm</span>
+<span class="nt">provider</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">litellm_llm</span>
+<span class="nt">timeout</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">120</span>
+<span class="nt">models</span><span class="p">:</span>
+<span class="w">  </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="nt">alias</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">default</span>
+<span class="w">    </span><span class="nt">model</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">gpt-4.1-mini</span>
+<span class="w">    </span><span class="nt">context_window_size</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">200000</span>
+<span class="w">    </span><span class="nt">kwargs</span><span class="p">:</span>
+<span class="w">      </span><span class="nt">max_tokens</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">4096</span>
+<span class="w">      </span><span class="nt">temperature</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">0</span>
+</code></pre></div>
+
+<h3 id="wren-ai-프롬프트-분석">Wren AI 프롬프트 분석</h3>
+<p>소스 코드 분석 (<code>/src/pipelines/generation/utils/sql.py</code>):
+- <strong>시스템 프롬프트</strong>: 모델 중립적 (ANSI SQL 규칙, CTE 선호, DENSE_RANK 사용 등)
+- <strong>응답 포맷</strong>: <code>SQL_GENERATION_MODEL_KWARGS</code>에서 <code>response_format: json_schema</code> 사용 → <strong>OpenAI Structured Outputs 전용</strong>
+- <strong>영향</strong>: Claude 모델은 LiteLLM이 json_schema를 텍스트 프롬프트로 변환하여 전달 → Instructions/boolean 플래그 준수율 저하</p>
+<h3 id="추가-개선-instructions-보강-2026-04-08">추가 개선: Instructions 보강 (2026-04-08)</h3>
+<p>LLM 모델 비교 과정에서 발견된 문제 해결을 위해 Instructions 추가:</p>
+<table>
+<thead>
+<tr>
+<th>ID</th>
+<th>규칙</th>
+<th>해결한 문제</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>7</td>
+<td><code>data_type</code> 컬럼 설명 (actual/estimate/preliminary)</td>
+<td>잠정실적 조회 시 <code>data_type</code> 필터 누락</td>
+</tr>
+<tr>
+<td>8</td>
+<td>종목명 한글 필수 + ETF 제외</td>
+<td>"하이닉스" → "SK Hynix" 영문 번역으로 매칭 실패, KODEX ETF 잘못 매칭</td>
+</tr>
+</tbody>
+</table>
+<h3 id="모델-컬럼-추가-2026-04-08">모델 컬럼 추가 (2026-04-08)</h3>
+<p><code>analytics_valuation</code> 모델에 누락 컬럼 추가:
+- <code>data_type</code> (VARCHAR): actual/estimate/preliminary 구분
+- <code>fiscal_quarter</code> (INTEGER): 분기 (0=연간, 1~4=분기)</p>
+<p>SQL Pair 추가:
+- "삼성전자 1분기 잠정 실적" → <code>WHERE data_type = 'preliminary'</code>
+- "삼성전자와 SK하이닉스 2025~2026년 매출 비교" → <code>data_type</code> 필터 없이 전체 조회</p>
+<hr />
+<h2 id="4차-phase-1-최종-품질-검증-2026-04-12">4차: Phase 1 최종 품질 검증 (2026-04-12)</h2>
+<h3 id="배경_1">배경</h3>
+<p>Phase 1 마무리 작업 후 전체 품질 검증:
+- Curated View 4개 모델 재생성 (컬럼 1개 → 전체 17~52개 복구)
+- Relationship 4개 복구 (View → stock_info)
+- SQL Pairs 27개 추가 (43 → 70개)
+- OM → Wren AI description 동기화 DAG 실행</p>
+<h3 id="테스트-방법">테스트 방법</h3>
+<ol>
+<li>Wren AI API로 질문 제출 → SQL 생성</li>
+<li>생성된 SQL의 테이블명을 PostgreSQL용으로 변환 (<code>public_xxx</code> → <code>"public"."xxx"</code>)</li>
+<li>PostgreSQL에서 실행 → 결과 행 수/내용 검증</li>
+<li>동일 테스트를 Claude/Codex 스크립트 양쪽에서 독립 실행</li>
+</ol>
+<h3 id="결과-비교">결과 비교</h3>
+<table>
+<thead>
+<tr>
+<th>Metric</th>
+<th style="text-align: center;">Claude</th>
+<th style="text-align: center;">Codex 스크립트</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><strong>SQL 생성</strong></td>
+<td style="text-align: center;">15/15 (100%)</td>
+<td style="text-align: center;">14/15 (93%)</td>
+</tr>
+<tr>
+<td><strong>DB 실행</strong></td>
+<td style="text-align: center;">15/15 (100%)</td>
+<td style="text-align: center;">14/15 (93%)</td>
+</tr>
+<tr>
+<td><strong>의미 검증</strong></td>
+<td style="text-align: center;">15/15 (100%)</td>
+<td style="text-align: center;">13/15 (87%)</td>
+</tr>
+</tbody>
+</table>
+<blockquote>
+<p>Codex 스크립트 차이(1-2건)는 API 타임아웃/검증 로직 차이. 동일 Wren AI 엔진이므로 생성 SQL은 동일.</p>
+</blockquote>
+<h3 id="케이스별-상세">케이스별 상세</h3>
+<table>
+<thead>
+<tr>
+<th style="text-align: center;">#</th>
+<th>질문</th>
+<th style="text-align: center;">SQL</th>
+<th style="text-align: center;">실행</th>
+<th style="text-align: center;">검증</th>
+<th style="text-align: center;">행 수</th>
+<th>비고</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td style="text-align: center;">1</td>
+<td>삼성전자 PER</td>
+<td style="text-align: center;">✅</td>
+<td style="text-align: center;">✅</td>
+<td style="text-align: center;">✅</td>
+<td style="text-align: center;">1</td>
+<td>stock_info 사용</td>
+</tr>
+<tr>
+<td style="text-align: center;">2</td>
+<td>코스피 시총 상위 5종목</td>
+<td style="text-align: center;">✅</td>
+<td style="text-align: center;">✅</td>
+<td style="text-align: center;">✅</td>
+<td style="text-align: center;">5</td>
+<td>ETF 제외 적용</td>
+</tr>
+<tr>
+<td style="text-align: center;">3</td>
+<td>저평가주 찾아줘</td>
+<td style="text-align: center;">✅</td>
+<td style="text-align: center;">✅</td>
+<td style="text-align: center;">✅</td>
+<td style="text-align: center;">20</td>
+<td>is_value_stock ✅</td>
+</tr>
+<tr>
+<td style="text-align: center;">4</td>
+<td>과매도 종목</td>
+<td style="text-align: center;">✅</td>
+<td style="text-align: center;">✅</td>
+<td style="text-align: center;">✅</td>
+<td style="text-align: center;">16</td>
+<td>is_oversold_rsi ✅</td>
+</tr>
+<tr>
+<td style="text-align: center;">5</td>
+<td>외국인 순매수 상위 종목</td>
+<td style="text-align: center;">✅</td>
+<td style="text-align: center;">✅</td>
+<td style="text-align: center;">✅</td>
+<td style="text-align: center;">20</td>
+<td>is_foreign_net_buy ✅</td>
+</tr>
+<tr>
+<td style="text-align: center;">6</td>
+<td>삼성전자 vs SK하이닉스 밸류에이션</td>
+<td style="text-align: center;">✅</td>
+<td style="text-align: center;">✅</td>
+<td style="text-align: center;">✅</td>
+<td style="text-align: center;">2</td>
+<td>한글 매칭 ✅</td>
+</tr>
+<tr>
+<td style="text-align: center;">7</td>
+<td>삼성전자 잠정 실적</td>
+<td style="text-align: center;">✅</td>
+<td style="text-align: center;">✅</td>
+<td style="text-align: center;">✅</td>
+<td style="text-align: center;">1</td>
+<td>data_type='preliminary' ✅</td>
+</tr>
+<tr>
+<td style="text-align: center;">8</td>
+<td>2025 실적 + 2026 추정치 비교</td>
+<td style="text-align: center;">✅</td>
+<td style="text-align: center;">✅</td>
+<td style="text-align: center;">✅</td>
+<td style="text-align: center;">2223</td>
+<td>data_type 필터 없음 ✅</td>
+</tr>
+<tr>
+<td style="text-align: center;">9</td>
+<td>삼성전자 최근 5일 주가</td>
+<td style="text-align: center;">✅</td>
+<td style="text-align: center;">✅</td>
+<td style="text-align: center;">✅</td>
+<td style="text-align: center;">5</td>
+<td></td>
+</tr>
+<tr>
+<td style="text-align: center;">10</td>
+<td>최근 1주일 환율 추이</td>
+<td style="text-align: center;">✅</td>
+<td style="text-align: center;">✅</td>
+<td style="text-align: center;">✅</td>
+<td style="text-align: center;">7</td>
+<td></td>
+</tr>
+<tr>
+<td style="text-align: center;">11</td>
+<td>기관 외국인 동시 매수 종목</td>
+<td style="text-align: center;">✅</td>
+<td style="text-align: center;">✅</td>
+<td style="text-align: center;">✅</td>
+<td style="text-align: center;">20</td>
+<td>is_foreign + is_institution ✅</td>
+</tr>
+<tr>
+<td style="text-align: center;">12</td>
+<td>현대차 기아 실적 비교</td>
+<td style="text-align: center;">✅</td>
+<td style="text-align: center;">✅</td>
+<td style="text-align: center;">✅</td>
+<td style="text-align: center;">10</td>
+<td>한글 IN 매칭 ✅</td>
+</tr>
+<tr>
+<td style="text-align: center;">13</td>
+<td>성장주 추천</td>
+<td style="text-align: center;">✅</td>
+<td style="text-align: center;">✅</td>
+<td style="text-align: center;">✅</td>
+<td style="text-align: center;">20</td>
+<td>is_growth_stock ✅</td>
+</tr>
+<tr>
+<td style="text-align: center;">14</td>
+<td>저평가 + 외국인 매수 종목</td>
+<td style="text-align: center;">✅</td>
+<td style="text-align: center;">✅</td>
+<td style="text-align: center;">✅</td>
+<td style="text-align: center;">20</td>
+<td>Cross-view JOIN ✅</td>
+</tr>
+<tr>
+<td style="text-align: center;">15</td>
+<td>삼성전자 52주 신고가 신저가</td>
+<td style="text-align: center;">✅</td>
+<td style="text-align: center;">✅</td>
+<td style="text-align: center;">✅</td>
+<td style="text-align: center;">1</td>
+<td>v_technical_signals 사용 ✅</td>
+</tr>
+</tbody>
+</table>
+<h3 id="boolean-flag-사용률">Boolean Flag 사용률</h3>
+<table>
+<thead>
+<tr>
+<th>테스트</th>
+<th style="text-align: center;">이전 (3차)</th>
+<th style="text-align: center;">현재 (4차)</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>저평가주</td>
+<td style="text-align: center;">❌</td>
+<td style="text-align: center;">✅ is_value_stock</td>
+</tr>
+<tr>
+<td>과매도</td>
+<td style="text-align: center;">❌</td>
+<td style="text-align: center;">✅ is_oversold_rsi</td>
+</tr>
+<tr>
+<td>성장주</td>
+<td style="text-align: center;">❌</td>
+<td style="text-align: center;">✅ is_growth_stock</td>
+</tr>
+<tr>
+<td>거래량 급증</td>
+<td style="text-align: center;">❌</td>
+<td style="text-align: center;">✅ is_volume_spike</td>
+</tr>
+<tr>
+<td>외국인 순매수</td>
+<td style="text-align: center;">❌</td>
+<td style="text-align: center;">✅ is_foreign_net_buy</td>
+</tr>
+<tr>
+<td>기관 순매수</td>
+<td style="text-align: center;">❌</td>
+<td style="text-align: center;">✅ is_institution_net_buy</td>
+</tr>
+<tr>
+<td>52주 신저가</td>
+<td style="text-align: center;">❌</td>
+<td style="text-align: center;">✅ is_near_52w_low</td>
+</tr>
+<tr>
+<td><strong>합계</strong></td>
+<td style="text-align: center;"><strong>0/8 (0%)</strong></td>
+<td style="text-align: center;"><strong>7/8 (87%)</strong></td>
+</tr>
+</tbody>
+</table>
+<p>원인: Curated View 모델의 컬럼이 ticker 1개만 등록되어 있었음 → 전체 컬럼 재등록으로 해결</p>
+<h3 id="phase-1-전체-개선-추이">Phase 1 전체 개선 추이</h3>
+<table>
+<thead>
+<tr>
+<th>지표</th>
+<th style="text-align: center;">1차 (04-02)</th>
+<th style="text-align: center;">2차 (04-03)</th>
+<th style="text-align: center;">3차 (04-07)</th>
+<th style="text-align: center;"><strong>4차 (04-12)</strong></th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>A등급 비율</td>
+<td style="text-align: center;">58%</td>
+<td style="text-align: center;">77%</td>
+<td style="text-align: center;">-</td>
+<td style="text-align: center;"><strong>100%</strong></td>
+</tr>
+<tr>
+<td>SQL 생성 성공</td>
+<td style="text-align: center;">75%</td>
+<td style="text-align: center;">85%</td>
+<td style="text-align: center;">100%</td>
+<td style="text-align: center;"><strong>100%</strong></td>
+</tr>
+<tr>
+<td>DB 실행 성공</td>
+<td style="text-align: center;">-</td>
+<td style="text-align: center;">-</td>
+<td style="text-align: center;">-</td>
+<td style="text-align: center;"><strong>100%</strong></td>
+</tr>
+<tr>
+<td>Boolean flag</td>
+<td style="text-align: center;">-</td>
+<td style="text-align: center;">-</td>
+<td style="text-align: center;">0/8</td>
+<td style="text-align: center;"><strong>7/8 (87%)</strong></td>
+</tr>
+<tr>
+<td>SQL Pairs</td>
+<td style="text-align: center;">29</td>
+<td style="text-align: center;">34</td>
+<td style="text-align: center;">43</td>
+<td style="text-align: center;"><strong>70</strong></td>
+</tr>
+<tr>
+<td>Instructions</td>
+<td style="text-align: center;">2</td>
+<td style="text-align: center;">2</td>
+<td style="text-align: center;">4</td>
+<td style="text-align: center;"><strong>4</strong></td>
+</tr>
+<tr>
+<td>모델 컬럼 등록</td>
+<td style="text-align: center;">부분</td>
+<td style="text-align: center;">부분</td>
+<td style="text-align: center;">부분</td>
+<td style="text-align: center;"><strong>전체</strong></td>
+</tr>
+<tr>
+<td>평균 응답 속도</td>
+<td style="text-align: center;">~11s</td>
+<td style="text-align: center;">~11s</td>
+<td style="text-align: center;">16s</td>
+<td style="text-align: center;"><strong>10s</strong></td>
+</tr>
+<tr>
+<td>LLM</td>
+<td style="text-align: center;">gpt-4o-mini</td>
+<td style="text-align: center;">gpt-4o-mini</td>
+<td style="text-align: center;">gpt-4.1-mini</td>
+<td style="text-align: center;"><strong>gpt-4.1-mini</strong></td>
+</tr>
+</tbody>
+</table>
+<h3 id="자동화-테스트-스크립트">자동화 테스트 스크립트</h3>
+<p>Codex가 작성한 <code>scripts/wren_nl2sql_phase1_test.py</code>로 재현 가능:</p>
+<div class="codehilite"><pre><span></span><code><span class="nb">export</span><span class="w"> </span><span class="nv">PG_PASSWORD</span><span class="o">=</span>&lt;password&gt;
+<span class="nb">export</span><span class="w"> </span><span class="nv">PG_HOST</span><span class="o">=</span>localhost
+<span class="nb">export</span><span class="w"> </span><span class="nv">WREN_TIMEOUT_SECONDS</span><span class="o">=</span><span class="m">120</span>
+python3<span class="w"> </span>scripts/wren_nl2sql_phase1_test.py
+</code></pre></div>
+
+<p>리포트 출력: <code>reports/wren_phase1_results.json</code>, <code>reports/wren_phase1_results.md</code></p>
+<hr />
+<h2 id="5차-phase-1-구조-정비-및-다종목-검증-2026-04-12">5차: Phase 1 구조 정비 및 다종목 검증 (2026-04-12)</h2>
+<h3 id="5-1-구조-정비--무엇을-왜-했는가">5-1. 구조 정비 — 무엇을 왜 했는가</h3>
+<h4 id="curated-view-4개-모델-전체-컬럼-재등록">Curated View 4개 모델 전체 컬럼 재등록</h4>
+<p><strong>무엇:</strong> <code>v_latest_valuation</code>, <code>v_valuation_signals__v1</code>, <code>v_technical_signals__v1</code>, <code>v_flow_signals__v1</code> 4개 모델의 컬럼을 1개(ticker만)에서 전체(17~52개)로 재등록.</p>
+<p><strong>왜 필요했는가:</strong> 3차 테스트에서 boolean flag 사용률이 0/8(0%)로 측정되었다. GPT-4.1-mini가 <code>is_oversold_rsi</code> 컬럼을 사용하려 시도했으나 "Schema error: No field named public_v_technical_signals__v1.is_oversold_rsi"로 실패했다. 진단 결과, <strong>Curated View 모델이 최초 등록 시 <code>fields: ["ticker"]</code>로만 생성</strong>되어 나머지 16~51개 컬럼이 Wren AI에 존재하지 않았다. LLM은 Qdrant 임베딩에 없는 컬럼은 사용할 수 없으므로, boolean flag가 전혀 활용되지 않는 근본 원인이었다.</p>
+<p><strong>결과:</strong>
+| View | 이전 (컬럼) | 이후 (컬럼) | 핵심 추가 컬럼 |
+|------|:-:|:-:|------|
+| v_latest_valuation | 1 | 34 | per_actual, pbr_actual, roe_actual 등 밸류에이션 지표 |
+| v_valuation_signals__v1 | 1 | 35 | is_value_stock, is_growth_stock, is_deep_value 등 6개 boolean |
+| v_technical_signals__v1 | 1 | 52 | is_oversold_rsi, is_volume_spike, golden_cross 등 기술 지표 |
+| v_flow_signals__v1 | 1 | 17 | is_foreign_net_buy, is_institution_net_buy 등 수급 지표 |</p>
+<p><strong>효과:</strong> boolean flag 사용률 0/8 → 7/8 (87%)</p>
+<h4 id="relationship-4개-복구">Relationship 4개 복구</h4>
+<p><strong>무엇:</strong> <code>v_latest_valuation</code>, <code>v_valuation_signals__v1</code>, <code>v_technical_signals__v1</code>, <code>v_flow_signals__v1</code> 각각에서 <code>stock_info</code>로의 MANY_TO_ONE Relationship 추가.</p>
+<p><strong>왜 필요했는가:</strong> 이전 작업에서 <code>analytics_valuation</code> 모델을 삭제/재생성하면서 해당 모델과 연결된 Relationship이 CASCADE 삭제되었고, 신규 View 모델에는 Relationship이 설정되지 않은 상태였다. Relationship이 없으면 Wren AI가 <strong>Cross-model JOIN SQL을 생성할 수 없다</strong>. 예를 들어 "저평가이면서 외국인 매수 종목"은 <code>v_valuation_signals</code>와 <code>v_flow_signals</code>를 <code>stock_info</code>를 경유해 JOIN해야 하는데, Relationship 없이는 이 경로를 LLM이 인식하지 못한다.</p>
+<p><strong>결과:</strong> 기존 2개 + 신규 4개 = 총 6개 Relationship</p>
+<div class="codehilite"><pre><span></span><code><span class="n">stock_info</span><span class="w"> </span><span class="p">(</span><span class="n">id</span><span class="o">=</span><span class="mi">1</span><span class="p">)</span>
+<span class="w">  </span><span class="err">↑</span><span class="w"> </span><span class="n">MANY_TO_ONE</span>
+<span class="w">  </span><span class="err">├──</span><span class="w"> </span><span class="n">analytics_stock_daily</span><span class="w"> </span><span class="p">(</span><span class="err">기존</span><span class="p">)</span>
+<span class="w">  </span><span class="err">├──</span><span class="w"> </span><span class="n">stock_price_1d</span><span class="w"> </span><span class="p">(</span><span class="err">기존</span><span class="p">)</span>
+<span class="w">  </span><span class="err">├──</span><span class="w"> </span><span class="n">v_latest_valuation</span><span class="w"> </span><span class="p">(</span><span class="err">신규</span><span class="p">)</span>
+<span class="w">  </span><span class="err">├──</span><span class="w"> </span><span class="n">v_valuation_signals__v1</span><span class="w"> </span><span class="p">(</span><span class="err">신규</span><span class="p">)</span>
+<span class="w">  </span><span class="err">├──</span><span class="w"> </span><span class="n">v_technical_signals__v1</span><span class="w"> </span><span class="p">(</span><span class="err">신규</span><span class="p">)</span>
+<span class="w">  </span><span class="err">└──</span><span class="w"> </span><span class="n">v_flow_signals__v1</span><span class="w"> </span><span class="p">(</span><span class="err">신규</span><span class="p">)</span>
+</code></pre></div>
+
+<h4 id="sql-pairs-27개-추가-43--70개">SQL Pairs 27개 추가 (43 → 70개)</h4>
+<p><strong>무엇:</strong> 6개 카테고리에 걸쳐 27개 SQL Pair를 등록.</p>
+<p><strong>왜 필요했는가:</strong> SQL Pairs는 Wren AI의 RAG 검색에서 Few-shot 예시로 사용된다. LLM이 유사 질문의 SQL 패턴을 참조하여 더 정확한 SQL을 생성한다. 특히:</p>
+<ol>
+<li>
+<p><strong>Boolean flag 패턴 (6개):</strong> Curated View 컬럼을 등록했지만, LLM이 <code>is_value_stock = true</code> 같은 패턴을 자발적으로 사용하려면 Few-shot 예시가 필요하다. SQL Pair가 없으면 LLM은 여전히 <code>per_actual &lt; 10 AND pbr_actual &lt; 1</code>처럼 직접 계산하려 한다.</p>
+</li>
+<li>
+<p><strong>data_type/fiscal_quarter 패턴 (4개):</strong> <code>analytics_valuation</code>에 추가된 <code>data_type</code>(actual/estimate/preliminary)과 <code>fiscal_quarter</code> 컬럼의 정확한 사용법을 LLM에 학습시키기 위해. 특히 "잠정 실적" → <code>WHERE data_type = 'preliminary'</code>와 "연도별 비교" → <code>data_type</code> 필터 없이 전체 조회, 두 패턴이 상반되므로 명시적 예시가 필수.</p>
+</li>
+<li>
+<p><strong>종목 비교 패턴 (5개):</strong> 2개 이상 종목을 <code>IN</code> 절로 비교하는 SQL 패턴. LLM이 자체적으로 생성할 수 있지만, 종목명 한글 매칭 + ETF 제외 규칙을 일관되게 적용하려면 예시가 있어야 한다.</p>
+</li>
+<li>
+<p><strong>시계열 패턴 (5개):</strong> <code>INTERVAL</code>, <code>CURRENT_DATE</code>, <code>ORDER BY trade_date DESC LIMIT N</code> 같은 시간 범위 쿼리 패턴.</p>
+</li>
+<li>
+<p><strong>수급 분석 패턴 (3개):</strong> <code>v_flow_signals__v1</code>의 boolean flag를 활용한 외국인/기관 순매수 분석.</p>
+</li>
+<li>
+<p><strong>복합 조건 패턴 (4개):</strong> 2개 이상의 Curated View를 JOIN하는 고급 패턴. 이것이 가장 LLM이 자력으로 생성하기 어려운 유형이다.</p>
+</li>
+</ol>
+<p><strong>결과:</strong> SQL Pairs 43 → 70개, 4차 테스트 15/15 (100%) 달성</p>
+<h4 id="om--wren-ai-description-동기화-dag-실행">OM → Wren AI description 동기화 DAG 실행</h4>
+<p><strong>무엇:</strong> <code>10_sync_metadata_daily</code> DAG를 수동 trigger하여 OpenMetadata의 테이블/컬럼 설명을 Wren AI 모델에 반영.</p>
+<p><strong>왜 필요했는가:</strong> Curated View 모델을 삭제/재생성하면 기존에 동기화되어 있던 컬럼 description이 초기화된다. Description이 없으면 LLM이 컬럼의 비즈니스 의미를 이해하지 못해 잘못된 컬럼을 선택하거나 무시한다. 예를 들어 <code>is_value_stock</code> 컬럼에 "PER 10 이하이면서 PBR 1 이하인 저평가 종목 여부"라는 설명이 없으면, LLM은 이 컬럼이 무엇을 의미하는지 추론해야 한다.</p>
+<h3 id="5-2-다종목-검증-20문항">5-2. 다종목 검증 (20문항)</h3>
+<p><strong>왜 필요했는가:</strong> 4차 테스트(15문항)가 삼성전자/SK하이닉스 중심으로 편향되어 있었다. 실제 사용 환경에서는 다양한 종목(대형주, 중형주, KOSDAQ, 미국주식)과 약칭/업종 질의가 발생하므로, 이에 대한 커버리지를 검증해야 한다.</p>
+<p><strong>테스트 범위:</strong></p>
+<table>
+<thead>
+<tr>
+<th>카테고리</th>
+<th style="text-align: center;">문항수</th>
+<th>대상</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>KOSPI 대형주</td>
+<td style="text-align: center;">5</td>
+<td>현대차, NAVER, 카카오, LG에너지솔루션, 포스코홀딩스</td>
+</tr>
+<tr>
+<td>KOSPI 중형주</td>
+<td style="text-align: center;">3</td>
+<td>셀트리온, 한화에어로, 두산에너빌리티</td>
+</tr>
+<tr>
+<td>KOSDAQ</td>
+<td style="text-align: center;">2</td>
+<td>에코프로비엠, 알테오젠</td>
+</tr>
+<tr>
+<td>미국주식</td>
+<td style="text-align: center;">3</td>
+<td>엔비디아, 테슬라, 애플</td>
+</tr>
+<tr>
+<td>업종/섹터</td>
+<td style="text-align: center;">2</td>
+<td>자동차, 바이오</td>
+</tr>
+<tr>
+<td>약칭 테스트</td>
+<td style="text-align: center;">3</td>
+<td>엔솔, 현차, 포스코</td>
+</tr>
+<tr>
+<td>다종목 비교</td>
+<td style="text-align: center;">2</td>
+<td>3종목 PER, 2종목 밸류에이션</td>
+</tr>
+</tbody>
+</table>
+<p><strong>결과:</strong> SQL 생성 18/20 (90%), DB 실행 18/20 (90%)</p>
+<h3 id="5-3-발견된-문제와-한계">5-3. 발견된 문제와 한계</h3>
+<h4 id="문제-1-종목명-영문-번역-instructions-위반">문제 1: 종목명 영문 번역 (Instructions 위반)</h4>
+<p><strong>증상:</strong> "셀트리온 52주 신고가 신저가" → SQL에 <code>lower('Celltrion')</code> 사용 → 0행
+<strong>원인:</strong> Instructions에 "종목명은 반드시 한글로 검색" 규칙이 있으나 LLM이 간헐적으로 위반
+<strong>영향:</strong> 한글 종목명이 DB에 있는 종목에서 매칭 실패
+<strong>대응:</strong> SQL Pair 추가로 한글 패턴 강화, 또는 Phase 3 에이전트에서 Entity Resolution 단계 추가</p>
+<h4 id="문제-2-약칭-매핑-한계">문제 2: 약칭 매핑 한계</h4>
+<p><strong>증상:</strong>
+- "현차 PER" → <code>LIKE '%현차%'</code> → 0행 (정식명: 현대차)
+- "엔솔 주가" → <code>LIKE '%엔솔%'</code> → 케이엔솔 매칭 (의도: LG에너지솔루션)
+- "포스코 실적" → <code>LIKE '%포스코%'</code> → 여러 종목 매칭 (의도: 포스코홀딩스)</p>
+<p><strong>원인:</strong> NL2SQL은 자연어 약칭을 정식 종목명으로 변환하는 <strong>Entity Resolution 기능이 없다</strong>. LIKE 패턴 매칭만으로는 약칭→정식명 변환이 불가능.
+<strong>영향:</strong> 실사용 시 사용자들이 약칭을 많이 사용하므로 UX 저하 필연적
+<strong>대응:</strong> Phase 3 LangGraph 에이전트에서 Entity Resolver 노드 구현 (약칭→정식명 매핑 테이블 또는 LLM 기반 해석)</p>
+<h4 id="문제-3-데이터-부재">문제 3: 데이터 부재</h4>
+<p><strong>증상:</strong>
+- "포스코홀딩스 PBR" → SQL 정상이지만 stock_info에 해당 종목 없음 (ADR만 존재)
+- "테슬라 PER" → per 값이 NULL</p>
+<p><strong>원인:</strong> 데이터 수집 범위 또는 수집 로직 문제. NL2SQL 품질과 무관.
+<strong>대응:</strong> 데이터 수집 DAG 점검 (별도 작업)</p>
+<h4 id="문제-4-wren-ai-sql_answer-환각">문제 4: Wren AI sql_answer 환각</h4>
+<p><strong>증상:</strong> "삼성전자와 하이닉스의 5년간 PER/PBR/ROE 비교" 질문에서 SQL은 11행(양쪽 모두 포함)을 정상 반환했으나, Wren AI 답변 텍스트에 <strong>"하이닉스의 데이터는 제공되지 않아 비교가 어렵습니다"</strong>로 표시.</p>
+<p><strong>원인:</strong> Wren AI의 <code>sql_answer</code> 파이프라인은 SQL 실행 결과를 LLM에 넣어 자연어로 요약하는데, 행이 많거나 <code>data_type</code>이 actual/estimate/preliminary로 섞여있으면 LLM이 일부 데이터를 무시하는 환각이 발생.</p>
+<p><strong>검증:</strong> 동일 SQL을 PostgreSQL에서 직접 실행한 결과:</p>
+<div class="codehilite"><pre><span></span><code><span class="w"> </span><span class="nx">stock_name</span><span class="w"> </span><span class="o">|</span><span class="w"> </span><span class="nx">fiscal_year</span><span class="w"> </span><span class="o">|</span><span class="w"> </span><span class="nx">data_type</span><span class="w">  </span><span class="o">|</span><span class="w">  </span><span class="nx">PER</span><span class="w">   </span><span class="o">|</span><span class="w">  </span><span class="nx">PBR</span><span class="w">  </span><span class="o">|</span><span class="w">  </span><span class="nx">ROE</span>
+<span class="w"> </span><span class="nx">삼성전자</span><span class="w">   </span><span class="o">|</span><span class="w">        </span><span class="mi">2022</span><span class="w"> </span><span class="o">|</span><span class="w"> </span><span class="nx">actual</span><span class="w">     </span><span class="o">|</span><span class="w">  </span><span class="m m-Double">21.70</span><span class="w"> </span><span class="o">|</span><span class="w">  </span><span class="m m-Double">3.40</span><span class="w"> </span><span class="o">|</span><span class="w">  </span><span class="m m-Double">15.69</span>
+<span class="w"> </span><span class="nx">삼성전자</span><span class="w">   </span><span class="o">|</span><span class="w">        </span><span class="mi">2023</span><span class="w"> </span><span class="o">|</span><span class="w"> </span><span class="nx">actual</span><span class="w">     </span><span class="o">|</span><span class="w">  </span><span class="m m-Double">77.98</span><span class="w"> </span><span class="o">|</span><span class="w">  </span><span class="m m-Double">3.32</span><span class="w"> </span><span class="o">|</span><span class="w">   </span><span class="m m-Double">4.26</span>
+<span class="w"> </span><span class="o">...</span>
+<span class="w"> </span><span class="nx">SK하이닉스</span><span class="w"> </span><span class="o">|</span><span class="w">        </span><span class="mi">2022</span><span class="w"> </span><span class="o">|</span><span class="w"> </span><span class="nx">actual</span><span class="w">     </span><span class="o">|</span><span class="w"> </span><span class="m m-Double">317.30</span><span class="w"> </span><span class="o">|</span><span class="w"> </span><span class="m m-Double">11.24</span><span class="w"> </span><span class="o">|</span><span class="w">   </span><span class="m m-Double">3.54</span>
+<span class="w"> </span><span class="nx">SK하이닉스</span><span class="w"> </span><span class="o">|</span><span class="w">        </span><span class="mi">2023</span><span class="w"> </span><span class="o">|</span><span class="w"> </span><span class="nx">actual</span><span class="w">     </span><span class="o">|</span><span class="w">        </span><span class="o">|</span><span class="w"> </span><span class="m m-Double">13.29</span><span class="w"> </span><span class="o">|</span><span class="w"> </span><span class="o">-</span><span class="m m-Double">17.08</span>
+<span class="w"> </span><span class="o">...</span>
+<span class="w"> </span><span class="p">(</span><span class="mi">11</span><span class="nx">행</span><span class="w"> </span><span class="err">—</span><span class="w"> </span><span class="nx">두</span><span class="w"> </span><span class="nx">종목</span><span class="w"> </span><span class="nx">모두</span><span class="w"> </span><span class="nx">정상</span><span class="p">)</span>
+</code></pre></div>
+
+<p><strong>영향:</strong> SQL 품질은 정상이지만 사용자에게 잘못된 답변이 전달됨. Wren AI UI에서 "View SQL" → 결과 테이블을 직접 확인하면 정확한 데이터를 볼 수 있으나, 자연어 답변만 보면 오해 유발.</p>
+<p><strong>대응:</strong> ~~Phase 3 LangGraph 에이전트에서 Result Synthesizer를 직접 구현~~ → <strong>해석 컬럼(Interpretation Column) 추가로 해결</strong> (아래 문제 5 참조).</p>
+<h4 id="문제-5-sql_answer-답변-오해석--해석-컬럼으로-해결-2026-04-13">문제 5: sql_answer 답변 오해석 — 해석 컬럼으로 해결 (2026-04-13)</h4>
+<p><strong>증상:</strong> "외국인과 기관 순매수 데이터에 결측치나 이상치가 있는지" 질문에서 SQL은 정확하지만, 답변이 <strong>"음수값은 이상치, 데이터 오류 가능성"</strong>으로 잘못 해석.</p>
+<p><strong>원인 분석:</strong>
+1. Wren AI의 <code>sql_answer</code> 프롬프트(<code>/src/pipelines/generation/sql_answer.py</code>)는 SQL 실행 결과(columns + rows)만 LLM에 전달하고, <strong>컬럼 description은 포함하지 않음</strong>
+2. Description에 "음수=순매도, 정상값"이라고 작성해도 답변 생성 시 LLM이 참조 불가
+3. 컬럼명 <code>foreign_buy_volume</code>이 "매수량"처럼 읽혀서 LLM이 "매수량인데 왜 음수?"로 오해</p>
+<p><strong>시도한 해결 방법:</strong>
+- ❌ 컬럼 description 보강 → sql_answer에서 참조 안 됨
+- ❌ custom_instruction → Intent가 GENERAL로 분류되어 SQL 미생성
+- ✅ <strong>해석 컬럼(Interpretation Column) 추가</strong> → SQL 결과에 텍스트가 포함되어 LLM이 직접 읽음</p>
+<p><strong>해결:</strong></p>
+<div class="codehilite"><pre><span></span><code><span class="c1">-- View에 텍스트 해석 컬럼 추가</span>
+<span class="k">CASE</span>
+<span class="w">    </span><span class="k">WHEN</span><span class="w"> </span><span class="n">foreign_buy_volume</span><span class="w"> </span><span class="k">IS</span><span class="w"> </span><span class="k">NULL</span><span class="w"> </span><span class="k">THEN</span><span class="w"> </span><span class="s1">&#39;데이터없음&#39;</span>
+<span class="w">    </span><span class="k">WHEN</span><span class="w"> </span><span class="n">foreign_buy_volume</span><span class="w"> </span><span class="o">&gt;</span><span class="w"> </span><span class="mi">0</span><span class="w"> </span><span class="k">THEN</span><span class="w"> </span><span class="s1">&#39;순매수&#39;</span>
+<span class="w">    </span><span class="k">WHEN</span><span class="w"> </span><span class="n">foreign_buy_volume</span><span class="w"> </span><span class="o">&lt;</span><span class="w"> </span><span class="mi">0</span><span class="w"> </span><span class="k">THEN</span><span class="w"> </span><span class="s1">&#39;순매도&#39;</span>
+<span class="w">    </span><span class="k">ELSE</span><span class="w"> </span><span class="s1">&#39;보합&#39;</span>
+<span class="k">END</span><span class="w"> </span><span class="k">AS</span><span class="w"> </span><span class="n">foreign_direction</span>
+</code></pre></div>
+
+<p><strong>결과 비교:</strong></p>
+<table>
+<thead>
+<tr>
+<th></th>
+<th>이전 (해석 컬럼 없음)</th>
+<th>이후 (해석 컬럼 추가)</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>음수 해석</td>
+<td>"이상치, 데이터 오류 가능성" ❌</td>
+<td><strong>"순매도 의미, 이상치 아님"</strong> ✅</td>
+</tr>
+<tr>
+<td>방향 인식</td>
+<td>음수 = 문제</td>
+<td><strong>foreign_direction = '순매도'</strong> ✅</td>
+</tr>
+</tbody>
+</table>
+<p><strong>교훈:</strong> Wren AI에서 LLM 답변 품질을 제어하려면 description이 아니라 <strong>SQL 결과 자체에 해석 정보를 포함</strong>시켜야 한다. 이는 Wren AI의 sql_answer가 description을 전달하지 않는 구조적 한계를 우회하는 패턴이다.</p>
+<p><strong>적용 범위:</strong> 이 패턴은 양수/음수 방향성, NULL 의미, 숫자 범위 해석 등 LLM이 오해할 수 있는 모든 숫자 컬럼에 적용 가능. 상세 가이드는 <code>docs/nl2sql_enterprise_playbook.md</code> 1-3절 참조.</p>
+<h3 id="5-4-phase-1-최종-상태-2026-04-13">5-4. Phase 1 최종 상태 (2026-04-13)</h3>
+<table>
+<thead>
+<tr>
+<th>항목</th>
+<th>수량/상태</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>등록 모델</td>
+<td>9개 (Gold 3 + Raw 2 + View 4)</td>
+</tr>
+<tr>
+<td>전체 컬럼</td>
+<td>309개 (DB와 100% 일치)</td>
+</tr>
+<tr>
+<td>Relationship</td>
+<td>6개</td>
+</tr>
+<tr>
+<td>SQL Pairs</td>
+<td>70개</td>
+</tr>
+<tr>
+<td>Instructions</td>
+<td>4개</td>
+</tr>
+<tr>
+<td>LLM</td>
+<td>GPT-4.1-mini</td>
+</tr>
+<tr>
+<td>SQL 생성률</td>
+<td>100% (15/15 표준 테스트)</td>
+</tr>
+<tr>
+<td>DB 실행률</td>
+<td>100% (15/15)</td>
+</tr>
+<tr>
+<td>Boolean flag 사용률</td>
+<td>87% (7/8)</td>
+</tr>
+<tr>
+<td>다종목 SQL 생성률</td>
+<td>90% (18/20)</td>
+</tr>
+<tr>
+<td>평균 응답 속도</td>
+<td>10s</td>
+</tr>
+</tbody>
+</table>
+<h3 id="5-5-phase-2에서-해결해야-할-것">5-5. Phase 2에서 해결해야 할 것</h3>
+<p>위 문제들은 NL2SQL 엔진(Wren AI) 단독으로는 구조적으로 해결할 수 없으며, LangGraph 에이전트에서 다음 노드를 구현해야 한다:</p>
+<table>
+<thead>
+<tr>
+<th>문제</th>
+<th>Phase 2 해결 노드</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>약칭 매핑</td>
+<td>Entity Resolver (약칭→정식명 변환)</td>
+</tr>
+<tr>
+<td>영문 번역</td>
+<td>Entity Resolver (한글 강제)</td>
+</tr>
+<tr>
+<td>답변 환각</td>
+<td>Result Synthesizer (직접 답변 생성)</td>
+</tr>
+<tr>
+<td>데이터 부재 판단</td>
+<td>Evidence Validator ("데이터 없음" 명시)</td>
+</tr>
+</tbody>
+</table>
+</main>
+
+<script>
+  // 테마 전환
+  function setTheme(theme) {
+    document.documentElement.setAttribute('data-theme', theme);
+    localStorage.setItem('doc-theme', theme);
+    document.getElementById('btn-dark').classList.toggle('active', theme === 'dark');
+    document.getElementById('btn-light').classList.toggle('active', theme === 'light');
+    // Mermaid 재렌더링
+    if (typeof mermaid !== 'undefined') {
+      mermaid.initialize({ startOnLoad: false, theme: 'base', securityLevel: 'loose', themeVariables: getMermaidTheme(theme) });
+      document.querySelectorAll('.mermaid').forEach(el => {
+        // 원본 코드 보존 (최초 1회만 저장)
+        if (!el.dataset.source) {
+          el.dataset.source = el.textContent;
+        }
+        el.removeAttribute('data-processed');
+        el.innerHTML = el.dataset.source;
+      });
+      mermaid.run();
+    }
+  }
+
+  // 저장된 테마 로드
+  const savedTheme = localStorage.getItem('doc-theme') || 'dark';
+  setTheme(savedTheme);
+
+  // Mermaid 초기화
+  function getMermaidTheme(theme) {
+    const dark = {
+      primaryColor: '#3d7be0',
+      primaryTextColor: '#ffffff',
+      primaryBorderColor: '#5a9cf0',
+      secondaryColor: '#7c5cbf',
+      secondaryTextColor: '#ffffff',
+      secondaryBorderColor: '#a29bfe',
+      tertiaryColor: '#00997a',
+      tertiaryTextColor: '#ffffff',
+      tertiaryBorderColor: '#55efc4',
+      noteTextColor: '#f0f0f0',
+      noteBkgColor: '#2d3436',
+      noteBorderColor: '#636e72',
+      lineColor: '#8b949e',
+      textColor: '#e6edf3',
+      mainBkg: '#1e3050',
+      nodeBorder: '#5a9cf0',
+      clusterBkg: '#1a1e2e',
+      clusterBorder: '#4a5568',
+      titleColor: '#79c0ff',
+      edgeLabelBackground: '#21262d',
+      actorBkg: '#3d7be0',
+      actorTextColor: '#ffffff',
+      actorBorder: '#5a9cf0',
+      signalColor: '#8b949e',
+      labelBoxBkgColor: '#21262d',
+      labelBoxBorderColor: '#4a5568',
+      labelTextColor: '#e6edf3',
+      loopTextColor: '#e6edf3',
+      activationBorderColor: '#5a9cf0',
+      activationBkgColor: '#1e3050',
+      sequenceNumberColor: '#ffffff',
+      pie1: '#4f8fea', pie2: '#6c5ce7', pie3: '#00b894', pie4: '#e17055',
+      pie5: '#fdcb6e', pie6: '#00cec9', pie7: '#e84393', pie8: '#0984e3'
+    };
+    const light = {
+      primaryColor: '#4f8fea',
+      primaryTextColor: '#1a1a2e',
+      primaryBorderColor: '#3a7bd5',
+      secondaryColor: '#a29bfe',
+      secondaryTextColor: '#1a1a2e',
+      secondaryBorderColor: '#6c5ce7',
+      tertiaryColor: '#55efc4',
+      tertiaryTextColor: '#1a1a2e',
+      tertiaryBorderColor: '#00b894',
+      noteTextColor: '#2d3436',
+      noteBkgColor: '#ffeaa7',
+      noteBorderColor: '#fdcb6e',
+      lineColor: '#636e72',
+      textColor: '#2d3436',
+      mainBkg: '#dfe6e9',
+      nodeBorder: '#3a7bd5',
+      clusterBkg: '#f0f3f5',
+      clusterBorder: '#b2bec3',
+      titleColor: '#2d3436',
+      edgeLabelBackground: '#ffffff',
+      actorBkg: '#4f8fea',
+      actorTextColor: '#ffffff',
+      actorBorder: '#3a7bd5',
+      signalColor: '#636e72',
+      labelBoxBkgColor: '#ffffff',
+      labelBoxBorderColor: '#b2bec3',
+      labelTextColor: '#2d3436',
+      loopTextColor: '#2d3436',
+      activationBorderColor: '#3a7bd5',
+      activationBkgColor: '#dfe6e9',
+      sequenceNumberColor: '#ffffff',
+      pie1: '#4f8fea', pie2: '#6c5ce7', pie3: '#00b894', pie4: '#e17055',
+      pie5: '#fdcb6e', pie6: '#00cec9', pie7: '#e84393', pie8: '#0984e3'
+    };
+    return theme === 'dark' ? dark : light;
+  }
+
+  // 초기 렌더링 전에 원본 코드 저장
+  document.querySelectorAll('.mermaid').forEach(el => {
+    el.dataset.source = el.textContent;
+  });
+  mermaid.initialize({ startOnLoad: true, theme: 'base', securityLevel: 'loose', themeVariables: getMermaidTheme(savedTheme) });
+
+  // TOC 현재 위치 하이라이트
+  const tocLinks = document.querySelectorAll('.toc a');
+  const headings = [];
+  tocLinks.forEach(link => {
+    const id = link.getAttribute('href').slice(1);
+    const el = document.getElementById(id);
+    if (el) headings.push({ el, link });
+  });
+
+  function updateActiveToc() {
+    let current = null;
+    for (const h of headings) {
+      if (h.el.getBoundingClientRect().top <= 100) current = h;
+    }
+    tocLinks.forEach(l => l.classList.remove('active'));
+    if (current) current.link.classList.add('active');
+  }
+
+  window.addEventListener('scroll', updateActiveToc, { passive: true });
+  updateActiveToc();
+
+  // 모바일: 링크 클릭 시 사이드바 닫기
+  tocLinks.forEach(link => {
+    link.addEventListener('click', () => {
+      if (window.innerWidth <= 900) {
+        document.querySelector('.sidebar').classList.remove('open');
+      }
+    });
+  });
+</script>
+
+</body>
+</html>

@@ -493,24 +493,24 @@
 <div class="mermaid">
 graph TB
     subgraph Client["클라이언트"]
-        UI[Wren UI<br/>Next.js :3000]
-        API_EXT[외부 API 호출<br/>POST /v1/asks]
+        UI[Wren UI\nNext.js :3000]
+        API_EXT[외부 API 호출\nPOST /v1/asks]
     end
 
     subgraph Core["코어 서비스"]
-        AI[Wren AI Service<br/>Python/FastAPI :5555]
-        EN[Wren Engine<br/>Java + Rust/DataFusion :8080]
-        IB[Ibis Server<br/>Python :8000]
+        AI[Wren AI Service\nPython/FastAPI :5555]
+        EN[Wren Engine\nJava + Rust/DataFusion :8080]
+        IB[Ibis Server\nPython :8000]
     end
 
     subgraph Storage["저장소"]
-        QD[Qdrant<br/>벡터 DB :6333]
-        SQ[SQLite<br/>UI 메타데이터]
+        QD[Qdrant\n벡터 DB :6333]
+        SQ[SQLite\nUI 메타데이터]
     end
 
     subgraph External["외부"]
-        LLM[LLM Provider<br/>OpenAI / Anthropic / Ollama]
-        DB[(PostgreSQL<br/>사용자 데이터)]
+        LLM[LLM Provider\nOpenAI / Anthropic / Ollama]
+        DB[(PostgreSQL\n사용자 데이터)]
     end
 
     UI -->|GraphQL| AI
@@ -669,9 +669,9 @@ sequenceDiagram
 <p>MDL은 Wren AI의 <strong>시맨틱 레이어 정의 언어</strong>로, 물리적 DB 스키마와 사용자 사이에 비즈니스 의미를 부여하는 추상화 계층이다.</p>
 <div class="mermaid">
 graph LR
-    DB["물리적 DB<br/>stock_info, stock_price_1d, ..."]
-    MDL["MDL 시맨틱 레이어<br/>모델 + 관계 + 계산 필드 + 메트릭"]
-    USER["사용자 / LLM<br/>비즈니스 용어로 질문"]
+    DB["물리적 DB\nstock_info, stock_price_1d, ..."]
+    MDL["MDL 시맨틱 레이어\n모델 + 관계 + 계산 필드 + 메트릭"]
+    USER["사용자 / LLM\n비즈니스 용어로 질문"]
 
     DB -->|추상화| MDL -->|비즈니스 의미| USER
 </div>
@@ -691,12 +691,12 @@ graph LR
 <h3 id="3-2-쿼리-처리-파이프라인">3-2. 쿼리 처리 파이프라인</h3>
 <div class="mermaid">
 flowchart LR
-    SQL["입력 SQL<br/>(AI Service가 생성)"]
-    PARSE["SQL Parser<br/>(Trino fork, Antlr4)"]
-    LP["LogicalPlan<br/>(DataFusion IR)"]
-    REWRITE["MDL Rewriter<br/>(모델->서브쿼리 변환)"]
-    VALIDATE["Validator<br/>(테이블/컬럼/타입 검증)"]
-    OUTPUT["출력 SQL<br/>(DB 방언으로 변환)"]
+    SQL["입력 SQL\n(AI Service가 생성)"]
+    PARSE["SQL Parser\n(Trino fork, Antlr4)"]
+    LP["LogicalPlan\n(DataFusion IR)"]
+    REWRITE["MDL Rewriter\n(모델->서브쿼리 변환)"]
+    VALIDATE["Validator\n(테이블/컬럼/타입 검증)"]
+    OUTPUT["출력 SQL\n(DB 방언으로 변환)"]
 
     SQL --> PARSE --> LP --> REWRITE --> VALIDATE --> OUTPUT
 </div>
@@ -988,35 +988,35 @@ flowchart TB
     Q[사용자 질문]
 
     subgraph Stage1["Stage 1: 의도 분류"]
-        IC[Intent Classification<br/>LLM 호출]
+        IC[Intent Classification\nLLM 호출]
         IC_R{TEXT_TO_SQL?}
     end
 
     subgraph Stage2["Stage 2: 컨텍스트 수집"]
-        SR[Schema Retrieval<br/>Qdrant 벡터 검색]
-        SP[SQL Pairs Retrieval<br/>유사 패턴 검색]
-        IR[Instructions Retrieval<br/>규칙 검색]
-        SF[SQL Functions Retrieval<br/>DB 함수 목록]
+        SR[Schema Retrieval\nQdrant 벡터 검색]
+        SP[SQL Pairs Retrieval\n유사 패턴 검색]
+        IR[Instructions Retrieval\n규칙 검색]
+        SF[SQL Functions Retrieval\nDB 함수 목록]
     end
 
     subgraph Stage3["Stage 3: SQL 생성"]
-        SG[SQL Generation<br/>LLM + Chain-of-Thought]
+        SG[SQL Generation\nLLM + Chain-of-Thought]
     end
 
     subgraph Stage4["Stage 4: 검증/교정"]
-        VD[Validation<br/>Wren Engine Dry Run]
+        VD[Validation\nWren Engine Dry Run]
         VD_R{통과?}
-        SC[SQL Correction<br/>LLM 재생성<br/>최대 3회]
+        SC[SQL Correction\nLLM 재생성\n최대 3회]
     end
 
     subgraph Stage5["Stage 5: 실행/응답"]
-        EX[SQL Execution<br/>Engine -> Ibis -> DB]
-        AN[Answer Generation<br/>결과 자연어 변환]
+        EX[SQL Execution\nEngine -> Ibis -> DB]
+        AN[Answer Generation\n결과 자연어 변환]
     end
 
     Q --> IC --> IC_R
     IC_R -->|Yes| SR & SP & IR & SF
-    IC_R -->|No| DA[Data Assistance<br/>일반 대화 응답]
+    IC_R -->|No| DA[Data Assistance\n일반 대화 응답]
     SR & SP & IR & SF --> SG
     SG --> VD --> VD_R
     VD_R -->|Yes| EX --> AN
@@ -1889,18 +1889,18 @@ erDiagram
 <div class="mermaid">
 flowchart TB
     subgraph Source["메타데이터 원천"]
-        OM["OpenMetadata<br/>UI/API에서 편집"]
+        OM["OpenMetadata\nUI/API에서 편집"]
     end
 
-    subgraph DAG["10_sync_metadata_daily<br/>(Airflow DAG, 매일 09:00 KST)"]
-        T1["Task 1: sync_om_to_db<br/>OM API -> COMMENT ON TABLE/COLUMN"]
-        T2["Task 2: sync_om_to_wrenai<br/>OM API -> GraphQL updateModelMetadata -> deploy"]
+    subgraph DAG["10_sync_metadata_daily\n(Airflow DAG, 매일 09:00 KST)"]
+        T1["Task 1: sync_om_to_db\nOM API -> COMMENT ON TABLE/COLUMN"]
+        T2["Task 2: sync_om_to_wrenai\nOM API -> GraphQL updateModelMetadata -> deploy"]
     end
 
     subgraph Target["동기화 대상"]
         DB["PostgreSQL COMMENT"]
         WR["Wren AI Model Description"]
-        QD["Qdrant Embedding<br/>(Deploy 시 재인덱싱)"]
+        QD["Qdrant Embedding\n(Deploy 시 재인덱싱)"]
     end
 
     OM --> T1 --> DB
@@ -1966,8 +1966,12 @@ flowchart TB
     if (typeof mermaid !== 'undefined') {
       mermaid.initialize({ startOnLoad: false, theme: 'base', securityLevel: 'loose', themeVariables: getMermaidTheme(theme) });
       document.querySelectorAll('.mermaid').forEach(el => {
+        // 원본 코드 보존 (최초 1회만 저장)
+        if (!el.dataset.source) {
+          el.dataset.source = el.textContent;
+        }
         el.removeAttribute('data-processed');
-        el.innerHTML = el.textContent;
+        el.innerHTML = el.dataset.source;
       });
       mermaid.run();
     }
@@ -2052,6 +2056,10 @@ flowchart TB
     return theme === 'dark' ? dark : light;
   }
 
+  // 초기 렌더링 전에 원본 코드 저장
+  document.querySelectorAll('.mermaid').forEach(el => {
+    el.dataset.source = el.textContent;
+  });
   mermaid.initialize({ startOnLoad: true, theme: 'base', securityLevel: 'loose', themeVariables: getMermaidTheme(savedTheme) });
 
   // TOC 현재 위치 하이라이트

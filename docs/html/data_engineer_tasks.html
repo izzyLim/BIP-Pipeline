@@ -1,0 +1,1003 @@
+<!DOCTYPE html>
+<html lang="ko" data-theme="dark">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>데이터 엔지니어 작업 요청서</title>
+<script src="https://cdn.jsdelivr.net/npm/mermaid@11/dist/mermaid.min.js"></script>
+<style>
+  /* ── 테마 변수 ── */
+  :root[data-theme="dark"] {
+    --bg: #0d1117;
+    --bg-sidebar: #161b22;
+    --fg: #e6edf3;
+    --fg-muted: #8b949e;
+    --border: #30363d;
+    --accent: #58a6ff;
+    --accent-hover: #79c0ff;
+    --code-bg: #1e293b;
+    --code-fg: #e2e8f0;
+    --table-header: #161b22;
+    --table-even: #0d1117;
+    --table-odd: #161b22;
+    --blockquote-bg: #161b22;
+    --blockquote-border: #3b82f6;
+    --link: #58a6ff;
+    --strong: #79c0ff;
+    --card-bg: #21262d;
+  }
+  :root[data-theme="light"] {
+    --bg: #ffffff;
+    --bg-sidebar: #f6f8fa;
+    --fg: #1f2937;
+    --fg-muted: #6b7280;
+    --border: #e5e7eb;
+    --accent: #2563eb;
+    --accent-hover: #1d4ed8;
+    --code-bg: #f3f4f6;
+    --code-fg: #1e293b;
+    --table-header: #f8fafc;
+    --table-even: #ffffff;
+    --table-odd: #f9fafb;
+    --blockquote-bg: #eff6ff;
+    --blockquote-border: #3b82f6;
+    --link: #2563eb;
+    --strong: #1e40af;
+    --card-bg: #f3f4f6;
+  }
+
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+
+  body {
+    font-family: 'Pretendard', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+    background: var(--bg);
+    color: var(--fg);
+    line-height: 1.75;
+    display: flex;
+    min-height: 100vh;
+  }
+
+  /* ── 사이드바 ── */
+  .sidebar {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 280px;
+    height: 100vh;
+    background: var(--bg-sidebar);
+    border-right: 1px solid var(--border);
+    overflow-y: auto;
+    padding: 20px 0;
+    z-index: 100;
+    transition: transform 0.3s ease;
+  }
+
+  .sidebar-header {
+    padding: 0 20px 16px;
+    border-bottom: 1px solid var(--border);
+    margin-bottom: 12px;
+  }
+
+  .sidebar-title {
+    font-size: 0.95rem;
+    font-weight: 700;
+    color: var(--fg);
+    line-height: 1.3;
+  }
+
+  .sidebar-controls {
+    display: flex;
+    gap: 8px;
+    margin-top: 12px;
+  }
+
+  .theme-btn {
+    background: var(--card-bg);
+    border: 1px solid var(--border);
+    color: var(--fg-muted);
+    padding: 4px 10px;
+    border-radius: 6px;
+    font-size: 0.7rem;
+    cursor: pointer;
+    transition: all 0.2s;
+  }
+  .theme-btn:hover {
+    border-color: var(--accent);
+    color: var(--accent);
+  }
+  .theme-btn.active {
+    background: var(--accent);
+    color: #fff;
+    border-color: var(--accent);
+  }
+
+  .back-link {
+    display: block;
+    margin-top: 10px;
+    font-size: 0.75rem;
+    color: var(--fg-muted);
+    text-decoration: none;
+  }
+  .back-link:hover {
+    color: var(--accent);
+  }
+
+  /* ── TOC ── */
+  .toc {
+    padding: 0 12px;
+  }
+  .toc ul {
+    list-style: none;
+    padding: 0;
+  }
+  .toc li {
+    margin: 0;
+  }
+  .toc a {
+    display: block;
+    padding: 4px 8px;
+    color: var(--fg-muted);
+    text-decoration: none;
+    font-size: 0.78rem;
+    border-radius: 4px;
+    border-left: 2px solid transparent;
+    transition: all 0.15s;
+    line-height: 1.4;
+  }
+  .toc a:hover {
+    color: var(--accent);
+    background: var(--card-bg);
+    border-left-color: var(--accent);
+  }
+  .toc a.active {
+    color: var(--accent);
+    border-left-color: var(--accent);
+    font-weight: 600;
+  }
+  .toc-h3 a { padding-left: 20px; font-size: 0.75rem; }
+  .toc-h4 a { padding-left: 32px; font-size: 0.72rem; }
+
+  /* ── 본문 ── */
+  .content {
+    margin-left: 280px;
+    flex: 1;
+    max-width: 860px;
+    padding: 40px 48px 80px;
+  }
+
+  /* ── 모바일 ── */
+  .menu-toggle {
+    display: none;
+    position: fixed;
+    top: 12px;
+    left: 12px;
+    z-index: 200;
+    background: var(--bg-sidebar);
+    border: 1px solid var(--border);
+    color: var(--fg);
+    padding: 8px 12px;
+    border-radius: 6px;
+    cursor: pointer;
+    font-size: 1.1rem;
+  }
+
+  @media (max-width: 900px) {
+    .sidebar {
+      transform: translateX(-100%);
+    }
+    .sidebar.open {
+      transform: translateX(0);
+    }
+    .content {
+      margin-left: 0;
+      padding: 60px 20px 60px;
+    }
+    .menu-toggle {
+      display: block;
+    }
+  }
+
+  /* ── 타이포그래피 ── */
+  h1 { font-size: 1.9rem; margin: 2rem 0 1rem; padding-bottom: 0.5rem; border-bottom: 2px solid var(--accent); }
+  h2 { font-size: 1.45rem; margin: 2.5rem 0 0.8rem; padding-bottom: 0.3rem; border-bottom: 1px solid var(--border); color: var(--accent); }
+  h3 { font-size: 1.15rem; margin: 1.8rem 0 0.5rem; }
+  h4 { font-size: 1rem; margin: 1.3rem 0 0.4rem; color: var(--fg-muted); }
+  p { margin: 0.6rem 0; }
+  hr { border: none; border-top: 1px solid var(--border); margin: 2rem 0; }
+  strong { color: var(--strong); }
+  a { color: var(--link); text-decoration: none; }
+  a:hover { text-decoration: underline; }
+  ul, ol { margin: 0.5rem 0 0.5rem 1.5rem; }
+  li { margin: 0.25rem 0; }
+
+  /* ── 테이블 ── */
+  table { width: 100%; border-collapse: collapse; margin: 1rem 0; font-size: 0.85rem; }
+  th, td { border: 1px solid var(--border); padding: 0.5rem 0.75rem; text-align: left; }
+  th { background: var(--table-header); font-weight: 600; }
+  tr:nth-child(even) { background: var(--table-even); }
+  tr:nth-child(odd) { background: var(--table-odd); }
+
+  /* ── 코드 ── */
+  code {
+    background: var(--code-bg);
+    color: var(--code-fg);
+    padding: 0.15rem 0.4rem;
+    border-radius: 4px;
+    font-size: 0.82em;
+    font-family: 'JetBrains Mono', 'Fira Code', 'Cascadia Code', monospace;
+  }
+  pre {
+    background: var(--code-bg);
+    color: var(--code-fg);
+    padding: 1rem 1.2rem;
+    border-radius: 8px;
+    overflow-x: auto;
+    margin: 1rem 0;
+    border: 1px solid var(--border);
+  }
+  pre code {
+    background: none;
+    padding: 0;
+    font-size: 0.82rem;
+    line-height: 1.5;
+  }
+
+  /* ── 인용 ── */
+  blockquote {
+    border-left: 4px solid var(--blockquote-border);
+    padding: 0.6rem 1rem;
+    margin: 1rem 0;
+    background: var(--blockquote-bg);
+    border-radius: 0 6px 6px 0;
+  }
+  blockquote p { margin: 0.3rem 0; }
+
+  /* ── Mermaid ── */
+  .mermaid {
+    margin: 1.5rem 0;
+    text-align: center;
+    background: var(--card-bg);
+    padding: 1rem;
+    border-radius: 8px;
+    border: 1px solid var(--border);
+  }
+  .mermaid svg { max-width: 100%; }
+
+  /* ── Footer ── */
+  footer {
+    margin-top: 3rem;
+    padding-top: 1rem;
+    border-top: 1px solid var(--border);
+    color: var(--fg-muted);
+    font-size: 0.8rem;
+  }
+</style>
+</head>
+<body>
+
+<button class="menu-toggle" onclick="document.querySelector('.sidebar').classList.toggle('open')">☰</button>
+
+<aside class="sidebar">
+  <div class="sidebar-header">
+    <div class="sidebar-title">데이터 엔지니어 작업 요청서</div>
+    <div class="sidebar-controls">
+      <button class="theme-btn" onclick="setTheme('dark')" id="btn-dark">🌙 Dark</button>
+      <button class="theme-btn" onclick="setTheme('light')" id="btn-light">☀️ Light</button>
+    </div>
+    <a class="back-link" href="index.html">← 문서 목록으로</a>
+  </div>
+  <nav class="toc">
+<ul>
+<li class="toc-h2"><a href="#요청-목록-요약">요청 목록 요약</a></li>
+<li class="toc-h2"><a href="#de-001-재무제표-수집-dag-api-호출량-초과-문제-해결-긴급">DE-001: 재무제표 수집 DAG API 호출량 초과 문제 해결 (긴급)</a></li>
+  <li class="toc-h3"><a href="#배경-및-실제-문제">배경 및 실제 문제</a></li>
+  <li class="toc-h3"><a href="#요청-작업">요청 작업</a></li>
+  <li class="toc-h3"><a href="#dart-api-호출량-비교">DART API 호출량 비교</a></li>
+  <li class="toc-h3"><a href="#적용된-구현-내용-2026-03-22-완료">적용된 구현 내용 (2026-03-22 완료)</a></li>
+  <li class="toc-h3"><a href="#수정-후-예상-호출량">수정 후 예상 호출량</a></li>
+  <li class="toc-h3"><a href="#검수-기준">검수 기준</a></li>
+  <li class="toc-h3"><a href="#잔여-과제">잔여 과제</a></li>
+<li class="toc-h2"><a href="#de-002-컨센서스-수집-dag-자동화">DE-002: 컨센서스 수집 DAG 자동화</a></li>
+  <li class="toc-h3"><a href="#현황-파악-2026-03-23-기준">현황 파악 (2026-03-23 기준)</a></li>
+  <li class="toc-h3"><a href="#요청-작업_1">요청 작업</a></li>
+    <li class="toc-h4"><a href="#task-1-collect_consensuspy--airflow-dag-전환">Task 1. collect_consensus.py → Airflow DAG 전환</a></li>
+    <li class="toc-h4"><a href="#task-2-consensus_history-연동-추가-핵심-요청">Task 2. consensus_history 연동 추가 (핵심 요청)</a></li>
+    <li class="toc-h4"><a href="#task-3-수동-백필-dag-분리">Task 3. 수동 백필 DAG 분리</a></li>
+  <li class="toc-h3"><a href="#데이터-흐름">데이터 흐름</a></li>
+  <li class="toc-h3"><a href="#검수-기준_1">검수 기준</a></li>
+<li class="toc-h2"><a href="#de-003-기관-세부-수급-및-공매도-데이터-수집">DE-003: 기관 세부 수급 및 공매도 데이터 수집</a></li>
+  <li class="toc-h3"><a href="#배경-및-문제">배경 및 문제</a></li>
+  <li class="toc-h3"><a href="#요청-작업_2">요청 작업</a></li>
+    <li class="toc-h4"><a href="#3-1-krx-기관-세부-수급-수집">3-1. KRX 기관 세부 수급 수집</a></li>
+    <li class="toc-h4"><a href="#3-2-공매도-잔고-수집">3-2. 공매도 잔고 수집</a></li>
+  <li class="toc-h3"><a href="#검수-기준_2">검수 기준</a></li>
+<li class="toc-h2"><a href="#de-004-미국-종목-펀더멘털-수집-추가">DE-004: 미국 종목 펀더멘털 수집 추가</a></li>
+  <li class="toc-h3"><a href="#배경-및-문제_1">배경 및 문제</a></li>
+  <li class="toc-h3"><a href="#요청-작업_3">요청 작업</a></li>
+  <li class="toc-h3"><a href="#검수-기준_3">검수 기준</a></li>
+<li class="toc-h2"><a href="#de-005-analytics-파생-지표-테이블-구축">DE-005: Analytics 파생 지표 테이블 구축</a></li>
+  <li class="toc-h3"><a href="#배경-및-문제_2">배경 및 문제</a></li>
+  <li class="toc-h3"><a href="#요청-작업_4">요청 작업</a></li>
+    <li class="toc-h4"><a href="#5-1-analytics_valuation--밸류에이션-종합">5-1. analytics_valuation — 밸류에이션 종합</a></li>
+    <li class="toc-h4"><a href="#5-2-analytics_earnings_surprise--실적-서프라이즈">5-2. analytics_earnings_surprise — 실적 서프라이즈</a></li>
+    <li class="toc-h4"><a href="#5-3-dag-구성">5-3. DAG 구성</a></li>
+  <li class="toc-h3"><a href="#검수-기준_4">검수 기준</a></li>
+<li class="toc-h2"><a href="#de-006-네이버-스크래핑-의존도-리스크-대응">DE-006: 네이버 스크래핑 의존도 리스크 대응</a></li>
+  <li class="toc-h3"><a href="#배경-및-문제_3">배경 및 문제</a></li>
+  <li class="toc-h3"><a href="#요청-작업_5">요청 작업</a></li>
+  <li class="toc-h3"><a href="#검수-기준_5">검수 기준</a></li>
+<li class="toc-h2"><a href="#참고-작업-우선순위-판단-기준">참고: 작업 우선순위 판단 기준</a></li>
+</ul>
+</nav>
+</aside>
+
+<main class="content">
+<h1 id="데이터-엔지니어-작업-요청서">데이터 엔지니어 작업 요청서</h1>
+<blockquote>
+<p>데이터 분석 과정에서 발견된 파이프라인 결함 및 개선 요청 사항을 정리한 문서입니다.
+작업 완료 시 상태를 업데이트해 주세요.</p>
+</blockquote>
+<p><strong>작성일</strong>: 2026-03-21
+<strong>전달일</strong>: 2026-03-21
+<strong>작성자</strong>: 데이터 분석팀</p>
+<hr />
+<h2 id="요청-목록-요약">요청 목록 요약</h2>
+<table>
+<thead>
+<tr>
+<th>#</th>
+<th>제목</th>
+<th>우선순위</th>
+<th>난이도</th>
+<th>상태</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><a href="#de-001-재무제표-수집-dag-api-호출량-초과-문제-해결-긴급">DE-001</a></td>
+<td>재무제표 수집 DAG API 호출량 초과 해결</td>
+<td><strong>긴급</strong></td>
+<td>하</td>
+<td>✅ 완료 (2026-03-22)</td>
+</tr>
+<tr>
+<td><a href="#de-002-컨센서스-수집-dag-자동화">DE-002</a></td>
+<td>컨센서스 수집 DAG 자동화</td>
+<td>높음</td>
+<td>하</td>
+<td>✅ 완료 (2026-03-23)</td>
+</tr>
+<tr>
+<td><a href="#de-003-기관-세부-수급-및-공매도-데이터-수집">DE-003</a></td>
+<td>기관 세부 수급 + 공매도 데이터 수집</td>
+<td>중간</td>
+<td>중</td>
+<td>전달완료 (2026-03-21)</td>
+</tr>
+<tr>
+<td><a href="#de-004-미국-종목-펀더멘털-수집-추가">DE-004</a></td>
+<td>미국 종목 펀더멘털 수집 추가</td>
+<td>중간</td>
+<td>하</td>
+<td>전달완료 (2026-03-21)</td>
+</tr>
+<tr>
+<td><a href="#de-005-analytics-파생-지표-테이블-구축">DE-005</a></td>
+<td>Analytics 파생 지표 테이블 구축</td>
+<td>중간</td>
+<td>중</td>
+<td>전달완료 (2026-03-21)</td>
+</tr>
+<tr>
+<td><a href="#de-006-네이버-스크래핑-의존도-리스크-대응">DE-006</a></td>
+<td>네이버 스크래핑 의존도 리스크 대응</td>
+<td>낮음</td>
+<td>중</td>
+<td>전달완료 (2026-03-21)</td>
+</tr>
+</tbody>
+</table>
+<hr />
+<h2 id="de-001-재무제표-수집-dag-api-호출량-초과-문제-해결-긴급">DE-001: 재무제표 수집 DAG API 호출량 초과 문제 해결 (긴급)</h2>
+<blockquote>
+<p>⚠️ 초기 요청 내용("커버리지 확대") 수정. 실제 확인된 문제는 API 한도 초과임.</p>
+</blockquote>
+<h3 id="배경-및-실제-문제">배경 및 실제 문제</h3>
+<ul>
+<li><code>company_dart_info</code>: <strong>2,661개</strong> (수동 스크립트로 채워진 상태)</li>
+<li><code>collect_financial_statements()</code> task는 <code>company_dart_info</code> 전체를 처리</li>
+<li>주간 DAG 실행 시 예상 호출량: <strong>2,661 × 4 × 5 = 53,220건/주</strong></li>
+<li>DART API 일일 한도 <strong>10,000건</strong> 대비 최대 5배 초과</li>
+<li>실행 소요 시간: 약 <strong>14.8시간</strong> → 주간 실행 주기(7일)와 충돌 위험</li>
+</ul>
+<div class="codehilite"><pre><span></span><code><span class="k">[현재 구조 - 문제]</span>
+<span class="na">company_dart_info</span><span class="o">:</span><span class="w"> </span><span class="s">2,661개</span>
+<span class="na">collect_financial_statements()</span><span class="o">:</span><span class="w"> </span><span class="s">전체 2,661개 × 4보고서 × 5년 처리 시도</span>
+<span class="na">→ DART API 한도 초과, 실행시간 초과 위험</span>
+
+<span class="k">[목표 구조]</span>
+<span class="na">한도 내에서 중요 종목 우선 갱신 + 나머지는 분리 처리</span>
+</code></pre></div>
+
+<h3 id="요청-작업">요청 작업</h3>
+<p><strong>Option A (단기, 즉시 적용)</strong>: 수집 기간 단축</p>
+<p><code>collect_financial_statements()</code> 내 <code>years_to_fetch = 5</code> → <code>years_to_fetch = 2</code> 변경
+- 2,661 × 4 × 2 = 21,288건/주 (CFS+OFS 최대 42,576건)
+- 실행시간 약 5.9시간으로 단축
+- 5년치 이전 데이터는 이미 적재되어 있으므로 실질적 손실 없음</p>
+<p><strong>Option B (권장)</strong>: 시총 우선순위 + 수집 기간 단축 병행</p>
+<p><code>collect_financial_statements()</code> 쿼리를 아래처럼 수정:</p>
+<div class="codehilite"><pre><span></span><code><span class="n">cursor</span><span class="o">.</span><span class="n">execute</span><span class="p">(</span><span class="s2">&quot;&quot;&quot;</span>
+<span class="s2">    SELECT d.ticker, d.corp_code, d.corp_name</span>
+<span class="s2">    FROM company_dart_info d</span>
+<span class="s2">    LEFT JOIN stock_info s ON d.ticker = s.ticker</span>
+<span class="s2">    WHERE d.corp_code IS NOT NULL</span>
+<span class="s2">    ORDER BY s.market_value DESC NULLS LAST</span>
+<span class="s2">    LIMIT 500</span>
+<span class="s2">&quot;&quot;&quot;</span><span class="p">)</span>
+<span class="c1"># years_to_fetch = 2 로 변경</span>
+</code></pre></div>
+
+<ul>
+<li>500 × 4 × 2 = 4,000건/주 → DART 한도 내 안전</li>
+<li>나머지 2,161개는 별도 월간 DAG로 처리</li>
+</ul>
+<p><strong>Option C (근본 해결, 중장기)</strong>: DART 증분 수집</p>
+<ul>
+<li>DART <code>list</code> API로 최신 공시 목록 조회</li>
+<li>마지막 수집 이후 새로 공시된 보고서만 처리</li>
+<li>호출량 최소화, 구현 복잡도 높음</li>
+</ul>
+<h3 id="dart-api-호출량-비교">DART API 호출량 비교</h3>
+<table>
+<thead>
+<tr>
+<th>방안</th>
+<th>주간 호출량 (CFS만)</th>
+<th>CFS+OFS 최대</th>
+<th>일평균</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>현재 (2,661 × 4 × 5)</td>
+<td>53,220건</td>
+<td>106,440건</td>
+<td><strong>초과</strong></td>
+</tr>
+<tr>
+<td>Option A (2,661 × 4 × 2)</td>
+<td>21,288건</td>
+<td>42,576건</td>
+<td>6,082건 ✓</td>
+</tr>
+<tr>
+<td>Option B (500 × 4 × 2)</td>
+<td>4,000건</td>
+<td>8,000건</td>
+<td>1,143건 ✓✓</td>
+</tr>
+</tbody>
+</table>
+<h3 id="적용된-구현-내용-2026-03-22-완료">적용된 구현 내용 (2026-03-22 완료)</h3>
+<p>파일: <code>airflow/dags/stock_loader/dag_financial_statements.py</code></p>
+<ol>
+<li><strong>시총 순 정렬 + 30일 내 갱신 종목 스킵</strong> (143~157행)</li>
+<li><code>company_dart_info</code> LEFT JOIN <code>stock_info</code> → <code>market_value DESC</code> 정렬</li>
+<li><code>financial_statements.updated_at &gt; NOW() - INTERVAL '30 days'</code> 종목 제외</li>
+<li>
+<p>효과: 이미 최신 상태인 종목 재수집 방지, 시총 대형주 우선 처리</p>
+</li>
+<li>
+<p><strong>수집 기간 단축</strong> (166행)</p>
+</li>
+<li>
+<p><code>years_to_fetch = context.get("years_to_fetch", 2)</code> — 주간 DAG 기본값 5→2</p>
+</li>
+<li>
+<p><strong>수동 백필 DAG 분리</strong> (285행)</p>
+</li>
+<li><code>05_kr_financial_stmt_manual</code> DAG에 <code>op_kwargs={"years_to_fetch": 5}</code> 부여</li>
+<li>전체 히스토리 재수집 필요 시 수동 트리거로 분리</li>
+</ol>
+<h3 id="수정-후-예상-호출량">수정 후 예상 호출량</h3>
+<table>
+<thead>
+<tr>
+<th>상태</th>
+<th>예상 호출량</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>수정 전</td>
+<td>최대 106,440건/주 (한도 초과)</td>
+</tr>
+<tr>
+<td>수정 후 첫 실행</td>
+<td>최대 42,576건/주 (5.9시간)</td>
+</tr>
+<tr>
+<td>수정 후 이후 실행</td>
+<td>신규 공시분만, 대폭 감소</td>
+</tr>
+</tbody>
+</table>
+<h3 id="검수-기준">검수 기준</h3>
+<ul>
+<li>[ ] DAG 첫 실행 완료 시간 7시간 이내 확인</li>
+<li>[ ] DART API 일일 호출량 10,000건 미만 확인 (Airflow 로그)</li>
+<li>[ ] 시총 상위 종목 최신 분기 데이터 갱신 확인</li>
+<li>[ ] 두 번째 실행부터 30일 필터 동작으로 실행시간 단축 확인</li>
+</ul>
+<h3 id="잔여-과제">잔여 과제</h3>
+<ul>
+<li>첫 실행 시 2,661개 전체 대상으로 여전히 한도 초과 가능성 있음</li>
+<li>근본 해결책(DART <code>list</code> API 기반 증분 수집) 중장기 검토 필요</li>
+</ul>
+<hr />
+<h2 id="de-002-컨센서스-수집-dag-자동화">DE-002: 컨센서스 수집 DAG 자동화</h2>
+<p><strong>업데이트</strong>: 2026-03-23 (현황 분석 후 요청 내용 구체화)</p>
+<h3 id="현황-파악-2026-03-23-기준">현황 파악 (2026-03-23 기준)</h3>
+<ul>
+<li>수동 스크립트 최근 실행: 2026-03-13, 2026-03-14 (2회)</li>
+<li>수집 결과: 835개 대상 → <strong>301개 성공</strong>, 534개 SKIP (애널리스트 커버리지 없음)</li>
+<li>현재 DB: 561개 종목, 832건 (2025년 추정치 311건 + 2026년 추정치 521건)</li>
+<li>실행 소요 시간: <strong>약 6분</strong> (부담 없음)</li>
+<li><code>consensus_history</code> 테이블: 존재하나 수동 실행 시 미연동 상태 (2026-03-22 557건만 존재)</li>
+</ul>
+<h3 id="요청-작업_1">요청 작업</h3>
+<h4 id="task-1-collect_consensuspy--airflow-dag-전환">Task 1. <code>collect_consensus.py</code> → Airflow DAG 전환</h4>
+<table>
+<thead>
+<tr>
+<th>항목</th>
+<th>내용</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>DAG ID</td>
+<td><code>05_kr_consensus_weekly</code></td>
+</tr>
+<tr>
+<td>스케줄</td>
+<td>매주 화요일 19:00 KST</td>
+</tr>
+<tr>
+<td>수집 대상</td>
+<td><code>stock_info</code>에서 active=true인 전체 KR 종목 (<code>.KS</code>, <code>.KQ</code>)</td>
+</tr>
+<tr>
+<td>소요 시간</td>
+<td>약 6분 (835종목 × 0.5초 딜레이)</td>
+</tr>
+<tr>
+<td>기존 코드</td>
+<td><code>collect_consensus.py</code> 그대로 사용, DAG wrapper만 추가</td>
+</tr>
+</tbody>
+</table>
+<p>수집 대상 쿼리 (기존 INNER JOIN 제거, 전체 스캔으로 변경):</p>
+<div class="codehilite"><pre><span></span><code><span class="k">SELECT</span><span class="w"> </span><span class="n">ticker</span><span class="p">,</span><span class="w"> </span><span class="n">stock_name</span>
+<span class="k">FROM</span><span class="w"> </span><span class="n">stock_info</span>
+<span class="k">WHERE</span><span class="w"> </span><span class="p">(</span><span class="n">ticker</span><span class="w"> </span><span class="k">LIKE</span><span class="w"> </span><span class="s1">&#39;%.KS&#39;</span><span class="w"> </span><span class="k">OR</span><span class="w"> </span><span class="n">ticker</span><span class="w"> </span><span class="k">LIKE</span><span class="w"> </span><span class="s1">&#39;%.KQ&#39;</span><span class="p">)</span>
+<span class="w">  </span><span class="k">AND</span><span class="w"> </span><span class="n">active</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="k">true</span>
+<span class="k">ORDER</span><span class="w"> </span><span class="k">BY</span><span class="w"> </span><span class="n">market_value</span><span class="w"> </span><span class="k">DESC</span><span class="w"> </span><span class="n">NULLS</span><span class="w"> </span><span class="k">LAST</span>
+</code></pre></div>
+
+<p>→ 기존 INNER JOIN 방식은 재무제표 없는 종목을 원천 제외했으나,
+  실제로는 신규 상장 등 재무제표 미적재 상태에서도 컨센서스가 있는 종목이 존재할 수 있음.
+  데이터 없으면 기존 로직대로 자동 SKIP되므로 부작용 없음.</p>
+<h4 id="task-2-consensus_history-연동-추가-핵심-요청">Task 2. <code>consensus_history</code> 연동 추가 (핵심 요청)</h4>
+<p>수집 시마다 <code>consensus_estimates</code> UPSERT 외에 <strong><code>consensus_history</code>에도 INSERT</strong> 추가.
+목표주가 revision momentum 분석을 위해 반드시 필요.</p>
+<div class="codehilite"><pre><span></span><code><span class="c1">-- 매 수집마다 INSERT (UPSERT 아님 — 변경 이력 보존이 목적)</span>
+<span class="k">INSERT</span><span class="w"> </span><span class="k">INTO</span><span class="w"> </span><span class="n">consensus_history</span><span class="w"> </span><span class="p">(</span>
+<span class="w">    </span><span class="n">ticker</span><span class="p">,</span><span class="w"> </span><span class="n">stock_code</span><span class="p">,</span><span class="w"> </span><span class="n">collected_date</span><span class="p">,</span><span class="w"> </span><span class="n">estimate_year</span><span class="p">,</span>
+<span class="w">    </span><span class="n">rating</span><span class="p">,</span><span class="w"> </span><span class="n">target_price</span><span class="p">,</span><span class="w"> </span><span class="n">analyst_count</span><span class="p">,</span>
+<span class="w">    </span><span class="n">est_eps</span><span class="p">,</span><span class="w"> </span><span class="n">est_per</span><span class="p">,</span><span class="w"> </span><span class="n">est_revenue</span><span class="p">,</span><span class="w"> </span><span class="n">est_operating_profit</span><span class="p">,</span><span class="w"> </span><span class="n">est_net_income</span><span class="p">,</span>
+<span class="w">    </span><span class="n">data_source</span>
+<span class="p">)</span>
+<span class="k">VALUES</span><span class="w"> </span><span class="p">(...)</span>
+<span class="c1">-- ON CONFLICT 없음 — 동일 종목이라도 수집일마다 새 레코드</span>
+</code></pre></div>
+
+<p><code>consensus_history</code> 테이블 스키마 확인: <code>(ticker, collected_date, estimate_year)</code> 조합으로 중복 방지 인덱스 추가 권고.</p>
+<h4 id="task-3-수동-백필-dag-분리">Task 3. 수동 백필 DAG 분리</h4>
+<table>
+<thead>
+<tr>
+<th>DAG ID</th>
+<th>스케줄</th>
+<th>용도</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>05_kr_consensus_weekly</code></td>
+<td>매주 화요일 19:00</td>
+<td>정기 갱신</td>
+</tr>
+<tr>
+<td><code>05_kr_consensus_manual</code></td>
+<td>수동 트리거</td>
+<td>전체 재수집, 긴급 갱신</td>
+</tr>
+</tbody>
+</table>
+<h3 id="데이터-흐름">데이터 흐름</h3>
+<div class="codehilite"><pre><span></span><code>매주 화요일 19:00
+  → stock_info 전체 KR 종목 조회 (835개 내외)
+  → WiseReport + FnGuide 스크래핑 (약 6분)
+  → consensus_estimates UPSERT  ← 현재 최신값 유지
+  → consensus_history INSERT    ← 변경 이력 누적 (신규 추가)
+  → 수집 결과 로그 (성공/스킵/에러 건수)
+</code></pre></div>
+
+<h3 id="검수-기준_1">검수 기준</h3>
+<ul>
+<li>[ ] 매주 화요일 19:00 자동 실행 확인</li>
+<li>[ ] <code>consensus_estimates.updated_at</code> 300개 이상 최신화 확인</li>
+<li>[ ] <code>consensus_history</code>에 수집일 기준 신규 레코드 300개 이상 INSERT 확인</li>
+<li>[ ] 2회 이상 실행 후 <code>consensus_history</code>에 날짜별 이력 누적 확인</li>
+<li>[ ] 실패 시 Airflow 이메일 알림 동작 확인</li>
+</ul>
+<hr />
+<h2 id="de-003-기관-세부-수급-및-공매도-데이터-수집">DE-003: 기관 세부 수급 및 공매도 데이터 수집</h2>
+<h3 id="배경-및-문제">배경 및 문제</h3>
+<p>현재 <code>stock_price_1d</code>에는 외국인/기관 순매수 합계만 존재.
+투자 분석에서 <strong>연기금 순매수</strong>는 중장기 방향성 신호로 신뢰도가 매우 높으며,
+<strong>공매도 잔고 비율</strong>은 투자심리 및 단기 수급 판단에 필수적.</p>
+<h3 id="요청-작업_2">요청 작업</h3>
+<h4 id="3-1-krx-기관-세부-수급-수집">3-1. KRX 기관 세부 수급 수집</h4>
+<ul>
+<li>데이터 소스: KRX 데이터포털 (<code>data.krx.co.kr</code>) — 무료 API 제공</li>
+<li>수집 항목: 연기금, 투신, 사모펀드, 은행, 보험, 기타금융</li>
+<li>저장 테이블: <code>investor_trend_detail</code> (신규 생성)</li>
+<li>스케줄: 평일 17:30 KST (현재 <code>05_kr_investor_trend</code> 이후)</li>
+</ul>
+<div class="codehilite"><pre><span></span><code><span class="c1">-- 신규 테이블 스키마 (예시)</span>
+<span class="k">CREATE</span><span class="w"> </span><span class="k">TABLE</span><span class="w"> </span><span class="n">investor_trend_detail</span><span class="w"> </span><span class="p">(</span>
+<span class="w">    </span><span class="n">ticker</span><span class="w">          </span><span class="nb">VARCHAR</span><span class="p">(</span><span class="mi">20</span><span class="p">),</span>
+<span class="w">    </span><span class="n">trade_date</span><span class="w">      </span><span class="nb">DATE</span><span class="p">,</span>
+<span class="w">    </span><span class="n">pension_fund</span><span class="w">    </span><span class="nb">BIGINT</span><span class="p">,</span><span class="w">   </span><span class="c1">-- 연기금 순매수</span>
+<span class="w">    </span><span class="n">trust</span><span class="w">           </span><span class="nb">BIGINT</span><span class="p">,</span><span class="w">   </span><span class="c1">-- 투신</span>
+<span class="w">    </span><span class="n">private_fund</span><span class="w">    </span><span class="nb">BIGINT</span><span class="p">,</span><span class="w">   </span><span class="c1">-- 사모</span>
+<span class="w">    </span><span class="n">bank</span><span class="w">            </span><span class="nb">BIGINT</span><span class="p">,</span><span class="w">   </span><span class="c1">-- 은행</span>
+<span class="w">    </span><span class="n">insurance</span><span class="w">       </span><span class="nb">BIGINT</span><span class="p">,</span><span class="w">   </span><span class="c1">-- 보험</span>
+<span class="w">    </span><span class="n">other_finance</span><span class="w">   </span><span class="nb">BIGINT</span><span class="p">,</span><span class="w">   </span><span class="c1">-- 기타금융</span>
+<span class="w">    </span><span class="n">updated_at</span><span class="w">      </span><span class="k">TIMESTAMP</span><span class="w"> </span><span class="k">DEFAULT</span><span class="w"> </span><span class="n">NOW</span><span class="p">(),</span>
+<span class="w">    </span><span class="k">PRIMARY</span><span class="w"> </span><span class="k">KEY</span><span class="w"> </span><span class="p">(</span><span class="n">ticker</span><span class="p">,</span><span class="w"> </span><span class="n">trade_date</span><span class="p">)</span>
+<span class="p">);</span>
+</code></pre></div>
+
+<h4 id="3-2-공매도-잔고-수집">3-2. 공매도 잔고 수집</h4>
+<ul>
+<li>데이터 소스: KRX 공매도 종합포털 또는 데이터포털</li>
+<li>수집 항목: 공매도 잔고 수량, 잔고 금액, 잔고 비율(%)</li>
+<li>저장 테이블: <code>short_selling</code> (신규 생성)</li>
+<li>스케줄: 평일 18:00 KST (T+1 공시 기준)</li>
+</ul>
+<div class="codehilite"><pre><span></span><code><span class="c1">-- 신규 테이블 스키마 (예시)</span>
+<span class="k">CREATE</span><span class="w"> </span><span class="k">TABLE</span><span class="w"> </span><span class="n">short_selling</span><span class="w"> </span><span class="p">(</span>
+<span class="w">    </span><span class="n">ticker</span><span class="w">              </span><span class="nb">VARCHAR</span><span class="p">(</span><span class="mi">20</span><span class="p">),</span>
+<span class="w">    </span><span class="n">trade_date</span><span class="w">          </span><span class="nb">DATE</span><span class="p">,</span>
+<span class="w">    </span><span class="n">short_balance</span><span class="w">       </span><span class="nb">BIGINT</span><span class="p">,</span><span class="w">       </span><span class="c1">-- 공매도 잔고 수량</span>
+<span class="w">    </span><span class="n">short_balance_amt</span><span class="w">   </span><span class="nb">BIGINT</span><span class="p">,</span><span class="w">       </span><span class="c1">-- 공매도 잔고 금액 (원)</span>
+<span class="w">    </span><span class="n">short_balance_ratio</span><span class="w"> </span><span class="nb">DECIMAL</span><span class="p">(</span><span class="mi">6</span><span class="p">,</span><span class="mi">2</span><span class="p">),</span><span class="w"> </span><span class="c1">-- 잔고 비율 (%)</span>
+<span class="w">    </span><span class="n">updated_at</span><span class="w">          </span><span class="k">TIMESTAMP</span><span class="w"> </span><span class="k">DEFAULT</span><span class="w"> </span><span class="n">NOW</span><span class="p">(),</span>
+<span class="w">    </span><span class="k">PRIMARY</span><span class="w"> </span><span class="k">KEY</span><span class="w"> </span><span class="p">(</span><span class="n">ticker</span><span class="p">,</span><span class="w"> </span><span class="n">trade_date</span><span class="p">)</span>
+<span class="p">);</span>
+</code></pre></div>
+
+<h3 id="검수-기준_2">검수 기준</h3>
+<ul>
+<li>[ ] 삼성전자, SK하이닉스 등 주요 종목 기관 세부 수급 데이터 적재 확인</li>
+<li>[ ] 공매도 잔고 비율이 KRX 공시 수치와 일치 확인 (5개 종목 샘플)</li>
+<li>[ ] 주말/공휴일 수집 스킵 로직 동작 확인</li>
+</ul>
+<hr />
+<h2 id="de-004-미국-종목-펀더멘털-수집-추가">DE-004: 미국 종목 펀더멘털 수집 추가</h2>
+<h3 id="배경-및-문제_1">배경 및 문제</h3>
+<p>NASDAQ/NYSE 종목은 일봉 시세와 기술지표만 수집 중.
+밸류에이션(P/E, EV/EBITDA), 재무제표, 애널리스트 컨센서스 없이는
+<strong>한국 종목과 동일한 수준의 분석이 불가능</strong>.</p>
+<h3 id="요청-작업_3">요청 작업</h3>
+<p><code>yfinance</code>의 <code>Ticker</code> 객체를 활용한 미국 종목 펀더멘털 수집 DAG 추가:</p>
+<ul>
+<li>DAG ID: <code>05_us_fundamentals_weekly</code></li>
+<li>스케줄: 매주 토요일 06:00 KST (미국 시장 마감 후)</li>
+<li>수집 대상: <code>stock_info</code>에서 <code>.</code> 없는 ticker (NASDAQ/NYSE)</li>
+<li>수집 항목:</li>
+</ul>
+<div class="codehilite"><pre><span></span><code><span class="n">ticker</span> <span class="o">=</span> <span class="n">yf</span><span class="o">.</span><span class="n">Ticker</span><span class="p">(</span><span class="s2">&quot;AAPL&quot;</span><span class="p">)</span>
+
+<span class="c1"># 밸류에이션</span>
+<span class="n">ticker</span><span class="o">.</span><span class="n">info</span><span class="p">[</span><span class="s2">&quot;trailingPE&quot;</span><span class="p">]</span>       <span class="c1"># P/E</span>
+<span class="n">ticker</span><span class="o">.</span><span class="n">info</span><span class="p">[</span><span class="s2">&quot;priceToBook&quot;</span><span class="p">]</span>      <span class="c1"># P/B</span>
+<span class="n">ticker</span><span class="o">.</span><span class="n">info</span><span class="p">[</span><span class="s2">&quot;enterpriseToEbitda&quot;</span><span class="p">]</span>  <span class="c1"># EV/EBITDA</span>
+<span class="n">ticker</span><span class="o">.</span><span class="n">info</span><span class="p">[</span><span class="s2">&quot;targetMeanPrice&quot;</span><span class="p">]</span>  <span class="c1"># 애널리스트 평균 목표주가</span>
+<span class="n">ticker</span><span class="o">.</span><span class="n">info</span><span class="p">[</span><span class="s2">&quot;recommendationMean&quot;</span><span class="p">]</span>  <span class="c1"># 투자의견 점수</span>
+
+<span class="c1"># 재무제표 (연간)</span>
+<span class="n">ticker</span><span class="o">.</span><span class="n">financials</span>     <span class="c1"># 손익계산서</span>
+<span class="n">ticker</span><span class="o">.</span><span class="n">balance_sheet</span>  <span class="c1"># 재무상태표</span>
+<span class="n">ticker</span><span class="o">.</span><span class="n">cashflow</span>       <span class="c1"># 현금흐름표</span>
+</code></pre></div>
+
+<ul>
+<li>저장 테이블: 기존 <code>financial_statements</code>에 저장 (ticker 기준 호환)</li>
+<li>밸류에이션은 <code>consensus_estimates</code> 또는 별도 <code>us_valuation</code> 테이블</li>
+</ul>
+<h3 id="검수-기준_3">검수 기준</h3>
+<ul>
+<li>[ ] AAPL, NVDA, MSFT 등 10개 종목 재무제표 적재 확인</li>
+<li>[ ] P/E, 목표주가가 Yahoo Finance 웹과 일치 확인</li>
+<li>[ ] yfinance 오류(rate limit 등) 시 재시도 로직 동작 확인</li>
+</ul>
+<hr />
+<h2 id="de-005-analytics-파생-지표-테이블-구축">DE-005: Analytics 파생 지표 테이블 구축</h2>
+<h3 id="배경-및-문제_2">배경 및 문제</h3>
+<p>현재 각 테이블(<code>stock_price_1d</code>, <code>financial_statements</code>, <code>consensus_estimates</code>)은
+독립적으로 적재되고 cross-table 분석 지표가 전혀 없음.
+분석 레이어에서 매번 조인 쿼리를 작성해야 하며, 성능 및 일관성 문제 발생 가능.</p>
+<h3 id="요청-작업_4">요청 작업</h3>
+<p><code>analytics_*</code> 테이블 군을 신규 생성하고, 매일 새벽 사전 계산:</p>
+<h4 id="5-1-analytics_valuation--밸류에이션-종합">5-1. <code>analytics_valuation</code> — 밸류에이션 종합</h4>
+<div class="codehilite"><pre><span></span><code><span class="k">CREATE</span><span class="w"> </span><span class="k">TABLE</span><span class="w"> </span><span class="n">analytics_valuation</span><span class="w"> </span><span class="p">(</span>
+<span class="w">    </span><span class="n">ticker</span><span class="w">              </span><span class="nb">VARCHAR</span><span class="p">(</span><span class="mi">20</span><span class="p">),</span>
+<span class="w">    </span><span class="n">base_date</span><span class="w">           </span><span class="nb">DATE</span><span class="p">,</span>
+<span class="w">    </span><span class="c1">-- 현재 시세</span>
+<span class="w">    </span><span class="n">close_price</span><span class="w">         </span><span class="nb">BIGINT</span><span class="p">,</span>
+<span class="w">    </span><span class="n">market_cap</span><span class="w">          </span><span class="nb">BIGINT</span><span class="p">,</span>
+<span class="w">    </span><span class="c1">-- 재무 기반 계산</span>
+<span class="w">    </span><span class="n">per_trailing</span><span class="w">        </span><span class="nb">DECIMAL</span><span class="p">(</span><span class="mi">10</span><span class="p">,</span><span class="mi">2</span><span class="p">),</span><span class="w">  </span><span class="c1">-- 실적 기반 PER</span>
+<span class="w">    </span><span class="n">pbr</span><span class="w">                 </span><span class="nb">DECIMAL</span><span class="p">(</span><span class="mi">10</span><span class="p">,</span><span class="mi">2</span><span class="p">),</span>
+<span class="w">    </span><span class="n">psr</span><span class="w">                 </span><span class="nb">DECIMAL</span><span class="p">(</span><span class="mi">10</span><span class="p">,</span><span class="mi">2</span><span class="p">),</span>
+<span class="w">    </span><span class="c1">-- 컨센서스 기반</span>
+<span class="w">    </span><span class="n">per_forward</span><span class="w">         </span><span class="nb">DECIMAL</span><span class="p">(</span><span class="mi">10</span><span class="p">,</span><span class="mi">2</span><span class="p">),</span><span class="w">  </span><span class="c1">-- 예상 EPS 기반 PER</span>
+<span class="w">    </span><span class="n">consensus_target</span><span class="w">    </span><span class="nb">BIGINT</span><span class="p">,</span><span class="w">         </span><span class="c1">-- 애널리스트 평균 목표주가</span>
+<span class="w">    </span><span class="n">upside_pct</span><span class="w">          </span><span class="nb">DECIMAL</span><span class="p">(</span><span class="mi">8</span><span class="p">,</span><span class="mi">2</span><span class="p">),</span><span class="w">   </span><span class="c1">-- 목표주가 대비 괴리율(%)</span>
+<span class="w">    </span><span class="n">analyst_count</span><span class="w">       </span><span class="nb">INT</span><span class="p">,</span>
+<span class="w">    </span><span class="n">updated_at</span><span class="w">          </span><span class="k">TIMESTAMP</span><span class="w"> </span><span class="k">DEFAULT</span><span class="w"> </span><span class="n">NOW</span><span class="p">(),</span>
+<span class="w">    </span><span class="k">PRIMARY</span><span class="w"> </span><span class="k">KEY</span><span class="w"> </span><span class="p">(</span><span class="n">ticker</span><span class="p">,</span><span class="w"> </span><span class="n">base_date</span><span class="p">)</span>
+<span class="p">);</span>
+</code></pre></div>
+
+<h4 id="5-2-analytics_earnings_surprise--실적-서프라이즈">5-2. <code>analytics_earnings_surprise</code> — 실적 서프라이즈</h4>
+<div class="codehilite"><pre><span></span><code><span class="k">CREATE</span><span class="w"> </span><span class="k">TABLE</span><span class="w"> </span><span class="n">analytics_earnings_surprise</span><span class="w"> </span><span class="p">(</span>
+<span class="w">    </span><span class="n">ticker</span><span class="w">              </span><span class="nb">VARCHAR</span><span class="p">(</span><span class="mi">20</span><span class="p">),</span>
+<span class="w">    </span><span class="n">fiscal_year</span><span class="w">         </span><span class="nb">INT</span><span class="p">,</span>
+<span class="w">    </span><span class="n">fiscal_quarter</span><span class="w">      </span><span class="nb">INT</span><span class="p">,</span>
+<span class="w">    </span><span class="c1">-- 실제 실적 (DART)</span>
+<span class="w">    </span><span class="n">actual_revenue</span><span class="w">      </span><span class="nb">BIGINT</span><span class="p">,</span>
+<span class="w">    </span><span class="n">actual_op_profit</span><span class="w">    </span><span class="nb">BIGINT</span><span class="p">,</span>
+<span class="w">    </span><span class="n">actual_net_income</span><span class="w">   </span><span class="nb">BIGINT</span><span class="p">,</span>
+<span class="w">    </span><span class="c1">-- 컨센서스 추정 (수집 시점 기준)</span>
+<span class="w">    </span><span class="n">est_revenue</span><span class="w">         </span><span class="nb">BIGINT</span><span class="p">,</span>
+<span class="w">    </span><span class="n">est_op_profit</span><span class="w">       </span><span class="nb">BIGINT</span><span class="p">,</span>
+<span class="w">    </span><span class="n">est_net_income</span><span class="w">      </span><span class="nb">BIGINT</span><span class="p">,</span>
+<span class="w">    </span><span class="c1">-- 서프라이즈 계산</span>
+<span class="w">    </span><span class="n">revenue_surprise_pct</span><span class="w">    </span><span class="nb">DECIMAL</span><span class="p">(</span><span class="mi">8</span><span class="p">,</span><span class="mi">2</span><span class="p">),</span>
+<span class="w">    </span><span class="n">op_profit_surprise_pct</span><span class="w">  </span><span class="nb">DECIMAL</span><span class="p">(</span><span class="mi">8</span><span class="p">,</span><span class="mi">2</span><span class="p">),</span>
+<span class="w">    </span><span class="n">updated_at</span><span class="w">          </span><span class="k">TIMESTAMP</span><span class="w"> </span><span class="k">DEFAULT</span><span class="w"> </span><span class="n">NOW</span><span class="p">(),</span>
+<span class="w">    </span><span class="k">PRIMARY</span><span class="w"> </span><span class="k">KEY</span><span class="w"> </span><span class="p">(</span><span class="n">ticker</span><span class="p">,</span><span class="w"> </span><span class="n">fiscal_year</span><span class="p">,</span><span class="w"> </span><span class="n">fiscal_quarter</span><span class="p">)</span>
+<span class="p">);</span>
+</code></pre></div>
+
+<h4 id="5-3-dag-구성">5-3. DAG 구성</h4>
+<ul>
+<li>DAG ID: <code>09_analytics_daily</code></li>
+<li>스케줄: 매일 01:00 KST (전일 데이터 기준)</li>
+<li>Task 순서: valuation 계산 → earnings_surprise 계산 → (향후) 기술지표 복합신호</li>
+</ul>
+<h3 id="검수-기준_4">검수 기준</h3>
+<ul>
+<li>[ ] 삼성전자의 <code>upside_pct</code>가 수동 계산값과 일치 확인</li>
+<li>[ ] <code>earnings_surprise_pct</code>가 (실제 - 추정) / |추정| 공식으로 계산됨 확인</li>
+<li>[ ] DAG 실행 시간 30분 이내 완료 확인</li>
+</ul>
+<hr />
+<h2 id="de-006-네이버-스크래핑-의존도-리스크-대응">DE-006: 네이버 스크래핑 의존도 리스크 대응</h2>
+<h3 id="배경-및-문제_3">배경 및 문제</h3>
+<p>현재 네이버 금융 스크래핑에 의존하는 데이터:
+- <code>stock_info</code> (종목 메타데이터, 시가총액)
+- <code>investor_trend</code> (외국인/기관 순매수)
+- <code>kr_sectors</code> (업종별 등락률)
+- <code>consensus_estimates</code> (WiseReport/FnGuide)</p>
+<p>네이버 금융 페이지 구조 변경 시 위 항목이 <strong>전면 장애</strong> 가능. 이미 WiseReport 셀렉터 변경 전례 있음.</p>
+<h3 id="요청-작업_5">요청 작업</h3>
+<p>단기 리스크 완화 목적의 대체 소스 파악 및 일부 전환:</p>
+<table>
+<thead>
+<tr>
+<th>현재 소스</th>
+<th>대체 소스 후보</th>
+<th>우선도</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>네이버 금융 종목 정보</td>
+<td>KRX Open API (<code>data.krx.co.kr</code>)</td>
+<td>높음</td>
+</tr>
+<tr>
+<td>네이버 투자자 수급</td>
+<td>KRX 데이터포털 API</td>
+<td>높음 (DE-003과 병행)</td>
+</tr>
+<tr>
+<td>WiseReport 컨센서스</td>
+<td>FnGuide 직접 연동 또는 유료 API 검토</td>
+<td>중간</td>
+</tr>
+<tr>
+<td>업종 등락률</td>
+<td>KRX 업종지수 API</td>
+<td>낮음</td>
+</tr>
+</tbody>
+</table>
+<p><strong>즉시 요청</strong>: KRX Open API 가입 및 API Key 발급 후 종목 정보/수급 엔드포인트 테스트
+- KRX 데이터포털: <code>data.krx.co.kr</code>
+- 주요 API: 주식 기본정보, 투자자별 거래실적, 업종별 현황</p>
+<h3 id="검수-기준_5">검수 기준</h3>
+<ul>
+<li>[ ] KRX API로 삼성전자 당일 외국인 순매수 조회 성공</li>
+<li>[ ] 네이버 금융과 KRX 데이터 일치 여부 비교 (최소 10 거래일)</li>
+<li>[ ] DAG fallback 로직: 네이버 실패 시 KRX API로 전환하는 구조 설계</li>
+</ul>
+<hr />
+<h2 id="참고-작업-우선순위-판단-기준">참고: 작업 우선순위 판단 기준</h2>
+<div class="codehilite"><pre><span></span><code>긴급 (즉시): 현재 데이터가 stale 또는 부정확하여 분석 신뢰도에 영향
+높음 (2주 내): 있어야 할 데이터가 없어 분석 범위가 제한됨
+중간 (1달 내): 분석 품질 향상에 기여하나 현재 기능에 영향 없음
+낮음 (분기): 리스크 예방 목적, 당장 장애 가능성 낮음
+</code></pre></div>
+
+<hr />
+<p><em>완료된 작업은 요약 표의 상태를 <code>완료</code>로 변경하고, 실제 구현 내용(파일 경로, 테이블명 변경 등)을 해당 섹션에 기록해 주세요.</em></p>
+</main>
+
+<script>
+  // 테마 전환
+  function setTheme(theme) {
+    document.documentElement.setAttribute('data-theme', theme);
+    localStorage.setItem('doc-theme', theme);
+    document.getElementById('btn-dark').classList.toggle('active', theme === 'dark');
+    document.getElementById('btn-light').classList.toggle('active', theme === 'light');
+    // Mermaid 재렌더링
+    if (typeof mermaid !== 'undefined') {
+      mermaid.initialize({ startOnLoad: false, theme: 'base', securityLevel: 'loose', themeVariables: getMermaidTheme(theme) });
+      document.querySelectorAll('.mermaid').forEach(el => {
+        // 원본 코드 보존 (최초 1회만 저장)
+        if (!el.dataset.source) {
+          el.dataset.source = el.textContent;
+        }
+        el.removeAttribute('data-processed');
+        el.innerHTML = el.dataset.source;
+      });
+      mermaid.run();
+    }
+  }
+
+  // 저장된 테마 로드
+  const savedTheme = localStorage.getItem('doc-theme') || 'dark';
+  setTheme(savedTheme);
+
+  // Mermaid 초기화
+  function getMermaidTheme(theme) {
+    const dark = {
+      primaryColor: '#3d7be0',
+      primaryTextColor: '#ffffff',
+      primaryBorderColor: '#5a9cf0',
+      secondaryColor: '#7c5cbf',
+      secondaryTextColor: '#ffffff',
+      secondaryBorderColor: '#a29bfe',
+      tertiaryColor: '#00997a',
+      tertiaryTextColor: '#ffffff',
+      tertiaryBorderColor: '#55efc4',
+      noteTextColor: '#f0f0f0',
+      noteBkgColor: '#2d3436',
+      noteBorderColor: '#636e72',
+      lineColor: '#8b949e',
+      textColor: '#e6edf3',
+      mainBkg: '#1e3050',
+      nodeBorder: '#5a9cf0',
+      clusterBkg: '#1a1e2e',
+      clusterBorder: '#4a5568',
+      titleColor: '#79c0ff',
+      edgeLabelBackground: '#21262d',
+      actorBkg: '#3d7be0',
+      actorTextColor: '#ffffff',
+      actorBorder: '#5a9cf0',
+      signalColor: '#8b949e',
+      labelBoxBkgColor: '#21262d',
+      labelBoxBorderColor: '#4a5568',
+      labelTextColor: '#e6edf3',
+      loopTextColor: '#e6edf3',
+      activationBorderColor: '#5a9cf0',
+      activationBkgColor: '#1e3050',
+      sequenceNumberColor: '#ffffff',
+      pie1: '#4f8fea', pie2: '#6c5ce7', pie3: '#00b894', pie4: '#e17055',
+      pie5: '#fdcb6e', pie6: '#00cec9', pie7: '#e84393', pie8: '#0984e3'
+    };
+    const light = {
+      primaryColor: '#4f8fea',
+      primaryTextColor: '#1a1a2e',
+      primaryBorderColor: '#3a7bd5',
+      secondaryColor: '#a29bfe',
+      secondaryTextColor: '#1a1a2e',
+      secondaryBorderColor: '#6c5ce7',
+      tertiaryColor: '#55efc4',
+      tertiaryTextColor: '#1a1a2e',
+      tertiaryBorderColor: '#00b894',
+      noteTextColor: '#2d3436',
+      noteBkgColor: '#ffeaa7',
+      noteBorderColor: '#fdcb6e',
+      lineColor: '#636e72',
+      textColor: '#2d3436',
+      mainBkg: '#dfe6e9',
+      nodeBorder: '#3a7bd5',
+      clusterBkg: '#f0f3f5',
+      clusterBorder: '#b2bec3',
+      titleColor: '#2d3436',
+      edgeLabelBackground: '#ffffff',
+      actorBkg: '#4f8fea',
+      actorTextColor: '#ffffff',
+      actorBorder: '#3a7bd5',
+      signalColor: '#636e72',
+      labelBoxBkgColor: '#ffffff',
+      labelBoxBorderColor: '#b2bec3',
+      labelTextColor: '#2d3436',
+      loopTextColor: '#2d3436',
+      activationBorderColor: '#3a7bd5',
+      activationBkgColor: '#dfe6e9',
+      sequenceNumberColor: '#ffffff',
+      pie1: '#4f8fea', pie2: '#6c5ce7', pie3: '#00b894', pie4: '#e17055',
+      pie5: '#fdcb6e', pie6: '#00cec9', pie7: '#e84393', pie8: '#0984e3'
+    };
+    return theme === 'dark' ? dark : light;
+  }
+
+  // 초기 렌더링 전에 원본 코드 저장
+  document.querySelectorAll('.mermaid').forEach(el => {
+    el.dataset.source = el.textContent;
+  });
+  mermaid.initialize({ startOnLoad: true, theme: 'base', securityLevel: 'loose', themeVariables: getMermaidTheme(savedTheme) });
+
+  // TOC 현재 위치 하이라이트
+  const tocLinks = document.querySelectorAll('.toc a');
+  const headings = [];
+  tocLinks.forEach(link => {
+    const id = link.getAttribute('href').slice(1);
+    const el = document.getElementById(id);
+    if (el) headings.push({ el, link });
+  });
+
+  function updateActiveToc() {
+    let current = null;
+    for (const h of headings) {
+      if (h.el.getBoundingClientRect().top <= 100) current = h;
+    }
+    tocLinks.forEach(l => l.classList.remove('active'));
+    if (current) current.link.classList.add('active');
+  }
+
+  window.addEventListener('scroll', updateActiveToc, { passive: true });
+  updateActiveToc();
+
+  // 모바일: 링크 클릭 시 사이드바 닫기
+  tocLinks.forEach(link => {
+    link.addEventListener('click', () => {
+      if (window.innerWidth <= 900) {
+        document.querySelector('.sidebar').classList.remove('open');
+      }
+    });
+  });
+</script>
+
+</body>
+</html>

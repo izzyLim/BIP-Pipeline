@@ -1,0 +1,1057 @@
+<!DOCTYPE html>
+<html lang="ko" data-theme="dark">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>LangGraph 멀티 에이전트 전환 기록</title>
+<script src="https://cdn.jsdelivr.net/npm/mermaid@11/dist/mermaid.min.js"></script>
+<style>
+  /* ── 테마 변수 ── */
+  :root[data-theme="dark"] {
+    --bg: #0d1117;
+    --bg-sidebar: #161b22;
+    --fg: #e6edf3;
+    --fg-muted: #8b949e;
+    --border: #30363d;
+    --accent: #58a6ff;
+    --accent-hover: #79c0ff;
+    --code-bg: #1e293b;
+    --code-fg: #e2e8f0;
+    --table-header: #161b22;
+    --table-even: #0d1117;
+    --table-odd: #161b22;
+    --blockquote-bg: #161b22;
+    --blockquote-border: #3b82f6;
+    --link: #58a6ff;
+    --strong: #79c0ff;
+    --card-bg: #21262d;
+  }
+  :root[data-theme="light"] {
+    --bg: #ffffff;
+    --bg-sidebar: #f6f8fa;
+    --fg: #1f2937;
+    --fg-muted: #6b7280;
+    --border: #e5e7eb;
+    --accent: #2563eb;
+    --accent-hover: #1d4ed8;
+    --code-bg: #f3f4f6;
+    --code-fg: #1e293b;
+    --table-header: #f8fafc;
+    --table-even: #ffffff;
+    --table-odd: #f9fafb;
+    --blockquote-bg: #eff6ff;
+    --blockquote-border: #3b82f6;
+    --link: #2563eb;
+    --strong: #1e40af;
+    --card-bg: #f3f4f6;
+  }
+
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+
+  body {
+    font-family: 'Pretendard', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+    background: var(--bg);
+    color: var(--fg);
+    line-height: 1.75;
+    display: flex;
+    min-height: 100vh;
+  }
+
+  /* ── 사이드바 ── */
+  .sidebar {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 280px;
+    height: 100vh;
+    background: var(--bg-sidebar);
+    border-right: 1px solid var(--border);
+    overflow-y: auto;
+    padding: 20px 0;
+    z-index: 100;
+    transition: transform 0.3s ease;
+  }
+
+  .sidebar-header {
+    padding: 0 20px 16px;
+    border-bottom: 1px solid var(--border);
+    margin-bottom: 12px;
+  }
+
+  .sidebar-title {
+    font-size: 0.95rem;
+    font-weight: 700;
+    color: var(--fg);
+    line-height: 1.3;
+  }
+
+  .sidebar-controls {
+    display: flex;
+    gap: 8px;
+    margin-top: 12px;
+  }
+
+  .theme-btn {
+    background: var(--card-bg);
+    border: 1px solid var(--border);
+    color: var(--fg-muted);
+    padding: 4px 10px;
+    border-radius: 6px;
+    font-size: 0.7rem;
+    cursor: pointer;
+    transition: all 0.2s;
+  }
+  .theme-btn:hover {
+    border-color: var(--accent);
+    color: var(--accent);
+  }
+  .theme-btn.active {
+    background: var(--accent);
+    color: #fff;
+    border-color: var(--accent);
+  }
+
+  .back-link {
+    display: block;
+    margin-top: 10px;
+    font-size: 0.75rem;
+    color: var(--fg-muted);
+    text-decoration: none;
+  }
+  .back-link:hover {
+    color: var(--accent);
+  }
+
+  /* ── TOC ── */
+  .toc {
+    padding: 0 12px;
+  }
+  .toc ul {
+    list-style: none;
+    padding: 0;
+  }
+  .toc li {
+    margin: 0;
+  }
+  .toc a {
+    display: block;
+    padding: 4px 8px;
+    color: var(--fg-muted);
+    text-decoration: none;
+    font-size: 0.78rem;
+    border-radius: 4px;
+    border-left: 2px solid transparent;
+    transition: all 0.15s;
+    line-height: 1.4;
+  }
+  .toc a:hover {
+    color: var(--accent);
+    background: var(--card-bg);
+    border-left-color: var(--accent);
+  }
+  .toc a.active {
+    color: var(--accent);
+    border-left-color: var(--accent);
+    font-weight: 600;
+  }
+  .toc-h3 a { padding-left: 20px; font-size: 0.75rem; }
+  .toc-h4 a { padding-left: 32px; font-size: 0.72rem; }
+
+  /* ── 본문 ── */
+  .content {
+    margin-left: 280px;
+    flex: 1;
+    max-width: 860px;
+    padding: 40px 48px 80px;
+  }
+
+  /* ── 모바일 ── */
+  .menu-toggle {
+    display: none;
+    position: fixed;
+    top: 12px;
+    left: 12px;
+    z-index: 200;
+    background: var(--bg-sidebar);
+    border: 1px solid var(--border);
+    color: var(--fg);
+    padding: 8px 12px;
+    border-radius: 6px;
+    cursor: pointer;
+    font-size: 1.1rem;
+  }
+
+  @media (max-width: 900px) {
+    .sidebar {
+      transform: translateX(-100%);
+    }
+    .sidebar.open {
+      transform: translateX(0);
+    }
+    .content {
+      margin-left: 0;
+      padding: 60px 20px 60px;
+    }
+    .menu-toggle {
+      display: block;
+    }
+  }
+
+  /* ── 타이포그래피 ── */
+  h1 { font-size: 1.9rem; margin: 2rem 0 1rem; padding-bottom: 0.5rem; border-bottom: 2px solid var(--accent); }
+  h2 { font-size: 1.45rem; margin: 2.5rem 0 0.8rem; padding-bottom: 0.3rem; border-bottom: 1px solid var(--border); color: var(--accent); }
+  h3 { font-size: 1.15rem; margin: 1.8rem 0 0.5rem; }
+  h4 { font-size: 1rem; margin: 1.3rem 0 0.4rem; color: var(--fg-muted); }
+  p { margin: 0.6rem 0; }
+  hr { border: none; border-top: 1px solid var(--border); margin: 2rem 0; }
+  strong { color: var(--strong); }
+  a { color: var(--link); text-decoration: none; }
+  a:hover { text-decoration: underline; }
+  ul, ol { margin: 0.5rem 0 0.5rem 1.5rem; }
+  li { margin: 0.25rem 0; }
+
+  /* ── 테이블 ── */
+  table { width: 100%; border-collapse: collapse; margin: 1rem 0; font-size: 0.85rem; }
+  th, td { border: 1px solid var(--border); padding: 0.5rem 0.75rem; text-align: left; }
+  th { background: var(--table-header); font-weight: 600; }
+  tr:nth-child(even) { background: var(--table-even); }
+  tr:nth-child(odd) { background: var(--table-odd); }
+
+  /* ── 코드 ── */
+  code {
+    background: var(--code-bg);
+    color: var(--code-fg);
+    padding: 0.15rem 0.4rem;
+    border-radius: 4px;
+    font-size: 0.82em;
+    font-family: 'JetBrains Mono', 'Fira Code', 'Cascadia Code', monospace;
+  }
+  pre {
+    background: var(--code-bg);
+    color: var(--code-fg);
+    padding: 1rem 1.2rem;
+    border-radius: 8px;
+    overflow-x: auto;
+    margin: 1rem 0;
+    border: 1px solid var(--border);
+  }
+  pre code {
+    background: none;
+    padding: 0;
+    font-size: 0.82rem;
+    line-height: 1.5;
+  }
+
+  /* ── 인용 ── */
+  blockquote {
+    border-left: 4px solid var(--blockquote-border);
+    padding: 0.6rem 1rem;
+    margin: 1rem 0;
+    background: var(--blockquote-bg);
+    border-radius: 0 6px 6px 0;
+  }
+  blockquote p { margin: 0.3rem 0; }
+
+  /* ── Mermaid ── */
+  .mermaid {
+    margin: 1.5rem 0;
+    text-align: center;
+    background: var(--card-bg);
+    padding: 1rem;
+    border-radius: 8px;
+    border: 1px solid var(--border);
+  }
+  .mermaid svg { max-width: 100%; }
+
+  /* ── Footer ── */
+  footer {
+    margin-top: 3rem;
+    padding-top: 1rem;
+    border-top: 1px solid var(--border);
+    color: var(--fg-muted);
+    font-size: 0.8rem;
+  }
+</style>
+</head>
+<body>
+
+<button class="menu-toggle" onclick="document.querySelector('.sidebar').classList.toggle('open')">☰</button>
+
+<aside class="sidebar">
+  <div class="sidebar-header">
+    <div class="sidebar-title">LangGraph 멀티 에이전트 전환 기록</div>
+    <div class="sidebar-controls">
+      <button class="theme-btn" onclick="setTheme('dark')" id="btn-dark">🌙 Dark</button>
+      <button class="theme-btn" onclick="setTheme('light')" id="btn-light">☀️ Light</button>
+    </div>
+    <a class="back-link" href="index.html">← 문서 목록으로</a>
+  </div>
+  <nav class="toc">
+<ul>
+<li class="toc-h2"><a href="#1-배경-및-목적">1. 배경 및 목적</a></li>
+  <li class="toc-h3"><a href="#기존-아키텍처-llm_analyzer_v2">기존 아키텍처 (llm_analyzer_v2)</a></li>
+  <li class="toc-h3"><a href="#langgraph-도입-목적">LangGraph 도입 목적</a></li>
+<li class="toc-h2"><a href="#2-최종-아키텍처">2. 최종 아키텍처</a></li>
+  <li class="toc-h3"><a href="#mcp-서버-bip-stock-mcp">MCP 서버 (bip-stock-mcp)</a></li>
+<li class="toc-h2"><a href="#3-단계별-시행착오">3. 단계별 시행착오</a></li>
+  <li class="toc-h3"><a href="#3-1-토큰-잘림-문제-aggregator-token-truncation">3-1. 토큰 잘림 문제 (Aggregator Token Truncation)</a></li>
+  <li class="toc-h3"><a href="#3-2-mcp-도구-미호출-문제">3-2. MCP 도구 미호출 문제</a></li>
+  <li class="toc-h3"><a href="#3-3-korea-agent-토큰-폭발-문제">3-3. Korea Agent 토큰 폭발 문제</a></li>
+  <li class="toc-h3"><a href="#3-4-quality-checker-오작동으로-인한-비용-낭비">3-4. Quality Checker 오작동으로 인한 비용 낭비</a></li>
+  <li class="toc-h3"><a href="#3-5-신호등-항상-긍정-표시-문제">3-5. 신호등(🟢🟡🔴) 항상 긍정 표시 문제</a></li>
+  <li class="toc-h3"><a href="#3-6-시장-신호-표시-방식-변경">3-6. 시장 신호 표시 방식 변경</a></li>
+  <li class="toc-h3"><a href="#3-7-섹션-순서-불일치">3-7. 섹션 순서 불일치</a></li>
+  <li class="toc-h3"><a href="#3-8-수급-동향-섹션-중복-문제">3-8. 수급 동향 섹션 중복 문제</a></li>
+  <li class="toc-h3"><a href="#3-9-시장전망대응시나리오-분리-원본-설계-복원">3-9. 시장전망/대응시나리오 분리 (원본 설계 복원)</a></li>
+<li class="toc-h2"><a href="#4-비용-분석">4. 비용 분석</a></li>
+  <li class="toc-h3"><a href="#실측-비용-특정-실행-기준">실측 비용 (특정 실행 기준)</a></li>
+  <li class="toc-h3"><a href="#비용-구조-분석">비용 구조 분석</a></li>
+  <li class="toc-h3"><a href="#비용-절감-방향">비용 절감 방향</a></li>
+<li class="toc-h2"><a href="#5-html-렌더링-파이프라인">5. HTML 렌더링 파이프라인</a></li>
+  <li class="toc-h3"><a href="#추출-흐름">추출 흐름</a></li>
+  <li class="toc-h3"><a href="#메일-html-최종-섹션-순서">메일 HTML 최종 섹션 순서</a></li>
+<li class="toc-h2"><a href="#6-주요-설계-원칙-학습-결과">6. 주요 설계 원칙 (학습 결과)</a></li>
+  <li class="toc-h3"><a href="#6-1-데이터-주입-vs-도구-호출">6-1. 데이터 주입 vs 도구 호출</a></li>
+  <li class="toc-h3"><a href="#6-2-결정론적-vs-비결정론적">6-2. 결정론적 vs 비결정론적</a></li>
+  <li class="toc-h3"><a href="#6-3-비용-최적화">6-3. 비용 최적화</a></li>
+  <li class="toc-h3"><a href="#6-4-섹션-구조-일관성">6-4. 섹션 구조 일관성</a></li>
+<li class="toc-h2"><a href="#7-현재-상태-및-미해결-과제">7. 현재 상태 및 미해결 과제</a></li>
+  <li class="toc-h3"><a href="#완료">완료</a></li>
+  <li class="toc-h3"><a href="#미해결">미해결</a></li>
+<li class="toc-h2"><a href="#8-파일-구조">8. 파일 구조</a></li>
+</ul>
+</nav>
+</aside>
+
+<main class="content">
+<h1 id="langgraph-멀티-에이전트-전환-기록">LangGraph 멀티 에이전트 전환 기록</h1>
+<blockquote>
+<p>BIP Morning Pulse 리포트 파이프라인 — LangGraph 도입 시행착오 및 실험 결과</p>
+</blockquote>
+<hr />
+<h2 id="1-배경-및-목적">1. 배경 및 목적</h2>
+<h3 id="기존-아키텍처-llm_analyzer_v2">기존 아키텍처 (llm_analyzer_v2)</h3>
+<p>기존 모닝 리포트는 단일 LLM 호출 방식이었다.</p>
+<div class="codehilite"><pre><span></span><code>데이터 수집 (macro_collector.py)
+    → 프롬프트에 데이터 전부 주입
+    → Claude Opus 4.5 단일 호출 (max_tokens=16000)
+    → 결과 파싱 → HTML 렌더링 → 메일 발송
+</code></pre></div>
+
+<p><strong>한계:</strong>
+- 입력 데이터가 많을수록 컨텍스트 오염 (중요 정보가 묻힘)
+- 분석 영역별 전문성 부재 (글로벌/한국/반도체를 한 LLM이 모두 처리)
+- 실시간 데이터 조회 불가 (모든 데이터를 사전 수집해서 주입)
+- 프롬프트 길이 증가에 따른 품질 저하</p>
+<h3 id="langgraph-도입-목적">LangGraph 도입 목적</h3>
+<ul>
+<li><strong>병렬 분석</strong>: 글로벌/한국/반도체/수급 에이전트를 동시에 실행</li>
+<li><strong>MCP 연동</strong>: 에이전트가 필요한 데이터를 온디맨드로 직접 조회</li>
+<li><strong>전문화</strong>: 각 에이전트가 특정 도메인에 집중</li>
+<li><strong>품질 관리</strong>: Quality Checker로 리포트 품질 자동 검증</li>
+</ul>
+<hr />
+<h2 id="2-최종-아키텍처">2. 최종 아키텍처</h2>
+<div class="codehilite"><pre><span></span><code><span class="n">parallel_analysis</span><span class="w"> </span><span class="p">(</span><span class="err">병렬</span><span class="w"> </span><span class="err">실행</span><span class="p">)</span>
+<span class="err">├──</span><span class="w"> </span><span class="n">global_agent</span><span class="w">  </span><span class="p">(</span><span class="n">Sonnet</span><span class="p">)</span><span class="w"> </span><span class="err">—</span><span class="w"> </span><span class="err">글로벌</span><span class="w"> </span><span class="err">시장</span><span class="p">,</span><span class="w"> </span><span class="err">매크로</span>
+<span class="err">├──</span><span class="w"> </span><span class="n">korea_agent</span><span class="w">   </span><span class="p">(</span><span class="n">Sonnet</span><span class="w"> </span><span class="o">+</span><span class="w"> </span><span class="n">MCP</span><span class="w"> </span><span class="n">ReAct</span><span class="p">)</span><span class="w"> </span><span class="err">—</span><span class="w"> </span><span class="err">한국</span><span class="w"> </span><span class="err">시장</span><span class="p">,</span><span class="w"> </span><span class="err">수급</span>
+<span class="err">├──</span><span class="w"> </span><span class="n">semi_agent</span><span class="w">    </span><span class="p">(</span><span class="n">Sonnet</span><span class="w"> </span><span class="o">+</span><span class="w"> </span><span class="n">MCP</span><span class="w"> </span><span class="n">ReAct</span><span class="p">)</span><span class="w"> </span><span class="err">—</span><span class="w"> </span><span class="err">반도체</span><span class="w"> </span><span class="err">섹터</span>
+<span class="err">└──</span><span class="w"> </span><span class="n">flow_agent</span><span class="w">    </span><span class="p">(</span><span class="n">Haiku</span><span class="p">)</span><span class="w"> </span><span class="err">—</span><span class="w"> </span><span class="err">수급</span><span class="w"> </span><span class="err">분석</span><span class="w"> </span><span class="err">보조</span>
+
+<span class="n">aggregator</span><span class="w"> </span><span class="p">(</span><span class="n">Opus</span><span class="p">)</span><span class="w"> </span><span class="err">—</span><span class="w"> </span><span class="err">통합</span><span class="w"> </span><span class="err">리포트</span><span class="w"> </span><span class="err">작성</span>
+
+<span class="n">quality_checker</span><span class="w"> </span><span class="p">(</span><span class="n">Haiku</span><span class="p">)</span><span class="w"> </span><span class="err">—</span><span class="w"> </span><span class="err">품질</span><span class="w"> </span><span class="err">검증</span>
+<span class="w">    </span><span class="err">↓</span><span class="w"> </span><span class="n">FAIL</span><span class="w"> </span><span class="err">→</span><span class="w"> </span><span class="n">aggregator</span><span class="w"> </span><span class="err">재실행</span><span class="w"> </span><span class="p">(</span><span class="err">최대</span><span class="w"> </span><span class="mh">2</span><span class="err">회</span><span class="p">)</span>
+<span class="w">    </span><span class="err">↓</span><span class="w"> </span><span class="n">PASS</span>
+
+<span class="n">finalize</span><span class="w"> </span><span class="err">→</span><span class="w"> </span><span class="err">결과</span><span class="w"> </span><span class="err">반환</span>
+
+<span class="n">report_builder_langgraph</span><span class="p">.</span><span class="n">py</span><span class="w"> </span><span class="err">—</span><span class="w"> </span><span class="n">HTML</span><span class="w"> </span><span class="err">렌더링</span><span class="p">,</span><span class="w"> </span><span class="err">메일</span><span class="w"> </span><span class="err">발송</span>
+<span class="w">    </span><span class="o">+</span><span class="w"> </span><span class="n">Haiku</span><span class="w"> </span><span class="p">(</span><span class="err">시장전망</span><span class="o">/</span><span class="err">대응시나리오</span><span class="w"> </span><span class="err">별도</span><span class="w"> </span><span class="err">생성</span><span class="p">)</span>
+</code></pre></div>
+
+<h3 id="mcp-서버-bip-stock-mcp">MCP 서버 (bip-stock-mcp)</h3>
+<p>FastMCP SSE 서버로 다음 도구를 제공:</p>
+<table>
+<thead>
+<tr>
+<th>도구</th>
+<th>설명</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>db_market_indices</code></td>
+<td>KOSPI/KOSDAQ/S&amp;P500 등 주요 지수</td>
+</tr>
+<tr>
+<td><code>db_investor_flow</code></td>
+<td>외국인/기관/개인 일별 순매수 집계</td>
+</tr>
+<tr>
+<td><code>db_investor_trading</code></td>
+<td>종목별 수급 TOP5</td>
+</tr>
+<tr>
+<td><code>db_semiconductor_prices</code></td>
+<td>DRAM/NAND 현물가</td>
+</tr>
+<tr>
+<td><code>news_search_naver</code></td>
+<td>네이버 뉴스 검색</td>
+</tr>
+<tr>
+<td><code>news_search_web</code></td>
+<td>웹 검색 (SerpAPI)</td>
+</tr>
+<tr>
+<td><code>dart_disclosure_list</code></td>
+<td>DART 공시 목록</td>
+</tr>
+<tr>
+<td><code>dart_financial_statement</code></td>
+<td>DART 재무제표</td>
+</tr>
+<tr>
+<td><code>dart_corp_search</code></td>
+<td>기업 고유번호 검색</td>
+</tr>
+<tr>
+<td><code>krx_stock_trade_info</code></td>
+<td>KRX 종목 일별 시세</td>
+</tr>
+<tr>
+<td><code>krx_market_index</code></td>
+<td>KRX 지수</td>
+</tr>
+</tbody>
+</table>
+<hr />
+<h2 id="3-단계별-시행착오">3. 단계별 시행착오</h2>
+<h3 id="3-1-토큰-잘림-문제-aggregator-token-truncation">3-1. 토큰 잘림 문제 (Aggregator Token Truncation)</h3>
+<p><strong>증상:</strong> 리포트에서 체크리스트, 시장전망, 대응시나리오 섹션이 누락됨</p>
+<p><strong>원인 분석:</strong>
+- Aggregator <code>max_tokens=6000</code> 으로 출력이 중간에 잘림
+- 여러 에이전트 결과를 통합하면 자연스럽게 출력이 길어짐</p>
+<p><strong>시도한 해결책:</strong></p>
+<div class="codehilite"><pre><span></span><code><span class="n">max_tokens</span><span class="o">:</span><span class="w"> </span><span class="mi">6000</span><span class="w"> </span><span class="err">→</span><span class="w"> </span><span class="mi">10000</span><span class="w"> </span><span class="err">→</span><span class="w"> </span><span class="mi">16000</span><span class="w"> </span><span class="err">→</span><span class="w"> </span><span class="mi">32000</span><span class="w"> </span><span class="o">(</span><span class="err">모델</span><span class="w"> </span><span class="err">최대값</span><span class="o">)</span>
+</code></pre></div>
+
+<p><strong>최종 결론:</strong> API는 <code>max_tokens</code>를 반드시 지정해야 하므로 모델 최대값으로 설정.</p>
+<table>
+<thead>
+<tr>
+<th>모델</th>
+<th>최대 출력 토큰</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>claude-opus-4-6</td>
+<td>32,000</td>
+</tr>
+<tr>
+<td>claude-sonnet-4-6</td>
+<td>64,000</td>
+</tr>
+<tr>
+<td>claude-haiku-4-5</td>
+<td>8,192</td>
+</tr>
+</tbody>
+</table>
+<p>Korea/Semi ReAct 에이전트도 4096 → 16000으로 상향 (툴 호출 루프 후 최종 리포트 작성 시 잘림 방지).</p>
+<hr />
+<h3 id="3-2-mcp-도구-미호출-문제">3-2. MCP 도구 미호출 문제</h3>
+<p><strong>증상:</strong> Korea/Semi 에이전트가 MCP 도구를 전혀 호출하지 않음. 분석 내용은 나오지만 실데이터가 아닌 LLM 내부 지식 기반으로 작성됨.</p>
+<p><strong>원인 분석:</strong>
+초기 설계는 데이터를 주입한 후 MCP 도구를 추가로 활용하는 방식이었다.</p>
+<div class="codehilite"><pre><span></span><code><span class="c1"># 초기 방식 (문제)</span>
+<span class="n">prompt</span> <span class="o">=</span> <span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="n">KOREA_PROMPT</span><span class="si">}</span><span class="se">\n\n</span><span class="s2">데이터:</span><span class="se">\n</span><span class="si">{</span><span class="n">json</span><span class="o">.</span><span class="n">dumps</span><span class="p">(</span><span class="n">korea_data</span><span class="p">)</span><span class="si">}</span><span class="s2">&quot;</span>
+<span class="c1"># 이미 데이터가 있으니 LLM이 도구 호출을 생략함</span>
+</code></pre></div>
+
+<p><strong>핵심 원인:</strong> LLM은 이미 충분한 데이터가 있다고 판단하면 도구를 호출하지 않는다. ReAct 패턴에서 도구 호출은 LLM의 자율적 판단에 의존하기 때문.</p>
+<p><strong>해결 과정:</strong></p>
+<p>1차 시도: 프롬프트에 "도구를 반드시 호출하세요" 가이드 추가 → 일부 호출하지만 불안정
+2차 시도: 데이터 주입 완전 제거 → LLM이 데이터 없이 도구를 <strong>반드시</strong> 호출해야 하는 상황 만들기</p>
+<div class="codehilite"><pre><span></span><code><span class="c1"># 최종 방식 (해결)</span>
+<span class="c1"># 데이터 주입 없이 날짜만 전달</span>
+<span class="n">report_date</span> <span class="o">=</span> <span class="n">state</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;report_date&quot;</span><span class="p">,</span> <span class="s2">&quot;&quot;</span><span class="p">)</span>
+<span class="n">prompt</span> <span class="o">=</span> <span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="n">KOREA_PROMPT</span><span class="si">}</span><span class="se">\n\n</span><span class="s2">분석 기준일: </span><span class="si">{</span><span class="n">report_date</span><span class="si">}</span><span class="s2">&quot;</span>
+</code></pre></div>
+
+<p>프롬프트도 "아래 데이터를 분석하세요" → "아래 순서대로 도구를 호출하여 수집하세요"로 변경:</p>
+<div class="codehilite"><pre><span></span><code><span class="n">분석</span><span class="w"> </span><span class="n">순서</span><span class="o">:</span>
+<span class="mf">1.</span><span class="w"> </span><span class="n n-Quoted">`db_market_indices`</span><span class="w"> </span><span class="n">호출</span><span class="w"> </span><span class="n">—</span><span class="w"> </span><span class="n">KOSPI</span><span class="o">/</span><span class="n">KOSDAQ</span><span class="w"> </span><span class="n">등락</span><span class="w"> </span><span class="n">확인</span>
+<span class="mf">2.</span><span class="w"> </span><span class="n n-Quoted">`db_investor_flow`</span><span class="w"> </span><span class="n">호출</span><span class="w"> </span><span class="n">—</span><span class="w"> </span><span class="n">외국인</span><span class="o">/</span><span class="n">기관</span><span class="o">/</span><span class="n">개인</span><span class="w"> </span><span class="n">순매수</span><span class="w"> </span><span class="n">집계</span><span class="w"> </span><span class="n">확인</span>
+<span class="mf">3.</span><span class="w"> </span><span class="n n-Quoted">`db_investor_trading`</span><span class="w"> </span><span class="n">호출</span><span class="w"> </span><span class="n">—</span><span class="w"> </span><span class="n">종목별</span><span class="w"> </span><span class="n">수급</span><span class="w"> </span><span class="n">상세</span><span class="w"> </span><span class="n">확인</span>
+<span class="mf">4.</span><span class="w"> </span><span class="n n-Quoted">`news_search_naver`</span><span class="n">로</span><span class="w"> </span><span class="n">시장</span><span class="w"> </span><span class="n">배경</span><span class="w"> </span><span class="n">뉴스</span><span class="w"> </span><span class="n">검색</span>
+<span class="mf">5.</span><span class="w"> </span><span class="n">뉴스에서</span><span class="w"> </span><span class="n">특이</span><span class="w"> </span><span class="n">이슈</span><span class="w"> </span><span class="n">포착</span><span class="w"> </span><span class="n">시</span><span class="w"> </span><span class="n">추가</span><span class="w"> </span><span class="n">조사</span>
+</code></pre></div>
+
+<p><strong>결과 확인:</strong> LLM이 자율적으로 생성한 검색 키워드로 뉴스 검색:
+- <code>"미국 이란 전쟁 반도체 헬륨 공급"</code> (지정학 이슈 감지 후 자율 검색)
+- <code>"구글 터보퀀트 메모리 반도체 영향"</code> (뉴스에서 포착한 이슈 심층 조사)</p>
+<p>이는 하드코딩된 키워드가 아닌 LLM이 맥락을 파악해 생성한 것.</p>
+<p><strong>교훈:</strong></p>
+<blockquote>
+<p>ReAct 에이전트에서 도구를 안정적으로 호출시키려면 <strong>데이터를 아예 제거</strong>해서 LLM이 도구를 호출할 수밖에 없는 환경을 만드는 것이 가장 효과적이다.</p>
+</blockquote>
+<hr />
+<h3 id="3-3-korea-agent-토큰-폭발-문제">3-3. Korea Agent 토큰 폭발 문제</h3>
+<p><strong>증상:</strong> Korea 에이전트 입력 토큰이 135,000으로 폭발 → 비용 급등</p>
+<p><strong>원인 분석:</strong>
+데이터를 부분적으로만 제거한 중간 상태에서 ReAct 루프가 무한히 실행됨.</p>
+<div class="codehilite"><pre><span></span><code>[1] 사고: 데이터가 있으니 확인해보자
+[2] 도구 호출: db_market_indices
+[3] 사고: 더 확인해보자
+[4] 도구 호출: db_investor_flow
+[5] 사고: 데이터가 있는데 왜 아직 분석 안 했지?
+<span class="k">...</span> (루프 반복)
+</code></pre></div>
+
+<p>각 툴 호출 결과가 컨텍스트에 누적되면서 입력 토큰이 계속 증가.</p>
+<p><strong>해결:</strong>
+- 데이터 주입을 <strong>완전히</strong> 제거 (부분 제거는 오히려 더 나쁨)
+- 프롬프트에 명시적 순서 지정으로 루프 방지</p>
+<hr />
+<h3 id="3-4-quality-checker-오작동으로-인한-비용-낭비">3-4. Quality Checker 오작동으로 인한 비용 낭비</h3>
+<p><strong>증상:</strong> 품질 검증이 계속 FAIL → Aggregator 재실행 → 비용 2배</p>
+<p><strong>원인 분석:</strong>
+Quality Checker가 검증하는 필수 5개 섹션 목록이 실제 Aggregator 출력과 불일치.</p>
+<div class="codehilite"><pre><span></span><code><span class="c1"># Quality Checker가 기대한 섹션</span>
+<span class="p">(</span><span class="err">📌</span><span class="n">오늘의핵심</span> <span class="o">/</span> <span class="err">🌐</span><span class="n">글로벌</span> <span class="o">/</span> <span class="err">🇰🇷</span><span class="n">한국</span> <span class="o">/</span> <span class="err">✅</span><span class="n">체크리스트</span> <span class="o">/</span> <span class="err">⚡</span><span class="n">시나리오</span><span class="p">)</span>
+<span class="c1">#                                                           ↑</span>
+<span class="c1">#                          이 섹션을 Aggregator에서 이미 제거했음</span>
+</code></pre></div>
+
+<p><code>⚡시나리오(대응시나리오)</code> 섹션을 Aggregator에서 제거하고 Haiku가 별도 생성하도록 변경했는데, Quality Checker는 여전히 이 섹션을 요구하고 있었음.</p>
+<p><strong>해결:</strong></p>
+<div class="codehilite"><pre><span></span><code><span class="c1"># 수정 후 — 실제 존재하는 섹션으로 교체</span>
+<span class="p">(</span><span class="err">📌</span><span class="n">오늘의핵심</span> <span class="o">/</span> <span class="err">🌍</span><span class="n">글로벌</span> <span class="o">/</span> <span class="err">🇰🇷</span><span class="n">한국</span> <span class="o">/</span> <span class="err">🇺🇸</span><span class="n">미국</span> <span class="o">/</span> <span class="err">✅</span><span class="n">체크리스트</span><span class="p">)</span>
+</code></pre></div>
+
+<p><strong>비용 영향:</strong>
+- Aggregator (Opus) 재실행 1회 = 약 $1.71 낭비
+- 전체 비용의 약 72%가 Aggregator × 2 실행에서 발생</p>
+<hr />
+<h3 id="3-5-신호등-항상-긍정-표시-문제">3-5. 신호등(🟢🟡🔴) 항상 긍정 표시 문제</h3>
+<p><strong>증상:</strong> 시장이 하락해도 신호등이 🟢 또는 🟡로만 표시됨</p>
+<p><strong>원인 분석:</strong>
+LLM이 신호등 판단 기준 없이 자체적으로 판단하여 일관성 없는 결과 생성.</p>
+<p><strong>해결 과정:</strong></p>
+<p>1단계: 명시적 판단 기준 추가</p>
+<div class="codehilite"><pre><span></span><code>- 🟢 긍정/강세/호재: 수치가 개선되고 뉴스/정세도 우호적
+- 🟡 중립/혼조/불확실: 수치와 맥락이 엇갈리거나 방향이 불분명
+- 🔴 부정/약세/악재: 수치 악화 OR 주요 리스크 현재화
+</code></pre></div>
+
+<p>2단계: <code>calculate_reference_signals()</code> 도입 (llm_analyzer_v2에서 차용)</p>
+<p>실제 수치 데이터 기반으로 사전 계산된 참고 신호를 LLM에게 힌트로 제공:</p>
+<div class="codehilite"><pre><span></span><code><span class="c1"># 예시 출력</span>
+<span class="n">참고</span> <span class="n">신호</span> <span class="p">(</span><span class="n">수치</span> <span class="n">기반</span><span class="p">):</span>
+<span class="o">-</span> <span class="n">KOSPI</span> <span class="n">등락</span><span class="p">:</span> <span class="o">-</span><span class="mf">1.2</span><span class="o">%</span> <span class="err">→</span> <span class="err">🔴</span>
+<span class="o">-</span> <span class="n">VIX</span><span class="p">:</span> <span class="mf">28.5</span> <span class="p">(</span><span class="o">&gt;</span><span class="mi">25</span><span class="p">)</span> <span class="err">→</span> <span class="err">🔴</span>
+<span class="o">-</span> <span class="n">USD</span><span class="o">/</span><span class="n">KRW</span><span class="p">:</span> <span class="o">+</span><span class="mf">0.8</span><span class="o">%</span> <span class="err">→</span> <span class="err">🔴</span>
+<span class="o">-</span> <span class="n">DRAM</span> <span class="n">DDR5</span><span class="p">:</span> <span class="o">+</span><span class="mf">0.3</span><span class="o">%</span> <span class="err">→</span> <span class="err">🟢</span>
+</code></pre></div>
+
+<div class="codehilite"><pre><span></span><code><span class="c1"># 프롬프트에 주입</span>
+<span class="n">아래는</span> <span class="n">실제</span> <span class="n">수치</span> <span class="n">데이터</span> <span class="n">기반으로</span> <span class="n">사전</span> <span class="n">계산된</span> <span class="n">참고</span> <span class="n">신호입니다</span><span class="o">.</span>
+<span class="n">최종</span> <span class="n">신호는</span> <span class="n">뉴스</span><span class="p">,</span> <span class="n">지정학적</span> <span class="n">맥락</span><span class="p">,</span> <span class="n">시장</span> <span class="n">흐름을</span> <span class="n">종합해</span> <span class="n">당신이</span> <span class="n">직접</span> <span class="n">판단하세요</span><span class="o">.</span>
+<span class="n">수치</span> <span class="n">참고값과</span> <span class="n">다르게</span> <span class="n">판단했다면</span> <span class="n">그</span> <span class="n">이유를</span> <span class="n">보고서</span> <span class="n">본문에</span> <span class="n">반영하세요</span><span class="o">.</span>
+
+<span class="p">{</span><span class="n">reference_signals</span><span class="p">}</span>
+</code></pre></div>
+
+<p><strong>설계 철학:</strong>
+- 수치만으로 판단 불가능한 경우 존재 (지정학, 정책 기대감 등)
+- LLM이 뉴스/맥락까지 종합해서 최종 판단하되, 수치 참고값을 앵커로 제공
+- 참고값과 다른 판단을 내릴 경우 보고서에 이유 명시 요구</p>
+<hr />
+<h3 id="3-6-시장-신호-표시-방식-변경">3-6. 시장 신호 표시 방식 변경</h3>
+<p><strong>초기 LangGraph 방식 (잘못된 설계):</strong></p>
+<div class="codehilite"><pre><span></span><code>### 🚦 시장 신호       ← 별도 섹션으로 최상단에 배치
+- 글로벌: 🟢
+- 한국(전일): 🟡
+...
+</code></pre></div>
+
+<p><strong>문제점:</strong>
+- 원본 llm_analyzer_v2와 섹션 구조가 다름
+- 리포트 내용 흐름 상 상단에 신호등 섹션이 뜨는 것이 어색
+- HTML에서는 별도 파싱해서 표시하는데 LLM 출력에서는 최상단에 있어 이중 구조</p>
+<p><strong>원본 방식 (올바른 설계):</strong></p>
+<div class="codehilite"><pre><span></span><code>### 🌍 글로벌 정세 &amp; 매크로 환경 [🟡]
+### 🇰🇷 [과거] 어제 한국 시장 마감 결과 [🔴]
+### 🇺🇸 [최신] 오늘 새벽 미국 시장 마감 결과 [🟢]
+### 📈 [전망] 오늘 한국 시장 예상 [🟡]
+### 🔬 반도체 섹터 심층 분석 [🟢]
+</code></pre></div>
+
+<ul>
+<li>각 섹션 헤더 끝에 <code>[🟡]</code> 형식으로 삽입</li>
+<li><code>report_builder_langgraph.py</code>의 <code>extract_signals()</code>가 헤더에서 파싱 후 제거</li>
+<li>HTML 템플릿의 <code>📡 섹션별 시장 신호</code> 대시보드로 렌더링</li>
+</ul>
+<div class="codehilite"><pre><span></span><code><span class="c1"># extract_signals() 로직</span>
+<span class="n">signal_map</span> <span class="o">=</span> <span class="p">{</span>
+    <span class="sa">r</span><span class="s1">&#39;글로벌.*정세|글로벌.*매크로&#39;</span><span class="p">:</span> <span class="s1">&#39;글로벌&#39;</span><span class="p">,</span>
+    <span class="sa">r</span><span class="s1">&#39;한국.*과거|과거.*한국|어제 한국&#39;</span><span class="p">:</span> <span class="s1">&#39;한국(전일)&#39;</span><span class="p">,</span>
+    <span class="sa">r</span><span class="s1">&#39;미국.*최신|최신.*미국|새벽.*미국|미국.*마감&#39;</span><span class="p">:</span> <span class="s1">&#39;미국&#39;</span><span class="p">,</span>
+    <span class="sa">r</span><span class="s1">&#39;한국.*전망|전망.*한국|오늘 한국&#39;</span><span class="p">:</span> <span class="s1">&#39;한국(전망)&#39;</span><span class="p">,</span>
+    <span class="sa">r</span><span class="s1">&#39;반도체.*섹터|반도체.*심층&#39;</span><span class="p">:</span> <span class="s1">&#39;반도체&#39;</span><span class="p">,</span>
+<span class="p">}</span>
+<span class="c1"># 헤더에서 [🟡] 파싱 → 제거 → 본문에는 신호등 없이 표시</span>
+</code></pre></div>
+
+<hr />
+<h3 id="3-7-섹션-순서-불일치">3-7. 섹션 순서 불일치</h3>
+<p><strong>초기 LangGraph Aggregator 섹션 순서:</strong></p>
+<div class="codehilite"><pre><span></span><code>🚦 시장 신호 (별도 섹션)
+📌 오늘의 핵심
+🔥 특별 이벤트 ← 글로벌보다 앞에 있었음
+🌍 글로벌
+🇰🇷 한국
+🇺🇸 미국
+📈 전망
+🔬 반도체
+💰 수급 동향 ← 불필요한 섹션
+💡 투자 아이디어
+📅 이번 주 이벤트
+✅ 체크리스트
+</code></pre></div>
+
+<p><strong>원본 llm_analyzer_v2 섹션 순서:</strong></p>
+<div class="codehilite"><pre><span></span><code>📌 오늘의 핵심
+🌍 글로벌
+🔥 특별 이벤트 (조건부)
+🇰🇷 한국
+🇺🇸 미국
+📈 전망
+🔬 반도체
+💡 투자 아이디어
+📅 이번 주 이벤트
+✅ 체크리스트
+</code></pre></div>
+
+<p><strong>변경 사항:</strong>
+1. <code>🚦 시장 신호</code> 별도 섹션 제거 → 헤더 <code>[🟡]</code> 방식으로 통합
+2. <code>🔥 특별 이벤트</code> → <code>🌍 글로벌</code> 뒤로 이동
+3. <code>💰 수급 동향</code> 제거</p>
+<hr />
+<h3 id="3-8-수급-동향-섹션-중복-문제">3-8. 수급 동향 섹션 중복 문제</h3>
+<p><strong>문제:</strong>
+수급 관련 내용이 세 곳에 중복:</p>
+<table>
+<thead>
+<tr>
+<th>위치</th>
+<th>방식</th>
+<th>신뢰성</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>HTML 투자자 동향 테이블</td>
+<td>DB 직접 쿼리</td>
+<td>✅ 항상 있음 (결정론적)</td>
+</tr>
+<tr>
+<td>korea_agent 분석</td>
+<td>MCP 툴 호출 (LLM 결정)</td>
+<td>⚠️ 매번 다를 수 있음</td>
+</tr>
+<tr>
+<td>aggregator <code>💰 수급 동향</code></td>
+<td>korea/flow 결과 재요약</td>
+<td>⚠️ 위에 의존</td>
+</tr>
+</tbody>
+</table>
+<p><strong>핵심 인사이트:</strong></p>
+<blockquote>
+<p>ReAct 에이전트의 도구 호출은 비결정적(non-deterministic)이다. LLM이 "이미 충분한 정보가 있다"고 판단하면 특정 도구를 건너뛸 수 있다. 따라서 수급 데이터처럼 <strong>항상 표시되어야 하는 정보</strong>는 DB 직접 쿼리 기반의 HTML 데이터 테이블로 보장하고, LLM은 해석/분석 역할만 담당해야 한다.</p>
+</blockquote>
+<p><strong>결론:</strong> <code>💰 수급 동향</code> 섹션 제거. HTML 데이터 테이블이 결정론적으로 보장.</p>
+<hr />
+<h3 id="3-9-시장전망대응시나리오-분리-원본-설계-복원">3-9. 시장전망/대응시나리오 분리 (원본 설계 복원)</h3>
+<p><strong>초기 LangGraph 설계:</strong> Aggregator가 시장전망 + 대응시나리오까지 모두 생성</p>
+<p><strong>문제:</strong> Aggregator 토큰이 이미 많은데 전망/시나리오까지 추가하면 품질 저하 및 잘림 위험</p>
+<p><strong>원본 파이프라인 설계 복원:</strong></p>
+<div class="codehilite"><pre><span></span><code><span class="c1"># 1. Aggregator (Opus): 상세 분석 리포트</span>
+<span class="n">ai_analysis</span> <span class="o">=</span> <span class="n">run_langgraph_analysis</span><span class="p">(</span><span class="n">macro_data</span><span class="p">,</span> <span class="n">news_context</span><span class="p">)</span>
+
+<span class="c1"># 2. Haiku: 분석 내용을 읽고 시장전망/대응시나리오 요약 생성</span>
+<span class="n">insight_text</span> <span class="o">=</span> <span class="n">generate_insight_summary</span><span class="p">(</span><span class="n">ai_analysis</span><span class="p">)</span>
+<span class="c1"># → &quot;📊 오늘의 시장 전망&quot; + &quot;대응 시나리오&quot; 파싱</span>
+</code></pre></div>
+
+<p><strong>역할 분리:</strong>
+- Opus Aggregator: 팩트 기반 상세 분석
+- Haiku: 요약 및 투자자 관점 전망 (빠르고 저렴)</p>
+<hr />
+<h2 id="4-비용-분석">4. 비용 분석</h2>
+<h3 id="실측-비용-특정-실행-기준">실측 비용 (특정 실행 기준)</h3>
+<table>
+<thead>
+<tr>
+<th>에이전트</th>
+<th>입력 토큰</th>
+<th>출력 토큰</th>
+<th>모델</th>
+<th>비용 추정</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>global</td>
+<td>~2,000</td>
+<td>~1,000</td>
+<td>Sonnet</td>
+<td>~$0.02</td>
+</tr>
+<tr>
+<td>korea</td>
+<td><strong>71,015</strong></td>
+<td>~3,000</td>
+<td>Sonnet</td>
+<td>~$0.26</td>
+</tr>
+<tr>
+<td>semi</td>
+<td><strong>73,364</strong></td>
+<td>~2,500</td>
+<td>Sonnet</td>
+<td>~$0.24</td>
+</tr>
+<tr>
+<td>flow</td>
+<td>~1,000</td>
+<td>~500</td>
+<td>Haiku</td>
+<td>~$0.001</td>
+</tr>
+<tr>
+<td>aggregator (1회)</td>
+<td>~30,000</td>
+<td>~8,000</td>
+<td>Opus</td>
+<td>~$0.85</td>
+</tr>
+<tr>
+<td>aggregator (2회)</td>
+<td>~30,000</td>
+<td>~8,000</td>
+<td>Opus</td>
+<td>~$0.85</td>
+</tr>
+<tr>
+<td>quality</td>
+<td>~10,000</td>
+<td>~200</td>
+<td>Haiku</td>
+<td>~$0.008</td>
+</tr>
+<tr>
+<td><strong>합계</strong></td>
+<td></td>
+<td></td>
+<td></td>
+<td><strong>~$2.39</strong></td>
+</tr>
+</tbody>
+</table>
+<h3 id="비용-구조-분석">비용 구조 분석</h3>
+<div class="codehilite"><pre><span></span><code><span class="n">Opus</span><span class="w"> </span><span class="n">Aggregator</span><span class="w"> </span><span class="err">×</span><span class="w"> </span><span class="mh">2</span><span class="w"> </span><span class="err">실행</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="err">$</span><span class="mf">1.70</span><span class="w"> </span><span class="p">(</span><span class="err">총비용의</span><span class="w"> </span><span class="mh">71</span><span class="o">%</span><span class="p">)</span>
+<span class="n">Korea</span><span class="w"> </span><span class="n">ReAct</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="err">$</span><span class="mf">0.26</span><span class="w"> </span><span class="p">(</span><span class="err">입력</span><span class="w"> </span><span class="err">토큰</span><span class="w"> </span><span class="err">폭발</span><span class="w"> </span><span class="err">원인</span><span class="o">:</span><span class="w"> </span><span class="n">MCP</span><span class="w"> </span><span class="err">결과</span><span class="w"> </span><span class="err">누적</span><span class="p">)</span>
+<span class="n">Semi</span><span class="w"> </span><span class="n">ReAct</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="err">$</span><span class="mf">0.24</span>
+</code></pre></div>
+
+<h3 id="비용-절감-방향">비용 절감 방향</h3>
+<ol>
+<li><strong>Quality Checker FAIL 방지</strong> → Aggregator 재실행 제거 → 약 $0.85 절약</li>
+<li>필수 섹션 목록을 실제 출력과 정확히 일치시킴</li>
+<li>
+<p>현실적 체크 항목으로 교체</p>
+</li>
+<li>
+<p><strong>Korea/Semi 입력 토큰 절감</strong></p>
+</li>
+<li>ReAct 루프 최적화 (불필요한 재사고 방지)</li>
+<li>
+<p>툴 결과 요약 전달</p>
+</li>
+<li>
+<p><strong>모델 조정 고려</strong></p>
+</li>
+<li>Aggregator를 Opus → Sonnet으로 낮추면 약 $0.60 절약</li>
+<li>단, 분석 품질 저하 위험 있음</li>
+</ol>
+<hr />
+<h2 id="5-html-렌더링-파이프라인">5. HTML 렌더링 파이프라인</h2>
+<h3 id="추출-흐름">추출 흐름</h3>
+<div class="codehilite"><pre><span></span><code><span class="n">ai_analysis</span> <span class="p">(</span><span class="n">aggregator</span> <span class="n">원본</span> <span class="n">마크다운</span><span class="p">)</span>
+  <span class="err">↓</span>
+<span class="n">extract_key_summary</span><span class="p">()</span>      <span class="c1"># ### 📌 오늘의 핵심 → 상단 강조 박스</span>
+  <span class="err">↓</span>
+<span class="n">extract_signals</span><span class="p">()</span>          <span class="c1"># ### 🌍 ... [🟡] → 신호등 대시보드</span>
+  <span class="err">↓</span>
+<span class="n">extract_checklist</span><span class="p">()</span>        <span class="c1"># ### ✅ 체크리스트 → 별도 강조 박스</span>
+  <span class="err">↓</span>
+<span class="n">convert_markdown_</span><span class="o">*</span><span class="p">()</span>       <span class="c1"># 나머지 → ai_analysis_html (AI 분석 상세 블록)</span>
+</code></pre></div>
+
+<div class="codehilite"><pre><span></span><code><span class="n">insight_text</span> <span class="p">(</span><span class="n">Haiku</span> <span class="n">원본</span><span class="p">)</span>
+  <span class="err">↓</span>
+<span class="n">outlook_pattern</span>  <span class="err">→</span>  <span class="n">insight_outlook_html</span>  <span class="p">(</span><span class="err">🔭</span> <span class="n">오늘의</span> <span class="n">시장</span> <span class="n">전망</span><span class="p">)</span>
+<span class="n">scenario_pattern</span> <span class="err">→</span>  <span class="n">insight_scenario_html</span> <span class="p">(</span><span class="err">🎯</span> <span class="n">대응</span> <span class="n">시나리오</span><span class="p">)</span>
+</code></pre></div>
+
+<h3 id="메일-html-최종-섹션-순서">메일 HTML 최종 섹션 순서</h3>
+<div class="codehilite"><pre><span></span><code><span class="mf">1.</span><span class="w"> </span><span class="err">📌</span><span class="w"> </span><span class="n">오늘의</span><span class="w"> </span><span class="n">핵심</span><span class="w">     </span><span class="p">(</span><span class="n">key_summary</span><span class="w"> </span><span class="err">—</span><span class="w"> </span><span class="n">LLM</span><span class="w"> </span><span class="n">파싱</span><span class="p">)</span>
+<span class="mf">2.</span><span class="w"> </span><span class="err">🔭</span><span class="w"> </span><span class="n">오늘의</span><span class="w"> </span><span class="n">시장</span><span class="w"> </span><span class="n">전망</span><span class="w"> </span><span class="p">(</span><span class="n">insight_outlook</span><span class="w"> </span><span class="err">—</span><span class="w"> </span><span class="n">Haiku</span><span class="p">)</span>
+<span class="mf">3.</span><span class="w"> </span><span class="err">✅</span><span class="w"> </span><span class="n">체크리스트</span><span class="w">       </span><span class="p">(</span><span class="n">checklist</span><span class="w"> </span><span class="err">—</span><span class="w"> </span><span class="n">LLM</span><span class="w"> </span><span class="n">파싱</span><span class="p">)</span>
+<span class="mf">4.</span><span class="w"> </span><span class="err">🎯</span><span class="w"> </span><span class="n">대응</span><span class="w"> </span><span class="n">시나리오</span><span class="w">    </span><span class="p">(</span><span class="n">insight_scenario</span><span class="w"> </span><span class="err">—</span><span class="w"> </span><span class="n">Haiku</span><span class="p">)</span>
+<span class="mf">5.</span><span class="w"> </span><span class="err">📈</span><span class="w"> </span><span class="n">주요</span><span class="w"> </span><span class="n">지수</span><span class="w">        </span><span class="p">(</span><span class="n">데이터</span><span class="w"> </span><span class="n">테이블</span><span class="p">)</span>
+<span class="mf">6.</span><span class="w"> </span><span class="err">🌍</span><span class="w"> </span><span class="n">매크로</span><span class="w"> </span><span class="n">지표</span><span class="w">      </span><span class="p">(</span><span class="n">데이터</span><span class="w"> </span><span class="n">테이블</span><span class="p">)</span>
+<span class="mf">7.</span><span class="w"> </span><span class="err">💰</span><span class="w"> </span><span class="n">투자자</span><span class="w"> </span><span class="n">동향</span><span class="w">      </span><span class="p">(</span><span class="n">데이터</span><span class="w"> </span><span class="n">테이블</span><span class="p">)</span>
+<span class="mf">8.</span><span class="w"> </span><span class="err">📊</span><span class="w"> </span><span class="n">거래량</span><span class="o">/</span><span class="n">거래대금</span><span class="w">  </span><span class="p">(</span><span class="n">데이터</span><span class="w"> </span><span class="n">테이블</span><span class="p">)</span>
+<span class="mf">9.</span><span class="w"> </span><span class="err">📡</span><span class="w"> </span><span class="n">섹션별</span><span class="w"> </span><span class="n">시장</span><span class="w"> </span><span class="n">신호</span><span class="w"> </span><span class="p">(</span><span class="n">signals</span><span class="w"> </span><span class="n">대시보드</span><span class="p">)</span>
+<span class="err">────</span><span class="w"> </span><span class="n">AI</span><span class="w"> </span><span class="n">상세</span><span class="w"> </span><span class="n">분석</span><span class="w"> </span><span class="n">구분선</span><span class="w"> </span><span class="err">────</span>
+<span class="mf">10.</span><span class="w"> </span><span class="err">💡</span><span class="w"> </span><span class="n">AI</span><span class="w"> </span><span class="n">분석</span><span class="w"> </span><span class="n">상세</span><span class="w">   </span><span class="p">(</span><span class="n">ai_analysis_html</span><span class="w"> </span><span class="err">—</span><span class="w"> </span><span class="n">전체</span><span class="w"> </span><span class="n">LLM</span><span class="w"> </span><span class="n">분석</span><span class="p">)</span>
+<span class="mf">11.</span><span class="w"> </span><span class="err">📊</span><span class="w"> </span><span class="n">수급</span><span class="w"> </span><span class="n">상세</span><span class="w">      </span><span class="p">(</span><span class="n">데이터</span><span class="w"> </span><span class="n">테이블</span><span class="p">)</span>
+<span class="mf">12.</span><span class="w"> </span><span class="err">🔧</span><span class="w"> </span><span class="n">반도체</span><span class="w"> </span><span class="n">현물가</span><span class="w">  </span><span class="p">(</span><span class="n">데이터</span><span class="w"> </span><span class="n">테이블</span><span class="p">)</span>
+<span class="mf">13.</span><span class="w"> </span><span class="n">KOSPI</span><span class="o">/</span><span class="n">KOSDAQ</span><span class="o">/</span><span class="n">S</span><span class="err">&amp;</span><span class="n">P500</span><span class="o">/</span><span class="n">NASDAQ</span><span class="w"> </span><span class="n">히트맵</span>
+</code></pre></div>
+
+<hr />
+<h2 id="6-주요-설계-원칙-학습-결과">6. 주요 설계 원칙 (학습 결과)</h2>
+<h3 id="6-1-데이터-주입-vs-도구-호출">6-1. 데이터 주입 vs 도구 호출</h3>
+<div class="codehilite"><pre><span></span><code>❌ 데이터 주입 후 도구 호출 안내
+   → LLM이 이미 데이터 있다고 판단, 도구 무시
+
+✅ 데이터 완전 제거 + &quot;도구 호출 순서&quot; 명시
+   → LLM이 도구를 반드시 호출해야 하는 환경
+</code></pre></div>
+
+<h3 id="6-2-결정론적-vs-비결정론적">6-2. 결정론적 vs 비결정론적</h3>
+<div class="codehilite"><pre><span></span><code>결정론적 (항상 보장)     비결정론적 (LLM 판단)
+─────────────────────   ──────────────────────
+HTML 데이터 테이블        ReAct 도구 호출 순서
+DB 직접 쿼리 결과         LLM 검색 키워드
+Reference Signals 계산    특정 도구 호출 여부
+</code></pre></div>
+
+<p><strong>원칙:</strong> 항상 보여야 하는 데이터는 결정론적으로 처리. LLM에게 맡기면 매번 다를 수 있음.</p>
+<h3 id="6-3-비용-최적화">6-3. 비용 최적화</h3>
+<div class="codehilite"><pre><span></span><code><span class="n">Haiku</span><span class="w">  </span><span class="o">:</span><span class="w"> </span><span class="err">요약</span><span class="o">,</span><span class="w"> </span><span class="err">검증</span><span class="o">,</span><span class="w"> </span><span class="err">짧은</span><span class="w"> </span><span class="err">생성</span><span class="w"> </span><span class="err">작업</span>
+<span class="n">Sonnet</span><span class="w"> </span><span class="o">:</span><span class="w"> </span><span class="err">도구</span><span class="w"> </span><span class="err">호출</span><span class="w"> </span><span class="o">+</span><span class="w"> </span><span class="err">전문</span><span class="w"> </span><span class="err">분석</span>
+<span class="n">Opus</span><span class="w">   </span><span class="o">:</span><span class="w"> </span><span class="err">최종</span><span class="w"> </span><span class="err">통합</span><span class="o">,</span><span class="w"> </span><span class="err">복잡한</span><span class="w"> </span><span class="err">추론</span>
+
+<span class="n">Quality</span><span class="w"> </span><span class="n">Checker가</span><span class="w"> </span><span class="n">PASS</span><span class="o">/</span><span class="n">FAIL을</span><span class="w"> </span><span class="err">제대로</span><span class="w"> </span><span class="err">하지</span><span class="w"> </span><span class="err">못하면</span>
+<span class="err">비싼</span><span class="w"> </span><span class="n">Opus</span><span class="w"> </span><span class="n">Aggregator가</span><span class="w"> </span><span class="err">재실행됨</span><span class="w"> </span><span class="err">→</span><span class="w"> </span><span class="err">최대</span><span class="w"> </span><span class="err">비용</span><span class="w"> </span><span class="err">요인</span>
+</code></pre></div>
+
+<h3 id="6-4-섹션-구조-일관성">6-4. 섹션 구조 일관성</h3>
+<div class="codehilite"><pre><span></span><code><span class="err">원본</span><span class="w"> </span><span class="n">llm_analyzer_v2</span><span class="w"> </span><span class="err">섹션</span><span class="w"> </span><span class="err">순서</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">LangGraph</span><span class="w"> </span><span class="n">aggregator</span><span class="w"> </span><span class="err">섹션</span><span class="w"> </span><span class="err">순서</span>
+<span class="w">                                </span><span class="o">=</span><span class="w"> </span><span class="n">HTML</span><span class="w"> </span><span class="err">렌더링</span><span class="w"> </span><span class="err">파싱</span><span class="w"> </span><span class="err">기준</span>
+
+<span class="err">세</span><span class="w"> </span><span class="err">가지가</span><span class="w"> </span><span class="err">일치해야</span><span class="w"> </span><span class="err">파싱</span><span class="w"> </span><span class="err">로직이</span><span class="w"> </span><span class="err">안정적으로</span><span class="w"> </span><span class="err">작동</span><span class="p">.</span>
+</code></pre></div>
+
+<hr />
+<h2 id="7-현재-상태-및-미해결-과제">7. 현재 상태 및 미해결 과제</h2>
+<h3 id="완료">완료</h3>
+<ul>
+<li>[x] ReAct 기반 자율 도구 호출 (korea, semi)</li>
+<li>[x] MCP DB 도구 추가 (investor_flow, investor_trading, semiconductor_prices, market_indices)</li>
+<li>[x] Reference Signals 기반 신호등 판단</li>
+<li>[x] Quality Checker 필수 섹션 목록 실제 출력과 일치</li>
+<li>[x] 섹션 순서 원본과 통일</li>
+<li>[x] 시장신호 표시 방식 원본 방식으로 통일 (헤더 <code>[🟡]</code>)</li>
+<li>[x] max_tokens 모델 최대값으로 상향</li>
+<li>[x] <code>💰 수급 동향</code> 중복 제거</li>
+</ul>
+<h3 id="미해결">미해결</h3>
+<ul>
+<li>
+<p>[ ] <strong>KOSDAQ 수급 데이터 누락</strong>: <code>stock_price_1d</code>의 <code>foreign_buy_volume</code>이 KOSDAQ 종목에 대해 NULL인 것으로 추정. <code>dag_kr_investor_trend.py</code>의 Naver 스크래핑이 KOSDAQ에 효과적으로 작동하는지 확인 필요.
+  <code>sql
+  SELECT market_type, COUNT(*), COUNT(foreign_buy_volume)
+  FROM stock_price_1d p JOIN stock_info si ON p.ticker = si.ticker
+  WHERE p.timestamp::date = CURRENT_DATE - 1
+  GROUP BY market_type;</code></p>
+</li>
+<li>
+<p>[ ] <strong>비용 최적화</strong>: 현재 리포트 1회 발송 약 $2.39. Aggregator 재실행 방지로 ~$0.85 절감 기대.</p>
+</li>
+<li>
+<p>[ ] <strong>Korea/Semi 입력 토큰 최적화</strong>: ReAct 루프에서 MCP 결과가 컨텍스트에 누적되어 입력 토큰 증가 (각 ~70K). 툴 결과 요약 또는 토큰 윈도우 제한 고려.</p>
+</li>
+</ul>
+<hr />
+<h2 id="8-파일-구조">8. 파일 구조</h2>
+<div class="codehilite"><pre><span></span><code>BIP-Agents/
+├── langgraph/
+│   ├── agents.py          # 에이전트 정의 (PROMPTS, nodes)
+│   ├── main.py            # 그래프 실행 진입점
+│   ├── state.py           # ReportState 정의
+│   └── graph.py           # LangGraph 그래프 구성
+├── mcp-servers/bip-stock-mcp/
+│   ├── server.py          # FastMCP 서버 (도구 등록)
+│   ├── db.py              # asyncpg DB 조회
+│   ├── dart.py            # DART API
+│   ├── krx.py             # KRX/네이버 금융
+│   └── news.py            # 뉴스 검색
+└── docker-compose.yml     # bip-stock-mcp + langgraph 서비스
+
+BIP-Pipeline/
+└── airflow/dags/reports/
+    ├── report_builder_langgraph.py  # LangGraph 버전 리포트 빌더
+    ├── langgraph_runner.py          # LangGraph 호출 인터페이스
+    └── llm_analyzer_v2.py           # 원본 분석기 (Reference Signals 공유)
+</code></pre></div>
+</main>
+
+<script>
+  // 테마 전환
+  function setTheme(theme) {
+    document.documentElement.setAttribute('data-theme', theme);
+    localStorage.setItem('doc-theme', theme);
+    document.getElementById('btn-dark').classList.toggle('active', theme === 'dark');
+    document.getElementById('btn-light').classList.toggle('active', theme === 'light');
+    // Mermaid 재렌더링
+    if (typeof mermaid !== 'undefined') {
+      mermaid.initialize({ startOnLoad: false, theme: 'base', securityLevel: 'loose', themeVariables: getMermaidTheme(theme) });
+      document.querySelectorAll('.mermaid').forEach(el => {
+        // 원본 코드 보존 (최초 1회만 저장)
+        if (!el.dataset.source) {
+          el.dataset.source = el.textContent;
+        }
+        el.removeAttribute('data-processed');
+        el.innerHTML = el.dataset.source;
+      });
+      mermaid.run();
+    }
+  }
+
+  // 저장된 테마 로드
+  const savedTheme = localStorage.getItem('doc-theme') || 'dark';
+  setTheme(savedTheme);
+
+  // Mermaid 초기화
+  function getMermaidTheme(theme) {
+    const dark = {
+      primaryColor: '#3d7be0',
+      primaryTextColor: '#ffffff',
+      primaryBorderColor: '#5a9cf0',
+      secondaryColor: '#7c5cbf',
+      secondaryTextColor: '#ffffff',
+      secondaryBorderColor: '#a29bfe',
+      tertiaryColor: '#00997a',
+      tertiaryTextColor: '#ffffff',
+      tertiaryBorderColor: '#55efc4',
+      noteTextColor: '#f0f0f0',
+      noteBkgColor: '#2d3436',
+      noteBorderColor: '#636e72',
+      lineColor: '#8b949e',
+      textColor: '#e6edf3',
+      mainBkg: '#1e3050',
+      nodeBorder: '#5a9cf0',
+      clusterBkg: '#1a1e2e',
+      clusterBorder: '#4a5568',
+      titleColor: '#79c0ff',
+      edgeLabelBackground: '#21262d',
+      actorBkg: '#3d7be0',
+      actorTextColor: '#ffffff',
+      actorBorder: '#5a9cf0',
+      signalColor: '#8b949e',
+      labelBoxBkgColor: '#21262d',
+      labelBoxBorderColor: '#4a5568',
+      labelTextColor: '#e6edf3',
+      loopTextColor: '#e6edf3',
+      activationBorderColor: '#5a9cf0',
+      activationBkgColor: '#1e3050',
+      sequenceNumberColor: '#ffffff',
+      pie1: '#4f8fea', pie2: '#6c5ce7', pie3: '#00b894', pie4: '#e17055',
+      pie5: '#fdcb6e', pie6: '#00cec9', pie7: '#e84393', pie8: '#0984e3'
+    };
+    const light = {
+      primaryColor: '#4f8fea',
+      primaryTextColor: '#1a1a2e',
+      primaryBorderColor: '#3a7bd5',
+      secondaryColor: '#a29bfe',
+      secondaryTextColor: '#1a1a2e',
+      secondaryBorderColor: '#6c5ce7',
+      tertiaryColor: '#55efc4',
+      tertiaryTextColor: '#1a1a2e',
+      tertiaryBorderColor: '#00b894',
+      noteTextColor: '#2d3436',
+      noteBkgColor: '#ffeaa7',
+      noteBorderColor: '#fdcb6e',
+      lineColor: '#636e72',
+      textColor: '#2d3436',
+      mainBkg: '#dfe6e9',
+      nodeBorder: '#3a7bd5',
+      clusterBkg: '#f0f3f5',
+      clusterBorder: '#b2bec3',
+      titleColor: '#2d3436',
+      edgeLabelBackground: '#ffffff',
+      actorBkg: '#4f8fea',
+      actorTextColor: '#ffffff',
+      actorBorder: '#3a7bd5',
+      signalColor: '#636e72',
+      labelBoxBkgColor: '#ffffff',
+      labelBoxBorderColor: '#b2bec3',
+      labelTextColor: '#2d3436',
+      loopTextColor: '#2d3436',
+      activationBorderColor: '#3a7bd5',
+      activationBkgColor: '#dfe6e9',
+      sequenceNumberColor: '#ffffff',
+      pie1: '#4f8fea', pie2: '#6c5ce7', pie3: '#00b894', pie4: '#e17055',
+      pie5: '#fdcb6e', pie6: '#00cec9', pie7: '#e84393', pie8: '#0984e3'
+    };
+    return theme === 'dark' ? dark : light;
+  }
+
+  // 초기 렌더링 전에 원본 코드 저장
+  document.querySelectorAll('.mermaid').forEach(el => {
+    el.dataset.source = el.textContent;
+  });
+  mermaid.initialize({ startOnLoad: true, theme: 'base', securityLevel: 'loose', themeVariables: getMermaidTheme(savedTheme) });
+
+  // TOC 현재 위치 하이라이트
+  const tocLinks = document.querySelectorAll('.toc a');
+  const headings = [];
+  tocLinks.forEach(link => {
+    const id = link.getAttribute('href').slice(1);
+    const el = document.getElementById(id);
+    if (el) headings.push({ el, link });
+  });
+
+  function updateActiveToc() {
+    let current = null;
+    for (const h of headings) {
+      if (h.el.getBoundingClientRect().top <= 100) current = h;
+    }
+    tocLinks.forEach(l => l.classList.remove('active'));
+    if (current) current.link.classList.add('active');
+  }
+
+  window.addEventListener('scroll', updateActiveToc, { passive: true });
+  updateActiveToc();
+
+  // 모바일: 링크 클릭 시 사이드바 닫기
+  tocLinks.forEach(link => {
+    link.addEventListener('click', () => {
+      if (window.innerWidth <= 900) {
+        document.querySelector('.sidebar').classList.remove('open');
+      }
+    });
+  });
+</script>
+
+</body>
+</html>

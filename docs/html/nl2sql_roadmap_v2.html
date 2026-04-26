@@ -1,0 +1,1696 @@
+<!DOCTYPE html>
+<html lang="ko" data-theme="dark">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>BIP-Pipeline NL2SQL 로드맵 v2 (Phase별 실행 계획)</title>
+<script src="https://cdn.jsdelivr.net/npm/mermaid@11/dist/mermaid.min.js"></script>
+<style>
+  /* ── 테마 변수 ── */
+  :root[data-theme="dark"] {
+    --bg: #0d1117;
+    --bg-sidebar: #161b22;
+    --fg: #e6edf3;
+    --fg-muted: #8b949e;
+    --border: #30363d;
+    --accent: #58a6ff;
+    --accent-hover: #79c0ff;
+    --code-bg: #1e293b;
+    --code-fg: #e2e8f0;
+    --table-header: #161b22;
+    --table-even: #0d1117;
+    --table-odd: #161b22;
+    --blockquote-bg: #161b22;
+    --blockquote-border: #3b82f6;
+    --link: #58a6ff;
+    --strong: #79c0ff;
+    --card-bg: #21262d;
+  }
+  :root[data-theme="light"] {
+    --bg: #ffffff;
+    --bg-sidebar: #f6f8fa;
+    --fg: #1f2937;
+    --fg-muted: #6b7280;
+    --border: #e5e7eb;
+    --accent: #2563eb;
+    --accent-hover: #1d4ed8;
+    --code-bg: #f3f4f6;
+    --code-fg: #1e293b;
+    --table-header: #f8fafc;
+    --table-even: #ffffff;
+    --table-odd: #f9fafb;
+    --blockquote-bg: #eff6ff;
+    --blockquote-border: #3b82f6;
+    --link: #2563eb;
+    --strong: #1e40af;
+    --card-bg: #f3f4f6;
+  }
+
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+
+  body {
+    font-family: 'Pretendard', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+    background: var(--bg);
+    color: var(--fg);
+    line-height: 1.75;
+    display: flex;
+    min-height: 100vh;
+  }
+
+  /* ── 사이드바 ── */
+  .sidebar {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 280px;
+    height: 100vh;
+    background: var(--bg-sidebar);
+    border-right: 1px solid var(--border);
+    overflow-y: auto;
+    padding: 20px 0;
+    z-index: 100;
+    transition: transform 0.3s ease;
+  }
+
+  .sidebar-header {
+    padding: 0 20px 16px;
+    border-bottom: 1px solid var(--border);
+    margin-bottom: 12px;
+  }
+
+  .sidebar-title {
+    font-size: 0.95rem;
+    font-weight: 700;
+    color: var(--fg);
+    line-height: 1.3;
+  }
+
+  .sidebar-controls {
+    display: flex;
+    gap: 8px;
+    margin-top: 12px;
+  }
+
+  .theme-btn {
+    background: var(--card-bg);
+    border: 1px solid var(--border);
+    color: var(--fg-muted);
+    padding: 4px 10px;
+    border-radius: 6px;
+    font-size: 0.7rem;
+    cursor: pointer;
+    transition: all 0.2s;
+  }
+  .theme-btn:hover {
+    border-color: var(--accent);
+    color: var(--accent);
+  }
+  .theme-btn.active {
+    background: var(--accent);
+    color: #fff;
+    border-color: var(--accent);
+  }
+
+  .back-link {
+    display: block;
+    margin-top: 10px;
+    font-size: 0.75rem;
+    color: var(--fg-muted);
+    text-decoration: none;
+  }
+  .back-link:hover {
+    color: var(--accent);
+  }
+
+  /* ── TOC ── */
+  .toc {
+    padding: 0 12px;
+  }
+  .toc ul {
+    list-style: none;
+    padding: 0;
+  }
+  .toc li {
+    margin: 0;
+  }
+  .toc a {
+    display: block;
+    padding: 4px 8px;
+    color: var(--fg-muted);
+    text-decoration: none;
+    font-size: 0.78rem;
+    border-radius: 4px;
+    border-left: 2px solid transparent;
+    transition: all 0.15s;
+    line-height: 1.4;
+  }
+  .toc a:hover {
+    color: var(--accent);
+    background: var(--card-bg);
+    border-left-color: var(--accent);
+  }
+  .toc a.active {
+    color: var(--accent);
+    border-left-color: var(--accent);
+    font-weight: 600;
+  }
+  .toc-h3 a { padding-left: 20px; font-size: 0.75rem; }
+  .toc-h4 a { padding-left: 32px; font-size: 0.72rem; }
+
+  /* ── 본문 ── */
+  .content {
+    margin-left: 280px;
+    flex: 1;
+    max-width: 860px;
+    padding: 40px 48px 80px;
+  }
+
+  /* ── 모바일 ── */
+  .menu-toggle {
+    display: none;
+    position: fixed;
+    top: 12px;
+    left: 12px;
+    z-index: 200;
+    background: var(--bg-sidebar);
+    border: 1px solid var(--border);
+    color: var(--fg);
+    padding: 8px 12px;
+    border-radius: 6px;
+    cursor: pointer;
+    font-size: 1.1rem;
+  }
+
+  @media (max-width: 900px) {
+    .sidebar {
+      transform: translateX(-100%);
+    }
+    .sidebar.open {
+      transform: translateX(0);
+    }
+    .content {
+      margin-left: 0;
+      padding: 60px 20px 60px;
+    }
+    .menu-toggle {
+      display: block;
+    }
+  }
+
+  /* ── 타이포그래피 ── */
+  h1 { font-size: 1.9rem; margin: 2rem 0 1rem; padding-bottom: 0.5rem; border-bottom: 2px solid var(--accent); }
+  h2 { font-size: 1.45rem; margin: 2.5rem 0 0.8rem; padding-bottom: 0.3rem; border-bottom: 1px solid var(--border); color: var(--accent); }
+  h3 { font-size: 1.15rem; margin: 1.8rem 0 0.5rem; }
+  h4 { font-size: 1rem; margin: 1.3rem 0 0.4rem; color: var(--fg-muted); }
+  p { margin: 0.6rem 0; }
+  hr { border: none; border-top: 1px solid var(--border); margin: 2rem 0; }
+  strong { color: var(--strong); }
+  a { color: var(--link); text-decoration: none; }
+  a:hover { text-decoration: underline; }
+  ul, ol { margin: 0.5rem 0 0.5rem 1.5rem; }
+  li { margin: 0.25rem 0; }
+
+  /* ── 테이블 ── */
+  table { width: 100%; border-collapse: collapse; margin: 1rem 0; font-size: 0.85rem; }
+  th, td { border: 1px solid var(--border); padding: 0.5rem 0.75rem; text-align: left; }
+  th { background: var(--table-header); font-weight: 600; }
+  tr:nth-child(even) { background: var(--table-even); }
+  tr:nth-child(odd) { background: var(--table-odd); }
+
+  /* ── 코드 ── */
+  code {
+    background: var(--code-bg);
+    color: var(--code-fg);
+    padding: 0.15rem 0.4rem;
+    border-radius: 4px;
+    font-size: 0.82em;
+    font-family: 'JetBrains Mono', 'Fira Code', 'Cascadia Code', monospace;
+  }
+  pre {
+    background: var(--code-bg);
+    color: var(--code-fg);
+    padding: 1rem 1.2rem;
+    border-radius: 8px;
+    overflow-x: auto;
+    margin: 1rem 0;
+    border: 1px solid var(--border);
+  }
+  pre code {
+    background: none;
+    padding: 0;
+    font-size: 0.82rem;
+    line-height: 1.5;
+  }
+
+  /* ── 인용 ── */
+  blockquote {
+    border-left: 4px solid var(--blockquote-border);
+    padding: 0.6rem 1rem;
+    margin: 1rem 0;
+    background: var(--blockquote-bg);
+    border-radius: 0 6px 6px 0;
+  }
+  blockquote p { margin: 0.3rem 0; }
+
+  /* ── Mermaid ── */
+  .mermaid {
+    margin: 1.5rem 0;
+    text-align: center;
+    background: var(--card-bg);
+    padding: 1rem;
+    border-radius: 8px;
+    border: 1px solid var(--border);
+  }
+  .mermaid svg { max-width: 100%; }
+
+  /* ── Footer ── */
+  footer {
+    margin-top: 3rem;
+    padding-top: 1rem;
+    border-top: 1px solid var(--border);
+    color: var(--fg-muted);
+    font-size: 0.8rem;
+  }
+</style>
+</head>
+<body>
+
+<button class="menu-toggle" onclick="document.querySelector('.sidebar').classList.toggle('open')">☰</button>
+
+<aside class="sidebar">
+  <div class="sidebar-header">
+    <div class="sidebar-title">BIP-Pipeline NL2SQL 로드맵 v2 (Phase별 실행 계획)</div>
+    <div class="sidebar-controls">
+      <button class="theme-btn" onclick="setTheme('dark')" id="btn-dark">🌙 Dark</button>
+      <button class="theme-btn" onclick="setTheme('light')" id="btn-light">☀️ Light</button>
+    </div>
+    <a class="back-link" href="index.html">← 문서 목록으로</a>
+  </div>
+  <nav class="toc">
+<ul>
+<li class="toc-h2"><a href="#목차">목차</a></li>
+<li class="toc-h2"><a href="#1-로드맵-개요">1. 로드맵 개요</a></li>
+  <li class="toc-h3"><a href="#1-1-전체-phase-요약">1-1. 전체 Phase 요약</a></li>
+  <li class="toc-h3"><a href="#1-2-phase별-목표-한줄-요약">1-2. Phase별 목표 한줄 요약</a></li>
+  <li class="toc-h3"><a href="#1-3-각-phase-종료-시-검증-항목">1-3. 각 Phase 종료 시 검증 항목</a></li>
+<li class="toc-h2"><a href="#2-phase-0-베이스라인-완료">2. Phase 0: 베이스라인 (완료)</a></li>
+  <li class="toc-h3"><a href="#2-1-데이터-레이어">2-1. 데이터 레이어</a></li>
+  <li class="toc-h3"><a href="#2-2-메타데이터-레이어">2-2. 메타데이터 레이어</a></li>
+  <li class="toc-h3"><a href="#2-3-얕은-시맨틱-레이어">2-3. 얕은 시맨틱 레이어</a></li>
+  <li class="toc-h3"><a href="#2-4-보안거버넌스">2-4. 보안·거버넌스</a></li>
+  <li class="toc-h3"><a href="#2-5-에이전트-부분">2-5. 에이전트 (부분)</a></li>
+<li class="toc-h2"><a href="#3-phase-1a-의미론-하드닝-2-4주">3. Phase 1A: 의미론 하드닝 (2-4주)</a></li>
+  <li class="toc-h3"><a href="#3-1-목표">3-1. 목표</a></li>
+  <li class="toc-h3"><a href="#3-2-작업-목록-wbs">3-2. 작업 목록 (WBS)</a></li>
+  <li class="toc-h3"><a href="#3-3-성공-기준">3-3. 성공 기준</a></li>
+  <li class="toc-h3"><a href="#3-4-기간-및-리스크">3-4. 기간 및 리스크</a></li>
+<li class="toc-h2"><a href="#4-phase-1b-시맨틱-레이어-보강-1-2주">4. Phase 1B: 시맨틱 레이어 보강 (1-2주)</a></li>
+  <li class="toc-h3"><a href="#4-1-목표">4-1. 목표</a></li>
+  <li class="toc-h3"><a href="#4-2-작업-목록">4-2. 작업 목록</a></li>
+  <li class="toc-h3"><a href="#4-3-성공-기준">4-3. 성공 기준</a></li>
+  <li class="toc-h3"><a href="#4-4-기간-및-리스크">4-4. 기간 및 리스크</a></li>
+<li class="toc-h2"><a href="#5-phase-2-온톨로지-구축-2-3주">5. Phase 2: 온톨로지 구축 (2-3주)</a></li>
+  <li class="toc-h3"><a href="#5-1-목표">5-1. 목표</a></li>
+  <li class="toc-h3"><a href="#5-2-작업-목록">5-2. 작업 목록</a></li>
+  <li class="toc-h3"><a href="#5-3-성공-기준">5-3. 성공 기준</a></li>
+  <li class="toc-h3"><a href="#5-4-기간-및-리스크">5-4. 기간 및 리스크</a></li>
+<li class="toc-h2"><a href="#6-phase-3-에이전트-레이어-3-4주">6. Phase 3: 에이전트 레이어 (3-4주)</a></li>
+  <li class="toc-h3"><a href="#6-1-목표">6-1. 목표</a></li>
+  <li class="toc-h3"><a href="#6-2-작업-목록">6-2. 작업 목록</a></li>
+  <li class="toc-h3"><a href="#6-3-성공-기준">6-3. 성공 기준</a></li>
+  <li class="toc-h3"><a href="#6-4-기간-및-리스크">6-4. 기간 및 리스크</a></li>
+<li class="toc-h2"><a href="#7-phase-4-고도화-및-사내-이관-준비-2-4주">7. Phase 4: 고도화 및 사내 이관 준비 (2-4주)</a></li>
+  <li class="toc-h3"><a href="#7-1-목표">7-1. 목표</a></li>
+  <li class="toc-h3"><a href="#7-2-작업-목록">7-2. 작업 목록</a></li>
+  <li class="toc-h3"><a href="#7-3-성공-기준">7-3. 성공 기준</a></li>
+  <li class="toc-h3"><a href="#7-4-기간-및-리스크">7-4. 기간 및 리스크</a></li>
+<li class="toc-h2"><a href="#8-전체-일정-및-의존-관계">8. 전체 일정 및 의존 관계</a></li>
+  <li class="toc-h3"><a href="#8-1-의존-관계-그래프">8-1. 의존 관계 그래프</a></li>
+  <li class="toc-h3"><a href="#8-2-예상-총-기간">8-2. 예상 총 기간</a></li>
+  <li class="toc-h3"><a href="#8-3-중간-의사결정-포인트">8-3. 중간 의사결정 포인트</a></li>
+<li class="toc-h2"><a href="#9-리스크-관리">9. 리스크 관리</a></li>
+  <li class="toc-h3"><a href="#9-1-top-5-리스크">9-1. Top 5 리스크</a></li>
+  <li class="toc-h3"><a href="#9-2-중단-조건-stop-the-line">9-2. 중단 조건 (stop-the-line)</a></li>
+  <li class="toc-h3"><a href="#9-3-성공-지표-overall-kpi">9-3. 성공 지표 (Overall KPI)</a></li>
+<li class="toc-h2"><a href="#부록-a-phase별-산출물-체크리스트">부록 A: Phase별 산출물 체크리스트</a></li>
+<li class="toc-h2"><a href="#부록-b-참고-문서">부록 B: 참고 문서</a></li>
+</ul>
+</nav>
+</aside>
+
+<main class="content">
+<h1 id="bip-pipeline-nl2sql-로드맵-v2-phase별-실행-계획">BIP-Pipeline NL2SQL 로드맵 v2 (Phase별 실행 계획)</h1>
+<blockquote>
+<p><strong>작성일:</strong> 2026-04-05
+<strong>선행 문서:</strong> <code>docs/nl2sql_architecture_v2.md</code> (최종 목표 아키텍처)
+<strong>문서 지위:</strong> 실행 계획서. 각 Phase별 목표, 작업 목록, 산출물, 성공 기준, 기간 추정, 의존 관계를 정의.
+<strong>배경:</strong> 개인 투자 데이터로 사전 검증 후 사내 업무 데이터에 적용 예정. 따라서 "경량화"보다 <strong>엔터프라이즈 확장성과 구조적 검증</strong>이 우선.</p>
+</blockquote>
+<hr />
+<h2 id="목차">목차</h2>
+<ol>
+<li><a href="#1-로드맵-개요">로드맵 개요</a></li>
+<li><a href="#2-phase-0-베이스라인-완료">Phase 0: 베이스라인 (완료)</a></li>
+<li><a href="#3-phase-1a-의미론-하드닝-2-4주">Phase 1A: 의미론 하드닝</a></li>
+<li><a href="#4-phase-1b-시맨틱-레이어-보강-1-2주">Phase 1B: 시맨틱 레이어 보강</a></li>
+<li><a href="#5-phase-2-온톨로지-구축-2-3주">Phase 2: 온톨로지 구축</a></li>
+<li><a href="#6-phase-3-에이전트-레이어-3-4주">Phase 3: 에이전트 레이어</a></li>
+<li><a href="#7-phase-4-고도화-및-사내-이관-준비-2-4주">Phase 4: 고도화 및 사내 이관 준비</a></li>
+<li><a href="#8-전체-일정-및-의존-관계">전체 일정 및 의존 관계</a></li>
+<li><a href="#9-리스크-관리">리스크 관리</a></li>
+</ol>
+<hr />
+<h2 id="1-로드맵-개요">1. 로드맵 개요</h2>
+<h3 id="1-1-전체-phase-요약">1-1. 전체 Phase 요약</h3>
+<div class="mermaid">
+gantt
+    title BIP-Pipeline NL2SQL 확장 로드맵
+    dateFormat  YYYY-MM-DD
+    section Phase 1
+    Phase 1A 의미론 하드닝           :p1a, 2026-04-07, 21d
+    Phase 1B 시맨틱 레이어 보강      :p1b, after p1a, 14d
+    section Phase 2
+    Phase 2 온톨로지 구축            :p2, after p1b, 21d
+    section Phase 3
+    Phase 3 에이전트 레이어          :p3, after p2, 28d
+    section Phase 4
+    Phase 4 고도화 & 사내 이관 준비  :p4, after p3, 28d
+</div>
+
+<p><strong>총 기간:</strong> 약 16주 (4개월), 솔로 개발자 기준. 엔터프라이즈 이관은 별도 일정.</p>
+<h3 id="1-2-phase별-목표-한줄-요약">1-2. Phase별 목표 한줄 요약</h3>
+<table>
+<thead>
+<tr>
+<th>Phase</th>
+<th style="text-align: center;">기간</th>
+<th>핵심 목표</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><strong>0. 베이스라인</strong></td>
+<td style="text-align: center;">완료</td>
+<td>데이터 레이어, OM, Wren AI, 보안 4-layer 구축 완료</td>
+</tr>
+<tr>
+<td><strong>1A. 의미론 하드닝</strong></td>
+<td style="text-align: center;">2-4주</td>
+<td>스키마 의미 결손(stock_metadata, timestamp, 단위, sector) 정리 + allowlist 축소 + 회귀 평가셋</td>
+</tr>
+<tr>
+<td><strong>1B. 시맨틱 레이어 보강</strong></td>
+<td style="text-align: center;">1-2주</td>
+<td>Curated View = 계산 SSOT + Wren MDL shell + Glossary 주입 + consistency check</td>
+</tr>
+<tr>
+<td><strong>2. 온톨로지 구축</strong></td>
+<td style="text-align: center;">2-3주</td>
+<td>Neo4j Community + YAML sidecar + 개념 그래프 + Cypher 템플릿</td>
+</tr>
+<tr>
+<td><strong>3. 에이전트 레이어</strong></td>
+<td style="text-align: center;">3-4주</td>
+<td>LangGraph 5단계 (deterministic 3 + LLM 2) + Evidence Budget + NL2SQLEngine 추상화</td>
+</tr>
+<tr>
+<td><strong>4. 고도화 &amp; 사내 이관 준비</strong></td>
+<td style="text-align: center;">2-4주</td>
+<td>평가 프레임워크 + 비용 모니터링 + 사내 데이터 매핑 가이드</td>
+</tr>
+</tbody>
+</table>
+<h3 id="1-3-각-phase-종료-시-검증-항목">1-3. 각 Phase 종료 시 검증 항목</h3>
+<p>Codex 리뷰의 핵심: "각 레이어의 운영 부담과 실패 모드를 증거 기반으로 수집해 사내 적용 시 리스크 산정에 사용한다."</p>
+<table>
+<thead>
+<tr>
+<th>Phase</th>
+<th>검증 산출물</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>1A</td>
+<td>의미론 이슈 해결 증명 리포트, allowlist 축소 diff, 회귀 평가셋 50개 PASS</td>
+</tr>
+<tr>
+<td>1B</td>
+<td>Consistency check CI 녹색, Curated View 성능 측정, 3층 역할 분리 문서화</td>
+</tr>
+<tr>
+<td>2</td>
+<td>온톨로지 authoring 부담 측정 리포트, Cypher 템플릿 라이브러리, KG path 쿼리 p95 latency</td>
+</tr>
+<tr>
+<td>3</td>
+<td>에이전트 LLM 호출 수 로그 (2회 제한 준수), Evidence Budget 동작 통계, Stage별 A/B test 환경</td>
+</tr>
+<tr>
+<td>4</td>
+<td>NL2SQL 정확도 대시보드, LLM 비용 추적, 사내 데이터 이관 체크리스트</td>
+</tr>
+</tbody>
+</table>
+<hr />
+<h2 id="2-phase-0-베이스라인-완료">2. Phase 0: 베이스라인 (완료)</h2>
+<p><strong>이미 구축된 것</strong> (자세한 내용은 <code>docs/data_architecture_review.md</code>, <code>docs/wrenai_technical_guide.md</code> 참조):</p>
+<h3 id="2-1-데이터-레이어">2-1. 데이터 레이어</h3>
+<ul>
+<li>Medallion 3단 (Raw/Derived/Gold)</li>
+<li>Gold 테이블 3개 (<code>analytics_stock_daily</code> 1.9M행, <code>analytics_macro_daily</code> 437행, <code>analytics_valuation</code> 7,609행)</li>
+<li>Gold DAG KR/US 분리 (<code>09_analytics_stock_daily_kr/us</code>)</li>
+</ul>
+<h3 id="2-2-메타데이터-레이어">2-2. 메타데이터 레이어</h3>
+<ul>
+<li>OpenMetadata 1.12.3 (39 tables, 77 glossary terms)</li>
+<li>Lineage: apiEndpoint(9) → DAG(43) → Table(39) → Consumer(2), 67 edges</li>
+<li>Tags: DataLayer, Domain, SourceType, SecurityLevel</li>
+<li><code>10_sync_metadata_daily</code> DAG 자동 동기화</li>
+</ul>
+<h3 id="2-3-얕은-시맨틱-레이어">2-3. 얕은 시맨틱 레이어</h3>
+<ul>
+<li>Wren AI (Engine 0.22.0 / AI Service 0.29.0 / UI 0.32.2, gpt-4o-mini)</li>
+<li>5 models (Gold 3 + Raw 2), 41 SQL Pairs, 3 Instructions, 4 Relationships</li>
+</ul>
+<h3 id="2-4-보안거버넌스">2-4. 보안·거버넌스</h3>
+<ul>
+<li>4-Layer defense (Layer 1-3 활성, Layer 4는 Phase 1A에서 Curated View로 전환)</li>
+<li><code>nl2sql_exec</code> 전용 role, 10개 테이블만 GRANT</li>
+<li><code>nl2sql_audit_log</code> + <code>agent_audit_log</code> 양쪽 경로</li>
+<li>39개 통합 테스트 PASS</li>
+</ul>
+<h3 id="2-5-에이전트-부분">2-5. 에이전트 (부분)</h3>
+<ul>
+<li><code>morning_pulse_langgraph</code> (멀티노드 모닝 브리핑)</li>
+<li><code>checklist_agent</code> (4단계: parser/collector/signal/explainer, LLM 1회)</li>
+<li>BIP-Agents FastAPI 감사 경로 구축</li>
+</ul>
+<hr />
+<h2 id="3-phase-1a-의미론-하드닝-2-4주">3. Phase 1A: 의미론 하드닝 (2-4주)</h2>
+<h3 id="3-1-목표">3-1. 목표</h3>
+<p>Codex 1차 리뷰 핵심: <strong>"의미 결손이 남은 상태로 상위 레이어를 쌓으면 쓰레기 in/쓰레기 out"</strong>.
+Phase 2 온톨로지, Phase 3 에이전트를 올리기 전에 <strong>스키마 의미 자체를 정리</strong>한다.</p>
+<h3 id="3-2-작업-목록-wbs">3-2. 작업 목록 (WBS)</h3>
+<p><strong>W1. 스키마 정리 (Week 1-2)</strong></p>
+<table>
+<thead>
+<tr>
+<th>#</th>
+<th>작업</th>
+<th>산출물</th>
+<th>의존</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>1A-01</td>
+<td><code>stock_metadata</code> 영향 분석 (downstream 확인)</td>
+<td>영향 리포트</td>
+<td>-</td>
+</tr>
+<tr>
+<td>1A-02</td>
+<td><code>stock_metadata</code> DROP 또는 VIEW로 대체</td>
+<td>마이그레이션 SQL</td>
+<td>1A-01</td>
+</tr>
+<tr>
+<td>1A-03</td>
+<td><code>stock_price_1d.trade_date DATE</code> 컬럼 추가 + 기존 데이터 backfill</td>
+<td>마이그레이션 SQL, DAG 업데이트</td>
+<td>-</td>
+</tr>
+<tr>
+<td>1A-04</td>
+<td><code>timestamp/timestamp_ny/timestamp_kst</code> 의미 COMMENT 명시</td>
+<td>COMMENT DDL</td>
+<td>1A-03</td>
+</tr>
+<tr>
+<td>1A-05</td>
+<td><code>stock_info.market_value</code> 단위 COMMENT + view 이중화 (<code>market_value_krw</code>)</td>
+<td>COMMENT DDL, View 컬럼</td>
+<td>-</td>
+</tr>
+<tr>
+<td>1A-06</td>
+<td><code>stock_info.sector/industry</code> 컬럼 추가 + KRX 분류 데이터 채우기</td>
+<td>마이그레이션 SQL, 수집 DAG</td>
+<td>-</td>
+</tr>
+<tr>
+<td>1A-07</td>
+<td>OpenMetadata에 변경 반영 (description + tags)</td>
+<td>OM sync</td>
+<td>1A-01~06</td>
+</tr>
+</tbody>
+</table>
+<p><strong>W2. Allowlist 축소 (Week 2-3)</strong></p>
+<table>
+<thead>
+<tr>
+<th>#</th>
+<th>작업</th>
+<th>산출물</th>
+<th>의존</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>1A-08</td>
+<td>현재 Wren AI 모델 사용 패턴 분석 (어떤 테이블이 실제 쿼리에 사용되나)</td>
+<td>사용 통계 리포트</td>
+<td>-</td>
+</tr>
+<tr>
+<td>1A-09</td>
+<td><code>NL2SQL_ALLOWLIST</code>를 Gold + 핵심 Raw (stock_info, stock_price_1d)로 축소</td>
+<td><code>validator_config.py</code> diff</td>
+<td>1A-08</td>
+</tr>
+<tr>
+<td>1A-10</td>
+<td><code>postgres/nl2sql_role.sql</code> GRANT 재조정</td>
+<td>마이그레이션 SQL</td>
+<td>1A-09</td>
+</tr>
+<tr>
+<td>1A-11</td>
+<td>Wren AI 모델 목록 정리 (Gold 3 + 핵심 Raw 2 유지, 나머지 검토)</td>
+<td>Wren AI UI 반영</td>
+<td>1A-09</td>
+</tr>
+<tr>
+<td>1A-12</td>
+<td>39개 보안 통합 테스트 재실행 + 축소 후 녹색 유지</td>
+<td>테스트 결과</td>
+<td>1A-09~11</td>
+</tr>
+</tbody>
+</table>
+<p><strong>W3. 회귀 평가셋 구축 (Week 3-4)</strong></p>
+<table>
+<thead>
+<tr>
+<th>#</th>
+<th>작업</th>
+<th>산출물</th>
+<th>의존</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>1A-13</td>
+<td>NL2SQL 평가셋 스키마 정의 (question, expected_sql, expected_tables, notes)</td>
+<td><code>eval/nl2sql_eval_v1.yaml</code></td>
+<td>-</td>
+</tr>
+<tr>
+<td>1A-14</td>
+<td>평가 케이스 50개 작성 (카테고리: 기본조회/기술지표/밸류에이션/매크로/수급/복합)</td>
+<td>YAML 파일</td>
+<td>1A-13</td>
+</tr>
+<tr>
+<td>1A-15</td>
+<td>자동 평가 스크립트 (Wren AI REST API + 정답 비교)</td>
+<td><code>scripts/nl2sql_eval.py</code></td>
+<td>1A-13</td>
+</tr>
+<tr>
+<td>1A-16</td>
+<td>기준선 A등급 비율 측정 (현재 수준 기록)</td>
+<td>기준선 리포트</td>
+<td>1A-14, 1A-15</td>
+</tr>
+<tr>
+<td>1A-17</td>
+<td>의미론 하드닝 후 재측정 (개선률 증명)</td>
+<td>비교 리포트</td>
+<td>1A-12, 1A-16</td>
+</tr>
+</tbody>
+</table>
+<p><strong>W4. Glossary 주입 (Week 4)</strong></p>
+<table>
+<thead>
+<tr>
+<th>#</th>
+<th>작업</th>
+<th>산출물</th>
+<th>의존</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>1A-18</td>
+<td><code>om_sync_wrenai.py</code> 확장: 컬럼에 링크된 Glossary term 정의를 description에 구조화 블록으로 append</td>
+<td>업데이트된 스크립트</td>
+<td>-</td>
+</tr>
+<tr>
+<td>1A-19</td>
+<td>description 블록 포맷 정의 (<code>## Definition</code>, <code>## Unit</code>, <code>## Synonyms</code>, <code>## Related Terms</code>)</td>
+<td>템플릿</td>
+<td>1A-18</td>
+</tr>
+<tr>
+<td>1A-20</td>
+<td>77개 용어 → Wren AI 반영 + Deploy</td>
+<td>Deployment log</td>
+<td>1A-18, 1A-19</td>
+</tr>
+</tbody>
+</table>
+<h3 id="3-3-성공-기준">3-3. 성공 기준</h3>
+<ul>
+<li>[ ] <code>stock_metadata</code> 제거 또는 downstream 모두 <code>stock_info</code> 사용 확인</li>
+<li>[ ] <code>trade_date</code> 컬럼 존재 + 기존 timestamp와 일관성 검증</li>
+<li>[ ] <code>market_value</code> 단위 오해로 인한 과거 이슈 재발 방지 테스트 PASS</li>
+<li>[ ] <code>sector/industry</code> 컬럼 90% 이상 채워짐</li>
+<li>[ ] <code>NL2SQL_ALLOWLIST</code>가 Gold 중심으로 축소됨</li>
+<li>[ ] 회귀 평가셋 50개 구축 및 기준선 측정 완료</li>
+<li>[ ] 하드닝 후 A등급 비율이 기준선 대비 개선 (목표: +10%p 이상)</li>
+<li>[ ] 39개 보안 통합 테스트 여전히 PASS</li>
+<li>[ ] 77개 Glossary 용어가 Wren AI description에 구조화된 블록으로 반영됨</li>
+</ul>
+<h3 id="3-4-기간-및-리스크">3-4. 기간 및 리스크</h3>
+<ul>
+<li><strong>기간:</strong> 2-4주 (Codex 권고)</li>
+<li><strong>주 리스크:</strong></li>
+<li><code>stock_metadata</code> downstream이 생각보다 많을 경우 (솔루션: 단계적 deprecation + VIEW 브리지)</li>
+<li><code>sector/industry</code> 데이터 수집 소스 결정 지연 (솔루션: KRX 분류부터 시작)</li>
+<li>기준선 측정 결과가 이미 높으면 개선 여지 불명확 (솔루션: 세부 카테고리별 측정)</li>
+</ul>
+<hr />
+<h2 id="4-phase-1b-시맨틱-레이어-보강-1-2주">4. Phase 1B: 시맨틱 레이어 보강 (1-2주)</h2>
+<h3 id="4-1-목표">4-1. 목표</h3>
+<p>Phase 1A에서 정리된 의미론 기반 위에 <strong>3층 역할 분리 (View=truth, MDL=shell, OM=description)</strong>를 확정한다. 계산 SSOT 중복을 automation으로 방지.</p>
+<h3 id="4-2-작업-목록">4-2. 작업 목록</h3>
+<p><strong>W1. Curated Views 작성</strong></p>
+<table>
+<thead>
+<tr>
+<th>#</th>
+<th>작업</th>
+<th>산출물</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>1B-01</td>
+<td>View 네이밍 규율 문서화 (<code>v_&lt;domain&gt;_&lt;subject&gt;__v&lt;N&gt;</code>)</td>
+<td><code>docs/curated_views_naming.md</code></td>
+</tr>
+<tr>
+<td>1B-02</td>
+<td><code>v_valuation_signals__v1</code> 작성 (is_value_stock, is_value_growth, is_high_dividend 등)</td>
+<td>SQL 파일</td>
+</tr>
+<tr>
+<td>1B-03</td>
+<td><code>v_technical_signals__v1</code> (is_golden_cross, is_oversold_rsi, is_bollinger_squeeze)</td>
+<td>SQL 파일</td>
+</tr>
+<tr>
+<td>1B-04</td>
+<td><code>v_flow_signals__v1</code> (foreign_buy_amount, institution_buy_amount, flow_intensity)</td>
+<td>SQL 파일</td>
+</tr>
+<tr>
+<td>1B-05</td>
+<td><code>v_sector_summary__v1</code> (sector별 avg PER/ROE, 상승/하락 종목수)</td>
+<td>SQL 파일</td>
+</tr>
+<tr>
+<td>1B-06</td>
+<td>각 View에 COMMENT 작성 (계산식은 COMMENT 안에 기재, SSOT 증명)</td>
+<td>DDL</td>
+</tr>
+<tr>
+<td>1B-07</td>
+<td>Wren AI에 View 모델로 등록 + nl2sql_exec GRANT</td>
+<td>Wren 모델 등록</td>
+</tr>
+</tbody>
+</table>
+<p><strong>W2. Wren AI MDL 얇게 재정리</strong></p>
+<table>
+<thead>
+<tr>
+<th>#</th>
+<th>작업</th>
+<th>산출물</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>1B-08</td>
+<td>기존 MDL에서 수식 형태 description 제거 (View로 이전 완료된 것)</td>
+<td>MDL diff</td>
+</tr>
+<tr>
+<td>1B-09</td>
+<td>Wren Calculated Fields (집계만) 재검토 - 유지할 것만</td>
+<td>수정된 MDL</td>
+</tr>
+<tr>
+<td>1B-10</td>
+<td>Relationships 4개 → 필요한 만큼 확장 (View ↔ Raw 연결)</td>
+<td>MDL 업데이트</td>
+</tr>
+<tr>
+<td>1B-11</td>
+<td>Metrics 정의 (집계 가능한 KPI만)</td>
+<td>MDL 업데이트</td>
+</tr>
+</tbody>
+</table>
+<p><strong>W3. Consistency Check 자동화</strong></p>
+<table>
+<thead>
+<tr>
+<th>#</th>
+<th>작업</th>
+<th>산출물</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>1B-12</td>
+<td>일관성 검사 스크립트 작성</td>
+<td><code>scripts/check_semantic_consistency.py</code></td>
+</tr>
+<tr>
+<td>1B-13</td>
+<td>검사 항목: OM description 해시 vs MDL description 해시, View 컬럼 vs MDL 컬럼, OM term vs View COMMENT</td>
+<td>스크립트 로직</td>
+</tr>
+<tr>
+<td>1B-14</td>
+<td>Airflow DAG에 통합 (<code>10_sync_metadata_daily</code> 확장)</td>
+<td>DAG 업데이트</td>
+</tr>
+<tr>
+<td>1B-15</td>
+<td>실패 시 알림 (Slack/Email)</td>
+<td>알림 설정</td>
+</tr>
+</tbody>
+</table>
+<p><strong>W4. 평가셋 확장 및 재측정</strong></p>
+<table>
+<thead>
+<tr>
+<th>#</th>
+<th>작업</th>
+<th>산출물</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>1B-16</td>
+<td>평가 케이스 50개 → 80개 확대 (복합 조건, View 컬럼 활용 질문 추가)</td>
+<td><code>eval/nl2sql_eval_v2.yaml</code></td>
+</tr>
+<tr>
+<td>1B-17</td>
+<td>Wren AI SQL Pairs 확대 (41 → 80개 수준)</td>
+<td>Wren AI DB</td>
+</tr>
+<tr>
+<td>1B-18</td>
+<td>평가 재측정 + A등급 비율 기록</td>
+<td>리포트</td>
+</tr>
+</tbody>
+</table>
+<h3 id="4-3-성공-기준">4-3. 성공 기준</h3>
+<ul>
+<li>[ ] 계산식이 Curated View에만 존재 (MDL/OM에 중복 없음, consistency check 녹색)</li>
+<li>[ ] Wren AI가 View 컬럼을 정확히 참조하는 SQL 생성 (평가셋 검증)</li>
+<li>[ ] Consistency check DAG 매일 녹색 유지</li>
+<li>[ ] 평가셋 80개로 확대, A등급 비율 Phase 1A 대비 추가 개선</li>
+</ul>
+<h3 id="4-4-기간-및-리스크">4-4. 기간 및 리스크</h3>
+<ul>
+<li><strong>기간:</strong> 1-2주</li>
+<li><strong>주 리스크:</strong></li>
+<li>Curated View가 DAG 실행 순서와 충돌 (솔루션: View는 기본 materialized X, 성능 문제 시 MATERIALIZED VIEW 전환)</li>
+<li>Wren AI가 View 컬럼 설명을 무시 (솔루션: SQL Pairs에 View 활용 예시 명시)</li>
+</ul>
+<hr />
+<h2 id="5-phase-2-온톨로지-구축-2-3주">5. Phase 2: 온톨로지 구축 (2-3주)</h2>
+<h3 id="5-1-목표">5-1. 목표</h3>
+<p>Neo4j Community Edition을 <strong>planner/context layer</strong>로 도입한다. 개념 확장과 entity 해석에만 사용하고, 수치 계산은 여전히 PostgreSQL/Wren AI가 담당.</p>
+<h3 id="5-2-작업-목록">5-2. 작업 목록</h3>
+<p><strong>W1. Neo4j 기반 구축</strong></p>
+<table>
+<thead>
+<tr>
+<th>#</th>
+<th>작업</th>
+<th>산출물</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>2-01</td>
+<td><code>docker-compose.neo4j.yml</code> 작성 (Community Edition, JVM 4GB, stock-network)</td>
+<td>Docker Compose</td>
+</tr>
+<tr>
+<td>2-02</td>
+<td>초기 스키마 제약 조건 (uniqueness constraint, index) Cypher 스크립트</td>
+<td><code>ontology/schema.cypher</code></td>
+</tr>
+<tr>
+<td>2-03</td>
+<td>Neo4j 읽기 전용 유저 <code>nl2sql_neo4j_reader</code> 생성</td>
+<td>사용자 설정</td>
+</tr>
+<tr>
+<td>2-04</td>
+<td>BIP-Pipeline <code>.env</code>에 Neo4j 연결 정보 추가</td>
+<td>env 파일</td>
+</tr>
+<tr>
+<td>2-05</td>
+<td>Neo4j 백업/복구 스크립트 (offline dump/load)</td>
+<td><code>scripts/neo4j_backup.sh</code></td>
+</tr>
+</tbody>
+</table>
+<p><strong>W2. YAML 저장소 + Sync 파이프라인</strong></p>
+<table>
+<thead>
+<tr>
+<th>#</th>
+<th>작업</th>
+<th>산출물</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>2-06</td>
+<td><code>ontology/</code> 디렉토리 구조 초기화 (<code>concepts/</code>, <code>stocks/</code>, <code>relationships/</code>, <code>schema.yaml</code>)</td>
+<td>디렉토리</td>
+</tr>
+<tr>
+<td>2-07</td>
+<td>YAML schema validator 작성 (jsonschema 또는 pydantic)</td>
+<td><code>scripts/validate_ontology_yaml.py</code></td>
+</tr>
+<tr>
+<td>2-08</td>
+<td><code>sync_yaml_to_neo4j.py</code> 작성 (MERGE 기반 멱등 업데이트, dry-run 모드)</td>
+<td>스크립트</td>
+</tr>
+<tr>
+<td>2-09</td>
+<td>Git pre-commit hook 또는 DAG으로 sync 자동화</td>
+<td>hook/DAG</td>
+</tr>
+<tr>
+<td>2-10</td>
+<td><code>om_sync_glossary_to_neo4j.py</code> (OM Glossary term → Neo4j Term node)</td>
+<td>스크립트</td>
+</tr>
+</tbody>
+</table>
+<p><strong>W3. 도메인 지식 수집 및 1차 데이터 입력</strong></p>
+<table>
+<thead>
+<tr>
+<th>#</th>
+<th>작업</th>
+<th>산출물</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>2-11</td>
+<td>KRX 업종 분류 스크래핑/다운로드</td>
+<td>원본 데이터</td>
+</tr>
+<tr>
+<td>2-12</td>
+<td>DART 사업보고서에서 주요 종속회사/매출처/원재료 추출</td>
+<td>원본 데이터</td>
+</tr>
+<tr>
+<td>2-13</td>
+<td>Sector/Theme Concept 노드 YAML 작성 (약 30-50개)</td>
+<td><code>ontology/concepts/sectors/*.yaml</code></td>
+</tr>
+<tr>
+<td>2-14</td>
+<td>Stock → Sector <code>HAS_MEMBER</code> 관계 1차 채우기 (Top 500 KOSPI/KOSDAQ)</td>
+<td><code>ontology/relationships/*.yaml</code></td>
+</tr>
+<tr>
+<td>2-15</td>
+<td>Competitor 관계 작성 (WiseReport 경쟁사 비교표 기반)</td>
+<td>YAML</td>
+</tr>
+<tr>
+<td>2-16</td>
+<td>77개 OM Glossary → Term 노드 마이그레이션</td>
+<td>YAML + sync</td>
+</tr>
+</tbody>
+</table>
+<p><strong>W4. Cypher 템플릿 라이브러리</strong></p>
+<table>
+<thead>
+<tr>
+<th>#</th>
+<th>작업</th>
+<th>산출물</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>2-17</td>
+<td>핵심 쿼리 템플릿 정의 (EXPAND_CONCEPT, FIND_COMPETITORS, RESOLVE_ENTITY, FIND_SECTOR_MEMBERS)</td>
+<td><code>ontology/cypher_templates.py</code></td>
+</tr>
+<tr>
+<td>2-18</td>
+<td>각 템플릿 단위 테스트 (실제 데이터로 결과 검증)</td>
+<td>테스트 파일</td>
+</tr>
+<tr>
+<td>2-19</td>
+<td>템플릿 카탈로그 문서 (에이전트가 참조할 "쿼리 책자")</td>
+<td><code>docs/cypher_template_catalog.md</code></td>
+</tr>
+</tbody>
+</table>
+<h3 id="5-3-성공-기준">5-3. 성공 기준</h3>
+<ul>
+<li>[ ] Neo4j Community 컨테이너 안정 운영 (1주 이상 restart 없음)</li>
+<li>[ ] YAML validator로 스키마 어긋남 없음</li>
+<li>[ ] 주요 섹터(30개) + 주요 종목(500개) Neo4j 반영</li>
+<li>[ ] 77개 Term 노드 생성</li>
+<li>[ ] Cypher 템플릿 10개 이상, 각 p95 latency &lt; 100ms</li>
+<li>[ ] <code>sync_yaml_to_neo4j.py</code> 멱등성 검증 (여러 번 실행해도 결과 동일)</li>
+</ul>
+<h3 id="5-4-기간-및-리스크">5-4. 기간 및 리스크</h3>
+<ul>
+<li><strong>기간:</strong> 2-3주</li>
+<li><strong>주 리스크:</strong></li>
+<li>도메인 지식 수집이 예상보다 오래 걸림 (솔루션: Top 100 종목만 1차, 나머지는 Phase 3/4에서 점진 확장)</li>
+<li>Cypher 템플릿 설계 경험 부족 (솔루션: GraphAcademy 무료 코스, 공식 예제 참고)</li>
+<li>YAML authoring 부담 (솔루션: Claude Code가 직접 편집, validator가 즉시 피드백)</li>
+</ul>
+<hr />
+<h2 id="6-phase-3-에이전트-레이어-3-4주">6. Phase 3: 에이전트 레이어 (3-4주)</h2>
+<h3 id="6-1-목표">6-1. 목표</h3>
+<p>LangGraph 5단계 에이전트 구축. <strong>개념적 5단계 분리 유지 + LLM 호출은 2회로 제한</strong> (Codex 권고). BIP-Agents 레포에 통합.</p>
+<h3 id="6-2-작업-목록">6-2. 작업 목록</h3>
+<p><strong>W1. NL2SQLEngine 추상화 + Stage 1-3 (Deterministic)</strong></p>
+<table>
+<thead>
+<tr>
+<th>#</th>
+<th>작업</th>
+<th>산출물</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>3-01</td>
+<td><code>NL2SQLEngine</code> Protocol 정의 + <code>WrenAIEngine</code> 구현</td>
+<td><code>BIP-Agents/langgraph/nl2sql/engines/</code></td>
+</tr>
+<tr>
+<td>3-02</td>
+<td>Intent Classifier (규칙 기반) — 5개 유형 라우팅</td>
+<td><code>intent_classifier.py</code></td>
+</tr>
+<tr>
+<td>3-03</td>
+<td>Entity Resolver — DB lookup + Neo4j <code>RESOLVE_ENTITY</code></td>
+<td><code>entity_resolver.py</code></td>
+</tr>
+<tr>
+<td>3-04</td>
+<td>Entity Resolver의 top-k + clarification 메커니즘</td>
+<td>테스트 포함</td>
+</tr>
+<tr>
+<td>3-05</td>
+<td>Query Planner — 질문 유형별 템플릿/루트 선택</td>
+<td><code>query_planner.py</code></td>
+</tr>
+</tbody>
+</table>
+<p><strong>W2. Stage 4-5 (LLM) + Evidence Budget</strong></p>
+<table>
+<thead>
+<tr>
+<th>#</th>
+<th>작업</th>
+<th>산출물</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>3-06</td>
+<td>SQL Executor — NL2SQLEngine 호출 + 결과 수집</td>
+<td><code>sql_executor.py</code></td>
+</tr>
+<tr>
+<td>3-07</td>
+<td>Multi SQL 실행 경로 (비교 분석용)</td>
+<td>확장된 executor</td>
+</tr>
+<tr>
+<td>3-08</td>
+<td>Result Analyzer — LLM 호출로 자연어 설명 생성</td>
+<td><code>result_analyzer.py</code></td>
+</tr>
+<tr>
+<td>3-09</td>
+<td>Evidence Budget 클래스 + clarification 생성기</td>
+<td><code>evidence_budget.py</code></td>
+</tr>
+<tr>
+<td>3-10</td>
+<td>"투자 조언 거부" 가드 (추천 질문 유형 탐지 + 거부 + 대체 제안)</td>
+<td>가드 로직</td>
+</tr>
+</tbody>
+</table>
+<p><strong>W3. LangGraph 통합 + 감사</strong></p>
+<table>
+<thead>
+<tr>
+<th>#</th>
+<th>작업</th>
+<th>산출물</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>3-11</td>
+<td>LangGraph StateGraph 정의 (5 nodes + clarification branch)</td>
+<td><code>graph.py</code></td>
+</tr>
+<tr>
+<td>3-12</td>
+<td>각 Stage의 <code>record_agent_audit()</code> 호출 (기존 패턴 재사용)</td>
+<td>audit 통합</td>
+</tr>
+<tr>
+<td>3-13</td>
+<td>FastAPI 엔드포인트 <code>/api/nl2sql/ask</code> (기존 BIP-Agents FastAPI 확장)</td>
+<td><code>api.py</code></td>
+</tr>
+<tr>
+<td>3-14</td>
+<td>Airflow에서 호출하는 클라이언트 (optional)</td>
+<td>bridge</td>
+</tr>
+</tbody>
+</table>
+<p><strong>W4. 통합 테스트 + 평가</strong></p>
+<table>
+<thead>
+<tr>
+<th>#</th>
+<th>작업</th>
+<th>산출물</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>3-15</td>
+<td>Phase 1 평가셋 80개를 에이전트 API로 실행</td>
+<td>테스트 결과</td>
+</tr>
+<tr>
+<td>3-16</td>
+<td>복합 질문 평가셋 20개 추가 ("저평가 반도체 관련주", "외국인 순매수 + RSI 과매도")</td>
+<td><code>eval/nl2sql_eval_v3.yaml</code></td>
+</tr>
+<tr>
+<td>3-17</td>
+<td>LLM 호출 수 로그 분석 (2회 제한 준수 검증)</td>
+<td>리포트</td>
+</tr>
+<tr>
+<td>3-18</td>
+<td>Evidence Budget 동작 통계 (얼마나 자주 clarification 반환?)</td>
+<td>리포트</td>
+</tr>
+<tr>
+<td>3-19</td>
+<td>각 Stage 독립 A/B test 환경 구성 (교체 가능성 검증)</td>
+<td>테스트 환경</td>
+</tr>
+</tbody>
+</table>
+<h3 id="6-3-성공-기준">6-3. 성공 기준</h3>
+<ul>
+<li>[ ] 에이전트 API가 Phase 1 평가셋 80개 통과 (A등급 비율 Phase 1B 이상)</li>
+<li>[ ] 복합 질문 20개 중 최소 14개 (70%) A등급</li>
+<li>[ ] 모든 질문에서 LLM 호출 수 ≤ 2회</li>
+<li>[ ] 근거 부족 질문 100%에서 clarification 반환 (evidence budget 작동)</li>
+<li>[ ] 투자 조언 요청 100% 거부 + 대체 제안</li>
+<li>[ ] 모든 Stage 호출이 <code>agent_audit_log</code>에 기록</li>
+<li>[ ] NL2SQLEngine 추상화로 Wren AI 비활성화 후 다른 엔진(모의)으로 교체 가능 증명</li>
+</ul>
+<h3 id="6-4-기간-및-리스크">6-4. 기간 및 리스크</h3>
+<ul>
+<li><strong>기간:</strong> 3-4주</li>
+<li><strong>주 리스크:</strong></li>
+<li>Intent Classifier 규칙이 실제 사용자 질문 다양성 커버 못 함 (솔루션: fallback to LLM 분류, 점진 규칙 보강)</li>
+<li>Entity Resolver가 "삼성" → "삼성전자" 류 단순 케이스는 해결하지만 복잡 케이스 실패 (솔루션: top-k + user clarification 원칙 고수)</li>
+<li>LangGraph 상태 관리 복잡도 (솔루션: 기존 checklist_agent 패턴 재사용)</li>
+</ul>
+<hr />
+<h2 id="7-phase-4-고도화-및-사내-이관-준비-2-4주">7. Phase 4: 고도화 및 사내 이관 준비 (2-4주)</h2>
+<h3 id="7-1-목표">7-1. 목표</h3>
+<p>프로토타입을 <strong>사내 업무 데이터에 적용 가능한 상태로</strong> 만든다. 평가 프레임워크 완성, 비용 모니터링, 이관 가이드 작성.</p>
+<h3 id="7-2-작업-목록">7-2. 작업 목록</h3>
+<p><strong>W1. 시계열 이벤트 탐지 (선택적)</strong></p>
+<table>
+<thead>
+<tr>
+<th>#</th>
+<th>작업</th>
+<th>산출물</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>4-01</td>
+<td>이벤트 탐지용 Curated View (<code>v_event_signals</code>) — 골든크로스, 데드크로스, 볼린저 돌파</td>
+<td>SQL</td>
+</tr>
+<tr>
+<td>4-02</td>
+<td>"이벤트 발생 후 N일 수익률" 쿼리 템플릿 (agent Query Planner에 추가)</td>
+<td>템플릿</td>
+</tr>
+<tr>
+<td>4-03</td>
+<td>시계열 평가 케이스 10개 추가</td>
+<td><code>eval/nl2sql_eval_v4.yaml</code></td>
+</tr>
+</tbody>
+</table>
+<p><strong>W2. 평가 프레임워크 완성</strong></p>
+<table>
+<thead>
+<tr>
+<th>#</th>
+<th>작업</th>
+<th>산출물</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>4-04</td>
+<td>평가 리포트 자동 생성 스크립트 (weekly)</td>
+<td><code>scripts/nl2sql_eval_report.py</code></td>
+</tr>
+<tr>
+<td>4-05</td>
+<td>카테고리별 A/B/F 등급 대시보드 (markdown + chart)</td>
+<td>대시보드</td>
+</tr>
+<tr>
+<td>4-06</td>
+<td>회귀 감지 — 새 배포가 기존 평가셋 점수를 떨어뜨리면 알림</td>
+<td>CI integration</td>
+</tr>
+<tr>
+<td>4-07</td>
+<td>실패 케이스 분석 리포트 (어떤 카테고리/패턴이 주로 실패하는지)</td>
+<td>리포트</td>
+</tr>
+</tbody>
+</table>
+<p><strong>W3. 비용 및 성능 모니터링</strong></p>
+<table>
+<thead>
+<tr>
+<th>#</th>
+<th>작업</th>
+<th>산출물</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>4-08</td>
+<td>LLM 비용 추적 대시보드 (Anthropic/OpenAI 호출당 비용 + 일/주/월 누적)</td>
+<td>Airflow DAG + Grafana</td>
+</tr>
+<tr>
+<td>4-09</td>
+<td>에이전트 Stage별 p50/p95/p99 지연 측정</td>
+<td>모니터링</td>
+</tr>
+<tr>
+<td>4-10</td>
+<td>Neo4j/Wren AI/PostgreSQL 리소스 사용량 (CPU, mem, disk) 기록</td>
+<td><code>dag_resource_monitor.py</code></td>
+</tr>
+<tr>
+<td>4-11</td>
+<td>"운영 부담 리포트" (각 컴포넌트의 일주일 실패율, 재시작 횟수, 개발자 개입 시간)</td>
+<td>리포트</td>
+</tr>
+</tbody>
+</table>
+<p><strong>W4. 사내 이관 가이드</strong></p>
+<table>
+<thead>
+<tr>
+<th>#</th>
+<th>작업</th>
+<th>산출물</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>4-12</td>
+<td>사내 데이터 도메인 분석 체크리스트</td>
+<td><code>docs/enterprise_migration_checklist.md</code></td>
+</tr>
+<tr>
+<td>4-13</td>
+<td>BIP-Pipeline 설계 → 사내 데이터 적용 매핑 템플릿</td>
+<td>가이드 문서</td>
+</tr>
+<tr>
+<td>4-14</td>
+<td>규모별 조정 포인트 (수만 행 vs 수억 행, 수십 명 vs 수천 명)</td>
+<td>문서</td>
+</tr>
+<tr>
+<td>4-15</td>
+<td>검증된 "운영 부담 증거" (Phase 1-3에서 수집한 데이터)</td>
+<td>종합 리포트</td>
+</tr>
+<tr>
+<td>4-16</td>
+<td>이관 시 주의사항 (민감 데이터, 규제, SLA)</td>
+<td>문서</td>
+</tr>
+</tbody>
+</table>
+<h3 id="7-3-성공-기준">7-3. 성공 기준</h3>
+<ul>
+<li>[ ] 시계열 이벤트 탐지 10개 케이스 커버 (선택적)</li>
+<li>[ ] 자동 평가 리포트 매주 실행, 회귀 즉시 감지</li>
+<li>[ ] LLM 비용 대시보드 운영 (일간 집계)</li>
+<li>[ ] 각 컴포넌트 리소스 사용량 1주일 이상 기록</li>
+<li>[ ] 사내 이관 가이드 완성, 예상 작업량 추정</li>
+</ul>
+<h3 id="7-4-기간-및-리스크">7-4. 기간 및 리스크</h3>
+<ul>
+<li><strong>기간:</strong> 2-4주</li>
+<li><strong>주 리스크:</strong></li>
+<li>시계열 이벤트 탐지가 Wren AI 단독으로 불가 → 에이전트의 Multi SQL Planner로 해결</li>
+<li>비용 모니터링이 Anthropic/OpenAI API 응답 형식 변경에 취약 → abstraction 유지</li>
+</ul>
+<hr />
+<h2 id="8-전체-일정-및-의존-관계">8. 전체 일정 및 의존 관계</h2>
+<h3 id="8-1-의존-관계-그래프">8-1. 의존 관계 그래프</h3>
+<div class="mermaid">
+graph LR
+    P0[Phase 0\n베이스라인\n✅ 완료]
+
+    P1A[Phase 1A\n의미론 하드닝\n2-4주]
+    P1B[Phase 1B\n시맨틱 보강\n1-2주]
+    P2[Phase 2\n온톨로지\n2-3주]
+    P3[Phase 3\n에이전트\n3-4주]
+    P4[Phase 4\n고도화/이관\n2-4주]
+
+    P0 --> P1A
+    P1A --> P1B
+    P1B --> P2
+    P2 --> P3
+    P3 --> P4
+
+    style P0 fill:#c8e6c9
+    style P1A fill:#fff59d
+    style P1B fill:#fff59d
+    style P2 fill:#b3e5fc
+    style P3 fill:#e1bee7
+    style P4 fill:#ffccbc
+</div>
+
+<h3 id="8-2-예상-총-기간">8-2. 예상 총 기간</h3>
+<ul>
+<li><strong>최소 (낙관):</strong> 10주 (1A: 2주, 1B: 1주, 2: 2주, 3: 3주, 4: 2주)</li>
+<li><strong>최대 (비관):</strong> 17주 (1A: 4주, 1B: 2주, 2: 3주, 3: 4주, 4: 4주)</li>
+<li><strong>기대값:</strong> 13주 (약 3개월)</li>
+</ul>
+<h3 id="8-3-중간-의사결정-포인트">8-3. 중간 의사결정 포인트</h3>
+<table>
+<thead>
+<tr>
+<th>시점</th>
+<th>의사결정</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Phase 1A 종료</td>
+<td>의미론 하드닝이 예상보다 오래 걸리면 Phase 1B 단축 여부</td>
+</tr>
+<tr>
+<td>Phase 1B 종료</td>
+<td>A등급 비율이 목표(85%)에 못 미치면 SQL Pairs 추가 vs Phase 2 진행</td>
+</tr>
+<tr>
+<td>Phase 2 종료</td>
+<td>Neo4j가 실제로 가치 창출하는지 (authoring 부담 vs 쿼리 품질 개선) — 사내 이관 시 유지/제거 결정의 근거</td>
+</tr>
+<tr>
+<td>Phase 3 종료</td>
+<td>LangGraph 오버헤드가 너무 크면 단일 모델 + tool use로 대체 가능한지 판단</td>
+</tr>
+</tbody>
+</table>
+<hr />
+<h2 id="9-리스크-관리">9. 리스크 관리</h2>
+<h3 id="9-1-top-5-리스크">9-1. Top 5 리스크</h3>
+<table>
+<thead>
+<tr>
+<th>#</th>
+<th>리스크</th>
+<th style="text-align: center;">확률</th>
+<th style="text-align: center;">영향</th>
+<th>완화 전략</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>R1</td>
+<td>Phase 1A에서 의미론 이슈가 생각보다 깊어서 3-4주로 안 됨</td>
+<td style="text-align: center;">중</td>
+<td style="text-align: center;">높음</td>
+<td>우선순위 기반 분할 (stock_metadata 우선, sector는 부분 커버로 시작)</td>
+</tr>
+<tr>
+<td>R2</td>
+<td>Neo4j text-to-Cypher 신뢰도 부족</td>
+<td style="text-align: center;">높음</td>
+<td style="text-align: center;">중</td>
+<td>Free-form 금지, 템플릿+slot fill, guardrail로 한정</td>
+</tr>
+<tr>
+<td>R3</td>
+<td>온톨로지 authoring 부담으로 데이터 입력 포기</td>
+<td style="text-align: center;">중</td>
+<td style="text-align: center;">높음</td>
+<td><code>source/as_of_date</code>만 필수, Claude Code가 직접 편집</td>
+</tr>
+<tr>
+<td>R4</td>
+<td>에이전트 Evidence Budget이 너무 엄격해서 false negative (답할 수 있는데 clarification 반환)</td>
+<td style="text-align: center;">중</td>
+<td style="text-align: center;">중</td>
+<td>기준 threshold 실전 데이터로 조정, 평가셋으로 측정</td>
+</tr>
+<tr>
+<td>R5</td>
+<td>Phase 3 LLM 비용 폭증</td>
+<td style="text-align: center;">중</td>
+<td style="text-align: center;">중</td>
+<td>prompt caching, 결과 캐싱, gpt-4o-mini 우선</td>
+</tr>
+</tbody>
+</table>
+<h3 id="9-2-중단-조건-stop-the-line">9-2. 중단 조건 (stop-the-line)</h3>
+<p>다음 중 하나라도 발생하면 <strong>해당 Phase 즉시 중단 + 재평가</strong>:</p>
+<ol>
+<li>Phase 1A에서 의미론 정리가 downstream을 깨뜨려 기존 서비스 영향</li>
+<li>Phase 2에서 Neo4j 운영 부담이 예상의 3배 이상</li>
+<li>Phase 3에서 LLM 비용이 예산을 초과</li>
+<li>보안 통합 테스트(현재 39개) 깨짐</li>
+<li><code>agent_audit_log</code> 또는 <code>nl2sql_audit_log</code> 기록 실패 (fail-closed)</li>
+</ol>
+<h3 id="9-3-성공-지표-overall-kpi">9-3. 성공 지표 (Overall KPI)</h3>
+<table>
+<thead>
+<tr>
+<th>지표</th>
+<th style="text-align: center;">현재 (2026-04-05)</th>
+<th style="text-align: center;">Phase 1 후</th>
+<th style="text-align: center;">Phase 3 후</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>NL2SQL A등급 비율 (80개 평가셋)</td>
+<td style="text-align: center;">77%</td>
+<td style="text-align: center;">85%</td>
+<td style="text-align: center;">90%</td>
+</tr>
+<tr>
+<td>복합 질문 커버리지</td>
+<td style="text-align: center;">0%</td>
+<td style="text-align: center;">0%</td>
+<td style="text-align: center;">70%</td>
+</tr>
+<tr>
+<td>평균 LLM 호출 수 / 질문</td>
+<td style="text-align: center;">1 (Wren AI 단일)</td>
+<td style="text-align: center;">1</td>
+<td style="text-align: center;">≤ 2</td>
+</tr>
+<tr>
+<td>민감 테이블 유출</td>
+<td style="text-align: center;">0건 (이미 달성)</td>
+<td style="text-align: center;">0건 유지</td>
+<td style="text-align: center;">0건 유지</td>
+</tr>
+<tr>
+<td>감사 기록 완전성</td>
+<td style="text-align: center;">100%</td>
+<td style="text-align: center;">100%</td>
+<td style="text-align: center;">100%</td>
+</tr>
+<tr>
+<td>의미론 이슈 (stock_metadata, timestamp, market_value, sector)</td>
+<td style="text-align: center;">🔴 미해결</td>
+<td style="text-align: center;">✅ 해결</td>
+<td style="text-align: center;">✅ 해결</td>
+</tr>
+</tbody>
+</table>
+<hr />
+<h2 id="부록-a-phase별-산출물-체크리스트">부록 A: Phase별 산출물 체크리스트</h2>
+<p><strong>Phase 1A (의미론 하드닝)</strong>
+- [ ] <code>stock_metadata</code> 제거 또는 VIEW 브리지
+- [ ] <code>stock_price_1d.trade_date</code> + timestamp 의미 문서화
+- [ ] <code>market_value_krw</code> View 컬럼 또는 COMMENT
+- [ ] <code>stock_info.sector/industry</code> + KRX 분류 데이터
+- [ ] OM description 업데이트
+- [ ] <code>NL2SQL_ALLOWLIST</code> Gold 중심 축소
+- [ ] <code>nl2sql_role.sql</code> 재조정
+- [ ] 보안 통합 테스트 39개 PASS 유지
+- [ ] 회귀 평가셋 <code>eval/nl2sql_eval_v1.yaml</code> 50개
+- [ ] 기준선/개선률 리포트
+- [ ] <code>om_sync_wrenai.py</code> 구조화 블록 append 기능
+- [ ] Glossary 77개 Wren AI 반영</p>
+<p><strong>Phase 1B (시맨틱 레이어 보강)</strong>
+- [ ] <code>v_valuation_signals__v1</code>, <code>v_technical_signals__v1</code>, <code>v_flow_signals__v1</code>, <code>v_sector_summary__v1</code>
+- [ ] View 네이밍/버전 규율 문서
+- [ ] Wren AI MDL에서 수식 제거 (View로 이전)
+- [ ] Consistency check 스크립트 + DAG 통합
+- [ ] 평가셋 80개로 확대 + Wren AI SQL Pairs 80개</p>
+<p><strong>Phase 2 (온톨로지)</strong>
+- [ ] <code>docker-compose.neo4j.yml</code> + 백업 스크립트
+- [ ] <code>ontology/</code> YAML 디렉토리 + schema validator
+- [ ] <code>sync_yaml_to_neo4j.py</code> + Git hook/DAG
+- [ ] Concept 노드 30-50개 + Stock 노드 500개
+- [ ] Competitor/Supplier 관계
+- [ ] 77 Term 노드 (OM Glossary 마이그레이션)
+- [ ] Cypher 템플릿 10개 이상 + 카탈로그 문서</p>
+<p><strong>Phase 3 (에이전트)</strong>
+- [ ] <code>NL2SQLEngine</code> Protocol + <code>WrenAIEngine</code> 구현
+- [ ] Intent Classifier (규칙)
+- [ ] Entity Resolver (DB + Neo4j)
+- [ ] Query Planner (템플릿 기반)
+- [ ] SQL Executor + Multi SQL 경로
+- [ ] Result Analyzer (LLM)
+- [ ] Evidence Budget + Clarification 생성기
+- [ ] LangGraph StateGraph
+- [ ] FastAPI 엔드포인트 <code>/api/nl2sql/ask</code>
+- [ ] 각 Stage <code>record_agent_audit()</code> 호출
+- [ ] 복합 질문 평가셋 20개 (총 100개)
+- [ ] LLM 2회 제한 검증 리포트
+- [ ] 투자 조언 거부 가드</p>
+<p><strong>Phase 4 (고도화/이관)</strong>
+- [ ] 시계열 이벤트 Curated View (선택)
+- [ ] 자동 평가 리포트 스크립트
+- [ ] 회귀 감지 CI
+- [ ] LLM 비용 대시보드
+- [ ] 컴포넌트 리소스 사용량 측정
+- [ ] 사내 이관 체크리스트/가이드
+- [ ] Phase 1-3 운영 부담 증거 종합 리포트</p>
+<hr />
+<h2 id="부록-b-참고-문서">부록 B: 참고 문서</h2>
+<ul>
+<li><code>docs/nl2sql_architecture_v2.md</code> — 최종 목표 아키텍처 (이 로드맵의 설계 근거)</li>
+<li><code>docs/data_architecture_review.md</code> — 이슈 트래커 (Phase 1A 작업 대상)</li>
+<li><code>docs/security_governance.md</code> — 보안 불변 조건 (모든 Phase에서 준수)</li>
+<li><code>docs/metadata_governance.md</code> — 메타데이터 갱신 절차</li>
+<li><code>docs/wrenai_technical_guide.md</code> — Wren AI 구조 및 제약</li>
+<li><code>docs/wrenai_test_report.md</code> — 평가 프레임워크 기반</li>
+</ul>
+<hr />
+<p><em>이 로드맵은 Phase별 실행 계획의 기준선입니다. 각 Phase 종료 시 실제 소요 시간, 성공 기준 달성 여부, 중간 의사결정 결과를 반영해 업데이트합니다. 로드맵이 크게 수정되면 <code>v3</code> 문서로 별도 관리합니다.</em></p>
+</main>
+
+<script>
+  // 테마 전환
+  function setTheme(theme) {
+    document.documentElement.setAttribute('data-theme', theme);
+    localStorage.setItem('doc-theme', theme);
+    document.getElementById('btn-dark').classList.toggle('active', theme === 'dark');
+    document.getElementById('btn-light').classList.toggle('active', theme === 'light');
+    // Mermaid 재렌더링
+    if (typeof mermaid !== 'undefined') {
+      mermaid.initialize({ startOnLoad: false, theme: 'base', securityLevel: 'loose', themeVariables: getMermaidTheme(theme) });
+      document.querySelectorAll('.mermaid').forEach(el => {
+        // 원본 코드 보존 (최초 1회만 저장)
+        if (!el.dataset.source) {
+          el.dataset.source = el.textContent;
+        }
+        el.removeAttribute('data-processed');
+        el.innerHTML = el.dataset.source;
+      });
+      mermaid.run();
+    }
+  }
+
+  // 저장된 테마 로드
+  const savedTheme = localStorage.getItem('doc-theme') || 'dark';
+  setTheme(savedTheme);
+
+  // Mermaid 초기화
+  function getMermaidTheme(theme) {
+    const dark = {
+      primaryColor: '#3d7be0',
+      primaryTextColor: '#ffffff',
+      primaryBorderColor: '#5a9cf0',
+      secondaryColor: '#7c5cbf',
+      secondaryTextColor: '#ffffff',
+      secondaryBorderColor: '#a29bfe',
+      tertiaryColor: '#00997a',
+      tertiaryTextColor: '#ffffff',
+      tertiaryBorderColor: '#55efc4',
+      noteTextColor: '#f0f0f0',
+      noteBkgColor: '#2d3436',
+      noteBorderColor: '#636e72',
+      lineColor: '#8b949e',
+      textColor: '#e6edf3',
+      mainBkg: '#1e3050',
+      nodeBorder: '#5a9cf0',
+      clusterBkg: '#1a1e2e',
+      clusterBorder: '#4a5568',
+      titleColor: '#79c0ff',
+      edgeLabelBackground: '#21262d',
+      actorBkg: '#3d7be0',
+      actorTextColor: '#ffffff',
+      actorBorder: '#5a9cf0',
+      signalColor: '#8b949e',
+      labelBoxBkgColor: '#21262d',
+      labelBoxBorderColor: '#4a5568',
+      labelTextColor: '#e6edf3',
+      loopTextColor: '#e6edf3',
+      activationBorderColor: '#5a9cf0',
+      activationBkgColor: '#1e3050',
+      sequenceNumberColor: '#ffffff',
+      pie1: '#4f8fea', pie2: '#6c5ce7', pie3: '#00b894', pie4: '#e17055',
+      pie5: '#fdcb6e', pie6: '#00cec9', pie7: '#e84393', pie8: '#0984e3'
+    };
+    const light = {
+      primaryColor: '#4f8fea',
+      primaryTextColor: '#1a1a2e',
+      primaryBorderColor: '#3a7bd5',
+      secondaryColor: '#a29bfe',
+      secondaryTextColor: '#1a1a2e',
+      secondaryBorderColor: '#6c5ce7',
+      tertiaryColor: '#55efc4',
+      tertiaryTextColor: '#1a1a2e',
+      tertiaryBorderColor: '#00b894',
+      noteTextColor: '#2d3436',
+      noteBkgColor: '#ffeaa7',
+      noteBorderColor: '#fdcb6e',
+      lineColor: '#636e72',
+      textColor: '#2d3436',
+      mainBkg: '#dfe6e9',
+      nodeBorder: '#3a7bd5',
+      clusterBkg: '#f0f3f5',
+      clusterBorder: '#b2bec3',
+      titleColor: '#2d3436',
+      edgeLabelBackground: '#ffffff',
+      actorBkg: '#4f8fea',
+      actorTextColor: '#ffffff',
+      actorBorder: '#3a7bd5',
+      signalColor: '#636e72',
+      labelBoxBkgColor: '#ffffff',
+      labelBoxBorderColor: '#b2bec3',
+      labelTextColor: '#2d3436',
+      loopTextColor: '#2d3436',
+      activationBorderColor: '#3a7bd5',
+      activationBkgColor: '#dfe6e9',
+      sequenceNumberColor: '#ffffff',
+      pie1: '#4f8fea', pie2: '#6c5ce7', pie3: '#00b894', pie4: '#e17055',
+      pie5: '#fdcb6e', pie6: '#00cec9', pie7: '#e84393', pie8: '#0984e3'
+    };
+    return theme === 'dark' ? dark : light;
+  }
+
+  // 초기 렌더링 전에 원본 코드 저장
+  document.querySelectorAll('.mermaid').forEach(el => {
+    el.dataset.source = el.textContent;
+  });
+  mermaid.initialize({ startOnLoad: true, theme: 'base', securityLevel: 'loose', themeVariables: getMermaidTheme(savedTheme) });
+
+  // TOC 현재 위치 하이라이트
+  const tocLinks = document.querySelectorAll('.toc a');
+  const headings = [];
+  tocLinks.forEach(link => {
+    const id = link.getAttribute('href').slice(1);
+    const el = document.getElementById(id);
+    if (el) headings.push({ el, link });
+  });
+
+  function updateActiveToc() {
+    let current = null;
+    for (const h of headings) {
+      if (h.el.getBoundingClientRect().top <= 100) current = h;
+    }
+    tocLinks.forEach(l => l.classList.remove('active'));
+    if (current) current.link.classList.add('active');
+  }
+
+  window.addEventListener('scroll', updateActiveToc, { passive: true });
+  updateActiveToc();
+
+  // 모바일: 링크 클릭 시 사이드바 닫기
+  tocLinks.forEach(link => {
+    link.addEventListener('click', () => {
+      if (window.innerWidth <= 900) {
+        document.querySelector('.sidebar').classList.remove('open');
+      }
+    });
+  });
+</script>
+
+</body>
+</html>

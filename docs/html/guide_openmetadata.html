@@ -412,26 +412,26 @@
 <div class="mermaid">
 graph TB
     subgraph Clients["클라이언트"]
-        UI[Web UI<br/>React]
-        SDK[Python SDK<br/>openmetadata-ingestion]
-        API_CLI[REST API<br/>직접 호출]
+        UI[Web UI\nReact]
+        SDK[Python SDK\nopenmetadata-ingestion]
+        API_CLI[REST API\n직접 호출]
     end
 
     subgraph Server["OpenMetadata Server"]
-        REST[REST API Layer<br/>Dropwizard/Java]
-        SCHEMA[JSON Schema<br/>엔티티 모델 정의]
-        AUTH[인증/인가<br/>JWT, SSO, RBAC]
-        EVENT[이벤트 핸들러<br/>변경 감지, 알림]
+        REST[REST API Layer\nDropwizard/Java]
+        SCHEMA[JSON Schema\n엔티티 모델 정의]
+        AUTH[인증/인가\nJWT, SSO, RBAC]
+        EVENT[이벤트 핸들러\n변경 감지, 알림]
     end
 
     subgraph Storage["저장소"]
-        DB[(MySQL / PostgreSQL<br/>메타데이터 저장)]
-        ES[(Elasticsearch<br/>검색 인덱스)]
+        DB[(MySQL / PostgreSQL\n메타데이터 저장)]
+        ES[(Elasticsearch\n검색 인덱스)]
     end
 
     subgraph Ingestion["수집 프레임워크"]
-        CONN[커넥터<br/>DB, Dashboard, Pipeline, ...]
-        PROF[프로파일러<br/>통계 수집]
+        CONN[커넥터\nDB, Dashboard, Pipeline, ...]
+        PROF[프로파일러\n통계 수집]
         LINEAGE_I[계보 수집기]
         DQ[품질 테스트 러너]
     end
@@ -688,9 +688,9 @@ graph LR
 <h5 id="사용-방법_2">사용 방법</h5>
 <div class="mermaid">
 graph TB
-    G["Glossary<br/>투자 용어집"]
-    G --> T1["Term: PER<br/>(주가수익비율)"]
-    G --> T2["Term: ROE<br/>(자기자본이익률)"]
+    G["Glossary\n투자 용어집"]
+    G --> T1["Term: PER\n(주가수익비율)"]
+    G --> T2["Term: ROE\n(자기자본이익률)"]
     G --> T3["Term: 시가총액"]
 
     T1 --> C1["analytics_valuation.per"]
@@ -1647,15 +1647,15 @@ metadata<span class="w"> </span>docker<span class="w"> </span>--start
 <h3 id="메타데이터-동기화-흐름">메타데이터 동기화 흐름</h3>
 <div class="mermaid">
 graph LR
-    OM["OpenMetadata<br/>(원천)"]
+    OM["OpenMetadata\n(원천)"]
 
     subgraph "동기화 DAG: 10_sync_metadata_daily"
         SYNC1["om_sync_comments.py"]
         SYNC2["om_sync_wrenai.py"]
     end
 
-    DB[(PostgreSQL<br/>DB COMMENT)]
-    WREN[Wren AI<br/>모델 description]
+    DB[(PostgreSQL\nDB COMMENT)]
+    WREN[Wren AI\n모델 description]
 
     OM --> SYNC1 --> DB
     OM --> SYNC2 --> WREN
@@ -1937,8 +1937,12 @@ graph LR
     if (typeof mermaid !== 'undefined') {
       mermaid.initialize({ startOnLoad: false, theme: 'base', securityLevel: 'loose', themeVariables: getMermaidTheme(theme) });
       document.querySelectorAll('.mermaid').forEach(el => {
+        // 원본 코드 보존 (최초 1회만 저장)
+        if (!el.dataset.source) {
+          el.dataset.source = el.textContent;
+        }
         el.removeAttribute('data-processed');
-        el.innerHTML = el.textContent;
+        el.innerHTML = el.dataset.source;
       });
       mermaid.run();
     }
@@ -2023,6 +2027,10 @@ graph LR
     return theme === 'dark' ? dark : light;
   }
 
+  // 초기 렌더링 전에 원본 코드 저장
+  document.querySelectorAll('.mermaid').forEach(el => {
+    el.dataset.source = el.textContent;
+  });
   mermaid.initialize({ startOnLoad: true, theme: 'base', securityLevel: 'loose', themeVariables: getMermaidTheme(savedTheme) });
 
   // TOC 현재 위치 하이라이트
