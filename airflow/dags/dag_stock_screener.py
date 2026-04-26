@@ -77,15 +77,23 @@ def run_daily_screener(**context):
     success = send_telegram_message(analysis, test=True)
     print(f"텔레그램 발송: {success}")
 
-    # stock_recommendations DB 저장
-    saved = _save_recommendations(recs, body.get("market_context", {}))
-    print(f"DB 저장: {saved}건")
+    # 중복 추천 필터 + 등급 변경 감지 + DB 저장
+    new_recs, grade_changes = _filter_and_detect_changes(recs)
+    saved = _save_recommendations(new_recs, body.get("market_context", {}))
+    print(f"DB 저장: {saved}건 (신규/변경), 등급 변경: {len(grade_changes)}건")
+
+    # 등급 변경 텔레그램 알림
+    if grade_changes:
+        change_msg = _build_grade_change_message(grade_changes)
+        send_telegram_message(change_msg, test=True)
+        print(f"등급 변경 알림 발송: {len(grade_changes)}건")
 
     return {
         "sent": success,
         "count": len(recs),
         "saved": saved,
-        "tickers": [r.get("ticker", "") for r in recs],
+        "grade_changes": len(grade_changes),
+        "tickers": [r.get("ticker", "") for r in new_recs],
     }
 
 
@@ -120,6 +128,101 @@ def _calc_confidence_for_save(r: dict) -> str:
     elif met >= 3:
         return "중간"
     return "낮음"
+
+
+def _filter_and_detect_changes(recs: list) -> tuple:
+    """active 종목 중복 제거 + 등급 변경 감지"""
+    from sqlalchemy import create_engine, text
+
+    database_url = os.getenv("DATABASE_URL")
+    if not database_url:
+        pg_pw = os.getenv("PG_PASSWORD", "")
+        database_url = f"postgresql+psycopg2://user:{pg_pw}@bip-postgres:5432/stockdb"
+    engine = create_engine(database_url)
+
+    # 현재 active 종목 조회
+    with engine.connect() as conn:
+        active_rows = conn.execute(text("""
+            SELECT r.ticker, r.grade, r.total_score, r.direction, r.run_date
+            FROM stock_recommendations r
+            JOIN recommendation_performance p USING (run_date, ticker, recommendation_type)
+            WHERE p.status = 'active'
+        """)).fetchall()
+
+    active_map = {r.ticker: r for r in active_rows}
+    engine.dispose()
+
+    new_recs = []
+    grade_changes = []
+
+    from datetime import date
+    today = date.today().isoformat()
+
+    for r in recs:
+        ticker = r.get("ticker", "")
+        if not ticker:
+            continue
+
+        existing = active_map.get(ticker)
+        if existing:
+            # 이미 active — 등급 변경 여부 확인
+            new_grade = r.get("grade")
+            if new_grade and new_grade != existing.grade:
+                grade_changes.append({
+                    "ticker": ticker,
+                    "stock_name": r.get("stock_name", ""),
+                    "original_run_date": str(existing.run_date),
+                    "prev_grade": existing.grade,
+                    "new_grade": new_grade,
+                    "prev_score": float(existing.total_score or 0),
+                    "new_score": r.get("total_score", 0),
+                    "prev_direction": existing.direction,
+                    "new_direction": r.get("direction"),
+                })
+            # active 종목은 신규 추천에서 제외
+            continue
+
+        new_recs.append(r)
+
+    # 등급 변경 이력 저장
+    if grade_changes:
+        engine2 = create_engine(database_url)
+        with engine2.begin() as conn:
+            for gc in grade_changes:
+                conn.execute(text("""
+                    INSERT INTO recommendation_grade_history (
+                        ticker, stock_name, original_run_date, change_date,
+                        prev_grade, new_grade, prev_score, new_score,
+                        prev_direction, new_direction, reason
+                    ) VALUES (
+                        :ticker, :stock_name, :original_run_date, :change_date,
+                        :prev_grade, :new_grade, :prev_score, :new_score,
+                        :prev_direction, :new_direction, :reason
+                    )
+                """), {
+                    **gc,
+                    "change_date": today,
+                    "reason": f"{gc['prev_grade']}({gc['prev_score']:.0f}) → {gc['new_grade']}({gc['new_score']:.0f})",
+                })
+        engine2.dispose()
+
+    return new_recs, grade_changes
+
+
+def _build_grade_change_message(changes: list) -> str:
+    """등급 변경 텔레그램 메시지"""
+    GRADE_LABEL = {
+        "Buy": "적극 매수", "Overweight": "매수 추천", "Hold": "관망",
+        "Underweight": "매수 주의", "Sell": "매도",
+    }
+    lines = ["📋 *등급 변경 알림*\n"]
+    for c in changes:
+        prev = GRADE_LABEL.get(c["prev_grade"], c["prev_grade"])
+        new = GRADE_LABEL.get(c["new_grade"], c["new_grade"])
+        lines.append(f"*{c['stock_name']}* ({c['ticker'][:6]})")
+        lines.append(f"  {prev} → {new} (스코어 {c['prev_score']:.0f} → {c['new_score']:.0f})")
+        lines.append("")
+    return "\n".join(lines)
 
 
 def _save_recommendations(recs: list, market_context: dict) -> int:
@@ -246,7 +349,7 @@ with DAG(
     dag_id="stock_screener_daily",
     default_args=default_args,
     description="종목 추천 에이전트 — 스크리닝 + Bull/Bear 토론 + 텔레그램 발송",
-    schedule_interval="0 19 * * 1-5",  # 평일 19:00 KST (analytics DAG 17:30 이후 여유)
+    schedule_interval=None,  # screener_performance에서 트리거
     start_date=datetime(2026, 4, 12),
     catchup=False,
     tags=["screener", "agent", "telegram"],

@@ -10,6 +10,7 @@ from datetime import datetime, timedelta
 
 from airflow import DAG
 from airflow.operators.python import PythonOperator
+from airflow.operators.trigger_dagrun import TriggerDagRunOperator
 
 logger = logging.getLogger(__name__)
 
@@ -43,7 +44,7 @@ def update_performance(**context):
             FROM stock_recommendations r
             JOIN recommendation_performance p
                 USING (run_date, ticker, recommendation_type)
-            WHERE p.status NOT IN ('expired', 'tracking_done')
+            WHERE p.status NOT IN ('expired', 'done')
               AND r.run_date < CURRENT_DATE
             ORDER BY r.run_date
         """)).fetchall()
@@ -104,6 +105,8 @@ def update_performance(**context):
             d20_trade_date = None
             d20_high = None
             d20_low = None
+            d10_close = None
+            d10_trade_date = None
             d60_close = None
             d60_trade_date = None
             d60_high = None
@@ -189,6 +192,10 @@ def update_performance(**context):
                     d5_high = running_high
                     d5_low = running_low
 
+                if day_n == 10:
+                    d10_close = close
+                    d10_trade_date = p.trade_date
+
                 if day_n == 20:
                     d20_close = close
                     d20_trade_date = p.trade_date
@@ -212,6 +219,7 @@ def update_performance(**context):
             # 수익률 계산 (D+1 시가 기준)
             d1_return = round((d1_close - d1_open) / d1_open * 100, 3) if d1_close else None
             d5_return = round((d5_close - d1_open) / d1_open * 100, 3) if d5_close else None
+            d10_return = round((d10_close - d1_open) / d1_open * 100, 3) if d10_close else None
             d20_return = round((d20_close - d1_open) / d1_open * 100, 3) if d20_close else None
             d60_return = round((d60_close - d1_open) / d1_open * 100, 3) if d60_close else None
 
@@ -229,22 +237,14 @@ def update_performance(**context):
             else:
                 scenario = "neither"
 
-            # 상태 결정
-            # closed: 목표/손절 히트로 성과 확정 (daily_tracking은 계속)
-            # tracking_done: D+60 도달, 모든 추적 완료
+            # 상태: active / closed / done / expired
             num_days = len(prices)
             if num_days >= 60:
-                status = "tracking_done"
+                status = "done"
             elif target_hit or stop_hit:
                 status = "closed"
-            elif num_days >= 20:
-                status = "pending_d60"
-            elif num_days >= 5:
-                status = "pending_d20"
-            elif num_days >= 1:
-                status = "pending_d5"
             else:
-                status = "pending"
+                status = "active"
 
             # UPSERT
             conn.execute(text("""
@@ -262,6 +262,9 @@ def update_performance(**context):
                     d20_low = :d20_low,
                     d1_return_pct = :d1_return,
                     d5_return_pct = :d5_return,
+                    d10_close = :d10_close,
+                    d10_trade_date = :d10_trade_date,
+                    d10_return_pct = :d10_return,
                     d20_return_pct = :d20_return,
                     d60_close = :d60_close,
                     d60_trade_date = :d60_trade_date,
@@ -295,6 +298,9 @@ def update_performance(**context):
                 "d20_low": d20_low,
                 "d1_return": d1_return,
                 "d5_return": d5_return,
+                "d10_close": d10_close,
+                "d10_trade_date": d10_trade_date,
+                "d10_return": d10_return,
                 "d20_return": d20_return,
                 "d60_close": d60_close,
                 "d60_trade_date": d60_trade_date,
@@ -318,7 +324,7 @@ with DAG(
     dag_id="screener_performance",
     default_args=default_args,
     description="종목 추천 성과 측정 — D+1/D+5/D+20 rolling 업데이트",
-    schedule_interval="0 18 * * 1-5",  # 평일 18:00 KST (analytics 17:30 이후)
+    schedule_interval=None,  # analytics DAG에서 트리거
     start_date=datetime(2026, 4, 19),
     catchup=False,
     tags=["screener", "backtest"],
@@ -328,3 +334,11 @@ with DAG(
         task_id="update_performance",
         python_callable=update_performance,
     )
+
+    trigger_screener = TriggerDagRunOperator(
+        task_id="trigger_stock_screener",
+        trigger_dag_id="stock_screener_daily",
+        wait_for_completion=False,
+    )
+
+    perf_task >> trigger_screener

@@ -13,6 +13,7 @@ Gold layer: stock_price_1d + stock_indicators + consensus_estimates + stock_info
 
 from airflow import DAG
 from airflow.operators.python import PythonOperator
+from airflow.operators.trigger_dagrun import TriggerDagRunOperator
 from datetime import datetime, timedelta, date
 from utils.db import get_pg_conn
 from utils.config import PG_CONN_INFO
@@ -37,6 +38,7 @@ INSERT INTO analytics_stock_daily (
     bb_upper, bb_middle, bb_lower, bb_pctb,
     atr14, golden_cross, death_cross,
     high_52w, low_52w, pct_from_52w_high, volume_ma20, volume_ratio,
+    vcp_contraction, vcp_vol_dry,
     analyst_rating, target_price, analyst_count,
     est_eps, est_per, est_pbr, est_roe,
     updated_at
@@ -124,6 +126,7 @@ SELECT
     ind.atr14, ind.golden_cross, ind.death_cross,
     ind.high_52w, ind.low_52w, ind.pct_from_52w_high,
     ind.volume_ma20, ind.volume_ratio,
+    ind.vcp_contraction, ind.vcp_vol_dry,
     -- 컨센서스
     ce.analyst_rating, ce.target_price, ce.analyst_count,
     ce.est_eps, ce.est_per, ce.est_pbr, ce.est_roe,
@@ -170,6 +173,8 @@ ON CONFLICT (ticker, trade_date) DO UPDATE SET
     pct_from_52w_high       = EXCLUDED.pct_from_52w_high,
     volume_ma20             = EXCLUDED.volume_ma20,
     volume_ratio            = EXCLUDED.volume_ratio,
+    vcp_contraction         = EXCLUDED.vcp_contraction,
+    vcp_vol_dry             = EXCLUDED.vcp_vol_dry,
     analyst_rating          = EXCLUDED.analyst_rating,
     target_price            = EXCLUDED.target_price,
     analyst_count           = EXCLUDED.analyst_count,
@@ -234,24 +239,38 @@ default_args = {
     "retry_delay": timedelta(minutes=5),
 }
 
-# ── 한국장 마감 후: 평일 17:30 KST ─────────────────────────────────────────
-# 03_indicator_kr_daily (16:30) 완료 후 당일 한국 주식 반영
+# ── 한국장 마감 후: investor_trend에서 트리거 ──────────────────────────────
+# 05_kr_investor_trend_daily 수급 적재 완료 후 TriggerDagRunOperator로 실행
 with DAG(
     dag_id="09_analytics_stock_daily_kr",
     default_args=default_args,
-    description="Gold layer: analytics_stock_daily — 한국장 마감 후 업데이트 (KR)",
-    schedule_interval="30 8 * * 1-5",    # 평일 17:30 KST = UTC 08:30
+    description="Gold layer: analytics_stock_daily — 수급 적재 후 트리거 실행 (KR)",
+    schedule_interval=None,  # 트리거 전용 (investor_trend에서 호출)
     catchup=False,
     max_active_runs=1,
     dagrun_timeout=timedelta(hours=2),
     tags=["gold", "market", "daily"],
 ) as dag_kr:
 
-    PythonOperator(
+    build_task = PythonOperator(
         task_id="build_analytics_stock",
         python_callable=build_analytics_stock,
         execution_timeout=timedelta(hours=1, minutes=30),
     )
+
+    trigger_context_snapshot = TriggerDagRunOperator(
+        task_id="trigger_context_snapshot",
+        trigger_dag_id="10_indicator_context_snapshot_daily",
+        wait_for_completion=False,
+    )
+
+    trigger_screener_perf = TriggerDagRunOperator(
+        task_id="trigger_screener_performance",
+        trigger_dag_id="screener_performance",
+        wait_for_completion=False,
+    )
+
+    build_task >> [trigger_context_snapshot, trigger_screener_perf]
 
 # ── 미국장 마감 후: 화-토 07:30 KST ────────────────────────────────────────
 # 03_indicator_us_daily (07:00) 완료 후 전날 미국 주식 반영
