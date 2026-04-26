@@ -470,9 +470,168 @@ graph TB
 
 ---
 
+## 11. v3 방향 전환 — Cube 탈락 + LangGraph 직접 구현 (2026-04-26)
+
+### 11-1. Cube 검증 결과
+
+BIP PostgreSQL에 Cube를 연결하여 7개 시맨틱 모델을 구축하고 테스트한 결과, **복합 JOIN에서 치명적 제약이 발견됨.**
+
+| 테스트 | 결과 |
+|--------|:----:|
+| 단순 조회 (`StockInfo.count`) | ✅ 11,382 |
+| 단일 Cube 쿼리 (`삼성전자 종가`) | ✅ 224,500원 |
+| Boolean flag (`저평가주 수`) | ✅ 1,676개 |
+| 2-Cube JOIN (StockInfo 경유) | ✅ |
+| **팩트-팩트 JOIN** (ValuationSignals + FlowSignals) | ❌ `Can't find join path` |
+| **3-Cube JOIN** | ❌ |
+| **저평가 + 외국인 순매수 종목** | ❌ |
+| **과매도이면서 저평가 종목** | ❌ |
+
+**원인:** 모든 Cube가 `StockInfo`로만 연결되어 있어 팩트-팩트 결합 불가. Cube의 JOIN 모델은 1:N 관계를 자동 구성하지만 N:N(팩트끼리) 결합은 별도 설계가 필요.
+
+**핵심 사용 케이스가 안 됨:** WrenAI에서는 단일 SQL로 동작했던 복합 질문이 Cube에서는 모두 실패. Agent 멀티스텝으로 우회하면 Cube를 거치는 의미가 줄어듦.
+
+### 11-2. 대안 재검토
+
+| 옵션 | 설명 | 평가 |
+|------|------|:----:|
+| **A. WrenAI + Oracle→PG 복제** | 검증된 엔진 그대로 사용 | 인프라 복잡 |
+| **B. WrenAI 포크/수정** | ibis-server Oracle 로직 수정 | 유지보수 부담 |
+| **C. LangGraph Agent 직접 구현** | WrenAI가 하던 것을 모듈로 재구성 | **선정** |
+| **D. Cube를 메타 정의용으로만 사용** | Agent가 DB 직결 SQL | Cube 도입 의미 감소 |
+
+**선정 근거:**
+- Codex 검토: "옵션 A → C → B" 순서 권장. 단기 안전성은 A, 장기 확장성은 C.
+- 사내 Oracle 직결이 필요하고, 비정형 RAG/멀티스텝/사내 LLM 확장을 고려하면 **C가 결국 도달점.**
+- 옵션 A를 거쳐도 결국 C를 만들게 됨 → 처음부터 C로 진행.
+
+### 11-3. 추가 조사 — DAQUV/QUVI + 논문
+
+**DAQUV (https://docs.daquv.com)**
+- NL → **SMQ(중간 표현)** → SQL 변환 (규칙 기반)
+- LLM은 SQL을 직접 만들지 않고 **메트릭/필터/그룹**만 구조화
+- SafeGuard 노드: SQL 실행 실패 시 자동 수정·재시도
+- AGENT 모드: 정보 부족 시 Re-question
+
+**논문: "Querying Databases with Function Calling" (arXiv 2502.00032)**
+- Function Calling 방식이 SQL 직접 생성보다 안정적
+- Claude 3.5 Sonnet 74.3%, GPT-4o mini 73.7% 정확도
+- 구조화된 도구 호출 → SQL 문법 에러 원천 차단
+
+**시사점:** LLM에게 SQL을 직접 쓰게 하지 말고 **구조화된 쿼리 명세(QuerySpec)**를 만들게 하는 것이 정확도/안정성에서 유리.
+
+### 11-4. 최종 아키텍처 (v3)
+
+```mermaid
+graph TB
+    USER[사용자 질문]
+    USER --> AGENT[LangGraph Agent]
+
+    AGENT --> RAG[Schema RAG<br/>벡터 DB]
+    RAG --> LLM[LLM<br/>QuerySpec 생성]
+    LLM --> CONV[SQL Converter<br/>규칙 기반]
+    CONV --> VAL[Validator<br/>sqlglot + dry-run]
+    VAL -->|실패| LLM
+    VAL -->|통과| EXEC[SQL 실행]
+    EXEC --> SYNTH[Result Synthesizer]
+    SYNTH --> ANSWER[자연어 답변]
+
+    OM[(OpenMetadata)] -.메타.-> RAG
+    DB[(PostgreSQL/Oracle)] --> EXEC
+    PAIRS[(SQL Pairs 70)] -.Few-shot.-> RAG
+    GLOSS[(Glossary 77)] -.용어.-> RAG
+```
+
+**핵심 구성 요소:**
+
+| 컴포넌트 | 역할 | 도구 |
+|---------|------|------|
+| **Agent** | 오케스트레이션 (멀티스텝, 재시도) | LangGraph |
+| **Schema RAG** | 관련 테이블/용어/예시 검색 | pgvector |
+| **LLM** | QuerySpec 생성 (SQL 아님) | GPT-4.1-mini 또는 사내 LLM |
+| **SQL Converter** | QuerySpec → SQL (규칙 기반) | 자체 구현 |
+| **Validator** | 구문/스키마/보안 검증 | sqlglot + DB dry-run |
+| **Schema Registry** | 테이블/컬럼/JOIN 메타 | DB COMMENT + joins.yaml |
+| **시맨틱 레이어** | 비즈니스 로직 고정 | Gold View + Curated View (DB 직접) |
+
+### 11-5. v2 대비 변경점
+
+| 항목 | v2 (Cube 기반) | v3 (LangGraph 직접) |
+|------|:-:|:-:|
+| 시맨틱 레이어 | Cube 모델 | **DB View (Gold + Curated)** |
+| SQL 생성 | Cube API → Cube 내부 | **LLM → QuerySpec → 변환기** |
+| 복합 JOIN | ❌ 제약 있음 | **✅ 자유** |
+| 시맨틱 정의 | Cube model/*.js | **DB COMMENT + joins.yaml** |
+| 메타 허브 | OM + Cube 이중화 | **OM 단일** |
+| 인프라 | Cube 컨테이너 추가 | **추가 컨테이너 없음** |
+| Oracle 19c | Cube → node-oracledb | **직접 cx_Oracle** |
+
+### 11-6. 구현 순서 (Codex 권고 반영)
+
+```mermaid
+gantt
+    title v3 LangGraph NL2SQL 구현 로드맵
+    dateFormat YYYY-MM-DD
+    axisFormat %m/%d
+
+    section Phase 0 준비
+    Gold View + JOIN YAML 확인       :p0a, 2026-04-26, 1d
+    평가셋 23개 정리                  :p0b, after p0a, 1d
+
+    section Phase 1 변환기
+    QuerySpec 모델 + 단위 테스트     :p1a, after p0b, 2d
+    SQL Converter 규칙 기반 구현     :p1b, after p1a, 3d
+    Validator (sqlglot + dry-run)    :p1c, after p1b, 2d
+
+    section Phase 2 Agent
+    Schema Registry (DB + YAML)      :p2a, after p1c, 2d
+    LangGraph Agent 뼈대             :p2b, after p2a, 3d
+    Schema RAG (pgvector)            :p2c, after p2b, 3d
+    자동 보정 루프                    :p2d, after p2c, 2d
+
+    section Phase 3 검증
+    평가셋 23개 실행 + WrenAI 비교   :p3a, after p2d, 3d
+    품질 튜닝                         :p3b, after p3a, 3d
+
+    section Phase 4 운영
+    FastAPI 서빙                     :p4a, after p3b, 2d
+    Oracle 19c 적용 (사내)            :p4b, after p4a, 5d
+```
+
+### 11-7. 진행 현황 (2026-04-26 기준)
+
+**완료:**
+- 아키텍처 결정 + 의사결정 이력 정리
+- Cube 7개 모델 구축 + 한계 검증
+- 평가셋 23개 정의 (`tests/evaluation_set.yaml`)
+- JOIN 관계 YAML (`joins.yaml`, 11개)
+- QuerySpec Pydantic 모델 (`query_spec.py`)
+- SQL Converter 뼈대 (`sql_converter.py`)
+- Schema Registry 뼈대 (`schema_registry.py`)
+- Validator 뼈대 (`validator.py`)
+
+**위치:** `BIP-Agents/langgraph/nl2sql/`
+
+**진행 중:**
+- SQL Converter 단위 테스트 (실데이터 검증)
+
+**남은 작업:**
+- LangGraph Agent 노드 구성
+- Schema RAG (pgvector + 임베딩 적재)
+- 자동 보정 루프
+- 평가셋 23개 실행 → WrenAI 결과와 비교
+
+### 11-8. 상세 설계 문서
+
+LangGraph Agent + QuerySpec 설계의 상세 내용은 별도 문서로 분리:
+**→ `docs/nl2sql_agent_design.md`**
+
+---
+
 ## 변경 이력
 
 | 날짜 | 내용 |
 |------|------|
-| 2026-04-18 | 초안 작성 |
+| 2026-04-18 | 초안 작성 (OM + Cube + Agent 아키텍처) |
 | 2026-04-22 | 문서 헤더 정리 |
+| 2026-04-26 | v3 방향 전환 추가 (Cube 탈락 + LangGraph 직접 구현). DAQUV/논문 분석 반영. 진행 현황 + 로드맵 갱신 |

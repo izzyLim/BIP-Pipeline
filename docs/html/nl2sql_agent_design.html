@@ -1,0 +1,1218 @@
+<!DOCTYPE html>
+<html lang="ko" data-theme="dark">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>LangGraph NL2SQL Agent 설계 문서</title>
+<script src="https://cdn.jsdelivr.net/npm/mermaid@11/dist/mermaid.min.js"></script>
+<style>
+  /* ── 테마 변수 ── */
+  :root[data-theme="dark"] {
+    --bg: #0d1117;
+    --bg-sidebar: #161b22;
+    --fg: #e6edf3;
+    --fg-muted: #8b949e;
+    --border: #30363d;
+    --accent: #58a6ff;
+    --accent-hover: #79c0ff;
+    --code-bg: #1e293b;
+    --code-fg: #e2e8f0;
+    --table-header: #161b22;
+    --table-even: #0d1117;
+    --table-odd: #161b22;
+    --blockquote-bg: #161b22;
+    --blockquote-border: #3b82f6;
+    --link: #58a6ff;
+    --strong: #79c0ff;
+    --card-bg: #21262d;
+  }
+  :root[data-theme="light"] {
+    --bg: #ffffff;
+    --bg-sidebar: #f6f8fa;
+    --fg: #1f2937;
+    --fg-muted: #6b7280;
+    --border: #e5e7eb;
+    --accent: #2563eb;
+    --accent-hover: #1d4ed8;
+    --code-bg: #f3f4f6;
+    --code-fg: #1e293b;
+    --table-header: #f8fafc;
+    --table-even: #ffffff;
+    --table-odd: #f9fafb;
+    --blockquote-bg: #eff6ff;
+    --blockquote-border: #3b82f6;
+    --link: #2563eb;
+    --strong: #1e40af;
+    --card-bg: #f3f4f6;
+  }
+
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+
+  body {
+    font-family: 'Pretendard', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+    background: var(--bg);
+    color: var(--fg);
+    line-height: 1.75;
+    display: flex;
+    min-height: 100vh;
+  }
+
+  /* ── 사이드바 ── */
+  .sidebar {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 280px;
+    height: 100vh;
+    background: var(--bg-sidebar);
+    border-right: 1px solid var(--border);
+    overflow-y: auto;
+    padding: 20px 0;
+    z-index: 100;
+    transition: transform 0.3s ease;
+  }
+
+  .sidebar-header {
+    padding: 0 20px 16px;
+    border-bottom: 1px solid var(--border);
+    margin-bottom: 12px;
+  }
+
+  .sidebar-title {
+    font-size: 0.95rem;
+    font-weight: 700;
+    color: var(--fg);
+    line-height: 1.3;
+  }
+
+  .sidebar-controls {
+    display: flex;
+    gap: 8px;
+    margin-top: 12px;
+  }
+
+  .theme-btn {
+    background: var(--card-bg);
+    border: 1px solid var(--border);
+    color: var(--fg-muted);
+    padding: 4px 10px;
+    border-radius: 6px;
+    font-size: 0.7rem;
+    cursor: pointer;
+    transition: all 0.2s;
+  }
+  .theme-btn:hover {
+    border-color: var(--accent);
+    color: var(--accent);
+  }
+  .theme-btn.active {
+    background: var(--accent);
+    color: #fff;
+    border-color: var(--accent);
+  }
+
+  .back-link {
+    display: block;
+    margin-top: 10px;
+    font-size: 0.75rem;
+    color: var(--fg-muted);
+    text-decoration: none;
+  }
+  .back-link:hover {
+    color: var(--accent);
+  }
+
+  /* ── TOC ── */
+  .toc {
+    padding: 0 12px;
+  }
+  .toc ul {
+    list-style: none;
+    padding: 0;
+  }
+  .toc li {
+    margin: 0;
+  }
+  .toc a {
+    display: block;
+    padding: 4px 8px;
+    color: var(--fg-muted);
+    text-decoration: none;
+    font-size: 0.78rem;
+    border-radius: 4px;
+    border-left: 2px solid transparent;
+    transition: all 0.15s;
+    line-height: 1.4;
+  }
+  .toc a:hover {
+    color: var(--accent);
+    background: var(--card-bg);
+    border-left-color: var(--accent);
+  }
+  .toc a.active {
+    color: var(--accent);
+    border-left-color: var(--accent);
+    font-weight: 600;
+  }
+  .toc-h3 a { padding-left: 20px; font-size: 0.75rem; }
+  .toc-h4 a { padding-left: 32px; font-size: 0.72rem; }
+
+  /* ── 본문 ── */
+  .content {
+    margin-left: 280px;
+    flex: 1;
+    max-width: 860px;
+    padding: 40px 48px 80px;
+  }
+
+  /* ── 모바일 ── */
+  .menu-toggle {
+    display: none;
+    position: fixed;
+    top: 12px;
+    left: 12px;
+    z-index: 200;
+    background: var(--bg-sidebar);
+    border: 1px solid var(--border);
+    color: var(--fg);
+    padding: 8px 12px;
+    border-radius: 6px;
+    cursor: pointer;
+    font-size: 1.1rem;
+  }
+
+  @media (max-width: 900px) {
+    .sidebar {
+      transform: translateX(-100%);
+    }
+    .sidebar.open {
+      transform: translateX(0);
+    }
+    .content {
+      margin-left: 0;
+      padding: 60px 20px 60px;
+    }
+    .menu-toggle {
+      display: block;
+    }
+  }
+
+  /* ── 타이포그래피 ── */
+  h1 { font-size: 1.9rem; margin: 2rem 0 1rem; padding-bottom: 0.5rem; border-bottom: 2px solid var(--accent); }
+  h2 { font-size: 1.45rem; margin: 2.5rem 0 0.8rem; padding-bottom: 0.3rem; border-bottom: 1px solid var(--border); color: var(--accent); }
+  h3 { font-size: 1.15rem; margin: 1.8rem 0 0.5rem; }
+  h4 { font-size: 1rem; margin: 1.3rem 0 0.4rem; color: var(--fg-muted); }
+  p { margin: 0.6rem 0; }
+  hr { border: none; border-top: 1px solid var(--border); margin: 2rem 0; }
+  strong { color: var(--strong); }
+  a { color: var(--link); text-decoration: none; }
+  a:hover { text-decoration: underline; }
+  ul, ol { margin: 0.5rem 0 0.5rem 1.5rem; }
+  li { margin: 0.25rem 0; }
+
+  /* ── 테이블 ── */
+  table { width: 100%; border-collapse: collapse; margin: 1rem 0; font-size: 0.85rem; }
+  th, td { border: 1px solid var(--border); padding: 0.5rem 0.75rem; text-align: left; }
+  th { background: var(--table-header); font-weight: 600; }
+  tr:nth-child(even) { background: var(--table-even); }
+  tr:nth-child(odd) { background: var(--table-odd); }
+
+  /* ── 코드 ── */
+  code {
+    background: var(--code-bg);
+    color: var(--code-fg);
+    padding: 0.15rem 0.4rem;
+    border-radius: 4px;
+    font-size: 0.82em;
+    font-family: 'JetBrains Mono', 'Fira Code', 'Cascadia Code', monospace;
+  }
+  pre {
+    background: var(--code-bg);
+    color: var(--code-fg);
+    padding: 1rem 1.2rem;
+    border-radius: 8px;
+    overflow-x: auto;
+    margin: 1rem 0;
+    border: 1px solid var(--border);
+  }
+  pre code {
+    background: none;
+    padding: 0;
+    font-size: 0.82rem;
+    line-height: 1.5;
+  }
+
+  /* ── 인용 ── */
+  blockquote {
+    border-left: 4px solid var(--blockquote-border);
+    padding: 0.6rem 1rem;
+    margin: 1rem 0;
+    background: var(--blockquote-bg);
+    border-radius: 0 6px 6px 0;
+  }
+  blockquote p { margin: 0.3rem 0; }
+
+  /* ── Mermaid ── */
+  .mermaid {
+    margin: 1.5rem 0;
+    text-align: center;
+    background: var(--card-bg);
+    padding: 1rem;
+    border-radius: 8px;
+    border: 1px solid var(--border);
+  }
+  .mermaid svg { max-width: 100%; }
+
+  /* ── Footer ── */
+  footer {
+    margin-top: 3rem;
+    padding-top: 1rem;
+    border-top: 1px solid var(--border);
+    color: var(--fg-muted);
+    font-size: 0.8rem;
+  }
+</style>
+</head>
+<body>
+
+<button class="menu-toggle" onclick="document.querySelector('.sidebar').classList.toggle('open')">☰</button>
+
+<aside class="sidebar">
+  <div class="sidebar-header">
+    <div class="sidebar-title">LangGraph NL2SQL Agent 설계 문서</div>
+    <div class="sidebar-controls">
+      <button class="theme-btn" onclick="setTheme('dark')" id="btn-dark">🌙 Dark</button>
+      <button class="theme-btn" onclick="setTheme('light')" id="btn-light">☀️ Light</button>
+    </div>
+    <a class="back-link" href="index.html">← 문서 목록으로</a>
+  </div>
+  <nav class="toc">
+<ul>
+<li class="toc-h2"><a href="#1-개요">1. 개요</a></li>
+  <li class="toc-h3"><a href="#1-1-목적">1-1. 목적</a></li>
+  <li class="toc-h3"><a href="#1-2-설계-원칙">1-2. 설계 원칙</a></li>
+  <li class="toc-h3"><a href="#1-3-참고한-외부-자료">1-3. 참고한 외부 자료</a></li>
+<li class="toc-h2"><a href="#2-아키텍처">2. 아키텍처</a></li>
+  <li class="toc-h3"><a href="#2-1-전체-구조">2-1. 전체 구조</a></li>
+  <li class="toc-h3"><a href="#2-2-데이터-흐름">2-2. 데이터 흐름</a></li>
+  <li class="toc-h3"><a href="#2-3-모듈-구조">2-3. 모듈 구조</a></li>
+<li class="toc-h2"><a href="#3-핵심-컴포넌트">3. 핵심 컴포넌트</a></li>
+  <li class="toc-h3"><a href="#3-1-queryspec--중간-표현">3-1. QuerySpec — 중간 표현</a></li>
+  <li class="toc-h3"><a href="#3-2-sql-converter--규칙-기반-sql-생성">3-2. SQL Converter — 규칙 기반 SQL 생성</a></li>
+  <li class="toc-h3"><a href="#3-3-schema-registry--스키마-메타데이터">3-3. Schema Registry — 스키마 메타데이터</a></li>
+  <li class="toc-h3"><a href="#3-4-validator--sql-검증">3-4. Validator — SQL 검증</a></li>
+  <li class="toc-h3"><a href="#3-5-langgraph-agent-예정">3-5. LangGraph Agent (예정)</a></li>
+<li class="toc-h2"><a href="#4-평가-전략">4. 평가 전략</a></li>
+  <li class="toc-h3"><a href="#4-1-평가셋-testsevaluation_setyaml">4-1. 평가셋 (tests/evaluation_set.yaml)</a></li>
+  <li class="toc-h3"><a href="#4-2-wrenai-결과와-비교-기준선">4-2. WrenAI 결과와 비교 (기준선)</a></li>
+  <li class="toc-h3"><a href="#4-3-자동-평가-스크립트">4-3. 자동 평가 스크립트</a></li>
+<li class="toc-h2"><a href="#5-wrenaicube와의-비교">5. WrenAI/Cube와의 비교</a></li>
+  <li class="toc-h3"><a href="#5-1-기능-비교">5-1. 기능 비교</a></li>
+  <li class="toc-h3"><a href="#5-2-책임-경계">5-2. 책임 경계</a></li>
+<li class="toc-h2"><a href="#6-bip-경험-이식">6. BIP 경험 이식</a></li>
+  <li class="toc-h3"><a href="#6-1-wrenai에서-배운-것">6-1. WrenAI에서 배운 것</a></li>
+  <li class="toc-h3"><a href="#6-2-wrenai에서-안-됐던-것--이번에-해결">6-2. WrenAI에서 안 됐던 것 → 이번에 해결</a></li>
+<li class="toc-h2"><a href="#7-진행-현황-2026-04-26">7. 진행 현황 (2026-04-26)</a></li>
+  <li class="toc-h3"><a href="#완료">완료</a></li>
+  <li class="toc-h3"><a href="#진행-예정">진행 예정</a></li>
+<li class="toc-h2"><a href="#8-알려진-리스크-codex-검토">8. 알려진 리스크 (Codex 검토)</a></li>
+<li class="toc-h2"><a href="#9-참고">9. 참고</a></li>
+<li class="toc-h2"><a href="#변경-이력">변경 이력</a></li>
+</ul>
+</nav>
+</aside>
+
+<main class="content">
+<h1 id="langgraph-nl2sql-agent-설계-문서">LangGraph NL2SQL Agent 설계 문서</h1>
+<blockquote>
+<p><strong>위치:</strong> <code>BIP-Agents/langgraph/nl2sql/</code>
+<strong>상위 문서:</strong> <code>docs/nl2sql_implementation_plan_v2.md</code> (§11 — v3 방향 전환)</p>
+</blockquote>
+<hr />
+<h2 id="1-개요">1. 개요</h2>
+<h3 id="1-1-목적">1-1. 목적</h3>
+<p>WrenAI를 대체할 자체 NL2SQL 엔진을 LangGraph 기반으로 구축한다. 사내 Oracle 19c 환경 호환과 복합 쿼리(팩트-팩트 JOIN)를 동시에 만족하는 것이 목표.</p>
+<h3 id="1-2-설계-원칙">1-2. 설계 원칙</h3>
+<div class="codehilite"><pre><span></span><code><span class="mf">1.</span><span class="w"> </span><span class="n">LLM에게</span><span class="w"> </span><span class="n">SQL을</span><span class="w"> </span><span class="n">직접</span><span class="w"> </span><span class="n">쓰게</span><span class="w"> </span><span class="n">하지</span><span class="w"> </span><span class="n">않는다</span><span class="mf">.</span>
+<span class="w">   </span><span class="err">→</span><span class="w"> </span><span class="n">LLM은</span><span class="w"> </span><span class="s">&quot;비즈니스 의도(QuerySpec)&quot;</span><span class="n">만</span><span class="w"> </span><span class="n">구조화한다</span><span class="mf">.</span>
+<span class="w">   </span><span class="err">→</span><span class="w"> </span><span class="n">SQL</span><span class="w"> </span><span class="n">생성은</span><span class="w"> </span><span class="n">규칙</span><span class="w"> </span><span class="n">기반</span><span class="w"> </span><span class="n">변환기가</span><span class="w"> </span><span class="n">담당한다</span><span class="mf">.</span>
+
+<span class="mf">2.</span><span class="w"> </span><span class="n">시맨틱</span><span class="w"> </span><span class="n">레이어는</span><span class="w"> </span><span class="n">DB에</span><span class="w"> </span><span class="n">둔다</span><span class="mf">.</span>
+<span class="w">   </span><span class="err">→</span><span class="w"> </span><span class="kr">Go</span><span class="n">ld</span><span class="w"> </span><span class="n">View</span><span class="w"> </span><span class="o">+</span><span class="w"> </span><span class="n">Curated</span><span class="w"> </span><span class="n">View가</span><span class="w"> </span><span class="n">메트릭</span><span class="o">/</span><span class="n">계산식의</span><span class="w"> </span><span class="n">SSOT</span><span class="mf">.</span>
+<span class="w">   </span><span class="err">→</span><span class="w"> </span><span class="n">Cube</span><span class="o">/</span><span class="n">dbt</span><span class="w"> </span><span class="n">같은</span><span class="w"> </span><span class="n">별도</span><span class="w"> </span><span class="n">도구를</span><span class="w"> </span><span class="n">두지</span><span class="w"> </span><span class="n">않는다</span><span class="mf">.</span>
+
+<span class="mf">3.</span><span class="w"> </span><span class="n">메타데이터는</span><span class="w"> </span><span class="n">자동</span><span class="w"> </span><span class="n">추출</span><span class="mf">.</span>
+<span class="w">   </span><span class="err">→</span><span class="w"> </span><span class="n">DB</span><span class="w"> </span><span class="n">COMMENT</span><span class="w"> </span><span class="o">+</span><span class="w"> </span><span class="kr">Open</span><span class="n">Metadata</span><span class="w"> </span><span class="n">API에서</span><span class="w"> </span><span class="n">자동</span><span class="w"> </span><span class="n">동기화</span><span class="mf">.</span>
+<span class="w">   </span><span class="err">→</span><span class="w"> </span><span class="n">JOIN</span><span class="w"> </span><span class="n">관계만</span><span class="w"> </span><span class="n">YAML로</span><span class="w"> </span><span class="n">수동</span><span class="w"> </span><span class="n">관리</span><span class="w"> </span><span class="p">(</span><span class="mf">10</span><span class="n">개</span><span class="w"> </span><span class="n">미만</span><span class="p">)</span><span class="mf">.</span>
+
+<span class="mf">4.</span><span class="w"> </span><span class="n">검증은</span><span class="w"> </span><span class="n">결정론</span><span class="mf">.</span>
+<span class="w">   </span><span class="err">→</span><span class="w"> </span><span class="n">sqlglot</span><span class="w"> </span><span class="n">구문</span><span class="w"> </span><span class="n">검증</span><span class="w"> </span><span class="o">+</span><span class="w"> </span><span class="n">DB</span><span class="w"> </span><span class="n">dry</span><span class="o">-</span><span class="kr">run</span><span class="mf">.</span>
+<span class="w">   </span><span class="err">→</span><span class="w"> </span><span class="n">실패</span><span class="w"> </span><span class="n">시</span><span class="w"> </span><span class="n">LLM에게</span><span class="w"> </span><span class="n">에러</span><span class="w"> </span><span class="n">메시지</span><span class="w"> </span><span class="n">피드백</span><span class="w"> </span><span class="err">→</span><span class="w"> </span><span class="n">재생성</span><span class="w"> </span><span class="p">(</span><span class="mf">3</span><span class="n">회</span><span class="p">)</span><span class="mf">.</span>
+
+<span class="mf">5.</span><span class="w"> </span><span class="n">Agent는</span><span class="w"> </span><span class="n">멀티스텝</span><span class="mf">.</span>
+<span class="w">   </span><span class="err">→</span><span class="w"> </span><span class="mf">1</span><span class="n">질문</span><span class="o">=</span><span class="mf">1</span><span class="n">SQL</span><span class="w"> </span><span class="n">제약</span><span class="w"> </span><span class="n">없음</span><span class="mf">.</span>
+<span class="w">   </span><span class="err">→</span><span class="w"> </span><span class="n">복합</span><span class="w"> </span><span class="n">질문은</span><span class="w"> </span><span class="n">Agent가</span><span class="w"> </span><span class="n">분해</span><span class="w"> </span><span class="o">+</span><span class="w"> </span><span class="n">조합</span><span class="mf">.</span>
+</code></pre></div>
+
+<h3 id="1-3-참고한-외부-자료">1-3. 참고한 외부 자료</h3>
+<table>
+<thead>
+<tr>
+<th>자료</th>
+<th>적용한 패턴</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><strong>WrenAI</strong></td>
+<td>SQL Pairs(Few-shot), Description, 자동 보정 3회</td>
+</tr>
+<tr>
+<td><strong>DAQUV/QUVI</strong></td>
+<td>SMQ(중간 표현) 방식, SafeGuard 노드</td>
+</tr>
+<tr>
+<td><strong>논문 "Querying Databases with Function Calling" (arXiv 2502.00032)</strong></td>
+<td>Function Calling 방식이 SQL 직접 생성보다 안정적</td>
+</tr>
+<tr>
+<td><strong>Codex 검토</strong></td>
+<td>QuerySpec 3단 IR 설계, OM + YAML 조합</td>
+</tr>
+</tbody>
+</table>
+<hr />
+<h2 id="2-아키텍처">2. 아키텍처</h2>
+<h3 id="2-1-전체-구조">2-1. 전체 구조</h3>
+<div class="mermaid">
+graph TB
+    USER[사용자 질문]
+
+    subgraph Agent["LangGraph Agent"]
+        IC[Intent Classifier]
+        SR[Schema Lookup]
+        QG[QuerySpec Generator\nLLM]
+        SC[SQL Converter\n규칙 기반]
+        VAL[Validator]
+        EX[Executor]
+        SY[Result Synthesizer]
+    end
+
+    subgraph Knowledge["Knowledge Layer"]
+        REG[(Schema Registry\nDB + YAML)]
+        VDB[(pgvector\nRAG)]
+    end
+
+    subgraph Data["Data Layer"]
+        DB[(PostgreSQL / Oracle)]
+        OM[(OpenMetadata)]
+    end
+
+    USER --> IC
+    IC --> SR
+    SR --> QG
+    QG --> SC
+    SC --> VAL
+    VAL -->|FAIL| QG
+    VAL -->|PASS| EX
+    EX --> SY
+    SY --> USER
+
+    REG -.-> SR
+    REG -.-> SC
+    VDB -.-> QG
+    OM -.-> REG
+    DB -.-> EX
+    style Agent fill:#4f8fea22,stroke:#4f8fea,stroke-width:2px,color:#e6edf3
+    style Knowledge fill:#6c5ce722,stroke:#6c5ce7,stroke-width:2px,color:#e6edf3
+    style Data fill:#00b89422,stroke:#00b894,stroke-width:2px,color:#e6edf3
+</div>
+
+<h3 id="2-2-데이터-흐름">2-2. 데이터 흐름</h3>
+<div class="mermaid">
+sequenceDiagram
+    participant U as User
+    participant A as Agent
+    participant R as RAG (pgvector)
+    participant L as LLM
+    participant C as SQL Converter
+    participant V as Validator
+    participant D as DB
+
+    U->>A: "저평가주 중 외국인 순매수 종목"
+    A->>R: 유사 SQL Pairs + Glossary 검색
+    R-->>A: top-5 컨텍스트
+    A->>L: 질문 + 스키마 + RAG → QuerySpec 생성 요청
+    L-->>A: QuerySpec (JSON)
+
+    A->>C: QuerySpec → SQL 변환
+    C-->>A: SQL 문자열
+    A->>V: 구문/스키마/보안 검증
+    V-->>A: PASS
+
+    A->>D: SQL 실행
+    D-->>A: 결과 행
+    A->>L: 결과 → 자연어 답변 생성
+    L-->>U: "저평가 + 외국인 순매수 종목은 ..."
+</div>
+
+<h3 id="2-3-모듈-구조">2-3. 모듈 구조</h3>
+<div class="codehilite"><pre><span></span><code><span class="n">BIP</span><span class="o">-</span><span class="n">Agents</span><span class="o">/</span><span class="n">langgraph</span><span class="o">/</span><span class="n">nl2sql</span><span class="o">/</span>
+<span class="err">├──</span><span class="w"> </span><span class="n">__init__</span><span class="p">.</span><span class="n">py</span>
+<span class="err">├──</span><span class="w"> </span><span class="n">query_spec</span><span class="p">.</span><span class="n">py</span><span class="w">          </span><span class="p">#</span><span class="w"> </span><span class="n">QuerySpec</span><span class="w"> </span><span class="n">Pydantic</span><span class="w"> </span><span class="err">모델</span>
+<span class="err">├──</span><span class="w"> </span><span class="n">sql_converter</span><span class="p">.</span><span class="n">py</span><span class="w">       </span><span class="p">#</span><span class="w"> </span><span class="n">QuerySpec</span><span class="w"> </span><span class="err">→</span><span class="w"> </span><span class="n">SQL</span><span class="w"> </span><span class="err">변환기</span><span class="w"> </span><span class="p">(</span><span class="err">규칙</span><span class="w"> </span><span class="err">기반</span><span class="p">)</span>
+<span class="err">├──</span><span class="w"> </span><span class="n">schema_registry</span><span class="p">.</span><span class="n">py</span><span class="w">     </span><span class="p">#</span><span class="w"> </span><span class="err">스키마</span><span class="w"> </span><span class="err">레지스트리</span><span class="w"> </span><span class="p">(</span><span class="n">DB</span><span class="w"> </span><span class="n">COMMENT</span><span class="w"> </span><span class="o">+</span><span class="w"> </span><span class="n">YAML</span><span class="p">)</span>
+<span class="err">├──</span><span class="w"> </span><span class="n">validator</span><span class="p">.</span><span class="n">py</span><span class="w">           </span><span class="p">#</span><span class="w"> </span><span class="n">SQL</span><span class="w"> </span><span class="err">검증</span><span class="w"> </span><span class="p">(</span><span class="n">sqlglot</span><span class="w"> </span><span class="o">+</span><span class="w"> </span><span class="n">dry</span><span class="o">-</span><span class="n">run</span><span class="w"> </span><span class="o">+</span><span class="w"> </span><span class="n">allowlist</span><span class="p">)</span>
+<span class="err">├──</span><span class="w"> </span><span class="n">joins</span><span class="p">.</span><span class="n">yaml</span><span class="w">             </span><span class="p">#</span><span class="w"> </span><span class="n">JOIN</span><span class="w"> </span><span class="err">관계</span><span class="w"> </span><span class="err">정의</span><span class="w"> </span><span class="p">(</span><span class="err">수동</span><span class="p">,</span><span class="w"> </span><span class="mh">11</span><span class="err">개</span><span class="p">)</span>
+<span class="err">├──</span><span class="w"> </span><span class="n">agent</span><span class="p">.</span><span class="n">py</span><span class="w">               </span><span class="p">#</span><span class="w"> </span><span class="n">LangGraph</span><span class="w"> </span><span class="n">Agent</span><span class="w"> </span><span class="p">(</span><span class="err">예정</span><span class="p">)</span>
+<span class="err">├──</span><span class="w"> </span><span class="n">rag</span><span class="p">.</span><span class="n">py</span><span class="w">                 </span><span class="p">#</span><span class="w"> </span><span class="err">벡터</span><span class="w"> </span><span class="err">검색</span><span class="w"> </span><span class="p">(</span><span class="err">예정</span><span class="p">)</span>
+<span class="err">└──</span><span class="w"> </span><span class="n">tests</span><span class="o">/</span>
+<span class="w">    </span><span class="err">└──</span><span class="w"> </span><span class="n">evaluation_set</span><span class="p">.</span><span class="n">yaml</span><span class="w">  </span><span class="p">#</span><span class="w"> </span><span class="err">평가셋</span><span class="w"> </span><span class="mh">23</span><span class="err">개</span><span class="w"> </span><span class="p">(</span><span class="n">WrenAI</span><span class="w"> </span><span class="err">비교용</span><span class="p">)</span>
+</code></pre></div>
+
+<hr />
+<h2 id="3-핵심-컴포넌트">3. 핵심 컴포넌트</h2>
+<h3 id="3-1-queryspec--중간-표현">3-1. QuerySpec — 중간 표현</h3>
+<p><strong>LLM이 생성하는 구조화된 쿼리 명세.</strong> SQL이 아니라 "비즈니스 의도"를 구조화한 IR(Intermediate Representation).</p>
+<div class="codehilite"><pre><span></span><code><span class="k">class</span><span class="w"> </span><span class="nc">QuerySpec</span><span class="p">(</span><span class="n">BaseModel</span><span class="p">):</span>
+    <span class="n">tables</span><span class="p">:</span> <span class="nb">list</span><span class="p">[</span><span class="nb">str</span><span class="p">]</span>                    <span class="c1"># 조회 테이블</span>
+    <span class="n">select</span><span class="p">:</span> <span class="nb">list</span><span class="p">[</span><span class="nb">str</span><span class="p">]</span>                    <span class="c1"># SELECT 컬럼</span>
+    <span class="n">filters</span><span class="p">:</span> <span class="nb">list</span><span class="p">[</span><span class="n">Filter</span><span class="p">]</span> <span class="o">=</span> <span class="p">[]</span>           <span class="c1"># WHERE 조건</span>
+    <span class="n">aggregations</span><span class="p">:</span> <span class="nb">list</span><span class="p">[</span><span class="n">Aggregation</span><span class="p">]</span> <span class="o">=</span> <span class="p">[]</span> <span class="c1"># SUM/AVG/COUNT</span>
+    <span class="n">group_by</span><span class="p">:</span> <span class="nb">list</span><span class="p">[</span><span class="nb">str</span><span class="p">]</span> <span class="o">=</span> <span class="p">[]</span>             <span class="c1"># GROUP BY</span>
+    <span class="n">order_by</span><span class="p">:</span> <span class="nb">list</span><span class="p">[</span><span class="n">OrderBy</span><span class="p">]</span> <span class="o">=</span> <span class="p">[]</span>         <span class="c1"># ORDER BY</span>
+    <span class="n">limit</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="mi">20</span>                      <span class="c1"># LIMIT</span>
+    <span class="n">time_scope</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">TimeScope</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span>  <span class="c1"># 시간 필터</span>
+</code></pre></div>
+
+<p><strong>예시:</strong></p>
+<div class="codehilite"><pre><span></span><code><span class="c1"># 질문: &quot;저평가주 중 외국인 순매수 종목 시총 상위 10개&quot;</span>
+<span class="n">QuerySpec</span><span class="p">(</span>
+    <span class="n">tables</span><span class="o">=</span><span class="p">[</span><span class="s2">&quot;v_valuation_signals__v1&quot;</span><span class="p">,</span> <span class="s2">&quot;v_flow_signals__v1&quot;</span><span class="p">,</span> <span class="s2">&quot;stock_info&quot;</span><span class="p">],</span>
+    <span class="n">select</span><span class="o">=</span><span class="p">[</span><span class="s2">&quot;stock_name&quot;</span><span class="p">,</span> <span class="s2">&quot;per_actual&quot;</span><span class="p">,</span> <span class="s2">&quot;foreign_direction&quot;</span><span class="p">,</span> <span class="s2">&quot;market_value&quot;</span><span class="p">],</span>
+    <span class="n">filters</span><span class="o">=</span><span class="p">[</span>
+        <span class="n">Filter</span><span class="p">(</span><span class="n">column</span><span class="o">=</span><span class="s2">&quot;is_value_stock&quot;</span><span class="p">,</span> <span class="n">op</span><span class="o">=</span><span class="n">FilterOp</span><span class="o">.</span><span class="n">EQ</span><span class="p">,</span> <span class="n">value</span><span class="o">=</span><span class="kc">True</span><span class="p">),</span>
+        <span class="n">Filter</span><span class="p">(</span><span class="n">column</span><span class="o">=</span><span class="s2">&quot;is_foreign_net_buy&quot;</span><span class="p">,</span> <span class="n">op</span><span class="o">=</span><span class="n">FilterOp</span><span class="o">.</span><span class="n">EQ</span><span class="p">,</span> <span class="n">value</span><span class="o">=</span><span class="kc">True</span><span class="p">),</span>
+    <span class="p">],</span>
+    <span class="n">order_by</span><span class="o">=</span><span class="p">[</span><span class="n">OrderBy</span><span class="p">(</span><span class="n">column</span><span class="o">=</span><span class="s2">&quot;market_value&quot;</span><span class="p">,</span> <span class="n">direction</span><span class="o">=</span><span class="n">OrderDirection</span><span class="o">.</span><span class="n">DESC</span><span class="p">)],</span>
+    <span class="n">limit</span><span class="o">=</span><span class="mi">10</span><span class="p">,</span>
+<span class="p">)</span>
+</code></pre></div>
+
+<p><strong>왜 SQL이 아니라 QuerySpec인가?</strong></p>
+<table>
+<thead>
+<tr>
+<th style="text-align: center;">LLM이 SQL 직접 생성</th>
+<th style="text-align: center;">LLM이 QuerySpec 생성</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td style="text-align: center;">SQL 문법 알아야 함</td>
+<td style="text-align: center;">"뭘 보고 싶은지"만 표현</td>
+</tr>
+<tr>
+<td style="text-align: center;">JOIN 경로 LLM이 결정</td>
+<td style="text-align: center;">변환기가 자동 처리</td>
+</tr>
+<tr>
+<td style="text-align: center;">DB 방언 처리 LLM 의존</td>
+<td style="text-align: center;">변환기가 처리</td>
+</tr>
+<tr>
+<td style="text-align: center;">SQL 인젝션 위험</td>
+<td style="text-align: center;">Pydantic 검증</td>
+</tr>
+<tr>
+<td style="text-align: center;">환각 가능성 높음</td>
+<td style="text-align: center;">구조화로 차단</td>
+</tr>
+</tbody>
+</table>
+<h3 id="3-2-sql-converter--규칙-기반-sql-생성">3-2. SQL Converter — 규칙 기반 SQL 생성</h3>
+<p><strong>QuerySpec을 SQL로 변환하는 결정론적 엔진.</strong> LLM 호출 없음.</p>
+<div class="codehilite"><pre><span></span><code><span class="k">class</span><span class="w"> </span><span class="nc">SQLConverter</span><span class="p">:</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">convert</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">spec</span><span class="p">:</span> <span class="n">QuerySpec</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">str</span><span class="p">:</span>
+        <span class="k">return</span> <span class="sa">f</span><span class="s2">&quot;&quot;&quot;</span>
+<span class="s2">        SELECT </span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">_build_select</span><span class="p">(</span><span class="n">spec</span><span class="p">)</span><span class="si">}</span>
+<span class="s2">        FROM </span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">_build_from</span><span class="p">(</span><span class="n">spec</span><span class="p">)</span><span class="si">}</span><span class="s2">     # JOIN 자동 처리</span>
+<span class="s2">        WHERE </span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">_build_where</span><span class="p">(</span><span class="n">spec</span><span class="p">)</span><span class="si">}</span>
+<span class="s2">        ORDER BY </span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">_build_order_by</span><span class="p">(</span><span class="n">spec</span><span class="p">)</span><span class="si">}</span>
+<span class="s2">        LIMIT </span><span class="si">{</span><span class="n">spec</span><span class="o">.</span><span class="n">limit</span><span class="si">}</span>
+<span class="s2">        &quot;&quot;&quot;</span>
+</code></pre></div>
+
+<p><strong>핵심 기능:</strong></p>
+<table>
+<thead>
+<tr>
+<th>기능</th>
+<th>설명</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><strong>JOIN 자동 생성</strong></td>
+<td><code>tables</code> 목록 → <code>joins.yaml</code>에서 경로 탐색 → JOIN 절 생성</td>
+</tr>
+<tr>
+<td><strong>컬럼 alias 처리</strong></td>
+<td><code>stock_name</code> → <code>vs.stock_name</code> (테이블 자동 식별)</td>
+</tr>
+<tr>
+<td><strong>DB 방언 처리</strong></td>
+<td>PostgreSQL: <code>LIMIT N</code>, Oracle: <code>FETCH FIRST N ROWS ONLY</code></td>
+</tr>
+<tr>
+<td><strong>시간 필터 변환</strong></td>
+<td><code>last_7d</code> → <code>CURRENT_DATE - INTERVAL '7 days'</code></td>
+</tr>
+<tr>
+<td><strong>SQL 인젝션 방지</strong></td>
+<td>모든 값을 <code>_quote_value()</code>로 escape</td>
+</tr>
+</tbody>
+</table>
+<p><strong>예시 변환:</strong></p>
+<div class="codehilite"><pre><span></span><code><span class="c1">-- QuerySpec → SQL Converter 출력</span>
+<span class="k">SELECT</span><span class="w"> </span><span class="n">vs</span><span class="p">.</span><span class="n">stock_name</span><span class="p">,</span><span class="w"> </span><span class="n">vs</span><span class="p">.</span><span class="n">per_actual</span><span class="p">,</span><span class="w"> </span><span class="n">fs</span><span class="p">.</span><span class="n">foreign_direction</span><span class="p">,</span><span class="w"> </span><span class="n">si</span><span class="p">.</span><span class="n">market_value</span>
+<span class="k">FROM</span><span class="w"> </span><span class="n">v_valuation_signals__v1</span><span class="w"> </span><span class="n">vs</span>
+<span class="k">JOIN</span><span class="w"> </span><span class="n">v_flow_signals__v1</span><span class="w"> </span><span class="n">fs</span><span class="w"> </span><span class="k">ON</span><span class="w"> </span><span class="n">vs</span><span class="p">.</span><span class="n">ticker</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">fs</span><span class="p">.</span><span class="n">ticker</span>
+<span class="k">JOIN</span><span class="w"> </span><span class="n">stock_info</span><span class="w"> </span><span class="n">si</span><span class="w"> </span><span class="k">ON</span><span class="w"> </span><span class="n">vs</span><span class="p">.</span><span class="n">ticker</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">si</span><span class="p">.</span><span class="n">ticker</span>
+<span class="k">WHERE</span><span class="w"> </span><span class="n">vs</span><span class="p">.</span><span class="n">is_value_stock</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="k">true</span>
+<span class="w">  </span><span class="k">AND</span><span class="w"> </span><span class="n">fs</span><span class="p">.</span><span class="n">is_foreign_net_buy</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="k">true</span>
+<span class="k">ORDER</span><span class="w"> </span><span class="k">BY</span><span class="w"> </span><span class="n">si</span><span class="p">.</span><span class="n">market_value</span><span class="w"> </span><span class="k">DESC</span>
+<span class="k">LIMIT</span><span class="w"> </span><span class="mi">10</span>
+</code></pre></div>
+
+<h3 id="3-3-schema-registry--스키마-메타데이터">3-3. Schema Registry — 스키마 메타데이터</h3>
+<p><strong>DB COMMENT + JOIN YAML을 통합 관리하는 레지스트리.</strong></p>
+<div class="codehilite"><pre><span></span><code><span class="k">class</span><span class="w"> </span><span class="nc">SchemaRegistry</span><span class="p">:</span>
+    <span class="n">tables</span><span class="p">:</span> <span class="nb">dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">TableInfo</span><span class="p">]</span>   <span class="c1"># 테이블/컬럼/설명 (DB 자동 추출)</span>
+    <span class="n">joins</span><span class="p">:</span> <span class="nb">list</span><span class="p">[</span><span class="n">JoinInfo</span><span class="p">]</span>          <span class="c1"># JOIN 관계 (YAML 수동)</span>
+
+    <span class="k">async</span> <span class="k">def</span><span class="w"> </span><span class="nf">load_from_db</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">dsn</span><span class="p">):</span> <span class="o">...</span>     <span class="c1"># DB COMMENT → tables</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">load_joins</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">yaml_path</span><span class="p">):</span> <span class="o">...</span>        <span class="c1"># joins.yaml → joins</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">find_join_path</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">tables</span><span class="p">):</span> <span class="o">...</span>       <span class="c1"># 다중 테이블 JOIN 경로</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">get_schema_prompt</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">tables</span><span class="p">):</span> <span class="o">...</span>    <span class="c1"># LLM 프롬프트용 요약</span>
+</code></pre></div>
+
+<p><strong>joins.yaml 예시:</strong></p>
+<div class="codehilite"><pre><span></span><code><span class="nt">joins</span><span class="p">:</span>
+<span class="w">  </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="nt">tables</span><span class="p">:</span><span class="w"> </span><span class="p p-Indicator">[</span><span class="s">&quot;stock_info&quot;</span><span class="p p-Indicator">,</span><span class="w"> </span><span class="s">&quot;v_valuation_signals__v1&quot;</span><span class="p p-Indicator">]</span>
+<span class="w">    </span><span class="nt">on</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;ticker&quot;</span>
+<span class="w">    </span><span class="nt">type</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;one_to_many&quot;</span>
+
+<span class="w">  </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="nt">tables</span><span class="p">:</span><span class="w"> </span><span class="p p-Indicator">[</span><span class="s">&quot;v_technical_signals__v1&quot;</span><span class="p p-Indicator">,</span><span class="w"> </span><span class="s">&quot;v_flow_signals__v1&quot;</span><span class="p p-Indicator">]</span>
+<span class="w">    </span><span class="nt">on</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;ticker,</span><span class="nv"> </span><span class="s">trade_date&quot;</span><span class="w">   </span><span class="c1"># 같은 grain끼리 직접 JOIN</span>
+<span class="w">    </span><span class="nt">type</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;one_to_one&quot;</span>
+
+<span class="w">  </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="nt">tables</span><span class="p">:</span><span class="w"> </span><span class="p p-Indicator">[</span><span class="s">&quot;v_valuation_signals__v1&quot;</span><span class="p p-Indicator">,</span><span class="w"> </span><span class="s">&quot;v_flow_signals__v1&quot;</span><span class="p p-Indicator">]</span>
+<span class="w">    </span><span class="nt">on</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;ticker&quot;</span>
+<span class="w">    </span><span class="nt">type</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;many_to_many&quot;</span>
+<span class="w">    </span><span class="nt">note</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;grain</span><span class="nv"> </span><span class="s">불일치</span><span class="nv"> </span><span class="s">(연도</span><span class="nv"> </span><span class="s">vs</span><span class="nv"> </span><span class="s">일자)</span><span class="nv"> </span><span class="s">—</span><span class="nv"> </span><span class="s">최신</span><span class="nv"> </span><span class="s">행</span><span class="nv"> </span><span class="s">필터</span><span class="nv"> </span><span class="s">권장&quot;</span>
+</code></pre></div>
+
+<p><strong>왜 OpenMetadata Lineage로 안 되는가?</strong>
+- Lineage = 데이터 흐름 (이 테이블이 어디서 왔는지)
+- JOIN 관계 = 어떤 컬럼끼리 연결하는지 (별개 메타)
+- OM에는 JOIN 정보가 없으므로 YAML로 보완</p>
+<h3 id="3-4-validator--sql-검증">3-4. Validator — SQL 검증</h3>
+<p><strong>3단계 검증 + 자동 보정.</strong></p>
+<div class="codehilite"><pre><span></span><code><span class="k">class</span><span class="w"> </span><span class="nc">SQLValidator</span><span class="p">:</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">validate_syntax</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">sql</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">ValidationResult</span><span class="p">:</span>
+        <span class="c1"># 1. SELECT only 확인</span>
+        <span class="c1"># 2. 금지 키워드 (INSERT, UPDATE, DELETE, DROP 등)</span>
+        <span class="c1"># 3. sqlglot 파싱</span>
+
+    <span class="k">def</span><span class="w"> </span><span class="nf">validate_tables</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">sql</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">ValidationResult</span><span class="p">:</span>
+        <span class="c1"># 4. allowlist 확인 (8개 테이블만 허용)</span>
+
+    <span class="k">async</span> <span class="k">def</span><span class="w"> </span><span class="nf">validate_with_db</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">sql</span><span class="p">,</span> <span class="n">dsn</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">ValidationResult</span><span class="p">:</span>
+        <span class="c1"># 5. EXPLAIN 실행 (스키마 검증)</span>
+</code></pre></div>
+
+<p><strong>ALLOWED_TABLES (NL2SQL 대상):</strong></p>
+<div class="codehilite"><pre><span></span><code><span class="n">ALLOWED_TABLES</span> <span class="o">=</span> <span class="p">{</span>
+    <span class="s2">&quot;stock_info&quot;</span><span class="p">,</span>
+    <span class="s2">&quot;analytics_stock_daily&quot;</span><span class="p">,</span>
+    <span class="s2">&quot;analytics_valuation&quot;</span><span class="p">,</span>
+    <span class="s2">&quot;analytics_macro_daily&quot;</span><span class="p">,</span>
+    <span class="s2">&quot;v_valuation_signals__v1&quot;</span><span class="p">,</span>
+    <span class="s2">&quot;v_technical_signals__v1&quot;</span><span class="p">,</span>
+    <span class="s2">&quot;v_flow_signals__v1&quot;</span><span class="p">,</span>
+    <span class="s2">&quot;v_latest_valuation&quot;</span><span class="p">,</span>
+<span class="p">}</span>
+</code></pre></div>
+
+<p>민감 테이블(portfolio, holding, transaction 등)은 allowlist에 없으므로 SQL이 생성되어도 차단됨.</p>
+<h3 id="3-5-langgraph-agent-예정">3-5. LangGraph Agent (예정)</h3>
+<p><strong>노드 구성:</strong></p>
+<div class="mermaid">
+graph LR
+    START([Start]) --> IC[intent_classifier]
+    IC --> SL[schema_lookup]
+    SL --> QG[query_spec_generator]
+    QG --> SC[sql_converter]
+    SC --> VAL[validator]
+    VAL -->|fail\nretry < 3| QG
+    VAL -->|pass| EX[executor]
+    VAL -->|fail\nretry >= 3| ERR[error_response]
+    EX --> SY[synthesizer]
+    SY --> END([End])
+    ERR --> END
+</div>
+
+<p><strong>State 정의 (예시):</strong></p>
+<div class="codehilite"><pre><span></span><code><span class="k">class</span><span class="w"> </span><span class="nc">NL2SQLState</span><span class="p">(</span><span class="n">TypedDict</span><span class="p">):</span>
+    <span class="n">question</span><span class="p">:</span> <span class="nb">str</span>
+    <span class="n">intent</span><span class="p">:</span> <span class="nb">str</span>                           <span class="c1"># text_to_sql / general / clarify</span>
+    <span class="n">schema_context</span><span class="p">:</span> <span class="nb">str</span>                   <span class="c1"># RAG 결과</span>
+    <span class="n">query_spec</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">QuerySpec</span><span class="p">]</span>
+    <span class="n">sql</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">str</span><span class="p">]</span>
+    <span class="n">validation_error</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">str</span><span class="p">]</span>
+    <span class="n">retry_count</span><span class="p">:</span> <span class="nb">int</span>
+    <span class="n">rows</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">list</span><span class="p">[</span><span class="nb">dict</span><span class="p">]]</span>
+    <span class="n">answer</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">str</span><span class="p">]</span>
+</code></pre></div>
+
+<hr />
+<h2 id="4-평가-전략">4. 평가 전략</h2>
+<h3 id="4-1-평가셋-testsevaluation_setyaml">4-1. 평가셋 (<code>tests/evaluation_set.yaml</code>)</h3>
+<p>WrenAI Phase 1에서 100% 달성한 동일한 질문을 사용 → <strong>순수한 NL2SQL 엔진 비교</strong>.</p>
+<table>
+<thead>
+<tr>
+<th>카테고리</th>
+<th style="text-align: center;">질문 수</th>
+<th>예시</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>기본 조회</td>
+<td style="text-align: center;">5</td>
+<td>삼성전자 PER, 코스피 시총 상위 5</td>
+</tr>
+<tr>
+<td>Boolean flag</td>
+<td style="text-align: center;">5</td>
+<td>저평가주, 과매도 종목</td>
+</tr>
+<tr>
+<td>비교 분석</td>
+<td style="text-align: center;">2</td>
+<td>삼성전자 vs SK하이닉스</td>
+</tr>
+<tr>
+<td>data_type 활용</td>
+<td style="text-align: center;">2</td>
+<td>잠정 실적, 추정치 비교</td>
+</tr>
+<tr>
+<td><strong>복합 JOIN</strong></td>
+<td style="text-align: center;"><strong>8</strong></td>
+<td><strong>저평가 + 외국인 매수, 과매도 + 저평가</strong></td>
+</tr>
+<tr>
+<td><strong>합계</strong></td>
+<td style="text-align: center;"><strong>23</strong></td>
+<td></td>
+</tr>
+</tbody>
+</table>
+<h3 id="4-2-wrenai-결과와-비교-기준선">4-2. WrenAI 결과와 비교 (기준선)</h3>
+<table>
+<thead>
+<tr>
+<th>지표</th>
+<th style="text-align: center;">WrenAI Phase 1</th>
+<th style="text-align: center;">LangGraph Agent (목표)</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>SQL 생성률</td>
+<td style="text-align: center;">100% (15/15)</td>
+<td style="text-align: center;">≥ 95%</td>
+</tr>
+<tr>
+<td>DB 실행률</td>
+<td style="text-align: center;">100% (15/15)</td>
+<td style="text-align: center;">≥ 95%</td>
+</tr>
+<tr>
+<td>Boolean flag 사용</td>
+<td style="text-align: center;">87% (7/8)</td>
+<td style="text-align: center;">≥ 80%</td>
+</tr>
+<tr>
+<td>복합 JOIN 성공</td>
+<td style="text-align: center;">✅</td>
+<td style="text-align: center;"><strong>✅ (필수)</strong></td>
+</tr>
+<tr>
+<td>평균 응답 속도</td>
+<td style="text-align: center;">10s</td>
+<td style="text-align: center;">≤ 15s</td>
+</tr>
+</tbody>
+</table>
+<p><strong>복합 JOIN 성공이 핵심 KPI.</strong> Cube에서 실패한 영역.</p>
+<h3 id="4-3-자동-평가-스크립트">4-3. 자동 평가 스크립트</h3>
+<div class="codehilite"><pre><span></span><code><span class="c1"># 사용 예시 (구현 예정)</span>
+python<span class="w"> </span>-m<span class="w"> </span>nl2sql.tests.run_evaluation<span class="w"> </span><span class="se">\</span>
+<span class="w">  </span>--dataset<span class="w"> </span>tests/evaluation_set.yaml<span class="w"> </span><span class="se">\</span>
+<span class="w">  </span>--baseline<span class="w"> </span>reports/wrenai_phase1_results.json<span class="w"> </span><span class="se">\</span>
+<span class="w">  </span>--output<span class="w"> </span>reports/agent_evaluation.json
+</code></pre></div>
+
+<hr />
+<h2 id="5-wrenaicube와의-비교">5. WrenAI/Cube와의 비교</h2>
+<h3 id="5-1-기능-비교">5-1. 기능 비교</h3>
+<table>
+<thead>
+<tr>
+<th>항목</th>
+<th style="text-align: center;">WrenAI</th>
+<th style="text-align: center;">Cube</th>
+<th style="text-align: center;">LangGraph Agent (이 설계)</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>SQL 생성 방식</td>
+<td style="text-align: center;">LLM 직접</td>
+<td style="text-align: center;">Cube API</td>
+<td style="text-align: center;"><strong>LLM → QuerySpec → 변환기</strong></td>
+</tr>
+<tr>
+<td>시맨틱 레이어</td>
+<td style="text-align: center;">MDL (경량)</td>
+<td style="text-align: center;">Cube model</td>
+<td style="text-align: center;"><strong>DB View (Gold/Curated)</strong></td>
+</tr>
+<tr>
+<td>복합 JOIN</td>
+<td style="text-align: center;">✅</td>
+<td style="text-align: center;">❌ 제약</td>
+<td style="text-align: center;"><strong>✅</strong></td>
+</tr>
+<tr>
+<td>Oracle 19c</td>
+<td style="text-align: center;">❌ 23ai만</td>
+<td style="text-align: center;">✅</td>
+<td style="text-align: center;"><strong>✅</strong></td>
+</tr>
+<tr>
+<td>멀티스텝 쿼리</td>
+<td style="text-align: center;">❌</td>
+<td style="text-align: center;">❌</td>
+<td style="text-align: center;"><strong>✅</strong></td>
+</tr>
+<tr>
+<td>비정형 RAG 확장</td>
+<td style="text-align: center;">❌</td>
+<td style="text-align: center;">❌</td>
+<td style="text-align: center;"><strong>✅</strong></td>
+</tr>
+<tr>
+<td>자동 보정</td>
+<td style="text-align: center;">✅ 3회</td>
+<td style="text-align: center;">❌</td>
+<td style="text-align: center;"><strong>✅ 3회</strong></td>
+</tr>
+<tr>
+<td>사내 LLM 사용</td>
+<td style="text-align: center;">⚠️ LiteLLM</td>
+<td style="text-align: center;">-</td>
+<td style="text-align: center;"><strong>✅ 자유</strong></td>
+</tr>
+<tr>
+<td>관리 UI</td>
+<td style="text-align: center;">✅</td>
+<td style="text-align: center;">✅</td>
+<td style="text-align: center;">❌ (코드 관리)</td>
+</tr>
+<tr>
+<td>구현 비용</td>
+<td style="text-align: center;">0</td>
+<td style="text-align: center;">0</td>
+<td style="text-align: center;">2-3주</td>
+</tr>
+</tbody>
+</table>
+<h3 id="5-2-책임-경계">5-2. 책임 경계</h3>
+<div class="mermaid">
+graph TB
+    subgraph LLM["LLM의 책임"]
+        L1[질문 의도 파악]
+        L2[QuerySpec 생성]
+        L3[결과 → 자연어 변환]
+    end
+
+    subgraph CODE["코드의 책임"]
+        C1[Schema/JOIN 조회]
+        C2[SQL 생성 — 규칙 기반]
+        C3[검증 — sqlglot/dry-run]
+        C4[실행 — DB connection]
+        C5[보안 — allowlist/audit]
+    end
+
+    L1 --> L2
+    L2 --> C2
+    C2 --> C3
+    C3 --> C4
+    C4 --> L3
+    C1 -.context.-> L2
+    C5 -.guard.-> C2
+    C5 -.guard.-> C4
+    style LLM fill:#4f8fea22,stroke:#4f8fea,stroke-width:2px,color:#e6edf3
+    style CODE fill:#6c5ce722,stroke:#6c5ce7,stroke-width:2px,color:#e6edf3
+</div>
+
+<p><strong>원칙:</strong> LLM이 결정하는 영역을 최소화한다. SQL의 위험한 부분(JOIN, 보안, 방언)은 결정론으로 처리.</p>
+<hr />
+<h2 id="6-bip-경험-이식">6. BIP 경험 이식</h2>
+<h3 id="6-1-wrenai에서-배운-것">6-1. WrenAI에서 배운 것</h3>
+<table>
+<thead>
+<tr>
+<th>BIP 자산</th>
+<th>LangGraph Agent에서 활용</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Gold Table 3종</td>
+<td>그대로 사용 (DB 시맨틱 레이어)</td>
+</tr>
+<tr>
+<td>Curated View 4종</td>
+<td>그대로 사용</td>
+</tr>
+<tr>
+<td>Boolean flag (is_value_stock 등)</td>
+<td>LLM이 QuerySpec 필터로 활용</td>
+</tr>
+<tr>
+<td>해석 컬럼 (foreign_direction)</td>
+<td>sql_answer 환각 방지에 그대로 유효</td>
+</tr>
+<tr>
+<td>SQL Pairs 70개</td>
+<td>벡터 DB에 임베딩 → Few-shot</td>
+</tr>
+<tr>
+<td>Instructions 4개</td>
+<td>Agent System Prompt</td>
+</tr>
+<tr>
+<td>OM Glossary 77개</td>
+<td>벡터 DB에 임베딩</td>
+</tr>
+<tr>
+<td>4-layer 보안</td>
+<td>Validator + DB role + audit log 그대로</td>
+</tr>
+<tr>
+<td>평가셋 15개</td>
+<td>tests/evaluation_set.yaml에 통합</td>
+</tr>
+</tbody>
+</table>
+<h3 id="6-2-wrenai에서-안-됐던-것--이번에-해결">6-2. WrenAI에서 안 됐던 것 → 이번에 해결</h3>
+<table>
+<thead>
+<tr>
+<th>WrenAI 한계</th>
+<th>LangGraph Agent에서</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>1질문=1SQL</td>
+<td>Agent 멀티스텝</td>
+</tr>
+<tr>
+<td>sql_answer 환각</td>
+<td>Result Synthesizer 직접 제어</td>
+</tr>
+<tr>
+<td>프롬프트 커스터마이징 불가</td>
+<td>완전 제어</td>
+</tr>
+<tr>
+<td>OpenAI json_schema 편향</td>
+<td>LLM 자유 선택</td>
+</tr>
+<tr>
+<td>Oracle 19c 미지원</td>
+<td>직결 가능</td>
+</tr>
+<tr>
+<td>비정형 RAG 불가</td>
+<td>RAG Tool 확장</td>
+</tr>
+</tbody>
+</table>
+<hr />
+<h2 id="7-진행-현황-2026-04-26">7. 진행 현황 (2026-04-26)</h2>
+<h3 id="완료">완료</h3>
+<ul>
+<li>[x] QuerySpec Pydantic 모델 (<code>query_spec.py</code>)</li>
+<li>[x] SQL Converter 뼈대 (<code>sql_converter.py</code>)</li>
+<li>[x] Schema Registry 뼈대 (<code>schema_registry.py</code>)</li>
+<li>[x] Validator 뼈대 (<code>validator.py</code>)</li>
+<li>[x] joins.yaml (11개 JOIN 관계)</li>
+<li>[x] 평가셋 정의 (23개 질문)</li>
+</ul>
+<h3 id="진행-예정">진행 예정</h3>
+<ul>
+<li>[ ] SQL Converter 단위 테스트 (실데이터)</li>
+<li>[ ] Schema Registry DB 연결 테스트</li>
+<li>[ ] LangGraph Agent 노드 구성 (<code>agent.py</code>)</li>
+<li>[ ] 벡터 DB (pgvector) 구축 + 임베딩 적재 (<code>rag.py</code>)</li>
+<li>[ ] Agent 통합 + 자동 보정 루프</li>
+<li>[ ] 평가셋 23개 실행 → WrenAI 결과 비교</li>
+<li>[ ] FastAPI 라우트 추가 (<code>api.py</code>)</li>
+</ul>
+<hr />
+<h2 id="8-알려진-리스크-codex-검토">8. 알려진 리스크 (Codex 검토)</h2>
+<table>
+<thead>
+<tr>
+<th>리스크</th>
+<th>대응</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><strong>팬아웃/중복 집계</strong></td>
+<td>JOIN 시 grain 검증, COUNT DISTINCT 명시적 사용</td>
+</tr>
+<tr>
+<td><strong>시점 의미</strong></td>
+<td>"최근/이번 분기" → TimeScope 정책 고정</td>
+</tr>
+<tr>
+<td><strong>비가산 지표</strong></td>
+<td>비율/평균 재집계 방지, 사전 계산된 컬럼 우선</td>
+</tr>
+<tr>
+<td><strong>Oracle/PG 차이</strong></td>
+<td>dialect 분기 처리 (Converter 내부)</td>
+</tr>
+<tr>
+<td><strong>검증 과신</strong></td>
+<td>sqlglot은 의미까지 보장 안 함 → 평가셋 결과 검증 필수</td>
+</tr>
+<tr>
+<td><strong>모호한 질문</strong></td>
+<td>clarify(되묻기) 정책 (Phase 4)</td>
+</tr>
+<tr>
+<td><strong>표현 한계</strong></td>
+<td>서브쿼리/윈도우 함수 → fallback to direct SQL (allowlist 한정)</td>
+</tr>
+</tbody>
+</table>
+<hr />
+<h2 id="9-참고">9. 참고</h2>
+<table>
+<thead>
+<tr>
+<th>항목</th>
+<th>위치</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>상위 의사결정 문서</td>
+<td><code>docs/nl2sql_implementation_plan_v2.md</code> §11</td>
+</tr>
+<tr>
+<td>WrenAI 결과 (비교 기준선)</td>
+<td><code>docs/wrenai_test_report.md</code></td>
+</tr>
+<tr>
+<td>Curated View 패턴</td>
+<td><code>docs/nl2sql_enterprise_playbook.md</code></td>
+</tr>
+<tr>
+<td>코드 위치</td>
+<td><code>BIP-Agents/langgraph/nl2sql/</code></td>
+</tr>
+<tr>
+<td>평가셋</td>
+<td><code>BIP-Agents/langgraph/nl2sql/tests/evaluation_set.yaml</code></td>
+</tr>
+<tr>
+<td><strong>DAQUV/QUVI</strong> (참고 솔루션)</td>
+<td>https://docs.daquv.com</td>
+</tr>
+<tr>
+<td><strong>논문</strong></td>
+<td>arXiv:2502.00032 — Querying Databases with Function Calling</td>
+</tr>
+</tbody>
+</table>
+<hr />
+<h2 id="변경-이력">변경 이력</h2>
+<table>
+<thead>
+<tr>
+<th>날짜</th>
+<th>내용</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>2026-04-26</td>
+<td>초안 작성 (Cube 탈락 → LangGraph 직접 구현 결정 후 상세 설계)</td>
+</tr>
+</tbody>
+</table>
+</main>
+
+<script>
+  // 테마 전환
+  function setTheme(theme) {
+    document.documentElement.setAttribute('data-theme', theme);
+    localStorage.setItem('doc-theme', theme);
+    document.getElementById('btn-dark').classList.toggle('active', theme === 'dark');
+    document.getElementById('btn-light').classList.toggle('active', theme === 'light');
+    // Mermaid 재렌더링
+    if (typeof mermaid !== 'undefined') {
+      mermaid.initialize({ startOnLoad: false, theme: 'base', securityLevel: 'loose', themeVariables: getMermaidTheme(theme) });
+      document.querySelectorAll('.mermaid').forEach(el => {
+        // 원본 코드 보존 (최초 1회만 저장)
+        if (!el.dataset.source) {
+          el.dataset.source = el.textContent;
+        }
+        el.removeAttribute('data-processed');
+        el.innerHTML = el.dataset.source;
+      });
+      mermaid.run();
+    }
+  }
+
+  // 저장된 테마 로드
+  const savedTheme = localStorage.getItem('doc-theme') || 'dark';
+  setTheme(savedTheme);
+
+  // Mermaid 초기화
+  function getMermaidTheme(theme) {
+    const dark = {
+      primaryColor: '#3d7be0',
+      primaryTextColor: '#ffffff',
+      primaryBorderColor: '#5a9cf0',
+      secondaryColor: '#7c5cbf',
+      secondaryTextColor: '#ffffff',
+      secondaryBorderColor: '#a29bfe',
+      tertiaryColor: '#00997a',
+      tertiaryTextColor: '#ffffff',
+      tertiaryBorderColor: '#55efc4',
+      noteTextColor: '#f0f0f0',
+      noteBkgColor: '#2d3436',
+      noteBorderColor: '#636e72',
+      lineColor: '#8b949e',
+      textColor: '#e6edf3',
+      mainBkg: '#1e3050',
+      nodeBorder: '#5a9cf0',
+      clusterBkg: '#1a1e2e',
+      clusterBorder: '#4a5568',
+      titleColor: '#79c0ff',
+      edgeLabelBackground: '#21262d',
+      actorBkg: '#3d7be0',
+      actorTextColor: '#ffffff',
+      actorBorder: '#5a9cf0',
+      signalColor: '#8b949e',
+      labelBoxBkgColor: '#21262d',
+      labelBoxBorderColor: '#4a5568',
+      labelTextColor: '#e6edf3',
+      loopTextColor: '#e6edf3',
+      activationBorderColor: '#5a9cf0',
+      activationBkgColor: '#1e3050',
+      sequenceNumberColor: '#ffffff',
+      pie1: '#4f8fea', pie2: '#6c5ce7', pie3: '#00b894', pie4: '#e17055',
+      pie5: '#fdcb6e', pie6: '#00cec9', pie7: '#e84393', pie8: '#0984e3'
+    };
+    const light = {
+      primaryColor: '#4f8fea',
+      primaryTextColor: '#1a1a2e',
+      primaryBorderColor: '#3a7bd5',
+      secondaryColor: '#a29bfe',
+      secondaryTextColor: '#1a1a2e',
+      secondaryBorderColor: '#6c5ce7',
+      tertiaryColor: '#55efc4',
+      tertiaryTextColor: '#1a1a2e',
+      tertiaryBorderColor: '#00b894',
+      noteTextColor: '#2d3436',
+      noteBkgColor: '#ffeaa7',
+      noteBorderColor: '#fdcb6e',
+      lineColor: '#636e72',
+      textColor: '#2d3436',
+      mainBkg: '#dfe6e9',
+      nodeBorder: '#3a7bd5',
+      clusterBkg: '#f0f3f5',
+      clusterBorder: '#b2bec3',
+      titleColor: '#2d3436',
+      edgeLabelBackground: '#ffffff',
+      actorBkg: '#4f8fea',
+      actorTextColor: '#ffffff',
+      actorBorder: '#3a7bd5',
+      signalColor: '#636e72',
+      labelBoxBkgColor: '#ffffff',
+      labelBoxBorderColor: '#b2bec3',
+      labelTextColor: '#2d3436',
+      loopTextColor: '#2d3436',
+      activationBorderColor: '#3a7bd5',
+      activationBkgColor: '#dfe6e9',
+      sequenceNumberColor: '#ffffff',
+      pie1: '#4f8fea', pie2: '#6c5ce7', pie3: '#00b894', pie4: '#e17055',
+      pie5: '#fdcb6e', pie6: '#00cec9', pie7: '#e84393', pie8: '#0984e3'
+    };
+    return theme === 'dark' ? dark : light;
+  }
+
+  // 초기 렌더링 전에 원본 코드 저장
+  document.querySelectorAll('.mermaid').forEach(el => {
+    el.dataset.source = el.textContent;
+  });
+  mermaid.initialize({ startOnLoad: true, theme: 'base', securityLevel: 'loose', themeVariables: getMermaidTheme(savedTheme) });
+
+  // TOC 현재 위치 하이라이트
+  const tocLinks = document.querySelectorAll('.toc a');
+  const headings = [];
+  tocLinks.forEach(link => {
+    const id = link.getAttribute('href').slice(1);
+    const el = document.getElementById(id);
+    if (el) headings.push({ el, link });
+  });
+
+  function updateActiveToc() {
+    let current = null;
+    for (const h of headings) {
+      if (h.el.getBoundingClientRect().top <= 100) current = h;
+    }
+    tocLinks.forEach(l => l.classList.remove('active'));
+    if (current) current.link.classList.add('active');
+  }
+
+  window.addEventListener('scroll', updateActiveToc, { passive: true });
+  updateActiveToc();
+
+  // 모바일: 링크 클릭 시 사이드바 닫기
+  tocLinks.forEach(link => {
+    link.addEventListener('click', () => {
+      if (window.innerWidth <= 900) {
+        document.querySelector('.sidebar').classList.remove('open');
+      }
+    });
+  });
+</script>
+
+</body>
+</html>
