@@ -1,0 +1,681 @@
+<!DOCTYPE html>
+<html lang="ko" data-theme="dark">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>실전 워크플로우</title>
+<script src="https://cdn.jsdelivr.net/npm/mermaid@11/dist/mermaid.min.js"></script>
+<style>
+  /* ── 테마 변수 ── */
+  :root[data-theme="dark"] {
+    --bg: #0d1117;
+    --bg-sidebar: #161b22;
+    --fg: #e6edf3;
+    --fg-muted: #8b949e;
+    --border: #30363d;
+    --accent: #58a6ff;
+    --accent-hover: #79c0ff;
+    --code-bg: #1e293b;
+    --code-fg: #e2e8f0;
+    --table-header: #161b22;
+    --table-even: #0d1117;
+    --table-odd: #161b22;
+    --blockquote-bg: #161b22;
+    --blockquote-border: #3b82f6;
+    --link: #58a6ff;
+    --strong: #79c0ff;
+    --card-bg: #21262d;
+  }
+  :root[data-theme="light"] {
+    --bg: #ffffff;
+    --bg-sidebar: #f6f8fa;
+    --fg: #1f2937;
+    --fg-muted: #6b7280;
+    --border: #e5e7eb;
+    --accent: #2563eb;
+    --accent-hover: #1d4ed8;
+    --code-bg: #f3f4f6;
+    --code-fg: #1e293b;
+    --table-header: #f8fafc;
+    --table-even: #ffffff;
+    --table-odd: #f9fafb;
+    --blockquote-bg: #eff6ff;
+    --blockquote-border: #3b82f6;
+    --link: #2563eb;
+    --strong: #1e40af;
+    --card-bg: #f3f4f6;
+  }
+
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+
+  body {
+    font-family: 'Pretendard', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+    background: var(--bg);
+    color: var(--fg);
+    line-height: 1.75;
+    display: flex;
+    min-height: 100vh;
+  }
+
+  /* ── 사이드바 ── */
+  .sidebar {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 280px;
+    height: 100vh;
+    background: var(--bg-sidebar);
+    border-right: 1px solid var(--border);
+    overflow-y: auto;
+    padding: 20px 0;
+    z-index: 100;
+    transition: transform 0.3s ease;
+  }
+
+  .sidebar-header {
+    padding: 0 20px 16px;
+    border-bottom: 1px solid var(--border);
+    margin-bottom: 12px;
+  }
+
+  .sidebar-title {
+    font-size: 0.95rem;
+    font-weight: 700;
+    color: var(--fg);
+    line-height: 1.3;
+  }
+
+  .sidebar-controls {
+    display: flex;
+    gap: 8px;
+    margin-top: 12px;
+  }
+
+  .theme-btn {
+    background: var(--card-bg);
+    border: 1px solid var(--border);
+    color: var(--fg-muted);
+    padding: 4px 10px;
+    border-radius: 6px;
+    font-size: 0.7rem;
+    cursor: pointer;
+    transition: all 0.2s;
+  }
+  .theme-btn:hover {
+    border-color: var(--accent);
+    color: var(--accent);
+  }
+  .theme-btn.active {
+    background: var(--accent);
+    color: #fff;
+    border-color: var(--accent);
+  }
+
+  .back-link {
+    display: block;
+    margin-top: 10px;
+    font-size: 0.75rem;
+    color: var(--fg-muted);
+    text-decoration: none;
+  }
+  .back-link:hover {
+    color: var(--accent);
+  }
+
+  /* ── TOC ── */
+  .toc {
+    padding: 0 12px;
+  }
+  .toc ul {
+    list-style: none;
+    padding: 0;
+  }
+  .toc li {
+    margin: 0;
+  }
+  .toc a {
+    display: block;
+    padding: 4px 8px;
+    color: var(--fg-muted);
+    text-decoration: none;
+    font-size: 0.78rem;
+    border-radius: 4px;
+    border-left: 2px solid transparent;
+    transition: all 0.15s;
+    line-height: 1.4;
+  }
+  .toc a:hover {
+    color: var(--accent);
+    background: var(--card-bg);
+    border-left-color: var(--accent);
+  }
+  .toc a.active {
+    color: var(--accent);
+    border-left-color: var(--accent);
+    font-weight: 600;
+  }
+  .toc-h3 a { padding-left: 20px; font-size: 0.75rem; }
+  .toc-h4 a { padding-left: 32px; font-size: 0.72rem; }
+
+  /* ── 본문 ── */
+  .content {
+    margin-left: 280px;
+    flex: 1;
+    max-width: 860px;
+    padding: 40px 48px 80px;
+  }
+
+  /* ── 모바일 ── */
+  .menu-toggle {
+    display: none;
+    position: fixed;
+    top: 12px;
+    left: 12px;
+    z-index: 200;
+    background: var(--bg-sidebar);
+    border: 1px solid var(--border);
+    color: var(--fg);
+    padding: 8px 12px;
+    border-radius: 6px;
+    cursor: pointer;
+    font-size: 1.1rem;
+  }
+
+  @media (max-width: 900px) {
+    .sidebar {
+      transform: translateX(-100%);
+    }
+    .sidebar.open {
+      transform: translateX(0);
+    }
+    .content {
+      margin-left: 0;
+      padding: 60px 20px 60px;
+    }
+    .menu-toggle {
+      display: block;
+    }
+  }
+
+  /* ── 타이포그래피 ── */
+  h1 { font-size: 1.9rem; margin: 2rem 0 1rem; padding-bottom: 0.5rem; border-bottom: 2px solid var(--accent); }
+  h2 { font-size: 1.45rem; margin: 2.5rem 0 0.8rem; padding-bottom: 0.3rem; border-bottom: 1px solid var(--border); color: var(--accent); }
+  h3 { font-size: 1.15rem; margin: 1.8rem 0 0.5rem; }
+  h4 { font-size: 1rem; margin: 1.3rem 0 0.4rem; color: var(--fg-muted); }
+  p { margin: 0.6rem 0; }
+  hr { border: none; border-top: 1px solid var(--border); margin: 2rem 0; }
+  strong { color: var(--strong); }
+  a { color: var(--link); text-decoration: none; }
+  a:hover { text-decoration: underline; }
+  ul, ol { margin: 0.5rem 0 0.5rem 1.5rem; }
+  li { margin: 0.25rem 0; }
+
+  /* ── 테이블 ── */
+  table { width: 100%; border-collapse: collapse; margin: 1rem 0; font-size: 0.85rem; }
+  th, td { border: 1px solid var(--border); padding: 0.5rem 0.75rem; text-align: left; }
+  th { background: var(--table-header); font-weight: 600; }
+  tr:nth-child(even) { background: var(--table-even); }
+  tr:nth-child(odd) { background: var(--table-odd); }
+
+  /* ── 코드 ── */
+  code {
+    background: var(--code-bg);
+    color: var(--code-fg);
+    padding: 0.15rem 0.4rem;
+    border-radius: 4px;
+    font-size: 0.82em;
+    font-family: 'JetBrains Mono', 'Fira Code', 'Cascadia Code', monospace;
+  }
+  pre {
+    background: var(--code-bg);
+    color: var(--code-fg);
+    padding: 1rem 1.2rem;
+    border-radius: 8px;
+    overflow-x: auto;
+    margin: 1rem 0;
+    border: 1px solid var(--border);
+  }
+  pre code {
+    background: none;
+    padding: 0;
+    font-size: 0.82rem;
+    line-height: 1.5;
+  }
+
+  /* ── 인용 ── */
+  blockquote {
+    border-left: 4px solid var(--blockquote-border);
+    padding: 0.6rem 1rem;
+    margin: 1rem 0;
+    background: var(--blockquote-bg);
+    border-radius: 0 6px 6px 0;
+  }
+  blockquote p { margin: 0.3rem 0; }
+
+  /* ── Mermaid ── */
+  .mermaid {
+    margin: 1.5rem 0;
+    text-align: center;
+    background: var(--card-bg);
+    padding: 1rem;
+    border-radius: 8px;
+    border: 1px solid var(--border);
+  }
+  .mermaid svg { max-width: 100%; }
+
+  /* ── Footer ── */
+  footer {
+    margin-top: 3rem;
+    padding-top: 1rem;
+    border-top: 1px solid var(--border);
+    color: var(--fg-muted);
+    font-size: 0.8rem;
+  }
+</style>
+</head>
+<body>
+
+<button class="menu-toggle" onclick="document.querySelector('.sidebar').classList.toggle('open')">☰</button>
+
+<aside class="sidebar">
+  <div class="sidebar-header">
+    <div class="sidebar-title">실전 워크플로우</div>
+    <div class="sidebar-controls">
+      <button class="theme-btn" onclick="setTheme('dark')" id="btn-dark">🌙 Dark</button>
+      <button class="theme-btn" onclick="setTheme('light')" id="btn-light">☀️ Light</button>
+    </div>
+    <a class="back-link" href="index.html">← 문서 목록으로</a>
+  </div>
+  <nav class="toc">
+<ul>
+<li class="toc-h2"><a href="#01-새-프로젝트-시작">01. 새 프로젝트 시작</a></li>
+<li class="toc-h2"><a href="#02-기능-구현">02. 기능 구현</a></li>
+<li class="toc-h2"><a href="#03-버그-디버깅">03. 버그 디버깅</a></li>
+  <li class="toc-h3"><a href="#원인을-못-찾을-때--단계적-접근">원인을 못 찾을 때 — 단계적 접근</a></li>
+<li class="toc-h2"><a href="#04-코드-리뷰">04. 코드 리뷰</a></li>
+  <li class="toc-h3"><a href="#pr-리뷰-요청-시">PR 리뷰 요청 시</a></li>
+<li class="toc-h2"><a href="#05-리팩토링">05. 리팩토링</a></li>
+<li class="toc-h2"><a href="#06-세션-시작-루틴">06. 세션 시작 루틴</a></li>
+<li class="toc-h2"><a href="#세션-시작--이전-상태-완료-지난-세션에서-완료한-것-현재-현재-파일기능-상태-미완료-남은-작업--이번-세션-목표-이번에-완료할-것--구체적으로--제약---중요한-제약사항---오늘-작업-범위-파일-또는-모듈-범위-claudemd를-읽고-위-내용을-바탕으로-시작해줘">세션 시작 ### 이전 상태 완료: [지난 세션에서 완료한 것] 현재: [현재 파일/기능 상태] 미완료: [남은 작업] ### 이번 세션 목표 [이번에 완료할 것 — 구체적으로] ### 제약 - [중요한 제약사항] - 오늘 작업 범위: [파일 또는 모듈 범위] CLAUDE.md를 읽고 위 내용을 바탕으로 시작해줘.</a></li>
+<li class="toc-h2"><a href="#07-세션-마무리-루틴">07. 세션 마무리 루틴</a></li>
+<li class="toc-h2"><a href="#08-긴-작업-이어가기">08. 긴 작업 이어가기</a></li>
+  <li class="toc-h3"><a href="#새-세션에서-재개">새 세션에서 재개</a></li>
+<li class="toc-h2"><a href="#09-역할-분리-구성">09. 역할 분리 구성</a></li>
+<li class="toc-h2"><a href="#10-오케스트레이터-세션-운영">10. 오케스트레이터 세션 운영</a></li>
+<li class="toc-h2"><a href="#11-데이터-분석">11. 데이터 분석</a></li>
+<li class="toc-h2"><a href="#12-nl2sql-작업">12. NL2SQL 작업</a></li>
+  <li class="toc-h3"><a href="#쿼리-검증-프롬프트">쿼리 검증 프롬프트</a></li>
+<li class="toc-h2"><a href="#13-ml-모델-개발">13. ML 모델 개발</a></li>
+<li class="toc-h2"><a href="#14-자주-쓰는-프롬프트-패턴">14. 자주 쓰는 프롬프트 패턴</a></li>
+  <li class="toc-h3"><a href="#계획-먼저-실행은-나중에">계획 먼저, 실행은 나중에</a></li>
+  <li class="toc-h3"><a href="#모르면-모른다고-하게-하기">모르면 모른다고 하게 하기</a></li>
+  <li class="toc-h3"><a href="#단계별-체크포인트">단계별 체크포인트</a></li>
+  <li class="toc-h3"><a href="#출력-형식-지정">출력 형식 지정</a></li>
+  <li class="toc-h3"><a href="#반복-실수-방지">반복 실수 방지</a></li>
+<li class="toc-h2"><a href="#15-피해야-할-패턴">15. 피해야 할 패턴</a></li>
+</ul>
+</nav>
+</aside>
+
+<main class="content">
+<h1 id="실전-워크플로우">실전 워크플로우</h1>
+<p>가이드</p>
+<p>"어떻게 셋업하는가"는 하네스 가이드에 있어요. 이 문서는 실제 작업 상황에서 어떤 순서로, 어떤 프롬프트로 Claude를 쓰는가를 다룹니다. </p>
+<p><strong>이 문서의 전제</strong><br />
+CLAUDE.md가 세팅되어 있고, Claude Code CLI를 쓸 수 있는 상태입니다. 각 워크플로우는 독립적으로 읽을 수 있어요. </p>
+<p>기본 기본 워크플로우</p>
+<h2 id="01-새-프로젝트-시작">01. 새 프로젝트 시작</h2>
+<p>🚀</p>
+<p>상황: 새 프로젝트를 Claude와 함께 처음 시작할 때</p>
+<p>CLAUDE.md 작성 → 구조 설계 → 초기 코드 생성</p>
+<p>1</p>
+<p>CLAUDE.md 먼저 작성</p>
+<p>프롬프트</p>
+<p>아래 정보를 바탕으로 이 프로젝트의 CLAUDE.md를 작성해줘. 프로젝트: BIP-Pipeline 목적: 스마트폰 수요 예측 데이터 파이프라인 기술 스택: Python 3.11, FastAPI, Oracle 19c, Airflow 팀 규칙: snake_case, 타입 힌트 필수, docstring 필수 금지 사항: 프로덕션 DB 직접 접근, .env 출력</p>
+<p>2</p>
+<p>프로젝트 구조 설계</p>
+<p>프롬프트</p>
+<p>CLAUDE.md를 읽었으면, 이 프로젝트의 디렉토리 구조를 제안해줘. FastAPI 앱, Airflow DAG, Oracle 연동, 테스트 폴더 포함. 실제 생성하기 전에 구조만 먼저 보여줘.</p>
+<p>3</p>
+<p>구조 확인 후 생성 지시</p>
+<p>프롬프트</p>
+<p>구조가 맞아. 이제 생성해줘. 각 파일은 기본 보일러플레이트만 — 복잡한 로직은 아직 넣지 말고. 생성 완료 후 파일 목록 요약해줘.</p>
+<p>💡</p>
+<p><strong>포인트</strong> 구조를 먼저 보고 확인한 다음 생성하세요. Claude가 한 번에 너무 많은 걸 만들면 검토하기 어려워요.</p>
+<h2 id="02-기능-구현">02. 기능 구현</h2>
+<p>⚙️</p>
+<p>상황: 새 기능을 Claude에게 구현 요청할 때</p>
+<p>요청 → 계획 확인 → 구현 → 테스트</p>
+<p>1</p>
+<p>구현 전 계획 먼저 확인</p>
+<p>프롬프트 — 계획 요청</p>
+<p>NL2SQL 엔드포인트를 구현하려고 해. 요구사항: - POST /api/v1/query - 자연어 입력 → Oracle SQL 생성 → 실행 → 결과 반환 - 쿼리 실행 타임아웃: 30초 - 결과 최대 1000행 코드 바로 작성하지 말고, 구현 계획을 먼저 보여줘. 어떤 파일을 수정하고 어떤 순서로 진행할지.</p>
+<p>2</p>
+<p>계획 확인 후 구현 지시</p>
+<p>프롬프트 — 구현 지시</p>
+<p>계획 좋아. 그대로 진행해줘. 단, SQL 생성 로직은 일단 TODO로 남겨두고 나머지 라우터, DB 연결, 응답 형식부터 완성해줘.</p>
+<p>3</p>
+<p>테스트 먼저, 그 다음 실행</p>
+<p>프롬프트 — 테스트</p>
+<p>구현된 엔드포인트의 pytest 테스트를 작성해줘. 정상 케이스 2개, 에러 케이스 3개 (타임아웃, 빈 결과, DB 연결 실패). 테스트 작성 후 실행해서 결과 알려줘.</p>
+<h2 id="03-버그-디버깅">03. 버그 디버깅</h2>
+<p>🔍</p>
+<p>상황: 오류가 발생했는데 원인을 모를 때</p>
+<p>오류 공유 → 원인 분석 → 수정 → 검증</p>
+<p>기본 디버깅 프롬프트</p>
+<p>아래 오류가 발생했어. 오류 메시지: [오류 전문 붙여넣기] 오류가 나는 코드: [관련 코드만 발췌] 실행 환경: Python 3.11, Oracle 19c, FastAPI 0.104 재현 조건: POST /api/v1/query에 한국어 자연어 입력 시 1. 원인 분석 2. 수정 방법 3. 같은 패턴의 다른 버그 있는지 확인 순서로 진행해줘. 수정 전에 분석 결과 먼저 보여줘.</p>
+<h3 id="원인을-못-찾을-때--단계적-접근">원인을 못 찾을 때 — 단계적 접근</h3>
+<p>심화 디버깅 프롬프트</p>
+<p>원인을 모르겠어. 단계적으로 디버깅해줘. 1단계: 가능한 원인 후보 목록 (가능성 높은 순) 2단계: 각 원인 확인하는 방법 3단계: 확인 코드 작성해서 실행 원인 찾으면 알려주고, 못 찾으면 더 좁혀나갈게.</p>
+<p>⚠</p>
+<p><strong>Claude가 같은 수정을 반복할 때</strong> 동일한 오류에서 3번 이상 같은 수정을 제안하면 접근 방식을 바꿔야 해요. "이 방법은 이미 시도했어. 다른 관점으로 접근해줘"라고 명시하세요.</p>
+<h2 id="04-코드-리뷰">04. 코드 리뷰</h2>
+<p>👁️</p>
+<p>상황: 작성한 코드를 Claude에게 검토 받을 때</p>
+<p>코드 제출 → 리뷰 → 수정 적용</p>
+<p>코드 리뷰 프롬프트</p>
+<p>아래 코드를 리뷰해줘. 파일: nl2sql.py 변경 목적: Oracle NL2SQL 쿼리 생성 및 검증 특히 확인해주세요: SQL 인젝션 방지, 타임아웃 처리 [코드 붙여넣기] 리뷰 항목: 1. 버그 가능성 (있으면 라인 번호 포함) 2. 보안 취약점 3. 성능 이슈 4. 코드 컨벤션 위반 심각도 기준으로 정렬해서 보여줘. 수정 제안도 포함해줘.</p>
+<h3 id="pr-리뷰-요청-시">PR 리뷰 요청 시</h3>
+<p>PR 리뷰 체크리스트 생성 요청</p>
+<p>이 변경사항을 PR로 올릴 거야. PR 설명과 함께 검토자가 확인해야 할 체크리스트를 만들어줘. 변경 내용: - NL2SQL 엔드포인트 추가 - Oracle 연결 풀 설정 - 입력 검증 로직 추가 보안팀 리뷰가 필요한지, DB 검토가 필요한지도 판단해줘.</p>
+<h2 id="05-리팩토링">05. 리팩토링</h2>
+<p>🔧</p>
+<p>상황: 기존 코드 구조를 개선할 때</p>
+<p>현황 파악 → 개선 계획 → 점진적 적용</p>
+<p>1</p>
+<p>현황 분석 먼저</p>
+<p>프롬프트</p>
+<p>이 모듈을 리팩토링하고 싶어. 먼저 현재 문제점만 분석해줘. [코드 또는 파일명] 분석 항목: - 코드 중복 - 지나치게 긴 함수 - 의존성 문제 - 테스트 어려운 부분 아직 수정하지 말고 분석만.</p>
+<p>2</p>
+<p>우선순위 합의 후 점진적 적용</p>
+<p>프롬프트</p>
+<p>분석 맞아. 이 중에서 중복 제거와 함수 분리만 먼저 하자. 한 번에 전부 바꾸지 말고, 파일 하나씩 진행해. 각 파일 수정 후 테스트 실행하고 다음으로 넘어가줘.</p>
+<p>💡</p>
+<p><strong>리팩토링 황금 규칙</strong> 한 번에 전부 바꾸지 마세요. 파일 단위로 수정 → 테스트 → 다음 순서로 진행하면 문제가 생겨도 되돌리기 쉬워요.</p>
+<p>세션 세션 관리 워크플로우</p>
+<h2 id="06-세션-시작-루틴">06. 세션 시작 루틴</h2>
+<p>▶️</p>
+<p>매 세션 시작 시 이 루틴을 따르세요</p>
+<p>컨텍스트 로드 → 목표 선언 → 제약 상기</p>
+<p>세션 시작 프롬프트 템플릿</p>
+<h2 id="세션-시작--이전-상태-완료-지난-세션에서-완료한-것-현재-현재-파일기능-상태-미완료-남은-작업--이번-세션-목표-이번에-완료할-것--구체적으로--제약---중요한-제약사항---오늘-작업-범위-파일-또는-모듈-범위-claudemd를-읽고-위-내용을-바탕으로-시작해줘">세션 시작 ### 이전 상태 완료: [지난 세션에서 완료한 것] 현재: [현재 파일/기능 상태] 미완료: [남은 작업] ### 이번 세션 목표 [이번에 완료할 것 — 구체적으로] ### 제약 - [중요한 제약사항] - 오늘 작업 범위: [파일 또는 모듈 범위] CLAUDE.md를 읽고 위 내용을 바탕으로 시작해줘.</h2>
+<p>ℹ</p>
+<p>이전 세션 상태를 .claude/status.md 파일에 저장해두면 다음 세션에서 바로 읽어올 수 있어요. CLAUDE.md에 "작업 완료 시 status.md 업데이트" 규칙을 추가하세요.</p>
+<h2 id="07-세션-마무리-루틴">07. 세션 마무리 루틴</h2>
+<p>⏹️</p>
+<p>작업을 끝내기 전에 반드시 실행하세요</p>
+<p>요약 → 상태 저장 → 다음 세션 준비</p>
+<p>세션 마무리 프롬프트</p>
+<p>세션 마무리할게. 아래 형식으로 .claude/status.md를 업데이트해줘. ## 마지막 업데이트: {날짜} ### 완료된 작업 - [목록] ### 현재 상태 - [변경된 파일과 상태] ### 미완료 (다음 세션에서) - [남은 작업, 우선순위 순] ### 중요 결정 사항 - [이번 세션에서 내린 중요한 기술적 결정] ### 주의사항 - [다음 세션에서 조심해야 할 것]</p>
+<h2 id="08-긴-작업-이어가기">08. 긴 작업 이어가기</h2>
+<p>🔄</p>
+<p>세션 중간에 컨텍스트가 길어질 때</p>
+<p>중간 압축 → 핵심만 유지 → 계속 진행</p>
+<p>컨텍스트 압축 프롬프트</p>
+<p>대화가 길어졌어. 지금까지 핵심만 압축 요약해줘. 포함할 것: - 완료된 작업 (파일명 포함) - 현재 어디까지 왔는지 - 다음 할 작업 - 중요한 기술적 결정 이 요약을 기반으로 이어서 진행할 수 있게 정리해줘.</p>
+<h3 id="새-세션에서-재개">새 세션에서 재개</h3>
+<p>재개 프롬프트</p>
+<p>.claude/status.md 파일을 읽고 이전 작업을 파악해줘. 파악이 완료되면 다음 단계가 무엇인지 확인하고 바로 이어서 진행해줘. 준비되면 "재개합니다" 한 줄만 출력하고 작업 시작해.</p>
+<p>멀티 멀티 세션 워크플로우</p>
+<h2 id="09-역할-분리-구성">09. 역할 분리 구성</h2>
+<p>🧩</p>
+<p>큰 프로젝트를 여러 세션으로 나눌 때</p>
+<p>역할 정의 → 경계 설정 → 상태 공유 구조 만들기</p>
+<p>구조멀티 세션 디렉토리 구성</p>
+<div class="codehilite"><pre><span></span><code>프로젝트 루트/
+├── CLAUDE.md                    ← 공통 규칙
+├── .claude/
+│   ├── session-backend.md       ← 백엔드 세션 역할 정의
+│   ├── session-frontend.md      ← 프론트엔드 세션 역할 정의
+│   ├── session-data.md          ← 데이터 세션 역할 정의
+│   └── session-orch.md          ← 오케스트레이터 역할 정의
+└── .orchestrator/
+    ├── status-backend.md        ← 백엔드 진행 상태 (자동 업데이트)
+    ├── status-frontend.md
+    └── status-data.md
+</code></pre></div>
+
+<p>세션 역할 시작 프롬프트</p>
+<p>.claude/session-backend.md 파일을 읽고 그 역할로 동작해줘. 역할 파악 후 .orchestrator/status-backend.md의 현재 상태를 확인하고 오늘 내가 할 작업을 알려줘.</p>
+<h2 id="10-오케스트레이터-세션-운영">10. 오케스트레이터 세션 운영</h2>
+<p>🎯</p>
+<p>여러 세션의 진행 상황을 조율할 때</p>
+<p>상태 수집 → 분석 → 충돌 감지 → 다음 지시</p>
+<p>오케스트레이터 정기 점검 프롬프트</p>
+<p>.orchestrator/ 폴더의 모든 status 파일을 읽고 아래 형식으로 전체 상황을 정리해줘: ## 전체 진행 상황 | 세션 | 완료율 | 현재 작업 | 상태 | |------|--------|----------|------| ## 충돌/의존성 이슈 - 같은 파일을 여러 세션이 수정 중인 것 - A가 끝나야 B가 시작 가능한 것 ## 블로킹 이슈 - 현재 대기 중인 세션과 이유 ## 다음 지시 - 세션별 다음 액션 (구체적으로)</p>
+<p>특화 데이터 / AI 특화 워크플로우</p>
+<h2 id="11-데이터-분석">11. 데이터 분석</h2>
+<p>📊</p>
+<p>데이터를 탐색하고 인사이트를 얻을 때</p>
+<p>데이터 파악 → 탐색 → 분석 → 시각화</p>
+<p>1</p>
+<p>데이터 개요 파악 먼저</p>
+<p>프롬프트</p>
+<p>아래 데이터를 분석할 거야. 먼저 데이터 개요만 파악해줘. 파일: demand_data.csv 확인해줄 것: - 컬럼 목록과 데이터 타입 - 행 수, 결측치 현황 - 숫자형 컬럼 기초 통계 - 이상치가 있어 보이는 컬럼 아직 분석하지 말고 개요만.</p>
+<p>2</p>
+<p>가설 기반 분석</p>
+<p>프롬프트</p>
+<p>아이폰 판매량이 갤럭시와 계절성 패턴이 다를 것 같아. 이 가설을 검증하는 분석을 해줘. 분석 방법은 네가 제안해줘. 시각화 코드 포함, 결론도 한 문장으로 정리해줘.</p>
+<h2 id="12-nl2sql-작업">12. NL2SQL 작업</h2>
+<p>🗄️</p>
+<p>Oracle DB에서 NL2SQL 쿼리를 생성하고 검증할 때</p>
+<p>메타데이터 확인 → SQL 생성 → 검증 → 실행</p>
+<p>NL2SQL 요청 프롬프트 (SKILL.md 기반)</p>
+<p>다음 질의에 대한 Oracle SQL을 생성해줘: "지난 분기 브랜드별 스마트폰 판매량 상위 10개 모델" nl2sql SKILL.md에 따라 진행해줘: 1. 관련 테이블 메타데이터 확인 (OpenMetadata 조회) 2. SQL 초안 생성 (Oracle 19c 문법) 3. 실행 계획 확인 4. 결과 샘플 검증 SQL 실행 전에 생성된 쿼리를 먼저 보여줘.</p>
+<h3 id="쿼리-검증-프롬프트">쿼리 검증 프롬프트</h3>
+<p>검증 프롬프트</p>
+<p>이 SQL을 검증해줘. [SQL 붙여넣기] 확인 항목: - Oracle 19c 호환 문법인지 - 전체 테이블 스캔 없는지 (EXPLAIN PLAN) - WHERE 조건이 빠진 UPDATE/DELETE 없는지 - 인덱스 활용 가능한지</p>
+<h2 id="13-ml-모델-개발">13. ML 모델 개발</h2>
+<p>🤖</p>
+<p>예측 모델을 개발하고 평가할 때</p>
+<p>베이스라인 → 실험 → 평가 → 개선</p>
+<p>모델 실험 프롬프트</p>
+<p>스마트폰 주간 판매량 예측 모델을 개발하려고 해. 데이터: - 기간: 2022-2024 주별 판매량 - 피처: 브랜드, 모델명, 지역, 출시일, 마케팅 비용 요구사항: - 예측 기간: 12주 - 평가 지표: MAPE &lt; 15% - 해석 가능성 필요 (SHAP) 1. 베이스라인 모델 먼저 (SimpleExpSmoothing) 2. 결과 확인 후 XGBoost나 Prophet으로 업그레이드 결정 베이스라인 코드 작성해줘.</p>
+<p>모델 비교 프롬프트</p>
+<p>XGBoost와 Prophet 모두 학습됐어. XGBoost MAPE: 12.3% Prophet MAPE: 14.8% 두 모델을 비교 분석해줘: - 어떤 상황에서 각 모델이 강점인지 - 앙상블이 의미 있을지 - 운영 관점 (재학습 주기, 유지보수 난이도) 최종 추천 모델과 이유도 알려줘.</p>
+<p>팁 팁 &amp; 패턴</p>
+<h2 id="14-자주-쓰는-프롬프트-패턴">14. 자주 쓰는 프롬프트 패턴</h2>
+<h3 id="계획-먼저-실행은-나중에">계획 먼저, 실행은 나중에</h3>
+<p>패턴</p>
+<p>코드 바로 작성하지 말고, [목표]를 달성하는 계획을 먼저 보여줘. 어떤 파일을 수정하고 어떤 순서로 진행할지. 계획이 맞으면 그때 실행할게.</p>
+<h3 id="모르면-모른다고-하게-하기">모르면 모른다고 하게 하기</h3>
+<p>패턴</p>
+<p>확실하지 않은 부분은 추측하지 말고 "모르겠습니다"라고 해줘. 불확실한 부분은 TODO로 표시하고 이유를 주석으로 남겨줘.</p>
+<h3 id="단계별-체크포인트">단계별 체크포인트</h3>
+<p>패턴</p>
+<p>이 작업을 [N]단계로 나눠서 진행해줘. 각 단계 완료 후 결과를 보여주고 다음 단계로 넘어가기 전에 확인 받아줘.</p>
+<h3 id="출력-형식-지정">출력 형식 지정</h3>
+<p>패턴</p>
+<p>결과를 아래 형식의 JSON으로만 출력해줘. 설명 없이. { "status": "success" | "fail", "changes": ["파일1", "파일2"], "next_steps": ["다음 할 것"] }</p>
+<h3 id="반복-실수-방지">반복 실수 방지</h3>
+<p>패턴</p>
+<p>방금 [실수 내용]을 했어. 앞으로 이 실수를 반복하지 않도록 확인 기준을 알려줘. 그리고 이미 만든 파일에도 같은 문제가 있는지 체크해줘.</p>
+<h2 id="15-피해야-할-패턴">15. 피해야 할 패턴</h2>
+<table>
+<thead>
+<tr>
+<th>안티패턴</th>
+<th>문제</th>
+<th>대신 이렇게</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>"전부 다 해줘"</td>
+<td>범위가 너무 커서 중간에 방향 잃음</td>
+<td>단계별로 나눠서 하나씩 확인하며 진행</td>
+</tr>
+<tr>
+<td>파일 전체를 통째로 넘기기</td>
+<td>관련 없는 부분에 집중 분산, 토큰 낭비</td>
+<td>관련 함수/섹션만 발췌해서 전달</td>
+</tr>
+<tr>
+<td>계획 없이 바로 구현 요청</td>
+<td>방향이 맞지 않으면 다 버려야 함</td>
+<td>계획 먼저 확인 후 구현 지시</td>
+</tr>
+<tr>
+<td>오류 메시지 없이 "안 돼요"</td>
+<td>Claude가 원인을 추측해야 함</td>
+<td>오류 전문 + 재현 조건 + 관련 코드</td>
+</tr>
+<tr>
+<td>세션 끝에 상태 저장 안 하기</td>
+<td>다음 세션에서 처음부터 다시 설명</td>
+<td>status.md 업데이트 후 종료</td>
+</tr>
+<tr>
+<td>모든 작업에 최고 모델 사용</td>
+<td>비용이 불필요하게 높아짐</td>
+<td>단순 작업은 Haiku, 복잡한 추론은 Opus</td>
+</tr>
+<tr>
+<td>Claude 결과물 검토 없이 실행</td>
+<td>예상치 못한 부작용 발생 가능</td>
+<td>실행 전 코드 검토 후 진행</td>
+</tr>
+</tbody>
+</table>
+</main>
+
+<script>
+  // 테마 전환
+  function setTheme(theme) {
+    document.documentElement.setAttribute('data-theme', theme);
+    localStorage.setItem('doc-theme', theme);
+    document.getElementById('btn-dark').classList.toggle('active', theme === 'dark');
+    document.getElementById('btn-light').classList.toggle('active', theme === 'light');
+    // Mermaid 재렌더링
+    if (typeof mermaid !== 'undefined') {
+      mermaid.initialize({ startOnLoad: false, theme: 'base', securityLevel: 'loose', themeVariables: getMermaidTheme(theme) });
+      document.querySelectorAll('.mermaid').forEach(el => {
+        // 원본 코드 보존 (최초 1회만 저장)
+        if (!el.dataset.source) {
+          el.dataset.source = el.textContent;
+        }
+        el.removeAttribute('data-processed');
+        el.innerHTML = el.dataset.source;
+      });
+      mermaid.run();
+    }
+  }
+
+  // 저장된 테마 로드
+  const savedTheme = localStorage.getItem('doc-theme') || 'dark';
+  setTheme(savedTheme);
+
+  // Mermaid 초기화
+  function getMermaidTheme(theme) {
+    const dark = {
+      primaryColor: '#3d7be0',
+      primaryTextColor: '#ffffff',
+      primaryBorderColor: '#5a9cf0',
+      secondaryColor: '#7c5cbf',
+      secondaryTextColor: '#ffffff',
+      secondaryBorderColor: '#a29bfe',
+      tertiaryColor: '#00997a',
+      tertiaryTextColor: '#ffffff',
+      tertiaryBorderColor: '#55efc4',
+      noteTextColor: '#f0f0f0',
+      noteBkgColor: '#2d3436',
+      noteBorderColor: '#636e72',
+      lineColor: '#8b949e',
+      textColor: '#e6edf3',
+      mainBkg: '#1e3050',
+      nodeBorder: '#5a9cf0',
+      clusterBkg: '#1a1e2e',
+      clusterBorder: '#4a5568',
+      titleColor: '#79c0ff',
+      edgeLabelBackground: '#21262d',
+      actorBkg: '#3d7be0',
+      actorTextColor: '#ffffff',
+      actorBorder: '#5a9cf0',
+      signalColor: '#8b949e',
+      labelBoxBkgColor: '#21262d',
+      labelBoxBorderColor: '#4a5568',
+      labelTextColor: '#e6edf3',
+      loopTextColor: '#e6edf3',
+      activationBorderColor: '#5a9cf0',
+      activationBkgColor: '#1e3050',
+      sequenceNumberColor: '#ffffff',
+      pie1: '#4f8fea', pie2: '#6c5ce7', pie3: '#00b894', pie4: '#e17055',
+      pie5: '#fdcb6e', pie6: '#00cec9', pie7: '#e84393', pie8: '#0984e3'
+    };
+    const light = {
+      primaryColor: '#4f8fea',
+      primaryTextColor: '#1a1a2e',
+      primaryBorderColor: '#3a7bd5',
+      secondaryColor: '#a29bfe',
+      secondaryTextColor: '#1a1a2e',
+      secondaryBorderColor: '#6c5ce7',
+      tertiaryColor: '#55efc4',
+      tertiaryTextColor: '#1a1a2e',
+      tertiaryBorderColor: '#00b894',
+      noteTextColor: '#2d3436',
+      noteBkgColor: '#ffeaa7',
+      noteBorderColor: '#fdcb6e',
+      lineColor: '#636e72',
+      textColor: '#2d3436',
+      mainBkg: '#dfe6e9',
+      nodeBorder: '#3a7bd5',
+      clusterBkg: '#f0f3f5',
+      clusterBorder: '#b2bec3',
+      titleColor: '#2d3436',
+      edgeLabelBackground: '#ffffff',
+      actorBkg: '#4f8fea',
+      actorTextColor: '#ffffff',
+      actorBorder: '#3a7bd5',
+      signalColor: '#636e72',
+      labelBoxBkgColor: '#ffffff',
+      labelBoxBorderColor: '#b2bec3',
+      labelTextColor: '#2d3436',
+      loopTextColor: '#2d3436',
+      activationBorderColor: '#3a7bd5',
+      activationBkgColor: '#dfe6e9',
+      sequenceNumberColor: '#ffffff',
+      pie1: '#4f8fea', pie2: '#6c5ce7', pie3: '#00b894', pie4: '#e17055',
+      pie5: '#fdcb6e', pie6: '#00cec9', pie7: '#e84393', pie8: '#0984e3'
+    };
+    return theme === 'dark' ? dark : light;
+  }
+
+  // 초기 렌더링 전에 원본 코드 저장
+  document.querySelectorAll('.mermaid').forEach(el => {
+    el.dataset.source = el.textContent;
+  });
+  mermaid.initialize({ startOnLoad: true, theme: 'base', securityLevel: 'loose', themeVariables: getMermaidTheme(savedTheme) });
+
+  // TOC 현재 위치 하이라이트
+  const tocLinks = document.querySelectorAll('.toc a');
+  const headings = [];
+  tocLinks.forEach(link => {
+    const id = link.getAttribute('href').slice(1);
+    const el = document.getElementById(id);
+    if (el) headings.push({ el, link });
+  });
+
+  function updateActiveToc() {
+    let current = null;
+    for (const h of headings) {
+      if (h.el.getBoundingClientRect().top <= 100) current = h;
+    }
+    tocLinks.forEach(l => l.classList.remove('active'));
+    if (current) current.link.classList.add('active');
+  }
+
+  window.addEventListener('scroll', updateActiveToc, { passive: true });
+  updateActiveToc();
+
+  // 모바일: 링크 클릭 시 사이드바 닫기
+  tocLinks.forEach(link => {
+    link.addEventListener('click', () => {
+      if (window.innerWidth <= 900) {
+        document.querySelector('.sidebar').classList.remove('open');
+      }
+    });
+  });
+</script>
+
+</body>
+</html>

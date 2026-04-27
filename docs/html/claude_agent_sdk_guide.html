@@ -1,0 +1,764 @@
+<!DOCTYPE html>
+<html lang="ko" data-theme="dark">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Claude Agent SDK</title>
+<script src="https://cdn.jsdelivr.net/npm/mermaid@11/dist/mermaid.min.js"></script>
+<style>
+  /* ── 테마 변수 ── */
+  :root[data-theme="dark"] {
+    --bg: #0d1117;
+    --bg-sidebar: #161b22;
+    --fg: #e6edf3;
+    --fg-muted: #8b949e;
+    --border: #30363d;
+    --accent: #58a6ff;
+    --accent-hover: #79c0ff;
+    --code-bg: #1e293b;
+    --code-fg: #e2e8f0;
+    --table-header: #161b22;
+    --table-even: #0d1117;
+    --table-odd: #161b22;
+    --blockquote-bg: #161b22;
+    --blockquote-border: #3b82f6;
+    --link: #58a6ff;
+    --strong: #79c0ff;
+    --card-bg: #21262d;
+  }
+  :root[data-theme="light"] {
+    --bg: #ffffff;
+    --bg-sidebar: #f6f8fa;
+    --fg: #1f2937;
+    --fg-muted: #6b7280;
+    --border: #e5e7eb;
+    --accent: #2563eb;
+    --accent-hover: #1d4ed8;
+    --code-bg: #f3f4f6;
+    --code-fg: #1e293b;
+    --table-header: #f8fafc;
+    --table-even: #ffffff;
+    --table-odd: #f9fafb;
+    --blockquote-bg: #eff6ff;
+    --blockquote-border: #3b82f6;
+    --link: #2563eb;
+    --strong: #1e40af;
+    --card-bg: #f3f4f6;
+  }
+
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+
+  body {
+    font-family: 'Pretendard', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+    background: var(--bg);
+    color: var(--fg);
+    line-height: 1.75;
+    display: flex;
+    min-height: 100vh;
+  }
+
+  /* ── 사이드바 ── */
+  .sidebar {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 280px;
+    height: 100vh;
+    background: var(--bg-sidebar);
+    border-right: 1px solid var(--border);
+    overflow-y: auto;
+    padding: 20px 0;
+    z-index: 100;
+    transition: transform 0.3s ease;
+  }
+
+  .sidebar-header {
+    padding: 0 20px 16px;
+    border-bottom: 1px solid var(--border);
+    margin-bottom: 12px;
+  }
+
+  .sidebar-title {
+    font-size: 0.95rem;
+    font-weight: 700;
+    color: var(--fg);
+    line-height: 1.3;
+  }
+
+  .sidebar-controls {
+    display: flex;
+    gap: 8px;
+    margin-top: 12px;
+  }
+
+  .theme-btn {
+    background: var(--card-bg);
+    border: 1px solid var(--border);
+    color: var(--fg-muted);
+    padding: 4px 10px;
+    border-radius: 6px;
+    font-size: 0.7rem;
+    cursor: pointer;
+    transition: all 0.2s;
+  }
+  .theme-btn:hover {
+    border-color: var(--accent);
+    color: var(--accent);
+  }
+  .theme-btn.active {
+    background: var(--accent);
+    color: #fff;
+    border-color: var(--accent);
+  }
+
+  .back-link {
+    display: block;
+    margin-top: 10px;
+    font-size: 0.75rem;
+    color: var(--fg-muted);
+    text-decoration: none;
+  }
+  .back-link:hover {
+    color: var(--accent);
+  }
+
+  /* ── TOC ── */
+  .toc {
+    padding: 0 12px;
+  }
+  .toc ul {
+    list-style: none;
+    padding: 0;
+  }
+  .toc li {
+    margin: 0;
+  }
+  .toc a {
+    display: block;
+    padding: 4px 8px;
+    color: var(--fg-muted);
+    text-decoration: none;
+    font-size: 0.78rem;
+    border-radius: 4px;
+    border-left: 2px solid transparent;
+    transition: all 0.15s;
+    line-height: 1.4;
+  }
+  .toc a:hover {
+    color: var(--accent);
+    background: var(--card-bg);
+    border-left-color: var(--accent);
+  }
+  .toc a.active {
+    color: var(--accent);
+    border-left-color: var(--accent);
+    font-weight: 600;
+  }
+  .toc-h3 a { padding-left: 20px; font-size: 0.75rem; }
+  .toc-h4 a { padding-left: 32px; font-size: 0.72rem; }
+
+  /* ── 본문 ── */
+  .content {
+    margin-left: 280px;
+    flex: 1;
+    max-width: 860px;
+    padding: 40px 48px 80px;
+  }
+
+  /* ── 모바일 ── */
+  .menu-toggle {
+    display: none;
+    position: fixed;
+    top: 12px;
+    left: 12px;
+    z-index: 200;
+    background: var(--bg-sidebar);
+    border: 1px solid var(--border);
+    color: var(--fg);
+    padding: 8px 12px;
+    border-radius: 6px;
+    cursor: pointer;
+    font-size: 1.1rem;
+  }
+
+  @media (max-width: 900px) {
+    .sidebar {
+      transform: translateX(-100%);
+    }
+    .sidebar.open {
+      transform: translateX(0);
+    }
+    .content {
+      margin-left: 0;
+      padding: 60px 20px 60px;
+    }
+    .menu-toggle {
+      display: block;
+    }
+  }
+
+  /* ── 타이포그래피 ── */
+  h1 { font-size: 1.9rem; margin: 2rem 0 1rem; padding-bottom: 0.5rem; border-bottom: 2px solid var(--accent); }
+  h2 { font-size: 1.45rem; margin: 2.5rem 0 0.8rem; padding-bottom: 0.3rem; border-bottom: 1px solid var(--border); color: var(--accent); }
+  h3 { font-size: 1.15rem; margin: 1.8rem 0 0.5rem; }
+  h4 { font-size: 1rem; margin: 1.3rem 0 0.4rem; color: var(--fg-muted); }
+  p { margin: 0.6rem 0; }
+  hr { border: none; border-top: 1px solid var(--border); margin: 2rem 0; }
+  strong { color: var(--strong); }
+  a { color: var(--link); text-decoration: none; }
+  a:hover { text-decoration: underline; }
+  ul, ol { margin: 0.5rem 0 0.5rem 1.5rem; }
+  li { margin: 0.25rem 0; }
+
+  /* ── 테이블 ── */
+  table { width: 100%; border-collapse: collapse; margin: 1rem 0; font-size: 0.85rem; }
+  th, td { border: 1px solid var(--border); padding: 0.5rem 0.75rem; text-align: left; }
+  th { background: var(--table-header); font-weight: 600; }
+  tr:nth-child(even) { background: var(--table-even); }
+  tr:nth-child(odd) { background: var(--table-odd); }
+
+  /* ── 코드 ── */
+  code {
+    background: var(--code-bg);
+    color: var(--code-fg);
+    padding: 0.15rem 0.4rem;
+    border-radius: 4px;
+    font-size: 0.82em;
+    font-family: 'JetBrains Mono', 'Fira Code', 'Cascadia Code', monospace;
+  }
+  pre {
+    background: var(--code-bg);
+    color: var(--code-fg);
+    padding: 1rem 1.2rem;
+    border-radius: 8px;
+    overflow-x: auto;
+    margin: 1rem 0;
+    border: 1px solid var(--border);
+  }
+  pre code {
+    background: none;
+    padding: 0;
+    font-size: 0.82rem;
+    line-height: 1.5;
+  }
+
+  /* ── 인용 ── */
+  blockquote {
+    border-left: 4px solid var(--blockquote-border);
+    padding: 0.6rem 1rem;
+    margin: 1rem 0;
+    background: var(--blockquote-bg);
+    border-radius: 0 6px 6px 0;
+  }
+  blockquote p { margin: 0.3rem 0; }
+
+  /* ── Mermaid ── */
+  .mermaid {
+    margin: 1.5rem 0;
+    text-align: center;
+    background: var(--card-bg);
+    padding: 1rem;
+    border-radius: 8px;
+    border: 1px solid var(--border);
+  }
+  .mermaid svg { max-width: 100%; }
+
+  /* ── Footer ── */
+  footer {
+    margin-top: 3rem;
+    padding-top: 1rem;
+    border-top: 1px solid var(--border);
+    color: var(--fg-muted);
+    font-size: 0.8rem;
+  }
+</style>
+</head>
+<body>
+
+<button class="menu-toggle" onclick="document.querySelector('.sidebar').classList.toggle('open')">☰</button>
+
+<aside class="sidebar">
+  <div class="sidebar-header">
+    <div class="sidebar-title">Claude Agent SDK</div>
+    <div class="sidebar-controls">
+      <button class="theme-btn" onclick="setTheme('dark')" id="btn-dark">🌙 Dark</button>
+      <button class="theme-btn" onclick="setTheme('light')" id="btn-light">☀️ Light</button>
+    </div>
+    <a class="back-link" href="index.html">← 문서 목록으로</a>
+  </div>
+  <nav class="toc">
+<ul>
+<li class="toc-h2"><a href="#멀티-에이전트-오케스트레이션이란">멀티 에이전트 오케스트레이션이란?</a></li>
+<li class="toc-h2"><a href="#claude-agent-sdk-개요">Claude Agent SDK 개요</a></li>
+  <li class="toc-h3"><a href="#핵심-기능">핵심 기능</a></li>
+<li class="toc-h2"><a href="#openclaw-vs-claude-agent-sdk">OpenClaw vs Claude Agent SDK</a></li>
+<li class="toc-h2"><a href="#전체-아키텍처-설계">전체 아키텍처 설계</a></li>
+  <li class="toc-h3"><a href="#프로젝트-디렉토리-구조">프로젝트 디렉토리 구조</a></li>
+  <li class="toc-h3"><a href="#데이터-흐름">데이터 흐름</a></li>
+<li class="toc-h2"><a href="#방법-1--cli--공유-파일-방식">방법 1 — CLI + 공유 파일 방식</a></li>
+<li class="toc-h2"><a href="#방법-2--claude-agent-sdk-스크립트">방법 2 — Claude Agent SDK 스크립트</a></li>
+  <li class="toc-h3"><a href="#설치">설치</a></li>
+  <li class="toc-h3"><a href="#orchestratorpy--기본-구조">orchestrator.py — 기본 구조</a></li>
+  <li class="toc-h3"><a href="#실행">실행</a></li>
+<li class="toc-h2"><a href="#bedrock-환경-연결">Bedrock 환경 연결</a></li>
+  <li class="toc-h3"><a href="#환경별-전환--env-파일로-관리">환경별 전환 — .env 파일로 관리</a></li>
+<li class="toc-h2"><a href="#claudemd-설계-가이드">CLAUDE.md 설계 가이드</a></li>
+  <li class="toc-h3"><a href="#프로젝트-루트-claudemd--공통-규칙">프로젝트 루트 CLAUDE.md — 공통 규칙</a></li>
+  <li class="toc-h3"><a href="#오케스트레이터-세션-역할-정의">오케스트레이터 세션 역할 정의</a></li>
+<li class="toc-h2"><a href="#운영-체크리스트">운영 체크리스트</a></li>
+  <li class="toc-h3"><a href="#초기-셋업">초기 셋업</a></li>
+  <li class="toc-h3"><a href="#일상-운영">일상 운영</a></li>
+  <li class="toc-h3"><a href="#sdk-자동화-전환-시점">SDK 자동화 전환 시점</a></li>
+</ul>
+</nav>
+</aside>
+
+<main class="content">
+<h1 id="claude-agent-sdk">Claude Agent SDK</h1>
+<p>멀티 세션 오케스트레이션</p>
+<p>여러 Claude Code 세션을 역할별로 나눠 동시에 운영할 때, 오케스트레이터 패턴으로 세션 간 충돌을 방지하고 진행 상황을 한눈에 조율합니다.</p>
+<p>Claude Agent SDK AWS Bedrock 지원 Python / TypeScript 서브에이전트 사내 환경 친화적</p>
+<p>01</p>
+<h2 id="멀티-에이전트-오케스트레이션이란">멀티 에이전트 오케스트레이션이란?</h2>
+<p>하나의 프로젝트를 여러 Claude Code 세션에 역할을 나눠 동시에 진행할 때 생기는 문제들이 있습니다.</p>
+<p>⚠️ 파일 충돌</p>
+<p>같은 파일을 서로 다른 세션이 동시에 수정해 충돌 발생</p>
+<p>🔗 의존성 누락</p>
+<p>A 세션이 끝나야 B 세션이 시작해야 하는 순서를 놓침</p>
+<p>👁️ 가시성 부족</p>
+<p>전체 진행 상황을 한눈에 파악할 수 없음</p>
+<p>🚧 블로킹 미감지</p>
+<p>어떤 세션이 블로킹 이슈를 갖고 있는지 파악 불가</p>
+<p>오케스트레이터 패턴은 전담 '조율 세션'이 다른 모든 세션의 상태를 파악하고, 우선순위를 결정하며, 충돌을 사전에 감지합니다.</p>
+<p>🎯 오케스트레이터 세션</p>
+<p>진행상황 수집 · 영향도 분석 · 다음 지시 결정</p>
+<p>↓   ↓   ↓</p>
+<p>세션 A</p>
+<p>백엔드 / API</p>
+<p>세션 B</p>
+<p>프론트엔드 / UI</p>
+<p>세션 C</p>
+<p>DB / 스키마</p>
+<p>02</p>
+<h2 id="claude-agent-sdk-개요">Claude Agent SDK 개요</h2>
+<p>Claude Agent SDK는 Claude Code CLI 내부 엔진을 Python / TypeScript 코드로 프로그래밍할 수 있게 Anthropic이 공식 제공하는 라이브러리입니다. 원래 'Claude Code SDK'였으나 2025년 9월 이름이 변경되었습니다.</p>
+<p>ℹ️</p>
+<p><strong>핵심 차이점</strong> 일반 Anthropic API는 Claude에게 프롬프트를 보내고 툴 실행을 개발자가 직접 구현해야 합니다. Agent SDK는 Claude가 파일 읽기 · 명령어 실행 · 웹 검색 · 코드 수정까지 자율적으로 처리합니다. </p>
+<h3 id="핵심-기능">핵심 기능</h3>
+<p>🤖 자율 실행</p>
+<p>파일 읽기, 명령어 실행, 웹 검색, 코드 수정을 Claude가 스스로 판단해서 처리</p>
+<p>🔀 서브에이전트</p>
+<p>오케스트레이터 Claude가 다른 Claude 세션을 프로그래밍적으로 생성하고 결과 수집</p>
+<p>☁️ 멀티 클라우드</p>
+<p>Bedrock / Vertex AI / Azure 환경변수 하나로 전환 가능</p>
+<p>🔌 MCP 지원</p>
+<p>Model Context Protocol로 Slack, GitHub, DB 등 외부 서비스 연동</p>
+<p>03</p>
+<h2 id="openclaw-vs-claude-agent-sdk">OpenClaw vs Claude Agent SDK</h2>
+<p>OpenClaw은 강력한 멀티에이전트 프레임워크이지만, 사내 환경 특성과 팀 규모를 고려하면 Claude Agent SDK가 더 현실적입니다.</p>
+<table>
+<thead>
+<tr>
+<th>항목</th>
+<th>OpenClaw</th>
+<th>Claude Agent SDK</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>설치 / 승인</td>
+<td>서드파티 오픈소스 — 사내 승인 필요</td>
+<td>Anthropic 공식 — 별도 승인 불필요</td>
+</tr>
+<tr>
+<td>외부망 의존</td>
+<td>Discord / Slack / Telegram 연동 전제</td>
+<td>없음</td>
+</tr>
+<tr>
+<td>Bedrock 지원</td>
+<td>추가 설정 필요</td>
+<td>환경변수 하나로 전환</td>
+</tr>
+<tr>
+<td>학습 곡선</td>
+<td>높음 (Lobster, 스킬 마켓플레이스 등)</td>
+<td>낮음 (Python 기본 지식으로 충분)</td>
+</tr>
+<tr>
+<td>멀티에이전트</td>
+<td>네이티브 강력 지원</td>
+<td>서브에이전트 지원</td>
+</tr>
+<tr>
+<td>스킬 에코시스템</td>
+<td>5,400+ 스킬</td>
+<td>CLAUDE.md 커스텀</td>
+</tr>
+<tr>
+<td>권장 상황</td>
+<td>대규모 팀, 외부 채널 연동 필요 시</td>
+<td>소규모 팀, 사내 환경, 빠른 시작</td>
+</tr>
+</tbody>
+</table>
+<p>💡</p>
+<p><strong>결론</strong> 개인 MacBook ↔ 사내 Bedrock 환경을 오가는 현재 상황에서는 Claude Agent SDK가 압도적으로 유리합니다. 팀이 커지고 외부 채널 연동이 필요해지면 그때 OpenClaw를 검토하세요. </p>
+<p>04</p>
+<h2 id="전체-아키텍처-설계">전체 아키텍처 설계</h2>
+<p>즉시 적용 가능한 파일 공유 방식과 자동화를 위한 SDK 스크립트 방식, 두 레이어로 구성합니다.</p>
+<h3 id="프로젝트-디렉토리-구조">프로젝트 디렉토리 구조</h3>
+<p>DIRECTORY</p>
+<div class="codehilite"><pre><span></span><code>프로젝트 루트/
+├── CLAUDE.md                    ← 전체 역할 분배 정의
+├── .claude/
+│   ├── session-orchestrator.md  ← 오케스트레이터 역할 정의
+│   ├── session-backend.md       ← 백엔드 세션 역할 정의
+│   ├── session-frontend.md      ← 프론트엔드 세션 역할 정의
+│   └── session-db.md            ← DB 세션 역할 정의
+├── .orchestrator/
+│   ├── status-backend.md        ← 백엔드 세션이 자동 업데이트
+│   ├── status-frontend.md       ← 프론트엔드 세션이 자동 업데이트
+│   └── status-db.md             ← DB 세션이 자동 업데이트
+└── orchestrator.py              ← SDK 기반 자동화 스크립트
+</code></pre></div>
+
+<h3 id="데이터-흐름">데이터 흐름</h3>
+<p>각 세션 작업 → status 파일 업데이트 → 오케스트레이터 읽기 → 충돌 / 의존성 분석 → 다음 지시 결정</p>
+<p>05</p>
+<h2 id="방법-1--cli--공유-파일-방식">방법 1 — CLI + 공유 파일 방식</h2>
+<p>SDK 설치 없이 지금 당장 적용할 수 있습니다. 각 세션이 작업 상태를 마크다운 파일로 남기고, 오케스트레이터 세션이 그 파일을 읽어 전체 상황을 파악합니다.</p>
+<p>1</p>
+<p>각 세션 CLAUDE.md에 상태 업데이트 규칙 추가</p>
+<div class="codehilite"><pre><span></span><code><span class="err">##</span><span class="w"> </span><span class="n">작업</span><span class="w"> </span><span class="n">완료</span><span class="w"> </span><span class="n">시</span><span class="w"> </span><span class="n">필수</span><span class="w"> </span><span class="n">규칙</span>
+<span class="n">작업</span><span class="w"> </span><span class="n">단위가</span><span class="w"> </span><span class="n">끝날</span><span class="w"> </span><span class="n">때마다</span><span class="w"> </span><span class="p">.</span><span class="n">orchestrator</span><span class="o">/</span><span class="n">status</span><span class="o">-</span><span class="n">backend</span><span class="p">.</span><span class="n">md를</span><span class="w"> </span><span class="n">업데이트할</span><span class="w"> </span><span class="n">것</span><span class="p">.</span>
+
+<span class="err">###</span><span class="w"> </span><span class="n">업데이트</span><span class="w"> </span><span class="n">형식</span>
+<span class="err">##</span><span class="w"> </span><span class="n">최종</span><span class="w"> </span><span class="nl">업데이트</span><span class="p">:</span><span class="w"> </span><span class="err">{</span><span class="n">날짜</span><span class="w"> </span><span class="n">시간</span><span class="err">}</span>
+
+<span class="err">###</span><span class="w"> </span><span class="n">완료된</span><span class="w"> </span><span class="n">작업</span>
+<span class="o">-</span><span class="w"> </span><span class="o">[</span><span class="n">x</span><span class="o">]</span><span class="w"> </span><span class="n">작업</span><span class="w"> </span><span class="n">내용</span>
+
+<span class="err">###</span><span class="w"> </span><span class="n">현재</span><span class="w"> </span><span class="n">진행</span><span class="w"> </span><span class="n">중</span>
+<span class="o">-</span><span class="w"> </span><span class="n">작업</span><span class="w"> </span><span class="n">내용</span><span class="w"> </span><span class="p">(</span><span class="n">예상</span><span class="w"> </span><span class="nl">완료</span><span class="p">:</span><span class="w"> </span><span class="o">~</span><span class="n">시간</span><span class="p">)</span>
+
+<span class="err">###</span><span class="w"> </span><span class="n">블로킹</span><span class="w"> </span><span class="n">이슈</span>
+<span class="o">-</span><span class="w"> </span><span class="n">다른</span><span class="w"> </span><span class="n">세션</span><span class="w"> </span><span class="n">결과를</span><span class="w"> </span><span class="n">기다려야</span><span class="w"> </span><span class="n">하는</span><span class="w"> </span><span class="n">항목</span>
+
+<span class="err">###</span><span class="w"> </span><span class="n">다음</span><span class="w"> </span><span class="n">예정</span><span class="w"> </span><span class="n">작업</span>
+<span class="o">-</span><span class="w"> </span><span class="n">작업</span><span class="w"> </span><span class="n">내용</span>
+</code></pre></div>
+
+<p>2</p>
+<p>오케스트레이터 세션에서 아래 프롬프트 사용</p>
+<div class="codehilite"><pre><span></span><code><span class="na">.orchestrator</span><span class="err">/</span><span class="w"> </span><span class="err">폴더의</span><span class="w"> </span><span class="err">모든</span><span class="w"> </span><span class="no">status</span><span class="w"> </span><span class="err">파일을</span><span class="w"> </span><span class="err">읽고</span><span class="p">:</span>
+
+<span class="err">1.</span><span class="w"> </span><span class="err">전체</span><span class="w"> </span><span class="err">진행상황</span><span class="w"> </span><span class="err">요약</span><span class="w"> </span><span class="err">(세션별</span><span class="w"> </span><span class="err">완료율)</span>
+<span class="err">2.</span><span class="w"> </span><span class="err">충돌</span><span class="w"> </span><span class="err">가능성</span><span class="w"> </span><span class="err">감지</span><span class="w"> </span><span class="err">(같은</span><span class="w"> </span><span class="err">파일을</span><span class="w"> </span><span class="err">여러</span><span class="w"> </span><span class="err">세션이</span><span class="w"> </span><span class="err">수정</span><span class="w"> </span><span class="err">중인지)</span>
+<span class="err">3.</span><span class="w"> </span><span class="err">의존성</span><span class="w"> </span><span class="err">블로킹</span><span class="w"> </span><span class="err">이슈</span><span class="w"> </span><span class="err">(</span><span class="nf">A가</span><span class="w"> </span><span class="err">끝나야</span><span class="w"> </span><span class="no">B가</span><span class="w"> </span><span class="err">시작</span><span class="w"> </span><span class="err">가능한</span><span class="w"> </span><span class="err">것</span><span class="p">)</span>
+<span class="err">4.</span><span class="w"> </span><span class="err">다음</span><span class="w"> </span><span class="err">우선순위</span><span class="w"> </span><span class="err">작업</span><span class="w"> </span><span class="err">목록</span>
+<span class="err">5.</span><span class="w"> </span><span class="err">각</span><span class="w"> </span><span class="err">세션에</span><span class="w"> </span><span class="err">전달할</span><span class="w"> </span><span class="err">다음</span><span class="w"> </span><span class="err">지시사항</span>
+
+<span class="err">를</span><span class="w"> </span><span class="err">정리해줘.</span>
+</code></pre></div>
+
+<p>⚠️</p>
+<p><strong>한계</strong> 상태 업데이트가 각 세션의 수동 실행에 의존하며 병렬 자동 실행은 불가능합니다. 패턴이 안정화되면 방법 2로 전환하세요. </p>
+<p>06</p>
+<h2 id="방법-2--claude-agent-sdk-스크립트">방법 2 — Claude Agent SDK 스크립트</h2>
+<p>반복 패턴이 안정화되면 SDK로 자동화합니다. 서브에이전트를 병렬로 실행하고 결과를 자동으로 수집합니다.</p>
+<h3 id="설치">설치</h3>
+<p>BASH</p>
+<div class="codehilite"><pre><span></span><code>pip install claude-agent-sdk
+</code></pre></div>
+
+<h3 id="orchestratorpy--기본-구조">orchestrator.py — 기본 구조</h3>
+<p>PYTHON</p>
+<div class="codehilite"><pre><span></span><code><span class="kn">import</span><span class="w"> </span><span class="nn">asyncio</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">claude_agent_sdk</span><span class="w"> </span><span class="kn">import</span> <span class="n">query</span><span class="p">,</span> <span class="n">ClaudeAgentOptions</span>
+
+<span class="c1"># 서브에이전트 실행 함수</span>
+<span class="k">async</span> <span class="k">def</span><span class="w"> </span><span class="nf">run_subagent</span><span class="p">(</span><span class="n">role</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="n">task</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="n">cwd</span><span class="p">:</span> <span class="nb">str</span><span class="p">):</span>
+    <span class="n">results</span> <span class="o">=</span> <span class="p">[]</span>
+    <span class="k">async</span> <span class="k">for</span> <span class="n">message</span> <span class="ow">in</span> <span class="n">query</span><span class="p">(</span>
+        <span class="n">prompt</span><span class="o">=</span><span class="n">task</span><span class="p">,</span>
+        <span class="n">options</span><span class="o">=</span><span class="n">ClaudeAgentOptions</span><span class="p">(</span>
+            <span class="n">cwd</span><span class="o">=</span><span class="n">cwd</span><span class="p">,</span>
+            <span class="n">allowed_tools</span><span class="o">=</span><span class="p">[</span><span class="s2">&quot;Bash&quot;</span><span class="p">,</span> <span class="s2">&quot;Read&quot;</span><span class="p">,</span> <span class="s2">&quot;Write&quot;</span><span class="p">],</span>
+            <span class="n">system_prompt</span><span class="o">=</span><span class="sa">f</span><span class="s2">&quot;당신은 </span><span class="si">{</span><span class="n">role</span><span class="si">}</span><span class="s2"> 담당입니다.&quot;</span>
+        <span class="p">)</span>
+    <span class="p">):</span>
+        <span class="k">if</span> <span class="nb">hasattr</span><span class="p">(</span><span class="n">message</span><span class="p">,</span> <span class="s2">&quot;result&quot;</span><span class="p">):</span>
+            <span class="n">results</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">message</span><span class="o">.</span><span class="n">result</span><span class="p">)</span>
+    <span class="k">return</span> <span class="n">results</span>
+
+<span class="c1"># 오케스트레이터 메인</span>
+<span class="k">async</span> <span class="k">def</span><span class="w"> </span><span class="nf">orchestrate</span><span class="p">():</span>
+    <span class="c1"># 서브에이전트 병렬 실행</span>
+    <span class="n">backend_task</span>  <span class="o">=</span> <span class="n">run_subagent</span><span class="p">(</span><span class="s2">&quot;백엔드&quot;</span><span class="p">,</span> <span class="s2">&quot;현재 TODO 처리해줘&quot;</span><span class="p">,</span> <span class="s2">&quot;./backend&quot;</span><span class="p">)</span>
+    <span class="n">frontend_task</span> <span class="o">=</span> <span class="n">run_subagent</span><span class="p">(</span><span class="s2">&quot;프론트엔드&quot;</span><span class="p">,</span> <span class="s2">&quot;현재 TODO 처리해줘&quot;</span><span class="p">,</span> <span class="s2">&quot;./frontend&quot;</span><span class="p">)</span>
+
+    <span class="n">backend_result</span><span class="p">,</span> <span class="n">frontend_result</span> <span class="o">=</span> <span class="k">await</span> <span class="n">asyncio</span><span class="o">.</span><span class="n">gather</span><span class="p">(</span>
+        <span class="n">backend_task</span><span class="p">,</span> <span class="n">frontend_task</span>
+    <span class="p">)</span>
+
+    <span class="c1"># 오케스트레이터가 결과 종합 및 보고</span>
+    <span class="k">async</span> <span class="k">for</span> <span class="n">message</span> <span class="ow">in</span> <span class="n">query</span><span class="p">(</span>
+        <span class="n">prompt</span><span class="o">=</span><span class="sa">f</span><span class="s2">&quot;&quot;&quot;</span>
+<span class="s2">        백엔드 결과: </span><span class="si">{</span><span class="n">backend_result</span><span class="si">}</span>
+<span class="s2">        프론트엔드 결과: </span><span class="si">{</span><span class="n">frontend_result</span><span class="si">}</span>
+
+<span class="s2">        위 결과를 바탕으로:</span>
+<span class="s2">        1. 전체 진행상황 요약</span>
+<span class="s2">        2. 충돌 / 의존성 이슈</span>
+<span class="s2">        3. 다음 우선순위 작업</span>
+<span class="s2">        를 정리해줘.</span>
+<span class="s2">        &quot;&quot;&quot;</span>
+    <span class="p">):</span>
+        <span class="k">if</span> <span class="nb">hasattr</span><span class="p">(</span><span class="n">message</span><span class="p">,</span> <span class="s2">&quot;result&quot;</span><span class="p">):</span>
+            <span class="nb">print</span><span class="p">(</span><span class="n">message</span><span class="o">.</span><span class="n">result</span><span class="p">)</span>
+
+<span class="n">asyncio</span><span class="o">.</span><span class="n">run</span><span class="p">(</span><span class="n">orchestrate</span><span class="p">())</span>
+</code></pre></div>
+
+<h3 id="실행">실행</h3>
+<div class="codehilite"><pre><span></span><code>python orchestrator.py
+</code></pre></div>
+
+<p>07</p>
+<h2 id="bedrock-환경-연결">Bedrock 환경 연결</h2>
+<p>사내 AWS Bedrock 환경에서 사용할 때는 환경변수 설정만으로 전환됩니다. 코드 변경은 전혀 필요하지 않습니다.</p>
+<p>BASH — .env.bedrock</p>
+<div class="codehilite"><pre><span></span><code><span class="c1"># Bedrock 사용 선언</span>
+<span class="k">export</span><span class="w"> </span><span class="n">CLAUDE_CODE_USE_BEDROCK</span><span class="o">=</span><span class="mi">1</span>
+
+<span class="c1"># AWS 리전 (서울)</span>
+<span class="k">export</span><span class="w"> </span><span class="n">AWS_REGION</span><span class="o">=</span><span class="n">ap</span><span class="o">-</span><span class="n">northeast</span><span class="o">-</span><span class="mi">2</span>
+
+<span class="c1"># AWS 자격증명 — 프로파일 방식 (권장)</span>
+<span class="k">export</span><span class="w"> </span><span class="n">AWS_PROFILE</span><span class="o">=</span><span class="n">your</span><span class="o">-</span><span class="n">company</span><span class="o">-</span><span class="n">profile</span>
+
+<span class="c1"># 이후 동일하게 실행</span>
+<span class="n">python</span><span class="w"> </span><span class="n">orchestrator</span><span class="o">.</span><span class="n">py</span>
+</code></pre></div>
+
+<h3 id="환경별-전환--env-파일로-관리">환경별 전환 — .env 파일로 관리</h3>
+<p>BASH — .env.local (개인 MacBook)</p>
+<div class="codehilite"><pre><span></span><code>ANTHROPIC_API_KEY=sk-ant-...
+</code></pre></div>
+
+<p>BASH — .env.bedrock (사내)</p>
+<div class="codehilite"><pre><span></span><code>CLAUDE_CODE_USE_BEDROCK=1
+AWS_REGION=ap-northeast-2
+AWS_PROFILE=company-profile
+</code></pre></div>
+
+<p>💡</p>
+<p>개인 MacBook에서 패턴을 완성한 뒤, .env.bedrock으로 전환해 사내 환경에 그대로 적용하세요. 코드 수정 없이 동일하게 동작합니다.</p>
+<p>08</p>
+<h2 id="claudemd-설계-가이드">CLAUDE.md 설계 가이드</h2>
+<p>CLAUDE.md는 각 세션이 시작될 때 자동으로 읽히는 컨텍스트 파일입니다. 역할 분리와 공통 규칙을 여기에 정의합니다.</p>
+<h3 id="프로젝트-루트-claudemd--공통-규칙">프로젝트 루트 CLAUDE.md — 공통 규칙</h3>
+<p>MARKDOWN</p>
+<div class="codehilite"><pre><span></span><code># 프로젝트: BIP-Pipeline
+
+## 역할 분배
+- 세션 A (백엔드): FastAPI 엔드포인트, 비즈니스 로직
+- 세션 B (프론트엔드): React 컴포넌트, UI/UX
+- 세션 C (DB): Oracle 스키마, 마이그레이션
+- 오케스트레이터: 진행 상황 조율, 충돌 감지
+
+## 공통 규칙
+1. 작업 단위 완료 시 .orchestrator/status-{역할}.md 업데이트 필수
+2. 다른 세션 담당 파일 수정 전 오케스트레이터에 보고
+3. 블로킹 이슈 발생 시 즉시 status 파일에 기록
+</code></pre></div>
+
+<h3 id="오케스트레이터-세션-역할-정의">오케스트레이터 세션 역할 정의</h3>
+<p>MARKDOWN — .claude/session-orchestrator.md</p>
+<div class="codehilite"><pre><span></span><code># 오케스트레이터 역할
+
+당신은 아래 세션들의 진행상황을 모니터링하고 조율하는 역할입니다.
+
+## 주요 임무
+1. .orchestrator/ 폴더의 모든 status 파일 주기적으로 확인
+2. 같은 파일을 여러 세션이 수정 중인지 충돌 감지
+3. 의존성 순서 관리 (A 완료 후 B 시작 필요한 것)
+4. 전체 진행률 계산 및 보고
+5. 각 세션에 다음 작업 지시
+
+## 보고 형식
+- 진행률: 세션별 완료 작업 / 전체 작업
+- 충돌 위험: 파일명과 관련 세션
+- 블로킹: 현재 대기 중인 세션과 이유
+- 다음 지시: 세션별 구체적 액션
+</code></pre></div>
+
+<p>09</p>
+<h2 id="운영-체크리스트">운영 체크리스트</h2>
+<h3 id="초기-셋업">초기 셋업</h3>
+<ul>
+<li>프로젝트 루트에 CLAUDE.md 작성 완료</li>
+<li>.claude/ 폴더에 세션별 역할 파일 작성</li>
+<li>.orchestrator/ 폴더 생성</li>
+<li>각 세션 CLAUDE.md에 상태 업데이트 규칙 추가</li>
+<li>Bedrock 환경변수 설정 확인 (사내 환경)</li>
+</ul>
+<h3 id="일상-운영">일상 운영</h3>
+<ul>
+<li>오케스트레이터 세션을 별도 터미널 창에서 상시 운영</li>
+<li>각 작업 단위 완료 시 status 파일 업데이트</li>
+<li>30분~1시간마다 오케스트레이터에 전체 상황 확인 요청</li>
+<li>충돌 감지 시 즉시 관련 세션에 중단 지시</li>
+</ul>
+<h3 id="sdk-자동화-전환-시점">SDK 자동화 전환 시점</h3>
+<ul>
+<li>동일 패턴의 오케스트레이션이 3회 이상 반복될 때</li>
+<li>세션 수가 5개 이상으로 늘어날 때</li>
+<li>병렬 실행이 필수적으로 필요해질 때</li>
+<li>Bedrock 환경에서 안정적으로 동작 확인 후</li>
+</ul>
+<p>🎯</p>
+<p><strong>핵심 권고사항</strong> 처음부터 SDK로 자동화하려 하지 말고, 방법 1(파일 공유)로 워크플로우 패턴을 먼저 안정화하세요. 반복적으로 하게 되는 패턴이 생기면 그때 Python 스크립트로 옮기는 것이 훨씬 효율적입니다. Bedrock 전환은 환경변수 하나로 되므로 개인 환경에서 완성한 패턴을 사내에 그대로 적용하면 됩니다. </p>
+</main>
+
+<script>
+  // 테마 전환
+  function setTheme(theme) {
+    document.documentElement.setAttribute('data-theme', theme);
+    localStorage.setItem('doc-theme', theme);
+    document.getElementById('btn-dark').classList.toggle('active', theme === 'dark');
+    document.getElementById('btn-light').classList.toggle('active', theme === 'light');
+    // Mermaid 재렌더링
+    if (typeof mermaid !== 'undefined') {
+      mermaid.initialize({ startOnLoad: false, theme: 'base', securityLevel: 'loose', themeVariables: getMermaidTheme(theme) });
+      document.querySelectorAll('.mermaid').forEach(el => {
+        // 원본 코드 보존 (최초 1회만 저장)
+        if (!el.dataset.source) {
+          el.dataset.source = el.textContent;
+        }
+        el.removeAttribute('data-processed');
+        el.innerHTML = el.dataset.source;
+      });
+      mermaid.run();
+    }
+  }
+
+  // 저장된 테마 로드
+  const savedTheme = localStorage.getItem('doc-theme') || 'dark';
+  setTheme(savedTheme);
+
+  // Mermaid 초기화
+  function getMermaidTheme(theme) {
+    const dark = {
+      primaryColor: '#3d7be0',
+      primaryTextColor: '#ffffff',
+      primaryBorderColor: '#5a9cf0',
+      secondaryColor: '#7c5cbf',
+      secondaryTextColor: '#ffffff',
+      secondaryBorderColor: '#a29bfe',
+      tertiaryColor: '#00997a',
+      tertiaryTextColor: '#ffffff',
+      tertiaryBorderColor: '#55efc4',
+      noteTextColor: '#f0f0f0',
+      noteBkgColor: '#2d3436',
+      noteBorderColor: '#636e72',
+      lineColor: '#8b949e',
+      textColor: '#e6edf3',
+      mainBkg: '#1e3050',
+      nodeBorder: '#5a9cf0',
+      clusterBkg: '#1a1e2e',
+      clusterBorder: '#4a5568',
+      titleColor: '#79c0ff',
+      edgeLabelBackground: '#21262d',
+      actorBkg: '#3d7be0',
+      actorTextColor: '#ffffff',
+      actorBorder: '#5a9cf0',
+      signalColor: '#8b949e',
+      labelBoxBkgColor: '#21262d',
+      labelBoxBorderColor: '#4a5568',
+      labelTextColor: '#e6edf3',
+      loopTextColor: '#e6edf3',
+      activationBorderColor: '#5a9cf0',
+      activationBkgColor: '#1e3050',
+      sequenceNumberColor: '#ffffff',
+      pie1: '#4f8fea', pie2: '#6c5ce7', pie3: '#00b894', pie4: '#e17055',
+      pie5: '#fdcb6e', pie6: '#00cec9', pie7: '#e84393', pie8: '#0984e3'
+    };
+    const light = {
+      primaryColor: '#4f8fea',
+      primaryTextColor: '#1a1a2e',
+      primaryBorderColor: '#3a7bd5',
+      secondaryColor: '#a29bfe',
+      secondaryTextColor: '#1a1a2e',
+      secondaryBorderColor: '#6c5ce7',
+      tertiaryColor: '#55efc4',
+      tertiaryTextColor: '#1a1a2e',
+      tertiaryBorderColor: '#00b894',
+      noteTextColor: '#2d3436',
+      noteBkgColor: '#ffeaa7',
+      noteBorderColor: '#fdcb6e',
+      lineColor: '#636e72',
+      textColor: '#2d3436',
+      mainBkg: '#dfe6e9',
+      nodeBorder: '#3a7bd5',
+      clusterBkg: '#f0f3f5',
+      clusterBorder: '#b2bec3',
+      titleColor: '#2d3436',
+      edgeLabelBackground: '#ffffff',
+      actorBkg: '#4f8fea',
+      actorTextColor: '#ffffff',
+      actorBorder: '#3a7bd5',
+      signalColor: '#636e72',
+      labelBoxBkgColor: '#ffffff',
+      labelBoxBorderColor: '#b2bec3',
+      labelTextColor: '#2d3436',
+      loopTextColor: '#2d3436',
+      activationBorderColor: '#3a7bd5',
+      activationBkgColor: '#dfe6e9',
+      sequenceNumberColor: '#ffffff',
+      pie1: '#4f8fea', pie2: '#6c5ce7', pie3: '#00b894', pie4: '#e17055',
+      pie5: '#fdcb6e', pie6: '#00cec9', pie7: '#e84393', pie8: '#0984e3'
+    };
+    return theme === 'dark' ? dark : light;
+  }
+
+  // 초기 렌더링 전에 원본 코드 저장
+  document.querySelectorAll('.mermaid').forEach(el => {
+    el.dataset.source = el.textContent;
+  });
+  mermaid.initialize({ startOnLoad: true, theme: 'base', securityLevel: 'loose', themeVariables: getMermaidTheme(savedTheme) });
+
+  // TOC 현재 위치 하이라이트
+  const tocLinks = document.querySelectorAll('.toc a');
+  const headings = [];
+  tocLinks.forEach(link => {
+    const id = link.getAttribute('href').slice(1);
+    const el = document.getElementById(id);
+    if (el) headings.push({ el, link });
+  });
+
+  function updateActiveToc() {
+    let current = null;
+    for (const h of headings) {
+      if (h.el.getBoundingClientRect().top <= 100) current = h;
+    }
+    tocLinks.forEach(l => l.classList.remove('active'));
+    if (current) current.link.classList.add('active');
+  }
+
+  window.addEventListener('scroll', updateActiveToc, { passive: true });
+  updateActiveToc();
+
+  // 모바일: 링크 클릭 시 사이드바 닫기
+  tocLinks.forEach(link => {
+    link.addEventListener('click', () => {
+      if (window.innerWidth <= 900) {
+        document.querySelector('.sidebar').classList.remove('open');
+      }
+    });
+  });
+</script>
+
+</body>
+</html>

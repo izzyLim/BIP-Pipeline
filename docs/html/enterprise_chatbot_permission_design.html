@@ -361,7 +361,10 @@
 <p><strong>에러 메시지도 권한에 따라 차등</strong> "X 테이블 접근 금지" 같은 메타 정보 노출 금지. "요청하신 정보 제공 불가"로 일반화.</p>
 <p>02전체 아키텍처</p>
 <p>하이브리드 아키텍처 전체 구성</p>
-<p>graph TD USER["사용자 (브라우저)"] SSO["기존 SSO / IdP"] subgraph Spring["기존 Java Spring 시스템"] UI["/chat 페이지\nThymeleaf or 기존 프론트"] PROXY["/api/chat 프록시\nChatController"] BIZ_API["기존 REST API\nCustomer/Order/...\n@PreAuthorize"] NL2SQL_API["/api/nl2sql/execute\nSQL 검증 + 권한 필터 + 실행"] RAG_API["/api/rag/verify\n문서 권한 검증"] SPRING_SEC["Spring Security\nJWT 검증 + 권한"] end subgraph Python["Python LLM 사이드카 (신규)"] GW["FastAPI Gateway\nJWT 검증"] AGENT["LangGraph Agent\nState: user_token"] MCP["MCP 도구들\n기존 API 래퍼"] end LLM_API["사내 LLM API\n서비스 계정 인증"] subgraph Data["데이터 레이어"] ORA["Oracle DB"] ES["Elasticsearch"] VEC["Vector DB\n권한 메타데이터"] end USER --&gt;|로그인| SSO SSO --&gt;|JWT| USER USER --&gt;|JWT| UI UI --&gt;|JWT| PROXY PROXY --&gt;|JWT| GW GW --&gt; AGENT AGENT --&gt; MCP AGENT --&gt;|서비스 계정| LLM_API MCP --&gt;|JWT| BIZ_API MCP --&gt;|JWT| NL2SQL_API MCP --&gt;|JWT| RAG_API BIZ_API --&gt; SPRING_SEC NL2SQL_API --&gt; SPRING_SEC RAG_API --&gt; SPRING_SEC BIZ_API --&gt; ORA BIZ_API --&gt; ES NL2SQL_API --&gt; ORA RAG_API --&gt; VEC style Spring fill:#0d0f18,stroke:#5a7af0 style Python fill:#0d0f18,stroke:#30c880 style Data fill:#0d0f18,stroke:#e09830 </p>
+<div class="mermaid">
+graph TD USER["사용자 (브라우저)"] SSO["기존 SSO / IdP"] subgraph Spring["기존 Java Spring 시스템"] UI["/chat 페이지\nThymeleaf or 기존 프론트"] PROXY["/api/chat 프록시\nChatController"] BIZ_API["기존 REST API\nCustomer/Order/...\n@PreAuthorize"] NL2SQL_API["/api/nl2sql/execute\nSQL 검증 + 권한 필터 + 실행"] RAG_API["/api/rag/verify\n문서 권한 검증"] SPRING_SEC["Spring Security\nJWT 검증 + 권한"] end subgraph Python["Python LLM 사이드카 (신규)"] GW["FastAPI Gateway\nJWT 검증"] AGENT["LangGraph Agent\nState: user_token"] MCP["MCP 도구들\n기존 API 래퍼"] end LLM_API["사내 LLM API\n서비스 계정 인증"] subgraph Data["데이터 레이어"] ORA["Oracle DB"] ES["Elasticsearch"] VEC["Vector DB\n권한 메타데이터"] end USER -->|로그인| SSO SSO -->|JWT| USER USER -->|JWT| UI UI -->|JWT| PROXY PROXY -->|JWT| GW GW --> AGENT AGENT --> MCP AGENT -->|서비스 계정| LLM_API MCP -->|JWT| BIZ_API MCP -->|JWT| NL2SQL_API MCP -->|JWT| RAG_API BIZ_API --> SPRING_SEC NL2SQL_API --> SPRING_SEC RAG_API --> SPRING_SEC BIZ_API --> ORA BIZ_API --> ES NL2SQL_API --> ORA RAG_API --> VEC style Spring fill:#0d0f18,stroke:#5a7af0 style Python fill:#0d0f18,stroke:#30c880 style Data fill:#0d0f18,stroke:#e09830
+</div>
+
 <p>🔐</p>
 <p><strong>아키텍처 핵심</strong> Python 사이드카는 "에이전트 오케스트레이션"만 담당. 모든 데이터 접근은 반드시 Spring API를 경유하며, Spring Security가 기존과 동일하게 권한을 집행합니다. Python 코드가 손상되어도 Spring에서 막힙니다. </p>
 <h2 id="왜-하이브리드인가">왜 하이브리드인가?</h2>
@@ -397,7 +400,10 @@
 </table>
 <p>03JWT 전파 흐름</p>
 <p>JWT가 전체 레이어에 전파되는 시퀀스</p>
-<p>sequenceDiagram participant U as 사용자 participant SSO as SSO/IdP participant UI as Spring UI participant PX as Spring /api/chat participant PY as Python Gateway participant AG as LangGraph Agent participant TL as MCP Tool participant API as Spring REST API participant DB as Oracle/ES U-&gt;&gt;SSO: 로그인 SSO--&gt;&gt;U: JWT 발급 U-&gt;&gt;UI: /chat (JWT in Cookie/Header) UI-&gt;&gt;PX: 질문 전송 (JWT) Note over PX: JWT 추출 후 Authorization Bearer로 설정 PX-&gt;&gt;PY: POST /api/ask\nAuthorization: Bearer {JWT} Note over PY: JWT 검증 (Spring과 동일 공개키) PY-&gt;&gt;AG: 에이전트 실행\nstate.user_token = JWT AG-&gt;&gt;TL: 도구 호출 (state에서 JWT 전달) TL-&gt;&gt;API: GET /api/customers\nAuthorization: Bearer {JWT} Note over API: Spring Security가 JWT 검증\n@PreAuthorize 권한 체크 API-&gt;&gt;DB: 사용자 권한 필터 적용 조회 DB--&gt;&gt;API: 필터링된 데이터 API--&gt;&gt;TL: 권한 범위 내 응답 TL--&gt;&gt;AG: 결과 (이미 권한 필터링됨) AG--&gt;&gt;PY: LLM이 해석한 답변 PY--&gt;&gt;PX: 최종 응답 PX--&gt;&gt;UI: JSON UI--&gt;&gt;U: 채팅 답변 표시 </p>
+<div class="mermaid">
+sequenceDiagram participant U as 사용자 participant SSO as SSO/IdP participant UI as Spring UI participant PX as Spring /api/chat participant PY as Python Gateway participant AG as LangGraph Agent participant TL as MCP Tool participant API as Spring REST API participant DB as Oracle/ES U->>SSO: 로그인 SSO-->>U: JWT 발급 U->>UI: /chat (JWT in Cookie/Header) UI->>PX: 질문 전송 (JWT) Note over PX: JWT 추출 후 Authorization Bearer로 설정 PX->>PY: POST /api/ask\nAuthorization: Bearer {JWT} Note over PY: JWT 검증 (Spring과 동일 공개키) PY->>AG: 에이전트 실행\nstate.user_token = JWT AG->>TL: 도구 호출 (state에서 JWT 전달) TL->>API: GET /api/customers\nAuthorization: Bearer {JWT} Note over API: Spring Security가 JWT 검증\n@PreAuthorize 권한 체크 API->>DB: 사용자 권한 필터 적용 조회 DB-->>API: 필터링된 데이터 API-->>TL: 권한 범위 내 응답 TL-->>AG: 결과 (이미 권한 필터링됨) AG-->>PY: LLM이 해석한 답변 PY-->>PX: 최종 응답 PX-->>UI: JSON UI-->>U: 채팅 답변 표시
+</div>
+
 <p>🔑</p>
 <p><strong>JWT 전파의 핵심</strong> 동일한 JWT가 레이어를 타고 최종 Spring API까지 도달합니다. Spring Security가 JWT를 검증하고 기존 권한 로직이 작동하므로, 사용자가 챗봇을 쓰든 기존 UI를 쓰든 <strong>동일한 데이터 범위</strong> 가 보장됩니다. </p>
 <p>04레이어별 역할 &amp; 책임</p>
@@ -456,13 +462,22 @@
 </tbody>
 </table>
 <p>권한 책임 분리 (Separation of Concerns)</p>
-<p>graph LR subgraph NoAuth["권한 판단 없음"] PY_G["Python Gateway\nJWT 검증만"] AG["LangGraph Agent\n오케스트레이션"] MCP["MCP Tools\n릴레이"] end subgraph Auth["권한 판단 담당"] SPRING["Spring REST API\n@PreAuthorize\nService 필터"] end PY_G --&gt; AG --&gt; MCP --&gt;|JWT| SPRING SPRING --&gt;|필터링된 데이터| MCP style NoAuth fill:#0d0f18,stroke:#e09830 style Auth fill:#0d0f18,stroke:#30c8c0 </p>
+<div class="mermaid">
+graph LR subgraph NoAuth["권한 판단 없음"] PY_G["Python Gateway\nJWT 검증만"] AG["LangGraph Agent\n오케스트레이션"] MCP["MCP Tools\n릴레이"] end subgraph Auth["권한 판단 담당"] SPRING["Spring REST API\n@PreAuthorize\nService 필터"] end PY_G --> AG --> MCP -->|JWT| SPRING SPRING -->|필터링된 데이터| MCP style NoAuth fill:#0d0f18,stroke:#e09830 style Auth fill:#0d0f18,stroke:#30c8c0
+</div>
+
 <p>05요청 처리 흐름 (End-to-End)</p>
 <p>사용자 질의부터 응답까지 — 권한 포함 처리</p>
-<p>flowchart TD START(["사용자 질문\n우리 부서 최근 주문 현황 알려줘"]) --&gt; AUTH{JWT 검증} AUTH --&gt;|실패| DENY1["401 재로그인"] AUTH --&gt;|성공| PLAN[에이전트 플래닝\nLLM이 도구 선택] PLAN --&gt; BRANCH{어떤 도구?} BRANCH --&gt;|MCP 기본| T1[get_orders 도구] BRANCH --&gt;|NL2SQL| T2[run_sql 도구] BRANCH --&gt;|RAG| T3[search_docs 도구] T1 --&gt;|JWT| S1[Spring /api/orders] T2 --&gt;|JWT + SQL| S2[Spring /api/nl2sql/execute] T3 --&gt;|JWT + query| S3[Spring /api/rag/search] S1 --&gt; AZ{Spring 권한 체크\n@PreAuthorize} S2 --&gt; AZ S3 --&gt; AZ AZ --&gt;|거부| DENY2["403 → 일반화 메시지"] AZ --&gt;|허용| FILTER[Service 레이어\n사용자별 필터링] FILTER --&gt; DATA[Oracle / ES / Vector] DATA --&gt;|필터링된 데이터| RESULT[도구 결과] RESULT --&gt; AGENT[에이전트 종합] AGENT --&gt; GUARD{Guardrail 검증} GUARD --&gt;|통과| RESPONSE[자연어 응답] GUARD --&gt;|실패| DENY3["기본값 응답"] RESPONSE --&gt; END([사용자에게 답변]) DENY2 --&gt; AGENT DENY3 --&gt; END style AUTH fill:#201010,stroke:#f05050,color:#f08080 style AZ fill:#201010,stroke:#f05050,color:#f08080 style GUARD fill:#201010,stroke:#f05050,color:#f08080 style FILTER fill:#102820,stroke:#30c880,color:#50e898 style AGENT fill:#1a2540,stroke:#5a7af0,color:#7a9aff </p>
+<div class="mermaid">
+flowchart TD START(["사용자 질문\n우리 부서 최근 주문 현황 알려줘"]) --> AUTH{JWT 검증} AUTH -->|실패| DENY1["401 재로그인"] AUTH -->|성공| PLAN[에이전트 플래닝\nLLM이 도구 선택] PLAN --> BRANCH{어떤 도구?} BRANCH -->|MCP 기본| T1[get_orders 도구] BRANCH -->|NL2SQL| T2[run_sql 도구] BRANCH -->|RAG| T3[search_docs 도구] T1 -->|JWT| S1[Spring /api/orders] T2 -->|JWT + SQL| S2[Spring /api/nl2sql/execute] T3 -->|JWT + query| S3[Spring /api/rag/search] S1 --> AZ{Spring 권한 체크\n@PreAuthorize} S2 --> AZ S3 --> AZ AZ -->|거부| DENY2["403 → 일반화 메시지"] AZ -->|허용| FILTER[Service 레이어\n사용자별 필터링] FILTER --> DATA[Oracle / ES / Vector] DATA -->|필터링된 데이터| RESULT[도구 결과] RESULT --> AGENT[에이전트 종합] AGENT --> GUARD{Guardrail 검증} GUARD -->|통과| RESPONSE[자연어 응답] GUARD -->|실패| DENY3["기본값 응답"] RESPONSE --> END([사용자에게 답변]) DENY2 --> AGENT DENY3 --> END style AUTH fill:#201010,stroke:#f05050,color:#f08080 style AZ fill:#201010,stroke:#f05050,color:#f08080 style GUARD fill:#201010,stroke:#f05050,color:#f08080 style FILTER fill:#102820,stroke:#30c880,color:#50e898 style AGENT fill:#1a2540,stroke:#5a7af0,color:#7a9aff
+</div>
+
 <p>06MCP Tools — 기존 API 래퍼</p>
 <p>MCP 도구 권한 처리 흐름</p>
-<p>sequenceDiagram participant AG as LangGraph Agent participant MCP as MCP Tool participant API as Spring API participant SS as Spring Security participant SVC as Service Layer AG-&gt;&gt;MCP: search_customer(name, ctx.user_token) MCP-&gt;&gt;API: GET /api/customers?name=...\nAuthorization: Bearer {JWT} API-&gt;&gt;SS: JWT 검증 SS-&gt;&gt;SS: @PreAuthorize 권한 체크 alt 권한 있음 SS-&gt;&gt;SVC: customerService.search(name, user) SVC-&gt;&gt;SVC: 부서/역할 필터 적용 SVC--&gt;&gt;API: 필터링된 고객 목록 API--&gt;&gt;MCP: 200 OK + 데이터 MCP--&gt;&gt;AG: {customers: [...]} else 권한 없음 SS--&gt;&gt;API: 403 Forbidden API--&gt;&gt;MCP: 403 MCP--&gt;&gt;AG: {accessible: false,\n message: "접근 권한 없음"} end </p>
+<div class="mermaid">
+sequenceDiagram participant AG as LangGraph Agent participant MCP as MCP Tool participant API as Spring API participant SS as Spring Security participant SVC as Service Layer AG->>MCP: search_customer(name, ctx.user_token) MCP->>API: GET /api/customers?name=...\nAuthorization: Bearer {JWT} API->>SS: JWT 검증 SS->>SS: @PreAuthorize 권한 체크 alt 권한 있음 SS->>SVC: customerService.search(name, user) SVC->>SVC: 부서/역할 필터 적용 SVC-->>API: 필터링된 고객 목록 API-->>MCP: 200 OK + 데이터 MCP-->>AG: {customers: [...]} else 권한 없음 SS-->>API: 403 Forbidden API-->>MCP: 403 MCP-->>AG: {accessible: false,\n message: "접근 권한 없음"} end
+</div>
+
 <p>PYTHONMCP Tool 구현 패턴</p>
 <div class="codehilite"><pre><span></span><code><span class="kn">from</span><span class="w"> </span><span class="nn">fastmcp</span><span class="w"> </span><span class="kn">import</span> <span class="n">FastMCP</span><span class="p">,</span> <span class="n">Context</span>
 <span class="kn">import</span><span class="w"> </span><span class="nn">httpx</span>
@@ -511,7 +526,10 @@
 <p>⚠️</p>
 <p><strong>NL2SQL은 가장 위험한 도구</strong> LLM이 자유롭게 SQL을 생성하므로 권한 필터가 누락될 수 있습니다. 따라서 <strong>Python이 SQL 실행을 직접 하지 않고</strong> , Spring 전용 엔드포인트에 위임해야 합니다. </p>
 <p>NL2SQL 권한 안전 처리 흐름</p>
-<p>sequenceDiagram participant AG as LangGraph Agent participant PY as Python NL2SQL Tool participant LLM as 사내 LLM API participant SP as Spring /api/nl2sql/execute participant VAL as Spring SqlValidator participant RW as Spring SqlRewriter participant AUD as Spring AuditLog participant DB as Oracle AG-&gt;&gt;PY: run_sql(question, ctx.user_token) PY-&gt;&gt;LLM: NL → SQL 변환 요청\n(프롬프트에 스키마 + 예제) LLM--&gt;&gt;PY: 생성된 SQL PY-&gt;&gt;SP: POST /api/nl2sql/execute\n{question, sql}\nAuthorization: Bearer {JWT} SP-&gt;&gt;VAL: SQL 문법·허용 테이블 검증 alt 검증 실패 VAL--&gt;&gt;SP: InvalidSql SP--&gt;&gt;PY: 400 + "쿼리 제한 초과" else 검증 통과 VAL--&gt;&gt;SP: OK SP-&gt;&gt;RW: 사용자 권한 기반 WHERE 주입 RW--&gt;&gt;SP: 재작성된 SQL SP-&gt;&gt;AUD: 감사 로그 기록 (원본+재작성+사용자) SP-&gt;&gt;DB: 전용 NL2SQL role로 실행 DB--&gt;&gt;SP: 결과 (사용자 범위 내) SP--&gt;&gt;PY: 데이터 end PY--&gt;&gt;AG: 결과 (LLM이 해석) </p>
+<div class="mermaid">
+sequenceDiagram participant AG as LangGraph Agent participant PY as Python NL2SQL Tool participant LLM as 사내 LLM API participant SP as Spring /api/nl2sql/execute participant VAL as Spring SqlValidator participant RW as Spring SqlRewriter participant AUD as Spring AuditLog participant DB as Oracle AG->>PY: run_sql(question, ctx.user_token) PY->>LLM: NL → SQL 변환 요청\n(프롬프트에 스키마 + 예제) LLM-->>PY: 생성된 SQL PY->>SP: POST /api/nl2sql/execute\n{question, sql}\nAuthorization: Bearer {JWT} SP->>VAL: SQL 문법·허용 테이블 검증 alt 검증 실패 VAL-->>SP: InvalidSql SP-->>PY: 400 + "쿼리 제한 초과" else 검증 통과 VAL-->>SP: OK SP->>RW: 사용자 권한 기반 WHERE 주입 RW-->>SP: 재작성된 SQL SP->>AUD: 감사 로그 기록 (원본+재작성+사용자) SP->>DB: 전용 NL2SQL role로 실행 DB-->>SP: 결과 (사용자 범위 내) SP-->>PY: 데이터 end PY-->>AG: 결과 (LLM이 해석)
+</div>
+
 <h3 id="spring-쪽-nl2sql-엔드포인트">Spring 쪽 NL2SQL 엔드포인트</h3>
 <p>JAVANL2SQLController.java</p>
 <div class="codehilite"><pre><span></span><code><span class="err">@</span><span class="nx">RestController</span>
@@ -644,9 +662,15 @@
 <p><strong>왜 Python이 직접 실행하면 안 되나</strong> Python이 Oracle에 직접 연결하면 ① LLM이 생성한 SQL이 권한 필터 없이 실행될 위험, ② Spring Security와 별도의 권한 경로가 생겨 감사 추적 분산, ③ 사내 보안 감사 시 이중 관리 부담. Spring에 위임하면 기존 감사 인프라를 그대로 활용할 수 있습니다. </p>
 <p>08RAG — 권한 메타데이터 기반 필터링</p>
 <p>RAG 인덱싱 시 권한 메타데이터 부착</p>
-<p>flowchart LR DOC[원본 문서\n사내 시스템] --&gt;|수집| CHUNK[청킹 + 임베딩] CHUNK --&gt; META[권한 메타데이터 부착\nacl.roles, acl.depts, sensitivity] META --&gt; VEC[(Vector DB\nQdrant/ES)] DOC -.-&gt;|권한 변경 이벤트| SYNC[ACL 동기화 DAG] SYNC --&gt; VEC style META fill:#201010,stroke:#f05050,color:#f08080 style VEC fill:#102820,stroke:#30c880,color:#50e898 </p>
+<div class="mermaid">
+flowchart LR DOC[원본 문서\n사내 시스템] -->|수집| CHUNK[청킹 + 임베딩] CHUNK --> META[권한 메타데이터 부착\nacl.roles, acl.depts, sensitivity] META --> VEC[(Vector DB\nQdrant/ES)] DOC -.->|권한 변경 이벤트| SYNC[ACL 동기화 DAG] SYNC --> VEC style META fill:#201010,stroke:#f05050,color:#f08080 style VEC fill:#102820,stroke:#30c880,color:#50e898
+</div>
+
 <p>RAG 검색 시 권한 필터링 (이중 검증)</p>
-<p>sequenceDiagram participant AG as LangGraph Agent participant RT as RAG Tool participant PERM as Spring /api/me/permissions participant VEC as Vector DB participant VER as Spring /api/rag/verify AG-&gt;&gt;RT: search_documents(query, user_token) RT-&gt;&gt;PERM: GET /api/me/permissions\nAuthorization: Bearer {JWT} PERM--&gt;&gt;RT: {roles: [...], depts: [...], max_level: "internal"} RT-&gt;&gt;VEC: Vector Search\nfilter: acl.roles IN user.roles\n sensitivity &lt;= max_level VEC--&gt;&gt;RT: Top-K 청크 (권한 필터 적용) loop 각 청크 RT-&gt;&gt;VER: POST /api/rag/verify\n{doc_id}\nAuthorization: Bearer {JWT} VER--&gt;&gt;RT: {accessible: true/false} end RT--&gt;&gt;AG: 권한 검증 통과한 청크만 반환 </p>
+<div class="mermaid">
+sequenceDiagram participant AG as LangGraph Agent participant RT as RAG Tool participant PERM as Spring /api/me/permissions participant VEC as Vector DB participant VER as Spring /api/rag/verify AG->>RT: search_documents(query, user_token) RT->>PERM: GET /api/me/permissions\nAuthorization: Bearer {JWT} PERM-->>RT: {roles: [...], depts: [...], max_level: "internal"} RT->>VEC: Vector Search\nfilter: acl.roles IN user.roles\n sensitivity <= max_level VEC-->>RT: Top-K 청크 (권한 필터 적용) loop 각 청크 RT->>VER: POST /api/rag/verify\n{doc_id}\nAuthorization: Bearer {JWT} VER-->>RT: {accessible: true/false} end RT-->>AG: 권한 검증 통과한 청크만 반환
+</div>
+
 <p>PYTHONRAG Tool 구현</p>
 <div class="codehilite"><pre><span></span><code><span class="err">@</span><span class="n">mcp</span><span class="o">.</span><span class="k">tool</span>
 <span class="n">async</span><span class="w"> </span><span class="n">def</span><span class="w"> </span><span class="n">search_documents</span><span class="p">(</span><span class="n">query</span><span class="p">:</span><span class="w"> </span><span class="nb">str</span><span class="p">,</span><span class="w"> </span><span class="n">ctx</span><span class="p">:</span><span class="w"> </span><span class="n">Context</span><span class="p">)</span><span class="w"> </span><span class="o">-&gt;</span><span class="w"> </span><span class="n">list</span><span class="p">:</span>
@@ -879,7 +903,10 @@
 
 <p>11프로젝트 구조</p>
 <p>저장소 구조</p>
-<p>graph LR subgraph Existing["기존 Spring (확장)"] SC["controllers/"] SS["services/"] ST["templates/"] end subgraph New["신규 Python 사이드카"] PA["app/"] PM["mcp-server/"] end SC --&gt; ChatCtrl[ChatController] SC --&gt; NLCtrl[NL2SQLController] SC --&gt; RagCtrl[RagController] SS --&gt; SqlVal[SqlValidator] SS --&gt; SqlRew[SqlRewriter] SS --&gt; Audit[AuditService] ST --&gt; ChatPage[chat.html] PA --&gt; Main[main.py] PA --&gt; Auth[auth.py] PA --&gt; Graph[agents/graph.py] PA --&gt; Tools[tools/] PM --&gt; McpSrv[server.py] PM --&gt; McpTools[tools.py] style Existing fill:#0d0f18,stroke:#5a7af0 style New fill:#0d0f18,stroke:#30c880 </p>
+<div class="mermaid">
+graph LR subgraph Existing["기존 Spring (확장)"] SC["controllers/"] SS["services/"] ST["templates/"] end subgraph New["신규 Python 사이드카"] PA["app/"] PM["mcp-server/"] end SC --> ChatCtrl[ChatController] SC --> NLCtrl[NL2SQLController] SC --> RagCtrl[RagController] SS --> SqlVal[SqlValidator] SS --> SqlRew[SqlRewriter] SS --> Audit[AuditService] ST --> ChatPage[chat.html] PA --> Main[main.py] PA --> Auth[auth.py] PA --> Graph[agents/graph.py] PA --> Tools[tools/] PM --> McpSrv[server.py] PM --> McpTools[tools.py] style Existing fill:#0d0f18,stroke:#5a7af0 style New fill:#0d0f18,stroke:#30c880
+</div>
+
 <p>구조디렉토리 트리</p>
 <div class="codehilite"><pre><span></span><code><span class="n">company</span><span class="o">-</span><span class="n">chatbot</span><span class="o">/</span>
 <span class="err">├──</span><span class="w"> </span><span class="n">spring</span><span class="o">-</span><span class="n">app</span><span class="o">/</span><span class="w">                    </span><span class="c1"># 기존 Spring Boot (확장)</span>
@@ -924,7 +951,10 @@
 
 <p>12감사 &amp; 모니터링</p>
 <p>감사 로그 흐름</p>
-<p>graph TD REQ[사용자 질의] --&gt; GW[Python Gateway] GW --&gt;|요청 로그| PY_AUDIT[(llm_request_log\nPython)] GW --&gt; AG[Agent 실행] AG --&gt; TOOL[MCP Tool 호출] TOOL --&gt;|JWT로 API 호출| SPRING[Spring API] SPRING --&gt;|기존 감사| SPRING_AUDIT[(기존 access_log\nSpring)] SPRING --&gt;|NL2SQL 시| NL_AUDIT[(nl2sql_audit_log\nSpring)] AG --&gt;|최종 응답 로그| PY_AUDIT style PY_AUDIT fill:#201810,stroke:#e09830,color:#f8b840 style SPRING_AUDIT fill:#102040,stroke:#5a7af0,color:#7a9aff style NL_AUDIT fill:#102040,stroke:#5a7af0,color:#7a9aff </p>
+<div class="mermaid">
+graph TD REQ[사용자 질의] --> GW[Python Gateway] GW -->|요청 로그| PY_AUDIT[(llm_request_log\nPython)] GW --> AG[Agent 실행] AG --> TOOL[MCP Tool 호출] TOOL -->|JWT로 API 호출| SPRING[Spring API] SPRING -->|기존 감사| SPRING_AUDIT[(기존 access_log\nSpring)] SPRING -->|NL2SQL 시| NL_AUDIT[(nl2sql_audit_log\nSpring)] AG -->|최종 응답 로그| PY_AUDIT style PY_AUDIT fill:#201810,stroke:#e09830,color:#f8b840 style SPRING_AUDIT fill:#102040,stroke:#5a7af0,color:#7a9aff style NL_AUDIT fill:#102040,stroke:#5a7af0,color:#7a9aff
+</div>
+
 <h3 id="감사-로그-테이블-스키마">감사 로그 테이블 스키마</h3>
 <p>SQLllm_request_log (Python 쪽)</p>
 <div class="codehilite"><pre><span></span><code><span class="n">CREATE</span><span class="w"> </span><span class="n">TABLE</span><span class="w"> </span><span class="n">llm_request_log</span><span class="w"> </span><span class="p">(</span>
@@ -1125,10 +1155,16 @@
 </tbody>
 </table>
 <p>권한 거부 이벤트 처리 흐름</p>
-<p>graph TD CALL[MCP Tool이 Spring API 호출] --&gt; RESP{응답 상태} RESP --&gt;|200 OK| OK[정상 결과] RESP --&gt;|403 Forbidden| DENIED[권한 거부] DENIED --&gt; AUDIT[감사 로그 기록] AUDIT --&gt; GENERIC[일반화 메시지 생성\n요청하신 정보를 제공할 수 없습니다] GENERIC --&gt; AG[Agent에 전달] AG --&gt; LLM_EXPLAIN[LLM이 자연스럽게 설명] LLM_EXPLAIN --&gt; USER[사용자에게 답변] AUDIT --&gt;|비정상 패턴| ALERT[보안 알림] style DENIED fill:#201010,stroke:#f05050,color:#f08080 style GENERIC fill:#201810,stroke:#e09830,color:#f8b840 style ALERT fill:#201010,stroke:#f05050,color:#f08080 </p>
+<div class="mermaid">
+graph TD CALL[MCP Tool이 Spring API 호출] --> RESP{응답 상태} RESP -->|200 OK| OK[정상 결과] RESP -->|403 Forbidden| DENIED[권한 거부] DENIED --> AUDIT[감사 로그 기록] AUDIT --> GENERIC[일반화 메시지 생성\n요청하신 정보를 제공할 수 없습니다] GENERIC --> AG[Agent에 전달] AG --> LLM_EXPLAIN[LLM이 자연스럽게 설명] LLM_EXPLAIN --> USER[사용자에게 답변] AUDIT -->|비정상 패턴| ALERT[보안 알림] style DENIED fill:#201010,stroke:#f05050,color:#f08080 style GENERIC fill:#201810,stroke:#e09830,color:#f8b840 style ALERT fill:#201010,stroke:#f05050,color:#f08080
+</div>
+
 <p>15단계별 로드맵</p>
 <p>구현 로드맵 (10주)</p>
-<p>gantt title Enterprise Chatbot 구현 로드맵 dateFormat YYYY-MM-DD axisFormat %m/%d section Phase 0 사전 LLM API 스펙 조사 :p0a, 2026-04-20, 3d 기존 권한 정책 파악 :p0b, after p0a, 3d 보안팀 사전 협의 :p0c, after p0b, 3d section Phase 1 기본 Spring 프록시 컨트롤러 :p1a, after p0c, 5d Python Gateway + JWT :p1b, after p1a, 5d MCP 도구 5개 래핑 :p1c, after p1b, 7d 채팅 UI 추가 :p1d, after p1c, 3d 테스트 권한 A vs B :p1e, after p1d, 3d section Phase 2 NL2SQL Spring SqlValidator :p2a, after p1e, 5d Spring SqlRewriter :p2b, after p2a, 5d Python NL2SQL Tool :p2c, after p2b, 3d 감사 로그 통합 :p2d, after p2c, 3d section Phase 3 RAG Vector DB 구축 :p3a, after p2d, 5d 권한 메타데이터 인덱싱 :p3b, after p3a, 5d Python RAG Tool + 검증 :p3c, after p3b, 5d section Phase 4 운영 모니터링 대시보드 :p4a, after p3c, 5d 침투 테스트 :p4b, after p4a, 7d 파일럿 사용자 확대 :p4c, after p4b, 7d </p>
+<div class="mermaid">
+gantt title Enterprise Chatbot 구현 로드맵 dateFormat YYYY-MM-DD axisFormat %m/%d section Phase 0 사전 LLM API 스펙 조사 :p0a, 2026-04-20, 3d 기존 권한 정책 파악 :p0b, after p0a, 3d 보안팀 사전 협의 :p0c, after p0b, 3d section Phase 1 기본 Spring 프록시 컨트롤러 :p1a, after p0c, 5d Python Gateway + JWT :p1b, after p1a, 5d MCP 도구 5개 래핑 :p1c, after p1b, 7d 채팅 UI 추가 :p1d, after p1c, 3d 테스트 권한 A vs B :p1e, after p1d, 3d section Phase 2 NL2SQL Spring SqlValidator :p2a, after p1e, 5d Spring SqlRewriter :p2b, after p2a, 5d Python NL2SQL Tool :p2c, after p2b, 3d 감사 로그 통합 :p2d, after p2c, 3d section Phase 3 RAG Vector DB 구축 :p3a, after p2d, 5d 권한 메타데이터 인덱싱 :p3b, after p3a, 5d Python RAG Tool + 검증 :p3c, after p3b, 5d section Phase 4 운영 모니터링 대시보드 :p4a, after p3c, 5d 침투 테스트 :p4b, after p4a, 7d 파일럿 사용자 확대 :p4c, after p4b, 7d
+</div>
+
 <p>PHASE 0</p>
 <p>사전 준비 (2주)</p>
 <ul>
