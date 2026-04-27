@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>NL2SQL &</title>
+<title>NL2SQL & 데이터 레이어 개념 레퍼런스</title>
 <script src="https://cdn.jsdelivr.net/npm/mermaid@11/dist/mermaid.min.js"></script>
 <style>
   /* ── 테마 변수 ── */
@@ -279,7 +279,7 @@
 
 <aside class="sidebar">
   <div class="sidebar-header">
-    <div class="sidebar-title">NL2SQL &</div>
+    <div class="sidebar-title">NL2SQL & 데이터 레이어 개념 레퍼런스</div>
     <div class="sidebar-controls">
       <button class="theme-btn" onclick="setTheme('dark')" id="btn-dark">🌙 Dark</button>
       <button class="theme-btn" onclick="setTheme('light')" id="btn-light">☀️ Light</button>
@@ -288,60 +288,104 @@
   </div>
   <nav class="toc">
 <ul>
-  <li class="toc-h3"><a href="#용어-혼동의-세-가지-원인">용어 혼동의 세 가지 원인</a></li>
-  <li class="toc-h3"><a href="#구성-요소">구성 요소</a></li>
-  <li class="toc-h3"><a href="#대표-도구-및-표준">대표 도구 및 표준</a></li>
-  <li class="toc-h3"><a href="#그래프-예시">그래프 예시</a></li>
-  <li class="toc-h3"><a href="#표준-및-구현">표준 및 구현</a></li>
-  <li class="toc-h3"><a href="#knowledge-graph와의-관계--tbox-vs-abox">Knowledge Graph와의 관계 — TBox vs ABox</a></li>
-  <li class="toc-h3"><a href="#표준">표준</a></li>
-  <li class="toc-h3"><a href="#구성-요소_1">구성 요소</a></li>
-  <li class="toc-h3"><a href="#전통-중앙집중-vs-data-mesh">전통 중앙집중 vs Data Mesh</a></li>
-<li class="toc-h2"><a href="#세-개념은-서로-다른-층위에-있습니다">세 개념은 서로 다른 층위에 있습니다</a></li>
-<li class="toc-h2"><a href="#3가지-아키텍처-패턴">3가지 아키텍처 패턴</a></li>
-  <li class="toc-h3"><a href="#nl2sql-품질-결정-요인">NL2SQL 품질 결정 요인</a></li>
-<li class="toc-h2"><a href="#주요-벤치마크">주요 벤치마크</a></li>
-  <li class="toc-h3"><a href="#bird-sql-접근법별-정확도">BIRD-SQL 접근법별 정확도</a></li>
-  <li class="toc-h3"><a href="#bird-interact--대화형-nl2sql-2025-신규">BIRD-Interact — 대화형 NL2SQL (2025 신규)</a></li>
-<li class="toc-h2"><a href="#셀프호스팅-가능한-nl2sql-엔진">셀프호스팅 가능한 NL2SQL 엔진</a></li>
-<li class="toc-h2"><a href="#dbt-vs-cubejs">dbt vs Cube.js</a></li>
-  <li class="toc-h3"><a href="#오픈소스-셀프호스팅-가능-도구">오픈소스 셀프호스팅 가능 도구</a></li>
-<li class="toc-h2"><a href="#플랫폼별-시맨틱온톨로지-접근-방식">플랫폼별 시맨틱/온톨로지 접근 방식</a></li>
-  <li class="toc-h3"><a href="#palantir-foundry--ontology-중심-아키텍처">Palantir Foundry — Ontology 중심 아키텍처</a></li>
-<li class="toc-h2"><a href="#3가지-접근법-비교">3가지 접근법 비교</a></li>
-<li class="toc-h2"><a href="#팀-내-권장-용법">팀 내 권장 용법</a></li>
-  <li class="toc-h3"><a href="#피해야-할-모호한-용어">피해야 할 모호한 용어</a></li>
-<li class="toc-h2"><a href="#필독-논문">필독 논문</a></li>
-  <li class="toc-h3"><a href="#w3c-공식-표준">W3C 공식 표준</a></li>
-  <li class="toc-h3"><a href="#추천-도서">추천 도서</a></li>
-  <li class="toc-h3"><a href="#벤더-공식-문서">벤더 공식 문서</a></li>
+<li class="toc-h2"><a href="#1-개요--용어-혼동의-세-가지-원인">1. 개요 — 용어 혼동의 세 가지 원인</a></li>
+<li class="toc-h2"><a href="#2-semantic-layer--시맨틱-레이어">2. Semantic Layer — 시맨틱 레이어</a></li>
+  <li class="toc-h3"><a href="#2-1-정의-gartner-it-glossary">2-1. 정의 (Gartner IT Glossary)</a></li>
+  <li class="toc-h3"><a href="#2-2-구성-요소">2-2. 구성 요소</a></li>
+  <li class="toc-h3"><a href="#2-3-대표-도구-및-표준">2-3. 대표 도구 및 표준</a></li>
+<li class="toc-h2"><a href="#3-knowledge-graph--지식그래프">3. Knowledge Graph — 지식그래프</a></li>
+  <li class="toc-h3"><a href="#3-1-정의-hogan-et-al-2021--acm-computing-surveys">3-1. 정의 (Hogan et al., 2021 · ACM Computing Surveys)</a></li>
+  <li class="toc-h3"><a href="#3-2-그래프-예시--기업섹터-kg">3-2. 그래프 예시 — 기업/섹터 KG</a></li>
+  <li class="toc-h3"><a href="#3-3-표준-및-구현">3-3. 표준 및 구현</a></li>
+<li class="toc-h2"><a href="#4-ontology--온톨로지">4. Ontology — 온톨로지</a></li>
+  <li class="toc-h3"><a href="#4-1-정의-tom-gruber-1993--확장-studer-et-al-1998">4-1. 정의 (Tom Gruber, 1993 · 확장 Studer et al., 1998)</a></li>
+  <li class="toc-h3"><a href="#4-2-kg와의-관계--tbox-vs-abox">4-2. KG와의 관계 — TBox vs ABox</a></li>
+  <li class="toc-h3"><a href="#4-3-표준">4-3. 표준</a></li>
+<li class="toc-h2"><a href="#5-data-fabric--데이터-패브릭">5. Data Fabric — 데이터 패브릭</a></li>
+  <li class="toc-h3"><a href="#5-1-정의-gartner-2019">5-1. 정의 (Gartner, 2019)</a></li>
+  <li class="toc-h3"><a href="#5-2-구성-요소">5-2. 구성 요소</a></li>
+  <li class="toc-h3"><a href="#5-3-대표-벤더">5-3. 대표 벤더</a></li>
+<li class="toc-h2"><a href="#6-data-mesh--데이터-메시">6. Data Mesh — 데이터 메시</a></li>
+  <li class="toc-h3"><a href="#6-1-정의-zhamak-dehghani-2019">6-1. 정의 (Zhamak Dehghani, 2019)</a></li>
+  <li class="toc-h3"><a href="#6-2-전통-중앙집중-vs-data-mesh">6-2. 전통 중앙집중 vs Data Mesh</a></li>
+  <li class="toc-h3"><a href="#6-3-4가지-원칙">6-3. 4가지 원칙</a></li>
+<li class="toc-h2"><a href="#7-semantic-layer-vs-knowledge-graph-vs-ontology--세-개념의-층위">7. Semantic Layer vs Knowledge Graph vs Ontology — 세 개념의 층위</a></li>
+<li class="toc-h2"><a href="#8-nl2sql-엔진-아키텍처--3가지-패턴">8. NL2SQL 엔진 아키텍처 — 3가지 패턴</a></li>
+  <li class="toc-h3"><a href="#8-1-품질-결정-요인">8-1. 품질 결정 요인</a></li>
+<li class="toc-h2"><a href="#9-nl2sql-벤치마크-현황-20252026">9. NL2SQL 벤치마크 현황 (2025–2026)</a></li>
+  <li class="toc-h3"><a href="#9-1-주요-벤치마크">9-1. 주요 벤치마크</a></li>
+  <li class="toc-h3"><a href="#9-2-bird-sql-접근법별-정확도">9-2. BIRD-SQL 접근법별 정확도</a></li>
+  <li class="toc-h3"><a href="#9-3-bird-interact--대화형-nl2sql-2025-신규">9-3. BIRD-Interact — 대화형 NL2SQL (2025 신규)</a></li>
+<li class="toc-h2"><a href="#10-nl2sql-도구-비교--셀프호스팅-가능-엔진">10. NL2SQL 도구 비교 — 셀프호스팅 가능 엔진</a></li>
+<li class="toc-h2"><a href="#11-시맨틱-레이어-도구--dbt-vs-cubejs">11. 시맨틱 레이어 도구 — dbt vs Cube.js</a></li>
+  <li class="toc-h3"><a href="#11-1-오픈소스-셀프호스팅-가능-도구">11-1. 오픈소스 셀프호스팅 가능 도구</a></li>
+<li class="toc-h2"><a href="#12-엔터프라이즈-사례--플랫폼별-시맨틱온톨로지-접근">12. 엔터프라이즈 사례 — 플랫폼별 시맨틱/온톨로지 접근</a></li>
+  <li class="toc-h3"><a href="#12-1-palantir-foundry--ontology-중심-아키텍처">12-1. Palantir Foundry — Ontology 중심 아키텍처</a></li>
+<li class="toc-h2"><a href="#13-비정형-데이터-통합--3가지-전략">13. 비정형 데이터 통합 — 3가지 전략</a></li>
+<li class="toc-h2"><a href="#14-용어-사용-가이드--팀-내-권장-용법">14. 용어 사용 가이드 — 팀 내 권장 용법</a></li>
+  <li class="toc-h3"><a href="#14-1-피해야-할-모호한-용어">14-1. 피해야 할 모호한 용어</a></li>
+<li class="toc-h2"><a href="#15-공식-참고-문헌">15. 공식 참고 문헌</a></li>
+  <li class="toc-h3"><a href="#15-1-필독-논문">15-1. 필독 논문</a></li>
+  <li class="toc-h3"><a href="#15-2-w3c-공식-표준">15-2. W3C 공식 표준</a></li>
+  <li class="toc-h3"><a href="#15-3-추천-도서">15-3. 추천 도서</a></li>
+  <li class="toc-h3"><a href="#15-4-벤더-공식-문서">15-4. 벤더 공식 문서</a></li>
+  <li class="toc-h3"><a href="#내부-관련-문서">내부 관련 문서</a></li>
+<li class="toc-h2"><a href="#변경-이력">변경 이력</a></li>
 </ul>
 </nav>
 </aside>
 
 <main class="content">
-<h1 id="nl2sql">NL2SQL &amp;</h1>
-<p>데이터 레이어<br />
-개념 레퍼런스</p>
-<p>업계·학계·벤더마다 다르게 쓰이는 용어를 벤더 중립적으로 정리합니다. 팀 내 혼동을 방지하고, 신규 합류자와 외부 협업자가 공통 언어를 가질 수 있도록 정식 통용 정의를 기반으로 작성했습니다.</p>
-<p>Semantic Layer Knowledge Graph Ontology NL2SQL Data Fabric Data Mesh</p>
-<h3 id="용어-혼동의-세-가지-원인">용어 혼동의 세 가지 원인</h3>
-<p>학술 vs 산업</p>
-<p>Ontology: 학술 = 형식 사양<br />
-산업 = Palantir식 통합 모델</p>
-<p>벤더마다 다른 명명</p>
-<p>Palantir: Ontology<br />
-Databricks: Unity Catalog<br />
-dbt: Semantic Layer</p>
-<p>개념 자체가 진화 중</p>
-<p>LLM 시대 이전/이후 정의 범위가 계속 확장</p>
-<p>01Semantic Layer — 시맨틱 레이어</p>
-<p>GARTNER IT GLOSSARY 정의</p>
+<h1 id="nl2sql--데이터-레이어-개념-레퍼런스">NL2SQL &amp; 데이터 레이어 개념 레퍼런스</h1>
+<blockquote>
+<p>업계·학계·벤더마다 다르게 쓰이는 용어를 <strong>벤더 중립적</strong>으로 정리. 팀 내 혼동을 방지하고, 신규 합류자와 외부 협업자가 공통 언어를 가질 수 있도록 정식 통용 정의 기반.</p>
+</blockquote>
+<hr />
+<h2 id="1-개요--용어-혼동의-세-가지-원인">1. 개요 — 용어 혼동의 세 가지 원인</h2>
+<table>
+<thead>
+<tr>
+<th>원인</th>
+<th>예시</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><strong>학술 vs 산업</strong></td>
+<td>Ontology — 학술: 형식 사양 / 산업: Palantir식 통합 모델</td>
+</tr>
+<tr>
+<td><strong>벤더마다 다른 명명</strong></td>
+<td>Palantir: Ontology / Databricks: Unity Catalog / dbt: Semantic Layer</td>
+</tr>
+<tr>
+<td><strong>개념 자체가 진화 중</strong></td>
+<td>LLM 시대 이전/이후 정의 범위 확장</td>
+</tr>
+</tbody>
+</table>
+<p>다루는 용어: Semantic Layer, Knowledge Graph, Ontology, NL2SQL, Data Fabric, Data Mesh.</p>
+<hr />
+<h2 id="2-semantic-layer--시맨틱-레이어">2. Semantic Layer — 시맨틱 레이어</h2>
+<h3 id="2-1-정의-gartner-it-glossary">2-1. 정의 (Gartner IT Glossary)</h3>
+<blockquote>
 <p>"A business representation of corporate data that helps end users access data autonomously using common business terms."</p>
-<p>원본 데이터 위에 비즈니스 의미를 부여한 추상화 층. Metric, Dimension, Entity, Relationship을 중앙에서 정의하고, 여러 도구(BI, API, 노트북)가 동일한 정의를 재사용. 전통적으로는 <strong>정형 데이터(SQL DB)에 한정</strong> 된 개념.</p>
-<h3 id="구성-요소">구성 요소</h3>
-<p>Semantic Layer 구성 요소</p>
-<p>graph LR A[Semantic Layer] --&gt; B["Metrics\n비즈니스 지표"] A --&gt; C["Dimensions\n분석 축"] A --&gt; D["Entities\n비즈니스 객체"] A --&gt; E["Relationships\nJOIN 경로"] B --&gt; B1["revenue = SUM(amount)\nWHERE status='paid'"] C --&gt; C1["month, region,\ncustomer_segment"] D --&gt; D1["Customer, Order,\nProduct"] E --&gt; E1["Customer ← Order ← OrderItem"] </p>
+</blockquote>
+<p>원본 데이터 위에 <strong>비즈니스 의미를 부여한 추상화 층</strong>. Metric, Dimension, Entity, Relationship을 중앙에서 정의하고, 여러 도구(BI, API, 노트북)가 동일한 정의를 재사용. 전통적으로는 <strong>정형 데이터(SQL DB)에 한정</strong>된 개념.</p>
+<h3 id="2-2-구성-요소">2-2. 구성 요소</h3>
+<div class="mermaid">
+graph LR
+    A[Semantic Layer] --> B[Metrics\n비즈니스 지표]
+    A --> C[Dimensions\n분석 축]
+    A --> D[Entities\n비즈니스 객체]
+    A --> E[Relationships\nJOIN 경로]
+
+    B --> B1["revenue = SUM(amount)\nWHERE status='paid'"]
+    C --> C1[month, region,\ncustomer_segment]
+    D --> D1[Customer, Order,\nProduct]
+    E --> E1[Customer ← Order ← OrderItem]
+</div>
+
 <table>
 <thead>
 <tr>
@@ -373,7 +417,7 @@ dbt: Semantic Layer</p>
 </tr>
 </tbody>
 </table>
-<h3 id="대표-도구-및-표준">대표 도구 및 표준</h3>
+<h3 id="2-3-대표-도구-및-표준">2-3. 대표 도구 및 표준</h3>
 <table>
 <thead>
 <tr>
@@ -405,26 +449,29 @@ dbt: Semantic Layer</p>
 </tr>
 </tbody>
 </table>
-<p>ℹ</p>
-<p><strong>표준 없음</strong> Semantic Layer는 업계 공식 표준이 없어요. 벤더마다 YAML 스키마가 다릅니다. Kimball Group의 차원 모델링이 사실상의 설계 기준으로 사용돼요.</p>
-<p>02Knowledge Graph — 지식그래프</p>
-<p>Hogan et al., 2021 · ACM Computing Surveys</p>
+<blockquote>
+<p>ℹ <strong>표준 없음</strong>: Semantic Layer는 업계 공식 표준이 없다. 벤더마다 YAML 스키마가 다르다. <strong>Kimball Group의 차원 모델링</strong>이 사실상의 설계 기준으로 사용된다.</p>
+</blockquote>
+<hr />
+<h2 id="3-knowledge-graph--지식그래프">3. Knowledge Graph — 지식그래프</h2>
+<h3 id="3-1-정의-hogan-et-al-2021--acm-computing-surveys">3-1. 정의 (Hogan et al., 2021 · ACM Computing Surveys)</h3>
+<blockquote>
 <p>"A knowledge graph is a graph of data intended to accumulate and convey knowledge of the real world, whose nodes represent entities of interest and whose edges represent relations between these entities."</p>
-<p>엔티티(노드) + 관계(엣지)로 구성된 그래프 구조. 정형/비정형 구분 없이 통합 가능하며 <strong>추론(inference)</strong> 이 가능해요 — 명시되지 않은 관계도 규칙 기반으로 도출. 산업에서 가장 널리 쓰이는 용어.</p>
-<h3 id="그래프-예시">그래프 예시</h3>
-<p>기업-섹터 Knowledge Graph 구조</p>
-<p>graph LR Samsung[삼성전자] --&gt;|IS_A| Semi[반도체 기업] Samsung --&gt;|BELONGS_TO| KOSPI[KOSPI] Samsung --&gt;|COMPETITOR| SK[SK하이닉스] Samsung --&gt;|PRODUCES| Memory[메모리 반도체] Samsung --&gt;|HQ_IN| Korea[대한민국] Semi --&gt;|IS_A| Tech[Technology 섹터] SK --&gt;|IS_A| Semi </p>
-<p>예시기업-섹터 지식그래프 구조</p>
-<div class="codehilite"><pre><span></span><code>삼성전자 ──IS_A──────▶ 반도체 기업
-삼성전자 ──BELONGS_TO─▶ KOSPI
-삼성전자 ──COMPETITOR──▶ SK하이닉스
-삼성전자 ──PRODUCES────▶ 메모리 반도체
-삼성전자 ──HQ_IN───────▶ 대한민국
-반도체기업 ──IS_A──────▶ Technology 섹터
-SK하이닉스 ──IS_A──────▶ 반도체 기업
-</code></pre></div>
+</blockquote>
+<p>엔티티(노드) + 관계(엣지)로 구성된 그래프 구조. 정형/비정형 구분 없이 통합 가능하며 <strong>추론(inference)</strong>이 가능하다 — 명시되지 않은 관계도 규칙 기반으로 도출. 산업에서 가장 널리 쓰이는 용어.</p>
+<h3 id="3-2-그래프-예시--기업섹터-kg">3-2. 그래프 예시 — 기업/섹터 KG</h3>
+<div class="mermaid">
+graph LR
+    Samsung[삼성전자] -->|IS_A| Semi[반도체 기업]
+    Samsung -->|BELONGS_TO| KOSPI[KOSPI]
+    Samsung -->|COMPETITOR| SK[SK하이닉스]
+    Samsung -->|PRODUCES| Memory[메모리 반도체]
+    Samsung -->|HQ_IN| Korea[대한민국]
+    Semi -->|IS_A| Tech[Technology 섹터]
+    SK -->|IS_A| Semi
+</div>
 
-<h3 id="표준-및-구현">표준 및 구현</h3>
+<h3 id="3-3-표준-및-구현">3-3. 표준 및 구현</h3>
 <table>
 <thead>
 <tr>
@@ -463,7 +510,7 @@ SK하이닉스 ──IS_A──────▶ 반도체 기업
 <tr>
 <td>Google Knowledge Graph</td>
 <td>비공개</td>
-<td>수십억 엔티티, 검색 품질 개선 목적</td>
+<td>수십억 엔티티, 검색 품질 개선</td>
 </tr>
 <tr>
 <td>Wikidata</td>
@@ -482,79 +529,125 @@ SK하이닉스 ──IS_A──────▶ 반도체 기업
 </tr>
 </tbody>
 </table>
-<p>03Ontology — 온톨로지</p>
-<p>Tom Gruber, 1993 · 확장 정의 Studer et al., 1998</p>
+<hr />
+<h2 id="4-ontology--온톨로지">4. Ontology — 온톨로지</h2>
+<h3 id="4-1-정의-tom-gruber-1993--확장-studer-et-al-1998">4-1. 정의 (Tom Gruber, 1993 · 확장 Studer et al., 1998)</h3>
+<blockquote>
 <p>"A formal, explicit specification of a shared conceptualization."</p>
-<p>도메인의 개념, 속성, 관계, 제약조건의 <strong>형식적 정의</strong>. Knowledge Graph의 스키마 역할. 학술적으로 가장 엄격한 정의이며, Formal semantics로 추론이 가능해요.</p>
-<h3 id="knowledge-graph와의-관계--tbox-vs-abox">Knowledge Graph와의 관계 — TBox vs ABox</h3>
-<p>Ontology = TBox (스키마) · Knowledge Graph = TBox + ABox (데이터)</p>
-<p>graph TB subgraph TBox["Ontology — TBox (Terminological Box)"] T1["Class: Company"] T2["Class: Sector"] T3["Property: IS_A"] T4["Property: COMPETITOR"] T5["Rule: Competitor is symmetric"] end subgraph ABox["Knowledge Graph — ABox (Assertional Box)"] A1["Samsung is_a Company"] A2["SK_Hynix is_a Company"] A3["Samsung competitor SK_Hynix"] A4["Semiconductor is_a Sector"] end TBox -."스키마 제공".-&gt; ABox ABox -."인스턴스".-&gt; TBox </p>
-<p>개념학술적 구분</p>
-<div class="codehilite"><pre><span></span><code>── Ontology = TBox (Terminological Box, 스키마) ──
-Class: Company
-Class: Sector
-Property: IS_A
-Property: COMPETITOR
-Rule: &quot;Competitor is symmetric&quot;
+</blockquote>
+<p>도메인의 개념, 속성, 관계, 제약조건의 <strong>형식적 정의</strong>. Knowledge Graph의 <strong>스키마 역할</strong>. 학술적으로 가장 엄격한 정의이며, Formal semantics로 추론 가능.</p>
+<h3 id="4-2-kg와의-관계--tbox-vs-abox">4-2. KG와의 관계 — TBox vs ABox</h3>
+<div class="mermaid">
+graph TB
+    subgraph TBox["Ontology — TBox (Terminological Box)"]
+        T1[Class: Company]
+        T2[Class: Sector]
+        T3[Property: IS_A]
+        T4[Property: COMPETITOR]
+        T5[Rule: Competitor is symmetric]
+    end
 
-── Knowledge Graph = Ontology + ABox (Assertional Box, 데이터) ──
-&quot;Samsung is_a Company&quot;         ← ABox 인스턴스
-&quot;SK_Hynix is_a Company&quot;
-&quot;Samsung competitor SK_Hynix&quot;
+    subgraph ABox["Knowledge Graph — ABox (Assertional Box)"]
+        A1[Samsung is_a Company]
+        A2[SK_Hynix is_a Company]
+        A3[Samsung competitor SK_Hynix]
+        A4[Semiconductor is_a Sector]
+    end
 
-요약: Ontology(스키마)가 KG(데이터)의 스키마를 제공
-</code></pre></div>
+    TBox -.스키마 제공.-> ABox
+    ABox -.인스턴스.-> TBox
+    style TBox fill:#4f8fea22,stroke:#4f8fea,stroke-width:2px,color:#e6edf3
+    style ABox fill:#6c5ce722,stroke:#6c5ce7,stroke-width:2px,color:#e6edf3
+</div>
 
-<h3 id="표준">표준</h3>
+<table>
+<thead>
+<tr>
+<th>영역</th>
+<th>내용</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><strong>Ontology = TBox</strong></td>
+<td>스키마 (Class, Property, Rule)</td>
+</tr>
+<tr>
+<td><strong>Knowledge Graph = TBox + ABox</strong></td>
+<td>스키마 + 데이터 (실제 인스턴스)</td>
+</tr>
+</tbody>
+</table>
+<h3 id="4-3-표준">4-3. 표준</h3>
 <table>
 <thead>
 <tr>
 <th>표준</th>
-<th>URL</th>
 <th>용도</th>
 </tr>
 </thead>
 <tbody>
 <tr>
 <td><strong>W3C OWL 2</strong></td>
-<td>w3.org/TR/owl2-overview/</td>
 <td>가장 공식적인 온톨로지 언어</td>
 </tr>
 <tr>
 <td><strong>W3C RDFS</strong></td>
-<td>w3.org/TR/rdf-schema/</td>
 <td>OWL의 부분집합, 경량 스키마</td>
 </tr>
 <tr>
 <td><strong>W3C SKOS</strong></td>
-<td>w3.org/TR/skos-reference/</td>
 <td>분류체계/용어집</td>
 </tr>
 <tr>
 <td><strong>W3C SHACL</strong></td>
-<td>w3.org/TR/shacl/</td>
 <td>데이터 검증 (2017~)</td>
 </tr>
 </tbody>
 </table>
-<p>04Data Fabric — 데이터 패브릭</p>
-<p>Gartner, 2019</p>
+<hr />
+<h2 id="5-data-fabric--데이터-패브릭">5. Data Fabric — 데이터 패브릭</h2>
+<h3 id="5-1-정의-gartner-2019">5-1. 정의 (Gartner, 2019)</h3>
+<blockquote>
 <p>"A design concept that serves as an integrated layer of data and connecting processes... utilizing continuous analytics over existing, discoverable and inferenced metadata assets."</p>
-<p><strong>아키텍처 패턴</strong> 이지 구체 제품이 아니에요. 메타데이터 기반 이기종 데이터 통합을 목표로 하며, Active metadata + AI/ML 기반 자동화를 강조해요. Gartner가 2019년부터 강력히 밀고 있는 개념입니다.</p>
-<h3 id="구성-요소_1">구성 요소</h3>
-<p>Metadata<br />
-Management</p>
-<p>Data<br />
-Catalog</p>
-<p>Data<br />
-Governance</p>
-<p>AI/ML<br />
-Augmentation</p>
-<p>Orchestration</p>
+</blockquote>
+<p><strong>아키텍처 패턴</strong>이지 구체 제품이 아니다. 메타데이터 기반 이기종 데이터 통합을 목표로 하며, <strong>Active metadata + AI/ML 기반 자동화</strong>를 강조. Gartner가 2019년부터 강력히 밀고 있는 개념.</p>
+<h3 id="5-2-구성-요소">5-2. 구성 요소</h3>
 <table>
 <thead>
 <tr>
-<th>대표 벤더</th>
+<th>구성</th>
+<th>설명</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Metadata Management</td>
+<td>능동적 메타데이터 수집/분석</td>
+</tr>
+<tr>
+<td>Data Catalog</td>
+<td>자산 디스커버리</td>
+</tr>
+<tr>
+<td>Data Governance</td>
+<td>정책 + 규제 준수</td>
+</tr>
+<tr>
+<td>AI/ML Augmentation</td>
+<td>자동 분류, 품질 검사</td>
+</tr>
+<tr>
+<td>Orchestration</td>
+<td>파이프라인 통합</td>
+</tr>
+</tbody>
+</table>
+<h3 id="5-3-대표-벤더">5-3. 대표 벤더</h3>
+<table>
+<thead>
+<tr>
+<th>벤더</th>
 <th>특징</th>
 </tr>
 </thead>
@@ -573,31 +666,81 @@ Augmentation</p>
 </tr>
 </tbody>
 </table>
-<p>05Data Mesh — 데이터 메시</p>
-<p>Zhamak Dehghani, 2019 (martinfowler.com)</p>
+<hr />
+<h2 id="6-data-mesh--데이터-메시">6. Data Mesh — 데이터 메시</h2>
+<h3 id="6-1-정의-zhamak-dehghani-2019">6-1. 정의 (Zhamak Dehghani, 2019)</h3>
+<blockquote>
 <p>"A sociotechnical approach to building a decentralized data architecture by leveraging a domain-oriented, self-serve design."</p>
-<p><strong>기술 스택이 아니라 원칙</strong> 이에요. 중앙 집중형 데이터 레이어의 반대 개념. 조직 설계와 데이터 아키텍처의 결합.</p>
-<h3 id="전통-중앙집중-vs-data-mesh">전통 중앙집중 vs Data Mesh</h3>
-<p>아키텍처 비교</p>
-<p>graph TB subgraph Traditional["Traditional — 중앙집중"] T1[Domain A] --&gt; TC[Central Data Team] T2[Domain B] --&gt; TC T3[Domain C] --&gt; TC TC --&gt; TDW[(Central DW)] TDW --&gt; TU[Users] end subgraph Mesh["Data Mesh — 분산"] M1["Domain A\n+Data Product"] --&gt; MU[Users] M2["Domain B\n+Data Product"] --&gt; MU M3["Domain C\n+Data Product"] --&gt; MU MP[Self-serve Platform] -."지원".-&gt; M1 MP -."지원".-&gt; M2 MP -."지원".-&gt; M3 end </p>
-<p>원칙 1</p>
-<p>Domain-oriented ownership</p>
-<p>도메인 팀이 자기 데이터를 직접 책임</p>
-<p>원칙 2</p>
-<p>Data as a product</p>
-<p>데이터를 프로덕트처럼 취급, 품질 보장</p>
-<p>원칙 3</p>
-<p>Self-serve data platform</p>
-<p>도메인 팀이 독립적으로 운영 가능</p>
-<p>원칙 4</p>
-<p>Federated computational governance</p>
-<p>분산된 거버넌스 — 중앙 통제 없음</p>
-<p>06Semantic Layer vs Knowledge Graph vs Ontology</p>
-<h2 id="세-개념은-서로-다른-층위에-있습니다">세 개념은 서로 다른 층위에 있습니다</h2>
-<p>추상화 계층 비교</p>
-<p>graph TB subgraph L1["추상화 계층"] O["Ontology\n형식적 개념 정의 (스키마)"] KG["Knowledge Graph\nOntology + 실제 데이터 (인스턴스)"] SL["Semantic Layer\n정형 데이터 메트릭 추상화"] end O --&gt;|"스키마 제공"| KG SL -.-&gt;|"다른 층위 (정형 DB 특화)"| KG </p>
-<p>⚡</p>
-<p><strong>핵심 구분</strong> Ontology는 스키마(어떤 개념이 존재하는가), Knowledge Graph는 스키마+데이터(실제 인스턴스 포함), Semantic Layer는 정형 DB 위의 비즈니스 메트릭 추상화. 서로 대체 관계가 아니에요.</p>
+</blockquote>
+<p><strong>기술 스택이 아니라 원칙</strong>이다. 중앙 집중형 데이터 레이어의 반대 개념. 조직 설계와 데이터 아키텍처의 결합.</p>
+<h3 id="6-2-전통-중앙집중-vs-data-mesh">6-2. 전통 중앙집중 vs Data Mesh</h3>
+<div class="mermaid">
+graph TB
+    subgraph Traditional["Traditional — 중앙집중"]
+        T1[Domain A] --> TC[Central Data Team]
+        T2[Domain B] --> TC
+        T3[Domain C] --> TC
+        TC --> TDW[(Central DW)]
+        TDW --> TU[Users]
+    end
+
+    subgraph Mesh["Data Mesh — 분산"]
+        M1[Domain A\n+Data Product] --> MU[Users]
+        M2[Domain B\n+Data Product] --> MU
+        M3[Domain C\n+Data Product] --> MU
+        MP[Self-serve Platform] -.지원.-> M1
+        MP -.지원.-> M2
+        MP -.지원.-> M3
+    end
+    style Traditional fill:#4f8fea22,stroke:#4f8fea,stroke-width:2px,color:#e6edf3
+    style Mesh fill:#6c5ce722,stroke:#6c5ce7,stroke-width:2px,color:#e6edf3
+</div>
+
+<h3 id="6-3-4가지-원칙">6-3. 4가지 원칙</h3>
+<table>
+<thead>
+<tr>
+<th>원칙</th>
+<th>설명</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><strong>Domain-oriented ownership</strong></td>
+<td>도메인 팀이 자기 데이터를 직접 책임</td>
+</tr>
+<tr>
+<td><strong>Data as a product</strong></td>
+<td>데이터를 프로덕트처럼 취급, 품질 보장</td>
+</tr>
+<tr>
+<td><strong>Self-serve data platform</strong></td>
+<td>도메인 팀이 독립적으로 운영 가능</td>
+</tr>
+<tr>
+<td><strong>Federated computational governance</strong></td>
+<td>분산된 거버넌스 — 중앙 통제 없음</td>
+</tr>
+</tbody>
+</table>
+<hr />
+<h2 id="7-semantic-layer-vs-knowledge-graph-vs-ontology--세-개념의-층위">7. Semantic Layer vs Knowledge Graph vs Ontology — 세 개념의 층위</h2>
+<div class="mermaid">
+graph TB
+    subgraph L1["추상화 계층"]
+        O[Ontology\n형식적 개념 정의 - 스키마]
+        KG[Knowledge Graph\nOntology + 실제 데이터 - 인스턴스]
+        SL[Semantic Layer\n정형 데이터 메트릭 추상화]
+    end
+
+    O -->|스키마 제공| KG
+    SL -.다른 층위 - 정형 DB 특화.-> KG
+    style L1 fill:#4f8fea22,stroke:#4f8fea,stroke-width:2px,color:#e6edf3
+</div>
+
+<blockquote>
+<p>⚡ <strong>핵심 구분</strong>: Ontology는 스키마(어떤 개념이 존재하는가), Knowledge Graph는 스키마+데이터(실제 인스턴스 포함), Semantic Layer는 정형 DB 위의 비즈니스 메트릭 추상화. <strong>서로 대체 관계가 아니다.</strong></p>
+</blockquote>
 <table>
 <thead>
 <tr>
@@ -652,39 +795,101 @@ Augmentation</p>
 </tr>
 </tbody>
 </table>
-<p>07NL2SQL 엔진 아키텍처</p>
-<h2 id="3가지-아키텍처-패턴">3가지 아키텍처 패턴</h2>
-<p>NL2SQL 아키텍처 패턴 비교</p>
-<p>graph TB subgraph P1["① Direct Prompting"] Q1[질문] --&gt; L1["LLM + 스키마 DDL"] --&gt; S1[SQL] end subgraph P2["② RAG 기반 (가장 보편적)"] Q2[질문] --&gt; E2[임베딩] --&gt; V2[("Vector DB\n스키마/Few-shot")] V2 --&gt; L2[LLM] Q2 --&gt; L2 L2 --&gt; VA2[SQL 검증] VA2 --&gt; S2[SQL] end subgraph P3["③ Agent 기반"] Q3[질문] --&gt; IC[Intent Classifier] IC --&gt; SP[Single SQL Agent] IC --&gt; MP[Multi-step Planner] MP --&gt; MP1[Step 1: SQL] MP1 --&gt; MP2[Step 2: 결과 기반 SQL] SP --&gt; S3[SQL] MP2 --&gt; S3 end </p>
-<p>① Direct Prompting</p>
-<p>질문 + 스키마 DDL → LLM → SQL  </p>
-<p>장점: 구현 단순<br />
-단점: 스키마가 크면 토큰 폭발 </p>
-<p>② RAG 기반 (가장 보편)</p>
-<p>질문 임베딩 → Vector DB 검색<br />
-(관련 스키마/Few-shot)<br />
-→ LLM → SQL 검증  </p>
-<p>장점: 대형 스키마 대응<br />
-단점: 벡터 DB 관리 필요 </p>
-<p>③ Agent 기반</p>
-<p>의도 분류 → 단순/복잡 분기<br />
-복잡: 다단계 서브태스크 분해<br />
-→ 각 단계 SQL → 결과 조합  </p>
-<p>장점: 복잡한 질문 대응<br />
-단점: 지연시간, 비용 높음 </p>
-<h3 id="nl2sql-품질-결정-요인">NL2SQL 품질 결정 요인</h3>
-<p>💡</p>
-<p><strong>도구보다 LLM과 컨텍스트가 중요</strong> 실제 현장 데이터 기준, 프론티어 LLM은 깨끗한 데이터에서 70–85% 정확도. 적절한 시맨틱 레이어와 비즈니스 컨텍스트 추가 시 86–95%까지 향상. 컨텍스트가 엉망인 엔터프라이즈 DB에서는 50–70%로 떨어져요.</p>
-<p>50%</p>
-<p>LLM 모델 품질</p>
-<p>30%</p>
-<p>스키마/컨텍스트 품질</p>
-<p>15%</p>
-<p>검증+재시도 로직</p>
-<p>5%</p>
-<p>도구 자체 차이</p>
-<p>08NL2SQL 벤치마크 현황 (2025–2026)</p>
-<h2 id="주요-벤치마크">주요 벤치마크</h2>
+<hr />
+<h2 id="8-nl2sql-엔진-아키텍처--3가지-패턴">8. NL2SQL 엔진 아키텍처 — 3가지 패턴</h2>
+<div class="mermaid">
+graph TB
+    subgraph P1["① Direct Prompting"]
+        Q1[질문] --> L1[LLM + 스키마 DDL]
+        L1 --> S1[SQL]
+    end
+
+    subgraph P2["② RAG 기반 (가장 보편적)"]
+        Q2[질문] --> E2[임베딩]
+        E2 --> V2[(Vector DB\n스키마/Few-shot)]
+        V2 --> L2[LLM]
+        Q2 --> L2
+        L2 --> VA2[SQL 검증]
+        VA2 --> S2[SQL]
+    end
+
+    subgraph P3["③ Agent 기반"]
+        Q3[질문] --> IC[Intent Classifier]
+        IC --> SP[Single SQL Agent]
+        IC --> MP[Multi-step Planner]
+        MP --> MP1[Step 1: SQL]
+        MP1 --> MP2[Step 2: 결과 기반 SQL]
+        SP --> S3[SQL]
+        MP2 --> S3
+    end
+    style P1 fill:#4f8fea22,stroke:#4f8fea,stroke-width:2px,color:#e6edf3
+    style P2 fill:#6c5ce722,stroke:#6c5ce7,stroke-width:2px,color:#e6edf3
+    style P3 fill:#00b89422,stroke:#00b894,stroke-width:2px,color:#e6edf3
+</div>
+
+<table>
+<thead>
+<tr>
+<th>패턴</th>
+<th>동작</th>
+<th>장점</th>
+<th>단점</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><strong>① Direct Prompting</strong></td>
+<td>질문 + 스키마 DDL → LLM → SQL</td>
+<td>구현 단순</td>
+<td>스키마 크면 토큰 폭발</td>
+</tr>
+<tr>
+<td><strong>② RAG 기반</strong></td>
+<td>질문 임베딩 → Vector DB 검색 → LLM → 검증</td>
+<td>대형 스키마 대응</td>
+<td>벡터 DB 관리 필요</td>
+</tr>
+<tr>
+<td><strong>③ Agent 기반</strong></td>
+<td>의도 분류 → 다단계 분해 → SQL 조합</td>
+<td>복잡한 질문 대응</td>
+<td>지연시간/비용 높음</td>
+</tr>
+</tbody>
+</table>
+<h3 id="8-1-품질-결정-요인">8-1. 품질 결정 요인</h3>
+<blockquote>
+<p>💡 <strong>도구보다 LLM과 컨텍스트가 중요</strong>: 프론티어 LLM은 <strong>깨끗한 데이터에서 70–85% 정확도</strong>. 적절한 시맨틱 레이어와 비즈니스 컨텍스트 추가 시 <strong>86–95%까지 향상</strong>. 컨텍스트가 엉망인 엔터프라이즈 DB에서는 50–70%로 떨어진다.</p>
+</blockquote>
+<table>
+<thead>
+<tr>
+<th>요인</th>
+<th style="text-align: center;">비중</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>LLM 모델 품질</td>
+<td style="text-align: center;"><strong>50%</strong></td>
+</tr>
+<tr>
+<td>스키마/컨텍스트 품질</td>
+<td style="text-align: center;"><strong>30%</strong></td>
+</tr>
+<tr>
+<td>검증+재시도 로직</td>
+<td style="text-align: center;">15%</td>
+</tr>
+<tr>
+<td>도구 자체 차이</td>
+<td style="text-align: center;">5%</td>
+</tr>
+</tbody>
+</table>
+<hr />
+<h2 id="9-nl2sql-벤치마크-현황-20252026">9. NL2SQL 벤치마크 현황 (2025–2026)</h2>
+<h3 id="9-1-주요-벤치마크">9-1. 주요 벤치마크</h3>
 <table>
 <thead>
 <tr>
@@ -697,58 +902,90 @@ Augmentation</p>
 <tr>
 <td><strong>BIRD-SQL</strong></td>
 <td>실세계 DB 기반, 복잡한 스키마</td>
-<td>2025.11 dev-1106 품질 개선 버전 릴리스</td>
+<td>2025.11 dev-1106 품질 개선</td>
 </tr>
 <tr>
 <td><strong>BIRD-Interact</strong></td>
-<td>대화형+에이전트형 인터랙션 모드</td>
-<td>ICLR 2026 Oral 채택. 최고 모델도 16.33% SR</td>
+<td>대화형+에이전트형 인터랙션</td>
+<td>ICLR 2026 Oral. 최고 모델도 16.33% SR</td>
 </tr>
 <tr>
 <td><strong>Spider 2.0</strong></td>
 <td>엔터프라이즈 수준 실세계 평가</td>
-<td>중첩 쿼리, 집합 연산, 다중 테이블 JOIN</td>
+<td>중첩 쿼리, 집합 연산, 다중 JOIN</td>
 </tr>
 <tr>
 <td><strong>LiveSQLBench</strong></td>
-<td>전체 SQL 스펙트럼 계층적 지식 기반</td>
-<td>Gemini 2.5 Pro도 28.67% (구어체 쿼리)</td>
+<td>전체 SQL 스펙트럼 계층적 지식</td>
+<td>Gemini 2.5 Pro도 28.67% (구어체)</td>
 </tr>
 </tbody>
 </table>
-<h3 id="bird-sql-접근법별-정확도">BIRD-SQL 접근법별 정확도</h3>
-<p>GPT-4 + CoT (직접 프롬프트)</p>
-<p>65%</p>
-<p>~65%</p>
-<p>DAIL-SQL (Few-shot 최적화)</p>
-<p>70%</p>
-<p>~70%</p>
-<p>DIN-SQL (질문 분해 전략)</p>
-<p>72%</p>
-<p>~72%</p>
-<p>MAC-SQL (멀티 에이전트)</p>
-<p>75%</p>
-<p>~75%</p>
-<p>Arctic-Text2SQL-R1 (RL 기반, 오픈)</p>
-<p>71.83%</p>
-<p>71.83%</p>
-<p>⚡</p>
-<p><strong>2025 주목할 동향 — RL 기반 학습</strong> Snowflake의 Arctic-Text2SQL-R1은 실제 실행 결과를 보상 신호로 학습하는 RL 방식을 채택. 오픈 모델임에도 71.83%라는 높은 성능. 다음 세대 NL2SQL 모델의 학습 방향을 제시하고 있어요.</p>
-<h3 id="bird-interact--대화형-nl2sql-2025-신규">BIRD-Interact — 대화형 NL2SQL (2025 신규)</h3>
-<p>신규인터랙션 기반 평가의 등장</p>
-<p>단발성 질문-SQL 변환을 넘어 <strong>대화형·에이전트형 인터랙션</strong> 을 평가하는 새 벤치마크. 실제 DBA 업무 사이클을 시뮬레이션해요.</p>
-<p>c-Interact (대화형): o3-mini 24.4% SR · a-Interact (에이전트형): Claude 3.7 Sonnet 17.78% SR — 최고 모델들도 여전히 어려운 영역이에요.</p>
-<p>발견된 현상: <strong>Interaction-Time Scaling</strong> — 인터랙션이 길어질수록 성능이 향상. 단발 NL2SQL보다 대화형이 더 높은 정확도 달성 가능.</p>
-<p>09NL2SQL 도구 비교</p>
-<h2 id="셀프호스팅-가능한-nl2sql-엔진">셀프호스팅 가능한 NL2SQL 엔진</h2>
+<h3 id="9-2-bird-sql-접근법별-정확도">9-2. BIRD-SQL 접근법별 정확도</h3>
+<table>
+<thead>
+<tr>
+<th>접근법</th>
+<th style="text-align: center;">정확도</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>GPT-4 + CoT (직접 프롬프트)</td>
+<td style="text-align: center;">~65%</td>
+</tr>
+<tr>
+<td>DAIL-SQL (Few-shot 최적화)</td>
+<td style="text-align: center;">~70%</td>
+</tr>
+<tr>
+<td>DIN-SQL (질문 분해 전략)</td>
+<td style="text-align: center;">~72%</td>
+</tr>
+<tr>
+<td>MAC-SQL (멀티 에이전트)</td>
+<td style="text-align: center;">~75%</td>
+</tr>
+<tr>
+<td><strong>Arctic-Text2SQL-R1</strong> (RL 기반, 오픈)</td>
+<td style="text-align: center;"><strong>71.83%</strong></td>
+</tr>
+</tbody>
+</table>
+<blockquote>
+<p>⚡ <strong>2025 주목 동향 — RL 기반 학습</strong>: Snowflake의 Arctic-Text2SQL-R1은 <strong>실제 실행 결과를 보상 신호로 학습</strong>하는 RL 방식. 오픈 모델임에도 71.83% — 다음 세대 NL2SQL 모델의 학습 방향을 제시.</p>
+</blockquote>
+<h3 id="9-3-bird-interact--대화형-nl2sql-2025-신규">9-3. BIRD-Interact — 대화형 NL2SQL (2025 신규)</h3>
+<p>단발성 질문-SQL 변환을 넘어 <strong>대화형·에이전트형 인터랙션</strong>을 평가하는 새 벤치마크. 실제 DBA 업무 사이클을 시뮬레이션.</p>
+<table>
+<thead>
+<tr>
+<th>모드</th>
+<th>최고 성능</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><strong>c-Interact</strong> (대화형)</td>
+<td>o3-mini 24.4% SR</td>
+</tr>
+<tr>
+<td><strong>a-Interact</strong> (에이전트형)</td>
+<td>Claude 3.7 Sonnet 17.78% SR</td>
+</tr>
+</tbody>
+</table>
+<p>발견된 현상: <strong>Interaction-Time Scaling</strong> — 인터랙션이 길어질수록 성능 향상. 단발 NL2SQL보다 <strong>대화형이 더 높은 정확도</strong> 달성 가능.</p>
+<hr />
+<h2 id="10-nl2sql-도구-비교--셀프호스팅-가능-엔진">10. NL2SQL 도구 비교 — 셀프호스팅 가능 엔진</h2>
 <table>
 <thead>
 <tr>
 <th>도구</th>
 <th>방식</th>
-<th>셀프호스팅</th>
-<th>SQL 검증</th>
-<th>시맨틱레이어</th>
+<th style="text-align: center;">셀프호스팅</th>
+<th style="text-align: center;">SQL 검증</th>
+<th style="text-align: center;">시맨틱레이어</th>
 <th>특징</th>
 </tr>
 </thead>
@@ -756,59 +993,76 @@ Augmentation</p>
 <tr>
 <td><strong>Wren AI</strong></td>
 <td>RAG + LLM</td>
-<td>✅</td>
-<td>✅ 3회 재시도</td>
-<td>MDL (경량)</td>
+<td style="text-align: center;">✅</td>
+<td style="text-align: center;">✅ 3회 재시도</td>
+<td style="text-align: center;">MDL (경량)</td>
 <td>관리 UI, 오픈소스</td>
 </tr>
 <tr>
 <td><strong>Vanna AI</strong></td>
 <td>RAG + LLM</td>
-<td>✅</td>
-<td>❌</td>
-<td>❌</td>
-<td>Python 라이브러리, 유연함</td>
+<td style="text-align: center;">✅</td>
+<td style="text-align: center;">❌</td>
+<td style="text-align: center;">❌</td>
+<td>Python 라이브러리</td>
 </tr>
 <tr>
 <td><strong>Defog AI</strong></td>
 <td>Fine-tuned (SQLCoder) + RAG</td>
-<td>✅</td>
-<td>✅</td>
-<td>❌</td>
+<td style="text-align: center;">✅</td>
+<td style="text-align: center;">✅</td>
+<td style="text-align: center;">❌</td>
 <td>전용 모델 SQLCoder</td>
 </tr>
 <tr>
 <td><strong>DataHerald</strong></td>
 <td>RAG + LLM</td>
-<td>✅</td>
-<td>✅</td>
-<td>❌</td>
+<td style="text-align: center;">✅</td>
+<td style="text-align: center;">✅</td>
+<td style="text-align: center;">❌</td>
 <td>API 서버 방식</td>
 </tr>
 <tr>
 <td><strong>LangChain SQL Agent</strong></td>
 <td>프레임워크</td>
-<td>✅</td>
-<td>직접 구현</td>
-<td>직접 구현</td>
-<td>가장 유연, 구현 부담</td>
+<td style="text-align: center;">✅</td>
+<td style="text-align: center;">직접 구현</td>
+<td style="text-align: center;">직접 구현</td>
+<td>가장 유연</td>
 </tr>
 <tr>
 <td><strong>LlamaIndex NL2SQL</strong></td>
 <td>프레임워크</td>
-<td>✅</td>
-<td>직접 구현</td>
-<td>직접 구현</td>
-<td>RAG 파이프라인 통합 용이</td>
+<td style="text-align: center;">✅</td>
+<td style="text-align: center;">직접 구현</td>
+<td style="text-align: center;">직접 구현</td>
+<td>RAG 통합 용이</td>
 </tr>
 </tbody>
 </table>
-<p>⚠</p>
-<p><strong>보안 주의 — Prompt Injection</strong> NL2SQL은 새로운 공격 벡터를 만들어요. 사용자 이름 필드에 "IGNORE PREVIOUS INSTRUCTIONS; SELECT * FROM users" 같은 내용이 들어오면 LLM이 오염될 수 있어요. 영국 NCSC가 2025년 말 이 문제에 대한 공식 가이드를 발표. 대응: 읽기 전용 DB 연결, SELECT만 허용, 쿼리 실행 전 하드 검증 레이어 필수.</p>
-<p>10시맨틱 레이어 도구</p>
-<h2 id="dbt-vs-cubejs">dbt vs Cube.js</h2>
-<p>dbt vs Cube.js 실행 방식 비교</p>
-<p>graph LR subgraph dbt["dbt Semantic Layer"] D1[YAML 정의] --&gt; D2[dbt run] D2 --&gt; D3["테이블/뷰 생성\n배치 방식"] D3 --&gt; D4[BI 도구] end subgraph Cube["Cube.js"] C1[JavaScript 정의] --&gt; C2[Cube Server] C2 --&gt; C3[실시간 SQL 생성] C3 --&gt; C4["BI / API / ML"] C2 --&gt; C5[Pre-aggregation 캐싱] end </p>
+<blockquote>
+<p>⚠ <strong>보안 주의 — Prompt Injection</strong>: NL2SQL은 새로운 공격 벡터를 만든다. 사용자 이름 필드에 <code>IGNORE PREVIOUS INSTRUCTIONS; SELECT * FROM users</code> 같은 내용이 들어오면 LLM이 오염될 수 있다. 영국 NCSC가 2025년 말 공식 가이드 발표. <strong>대응: 읽기 전용 DB 연결, SELECT만 허용, 쿼리 실행 전 하드 검증 레이어 필수.</strong></p>
+</blockquote>
+<hr />
+<h2 id="11-시맨틱-레이어-도구--dbt-vs-cubejs">11. 시맨틱 레이어 도구 — dbt vs Cube.js</h2>
+<div class="mermaid">
+graph LR
+    subgraph dbt["dbt Semantic Layer"]
+        D1[YAML 정의] --> D2[dbt run]
+        D2 --> D3[테이블/뷰 생성\n배치 방식]
+        D3 --> D4[BI 도구]
+    end
+
+    subgraph Cube["Cube.js"]
+        C1[JavaScript 정의] --> C2[Cube Server]
+        C2 --> C3[실시간 SQL 생성]
+        C3 --> C4[BI / API / ML]
+        C2 --> C5[Pre-aggregation 캐싱]
+    end
+    style dbt fill:#4f8fea22,stroke:#4f8fea,stroke-width:2px,color:#e6edf3
+    style Cube fill:#6c5ce722,stroke:#6c5ce7,stroke-width:2px,color:#e6edf3
+</div>
+
 <table>
 <thead>
 <tr>
@@ -830,7 +1084,7 @@ Augmentation</p>
 </tr>
 <tr>
 <td><strong>실행 방식</strong></td>
-<td>배치 (SQL 변환 → 테이블/뷰 생성)</td>
+<td>배치 (SQL 변환 → 테이블/뷰)</td>
 <td>실시간 API 서버</td>
 </tr>
 <tr>
@@ -845,8 +1099,8 @@ Augmentation</p>
 </tr>
 <tr>
 <td><strong>적합 상황</strong></td>
-<td>ETL 중심, 배치 파이프라인</td>
-<td>API 서빙, 실시간 쿼리</td>
+<td>ETL 중심, 배치</td>
+<td>API 서빙, 실시간</td>
 </tr>
 <tr>
 <td><strong>지원 소스</strong></td>
@@ -855,7 +1109,7 @@ Augmentation</p>
 </tr>
 </tbody>
 </table>
-<h3 id="오픈소스-셀프호스팅-가능-도구">오픈소스 셀프호스팅 가능 도구</h3>
+<h3 id="11-1-오픈소스-셀프호스팅-가능-도구">11-1. 오픈소스 셀프호스팅 가능 도구</h3>
 <table>
 <thead>
 <tr>
@@ -892,8 +1146,8 @@ Augmentation</p>
 </tr>
 </tbody>
 </table>
-<p>11엔터프라이즈 사례 분석</p>
-<h2 id="플랫폼별-시맨틱온톨로지-접근-방식">플랫폼별 시맨틱/온톨로지 접근 방식</h2>
+<hr />
+<h2 id="12-엔터프라이즈-사례--플랫폼별-시맨틱온톨로지-접근">12. 엔터프라이즈 사례 — 플랫폼별 시맨틱/온톨로지 접근</h2>
 <table>
 <thead>
 <tr>
@@ -907,13 +1161,13 @@ Augmentation</p>
 <tr>
 <td><strong>Palantir Foundry</strong></td>
 <td>Ontology</td>
-<td>Object + 관계 + Action Types. 비정형 데이터도 Object로 추상화. 가장 포괄적</td>
+<td>Object + 관계 + Action Types. 비정형도 Object로 추상화. 가장 포괄적</td>
 <td>AIP Agents (온톨로지 위 LLM)</td>
 </tr>
 <tr>
 <td><strong>Databricks</strong></td>
 <td>Unity Catalog + AI/BI</td>
-<td>Delta Lake 통합, 메타데이터 + 거버넌스 + 리니지</td>
+<td>Delta Lake 통합, 메타+거버넌스+리니지</td>
 <td>AI/BI Genie (NL2SQL + 시각화)</td>
 </tr>
 <tr>
@@ -936,15 +1190,37 @@ Augmentation</p>
 </tr>
 </tbody>
 </table>
-<h3 id="palantir-foundry--ontology-중심-아키텍처">Palantir Foundry — Ontology 중심 아키텍처</h3>
-<p>사례가장 포괄적인 엔터프라이즈 데이터 추상화</p>
-<p>모든 데이터를 <strong>Object</strong>(Customer, Order, Asset 등)로 추상화. Link Type으로 관계 정의, Action Type으로 실행 가능한 작업, Function Type으로 계산 로직을 포함.</p>
+<h3 id="12-1-palantir-foundry--ontology-중심-아키텍처">12-1. Palantir Foundry — Ontology 중심 아키텍처</h3>
+<p>모든 데이터를 <strong>Object</strong>(Customer, Order, Asset 등)로 추상화. <strong>Link Type</strong>으로 관계 정의, <strong>Action Type</strong>으로 실행 가능한 작업, <strong>Function Type</strong>으로 계산 로직.</p>
 <p>비정형 데이터(PDF, 문서)도 Object로 등록 가능. <strong>Action이 핵심 차별점</strong> — 단순 조회를 넘어 비즈니스 액션 실행까지 지원.</p>
-<p>AIP(AI Platform)에서 Ontology 위에 LLM 에이전트가 동작 — 시맨틱 레이어와 LLM 통합의 가장 성숙한 사례.</p>
-<p>12비정형 데이터 통합 전략</p>
-<h2 id="3가지-접근법-비교">3가지 접근법 비교</h2>
-<p>비정형 데이터 통합 전략</p>
-<p>graph TB subgraph S1["전략 1 — 정형화"] S1A[비정형 원본] --&gt; S1B[LLM 전처리] S1B --&gt; S1C[정형 테이블] S1C --&gt; S1D[Semantic Layer] end subgraph S2["전략 2 — 멀티소스"] S2A[("정형 DB")] --&gt; S2D["Cube.js /\n통합 레이어"] S2B[("NoSQL")] --&gt; S2D S2C[("Elasticsearch")] --&gt; S2D end subgraph S3["전략 3 — Ontology"] S3A[("정형")] --&gt; S3D["Ontology\nObject로 추상화"] S3B[("벡터")] --&gt; S3D S3C[("문서")] --&gt; S3D S3D --&gt; S3E[통합 쿼리 API] end </p>
+<p>AIP(AI Platform)에서 <strong>Ontology 위에 LLM 에이전트</strong>가 동작 — 시맨틱 레이어와 LLM 통합의 가장 성숙한 사례.</p>
+<hr />
+<h2 id="13-비정형-데이터-통합--3가지-전략">13. 비정형 데이터 통합 — 3가지 전략</h2>
+<div class="mermaid">
+graph TB
+    subgraph S1["전략 1 — 정형화"]
+        S1A[비정형 원본] --> S1B[LLM 전처리]
+        S1B --> S1C[정형 테이블]
+        S1C --> S1D[Semantic Layer]
+    end
+
+    subgraph S2["전략 2 — 멀티소스"]
+        S2A[(정형 DB)] --> S2D[Cube.js /\n통합 레이어]
+        S2B[(NoSQL)] --> S2D
+        S2C[(Elasticsearch)] --> S2D
+    end
+
+    subgraph S3["전략 3 — Ontology"]
+        S3A[(정형)] --> S3D[Ontology\nObject로 추상화]
+        S3B[(벡터)] --> S3D
+        S3C[(문서)] --> S3D
+        S3D --> S3E[통합 쿼리 API]
+    end
+    style S1 fill:#4f8fea22,stroke:#4f8fea,stroke-width:2px,color:#e6edf3
+    style S2 fill:#6c5ce722,stroke:#6c5ce7,stroke-width:2px,color:#e6edf3
+    style S3 fill:#00b89422,stroke:#00b894,stroke-width:2px,color:#e6edf3
+</div>
+
 <table>
 <thead>
 <tr>
@@ -979,8 +1255,8 @@ Augmentation</p>
 </tr>
 </tbody>
 </table>
-<p>13용어 사용 가이드</p>
-<h2 id="팀-내-권장-용법">팀 내 권장 용법</h2>
+<hr />
+<h2 id="14-용어-사용-가이드--팀-내-권장-용법">14. 용어 사용 가이드 — 팀 내 권장 용법</h2>
 <table>
 <thead>
 <tr>
@@ -1017,24 +1293,48 @@ Augmentation</p>
 </tr>
 </tbody>
 </table>
-<h3 id="피해야-할-모호한-용어">피해야 할 모호한 용어</h3>
-<p>Context Layer Knowledge Layer AI Layer Smart Data Layer</p>
-<p>위 용어들은 비표준이거나 너무 광범위한 마케팅 용어입니다. 팀 내 문서에서 사용을 피하세요.</p>
-<p>14공식 참고 문헌</p>
-<h2 id="필독-논문">필독 논문</h2>
-<p>Hogan et al. (2021). "Knowledge Graphs." ACM Computing Surveys, 54(4).</p>
-<p>KG 분야의 표준 서베이 논문</p>
-<p><a href="https://dl.acm.org/doi/10.1145/3447772">dl.acm.org/doi/10.1145/3447772</a></p>
-<p>Gruber, T. R. (1993). "A translation approach to portable ontology specifications." Knowledge Acquisition, 5(2).</p>
-<p>Ontology의 고전적 정의 — Tom Gruber의 원전</p>
-<p>Noy &amp; McGuinness (2001). "Ontology Development 101." Stanford KSL Technical Report.</p>
-<p>실무 관점 온톨로지 구축 가이드</p>
-<p>Liu et al. (2025). "A Survey of Text-to-SQL in the Era of LLMs." IEEE TKDE.</p>
-<p>LLM 시대 NL2SQL 종합 서베이</p>
-<p>BIRD-Interact (2025). ICLR 2026 Oral. NEW</p>
-<p>인터랙티브 NL2SQL 벤치마크. 최고 모델도 16.33% SR — 현실 문제의 어려움을 보여줌</p>
-<p><a href="https://bird-bench.github.io/">bird-bench.github.io</a></p>
-<h3 id="w3c-공식-표준">W3C 공식 표준</h3>
+<h3 id="14-1-피해야-할-모호한-용어">14-1. 피해야 할 모호한 용어</h3>
+<p>다음 용어들은 비표준이거나 너무 광범위한 마케팅 용어 — <strong>팀 내 문서에서 사용을 피하라</strong>.</p>
+<ul>
+<li>Context Layer</li>
+<li>Knowledge Layer</li>
+<li>AI Layer</li>
+<li>Smart Data Layer</li>
+</ul>
+<hr />
+<h2 id="15-공식-참고-문헌">15. 공식 참고 문헌</h2>
+<h3 id="15-1-필독-논문">15-1. 필독 논문</h3>
+<table>
+<thead>
+<tr>
+<th>논문</th>
+<th>주제</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><strong>Hogan et al. (2021).</strong> "Knowledge Graphs." <em>ACM Computing Surveys</em>, 54(4).</td>
+<td>KG 분야 표준 서베이 (<a href="https://dl.acm.org/doi/10.1145/3447772">dl.acm.org/doi/10.1145/3447772</a>)</td>
+</tr>
+<tr>
+<td><strong>Gruber, T. R. (1993).</strong> "A translation approach to portable ontology specifications." <em>Knowledge Acquisition</em>, 5(2).</td>
+<td>Ontology의 고전적 정의</td>
+</tr>
+<tr>
+<td><strong>Noy &amp; McGuinness (2001).</strong> "Ontology Development 101." Stanford KSL.</td>
+<td>실무 관점 온톨로지 구축</td>
+</tr>
+<tr>
+<td><strong>Liu et al. (2025).</strong> "A Survey of Text-to-SQL in the Era of LLMs." <em>IEEE TKDE</em>.</td>
+<td>LLM 시대 NL2SQL 종합 서베이</td>
+</tr>
+<tr>
+<td><strong>BIRD-Interact (2025).</strong> ICLR 2026 Oral.</td>
+<td>인터랙티브 NL2SQL 벤치마크 (<a href="https://bird-bench.github.io/">bird-bench.github.io</a>)</td>
+</tr>
+</tbody>
+</table>
+<h3 id="15-2-w3c-공식-표준">15-2. W3C 공식 표준</h3>
 <table>
 <thead>
 <tr>
@@ -1046,41 +1346,129 @@ Augmentation</p>
 <tbody>
 <tr>
 <td><strong>RDF 1.1</strong></td>
-<td><a href="https://www.w3.org/TR/rdf11-concepts/">w3.org/TR/rdf11-concepts/</a></td>
+<td>https://www.w3.org/TR/rdf11-concepts/</td>
 <td>데이터 모델</td>
 </tr>
 <tr>
 <td><strong>OWL 2</strong></td>
-<td><a href="https://www.w3.org/TR/owl2-overview/">w3.org/TR/owl2-overview/</a></td>
+<td>https://www.w3.org/TR/owl2-overview/</td>
 <td>온톨로지 언어</td>
 </tr>
 <tr>
 <td><strong>SPARQL 1.1</strong></td>
-<td><a href="https://www.w3.org/TR/sparql11-query/">w3.org/TR/sparql11-query/</a></td>
+<td>https://www.w3.org/TR/sparql11-query/</td>
 <td>쿼리 언어</td>
 </tr>
 <tr>
 <td><strong>SKOS</strong></td>
-<td><a href="https://www.w3.org/TR/skos-reference/">w3.org/TR/skos-reference/</a></td>
+<td>https://www.w3.org/TR/skos-reference/</td>
 <td>분류체계/용어집</td>
 </tr>
 <tr>
 <td><strong>SHACL</strong></td>
-<td><a href="https://www.w3.org/TR/shacl/">w3.org/TR/shacl/</a></td>
+<td>https://www.w3.org/TR/shacl/</td>
 <td>데이터 검증</td>
 </tr>
 </tbody>
 </table>
-<h3 id="추천-도서">추천 도서</h3>
-<p><strong>Barrasa &amp; Webber (2023).</strong> Building Knowledge Graphs: A Practitioner's Guide. O'Reilly.</p>
-<p><strong>Fensel et al. (2020).</strong> Knowledge Graphs: Methodology, Tools and Selected Use Cases. Springer.</p>
-<p><strong>Dehghani (2022).</strong> Data Mesh: Delivering Data-Driven Value at Scale. O'Reilly.</p>
-<p><strong>Kimball &amp; Ross (2013).</strong> The Data Warehouse Toolkit, 3rd ed. Wiley. — 차원 모델링 바이블</p>
-<p><strong>Hitzler et al. (2010).</strong> Foundations of Semantic Web Technologies. Chapman &amp; Hall/CRC.</p>
-<h3 id="벤더-공식-문서">벤더 공식 문서</h3>
-<p><a href="https://www.palantir.com/docs/foundry/ontology/overview/">Palantir Ontology</a> <a href="https://docs.getdbt.com/docs/build/about-metricflow">dbt MetricFlow</a> <a href="https://cube.dev/docs">Cube.dev</a> <a href="https://docs.databricks.com/en/data-governance/unity-catalog/">Databricks Unity Catalog</a> <a href="https://developers.google.com/knowledge-graph">Google KG API</a> <a href="https://schema.org/">schema.org</a> <a href="https://www.wikidata.org/">Wikidata</a></p>
-<p>nl2sql-data-layer.reference · 2026.04.12</p>
-<p>벤더 중립 · 팀 내부용 · BIP Project</p>
+<h3 id="15-3-추천-도서">15-3. 추천 도서</h3>
+<table>
+<thead>
+<tr>
+<th>도서</th>
+<th>주제</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><strong>Barrasa &amp; Webber (2023).</strong> <em>Building Knowledge Graphs: A Practitioner's Guide.</em> O'Reilly.</td>
+<td>KG 실무</td>
+</tr>
+<tr>
+<td><strong>Fensel et al. (2020).</strong> <em>Knowledge Graphs: Methodology, Tools and Selected Use Cases.</em> Springer.</td>
+<td>KG 방법론</td>
+</tr>
+<tr>
+<td><strong>Dehghani (2022).</strong> <em>Data Mesh: Delivering Data-Driven Value at Scale.</em> O'Reilly.</td>
+<td>Data Mesh</td>
+</tr>
+<tr>
+<td><strong>Kimball &amp; Ross (2013).</strong> <em>The Data Warehouse Toolkit</em>, 3rd ed. Wiley.</td>
+<td>차원 모델링 바이블</td>
+</tr>
+<tr>
+<td><strong>Hitzler et al. (2010).</strong> <em>Foundations of Semantic Web Technologies.</em> Chapman &amp; Hall/CRC.</td>
+<td>시맨틱 웹</td>
+</tr>
+</tbody>
+</table>
+<h3 id="15-4-벤더-공식-문서">15-4. 벤더 공식 문서</h3>
+<table>
+<thead>
+<tr>
+<th>벤더</th>
+<th>URL</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Palantir Ontology</td>
+<td>https://www.palantir.com/docs/foundry/ontology/overview/</td>
+</tr>
+<tr>
+<td>dbt MetricFlow</td>
+<td>https://docs.getdbt.com/docs/build/about-metricflow</td>
+</tr>
+<tr>
+<td>Cube.dev</td>
+<td>https://cube.dev/docs</td>
+</tr>
+<tr>
+<td>Databricks Unity Catalog</td>
+<td>https://docs.databricks.com/en/data-governance/unity-catalog/</td>
+</tr>
+<tr>
+<td>Google KG API</td>
+<td>https://developers.google.com/knowledge-graph</td>
+</tr>
+<tr>
+<td>schema.org</td>
+<td>https://schema.org/</td>
+</tr>
+<tr>
+<td>Wikidata</td>
+<td>https://www.wikidata.org/</td>
+</tr>
+</tbody>
+</table>
+<hr />
+<h3 id="내부-관련-문서">내부 관련 문서</h3>
+<ul>
+<li><code>docs/nl2sql_design.md</code> — BIP NL2SQL 시스템 설계</li>
+<li><code>docs/nl2sql_implementation_plan_v2.md</code> — 사내 적용 구현 계획</li>
+<li><code>docs/nl2sql_agent_design.md</code> — LangGraph Agent 상세 설계</li>
+<li><code>docs/guide_cubejs.md</code>, <code>docs/guide_dbt.md</code>, <code>docs/guide_openmetadata.md</code> — 도구별 사용 가이드</li>
+</ul>
+<hr />
+<h2 id="변경-이력">변경 이력</h2>
+<table>
+<thead>
+<tr>
+<th>날짜</th>
+<th>내용</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>2026-04-12</td>
+<td>초안 작성 (벤더 중립 용어 정리)</td>
+</tr>
+<tr>
+<td>2026-04-27</td>
+<td>표준 포맷 재작성 (Mermaid 코드 블록 복원, 15섹션 구조)</td>
+</tr>
+</tbody>
+</table>
 </main>
 
 <script>
