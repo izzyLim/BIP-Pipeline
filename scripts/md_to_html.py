@@ -71,7 +71,8 @@ def inject_mermaid_styles(code):
     for i, sg in enumerate(subgraphs):
         color = PALETTE[i % len(PALETTE)]
         # 밝은 배경 + 테두리
-        style_lines.append(f'    style {sg} fill:{color}22,stroke:{color},stroke-width:2px,color:#e6edf3')
+        # color 속성은 명시하지 않음 → mermaid 테마의 textColor 자동 사용 (다크/라이트 모두 가독성 보장)
+        style_lines.append(f'    style {sg} fill:{color}33,stroke:{color},stroke-width:2px')
 
     return code.strip() + '\n' + '\n'.join(style_lines) + '\n'
 

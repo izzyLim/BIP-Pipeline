@@ -443,7 +443,21 @@ GRANT SELECT ON v_customer_signals TO nl2sql_reader;
 
 ---
 
-## Phase 2: Wren AI 구축 (1주)
+## Phase 2: NL2SQL 엔진 구축 (1주)
+
+> ⚠️ **엔진 선택 — 환경별 권장 (2026-04 기준)**
+>
+> | 환경 | 권장 엔진 | 근거 |
+> |------|---------|------|
+> | **PostgreSQL** | Wren AI | BIP에서 검증 (100% SQL 생성, 87% boolean flag) |
+> | **Oracle 19c** | **LangGraph + QuerySpec 직접 구현** | Wren AI ibis-server는 Oracle 23ai만 지원. 19c 호환 불가 |
+> | **Oracle 23ai** | Wren AI | Wren AI 공식 지원. PostgreSQL과 동일 패턴 |
+>
+> 이번 섹션은 **Wren AI 기반**으로 작성됐지만, Oracle 19c 환경이라면 본 Phase 2를 건너뛰고 다음 문서를 참고:
+> - `docs/nl2sql_implementation_plan_v2.md` §11 — v3 방향 전환 (LangGraph 직접 구현)
+> - `docs/nl2sql_agent_design.md` — LangGraph Agent + QuerySpec 상세 설계
+>
+> Phase 0-1 (데이터 정비)은 어떤 엔진을 쓰든 동일하게 유효하다.
 
 ### 2-1. Wren AI 설치
 
@@ -724,6 +738,11 @@ gantt
 
 ## 참고
 
+### 사내 적용 (Oracle 19c) — v3 방향
+- `docs/nl2sql_implementation_plan_v2.md` — §11 v3 방향 전환 (Cube 탈락 → LangGraph 직접 구현)
+- `docs/nl2sql_agent_design.md` — LangGraph Agent + QuerySpec 중간 표현 설계
+
+### BIP NL2SQL 아키텍처 (PostgreSQL — Wren AI 기반)
 - `docs/nl2sql_design.md` — BIP NL2SQL 아키텍처 상세
 - `docs/nl2sql_concepts.md` — NL2SQL/시맨틱 레이어/KG 개념 레퍼런스
 - `docs/wrenai_technical_guide.md` — Wren AI 설정/운영 가이드
@@ -733,3 +752,12 @@ gantt
 ---
 
 *이 문서는 BIP-Pipeline 구축 경험(2026-03~04)을 기반으로 작성되었습니다. 실제 사내 적용 시 도메인에 맞게 조정이 필요합니다.*
+
+---
+
+## 변경 이력
+
+| 날짜 | 내용 |
+|------|------|
+| 2026-04-19 | 초안 작성 (Wren AI + PostgreSQL 기반 사내 적용 가이드) |
+| 2026-04-29 | Phase 2 — 엔진 선택 가이드 추가 (Oracle 19c는 LangGraph 직접 구현 권장). v3 참조 문서 링크. |

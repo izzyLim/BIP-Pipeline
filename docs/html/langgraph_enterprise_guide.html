@@ -463,12 +463,12 @@ graph TD
     MCP_S --> PG
     W1 & W2 -.->|callback| FUSE
     W1 & W2 -.->|metrics| GRAF
-    style Client fill:#4f8fea22,stroke:#4f8fea,stroke-width:2px,color:#e6edf3
-    style LB_LAYER fill:#6c5ce722,stroke:#6c5ce7,stroke-width:2px,color:#e6edf3
-    style Workers fill:#00b89422,stroke:#00b894,stroke-width:2px,color:#e6edf3
-    style Tools fill:#e1705522,stroke:#e17055,stroke-width:2px,color:#e6edf3
-    style Data fill:#fdcb6e22,stroke:#fdcb6e,stroke-width:2px,color:#e6edf3
-    style Monitor fill:#00cec922,stroke:#00cec9,stroke-width:2px,color:#e6edf3
+    style Client fill:#4f8fea33,stroke:#4f8fea,stroke-width:2px
+    style LB_LAYER fill:#6c5ce733,stroke:#6c5ce7,stroke-width:2px
+    style Workers fill:#00b89433,stroke:#00b894,stroke-width:2px
+    style Tools fill:#e1705533,stroke:#e17055,stroke-width:2px
+    style Data fill:#fdcb6e33,stroke:#fdcb6e,stroke-width:2px
+    style Monitor fill:#00cec933,stroke:#00cec9,stroke-width:2px
 </div>
 
 <p>핵심 설계 원칙: Worker는 완전 Stateless이다. 모든 상태는 PostgreSQL Checkpointer에 위임한다. 어떤 Worker가 요청을 받아도 동일하게 동작하므로, 장애 시 LB가 다른 Worker로 자동 라우팅한다.</p>

@@ -309,7 +309,7 @@
   <li class="toc-h3"><a href="#1-4-컬럼-description-작성">1-4. 컬럼 Description 작성</a></li>
   <li class="toc-h3"><a href="#1-4-db-comment-반영">1-4. DB COMMENT 반영</a></li>
   <li class="toc-h3"><a href="#1-5-nl2sql-전용-db-role-생성">1-5. NL2SQL 전용 DB Role 생성</a></li>
-<li class="toc-h2"><a href="#phase-2-wren-ai-구축-1주">Phase 2: Wren AI 구축 (1주)</a></li>
+<li class="toc-h2"><a href="#phase-2-nl2sql-엔진-구축-1주">Phase 2: NL2SQL 엔진 구축 (1주)</a></li>
   <li class="toc-h3"><a href="#2-1-wren-ai-설치">2-1. Wren AI 설치</a></li>
   <li class="toc-h3"><a href="#2-2-모델-등록--순서가-중요">2-2. 모델 등록 — 순서가 중요</a></li>
   <li class="toc-h3"><a href="#2-3-description-동기화">2-3. Description 동기화</a></li>
@@ -331,6 +331,9 @@
   <li class="toc-h3"><a href="#phase-3-완료-조건">Phase 3 완료 조건</a></li>
 <li class="toc-h2"><a href="#타임라인-요약">타임라인 요약</a></li>
 <li class="toc-h2"><a href="#참고">참고</a></li>
+  <li class="toc-h3"><a href="#사내-적용-oracle-19c--v3-방향">사내 적용 (Oracle 19c) — v3 방향</a></li>
+  <li class="toc-h3"><a href="#bip-nl2sql-아키텍처-postgresql--wren-ai-기반">BIP NL2SQL 아키텍처 (PostgreSQL — Wren AI 기반)</a></li>
+<li class="toc-h2"><a href="#변경-이력">변경 이력</a></li>
 </ul>
 </nav>
 </aside>
@@ -390,8 +393,8 @@ graph TB
     style M2 fill:#e3f2fd
     style M3 fill:#fff3e0
     style M4 fill:#fce4ec
-    style Methods fill:#4f8fea22,stroke:#4f8fea,stroke-width:2px,color:#e6edf3
-    style Data fill:#6c5ce722,stroke:#6c5ce7,stroke-width:2px,color:#e6edf3
+    style Methods fill:#4f8fea33,stroke:#4f8fea,stroke-width:2px
+    style Data fill:#6c5ce733,stroke:#6c5ce7,stroke-width:2px
 </div>
 
 <h3 id="판단-결정-트리">판단 결정 트리</h3>
@@ -830,8 +833,8 @@ graph TB
 
     style Raw fill:#fff3e0
     style Gold fill:#e8f5e9
-    style Raw fill:#4f8fea22,stroke:#4f8fea,stroke-width:2px,color:#e6edf3
-    style Gold fill:#6c5ce722,stroke:#6c5ce7,stroke-width:2px,color:#e6edf3
+    style Raw fill:#4f8fea33,stroke:#4f8fea,stroke-width:2px
+    style Gold fill:#6c5ce733,stroke:#6c5ce7,stroke-width:2px
 </div>
 
 <p><strong>핵심 규칙:</strong>
@@ -1024,7 +1027,7 @@ graph LR
     style A fill:#fff3e0
     style B fill:#e8f5e9
     style C fill:#e3f2fd
-    style View fill:#4f8fea22,stroke:#4f8fea,stroke-width:2px,color:#e6edf3
+    style View fill:#4f8fea33,stroke:#4f8fea,stroke-width:2px
 </div>
 
 <h3 id="1-4-컬럼-description-작성">1-4. 컬럼 Description 작성</h3>
@@ -1094,7 +1097,40 @@ graph LR
 </code></pre></div>
 
 <hr />
-<h2 id="phase-2-wren-ai-구축-1주">Phase 2: Wren AI 구축 (1주)</h2>
+<h2 id="phase-2-nl2sql-엔진-구축-1주">Phase 2: NL2SQL 엔진 구축 (1주)</h2>
+<blockquote>
+<p>⚠️ <strong>엔진 선택 — 환경별 권장 (2026-04 기준)</strong></p>
+<table>
+<thead>
+<tr>
+<th>환경</th>
+<th>권장 엔진</th>
+<th>근거</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><strong>PostgreSQL</strong></td>
+<td>Wren AI</td>
+<td>BIP에서 검증 (100% SQL 생성, 87% boolean flag)</td>
+</tr>
+<tr>
+<td><strong>Oracle 19c</strong></td>
+<td><strong>LangGraph + QuerySpec 직접 구현</strong></td>
+<td>Wren AI ibis-server는 Oracle 23ai만 지원. 19c 호환 불가</td>
+</tr>
+<tr>
+<td><strong>Oracle 23ai</strong></td>
+<td>Wren AI</td>
+<td>Wren AI 공식 지원. PostgreSQL과 동일 패턴</td>
+</tr>
+</tbody>
+</table>
+<p>이번 섹션은 <strong>Wren AI 기반</strong>으로 작성됐지만, Oracle 19c 환경이라면 본 Phase 2를 건너뛰고 다음 문서를 참고:
+- <code>docs/nl2sql_implementation_plan_v2.md</code> §11 — v3 방향 전환 (LangGraph 직접 구현)
+- <code>docs/nl2sql_agent_design.md</code> — LangGraph Agent + QuerySpec 상세 설계</p>
+<p>Phase 0-1 (데이터 정비)은 어떤 엔진을 쓰든 동일하게 유효하다.</p>
+</blockquote>
 <h3 id="2-1-wren-ai-설치">2-1. Wren AI 설치</h3>
 <p><strong>BIP 경험:</strong> Docker Compose로 5개 컨테이너 (UI, Engine, Ibis, AI Service, Qdrant). 설치 자체는 30분이면 되지만, DB 연결 설정에서 시간을 많이 소비.</p>
 <p><strong>핵심 설정:</strong>
@@ -1518,6 +1554,12 @@ gantt
 
 <hr />
 <h2 id="참고">참고</h2>
+<h3 id="사내-적용-oracle-19c--v3-방향">사내 적용 (Oracle 19c) — v3 방향</h3>
+<ul>
+<li><code>docs/nl2sql_implementation_plan_v2.md</code> — §11 v3 방향 전환 (Cube 탈락 → LangGraph 직접 구현)</li>
+<li><code>docs/nl2sql_agent_design.md</code> — LangGraph Agent + QuerySpec 중간 표현 설계</li>
+</ul>
+<h3 id="bip-nl2sql-아키텍처-postgresql--wren-ai-기반">BIP NL2SQL 아키텍처 (PostgreSQL — Wren AI 기반)</h3>
 <ul>
 <li><code>docs/nl2sql_design.md</code> — BIP NL2SQL 아키텍처 상세</li>
 <li><code>docs/nl2sql_concepts.md</code> — NL2SQL/시맨틱 레이어/KG 개념 레퍼런스</li>
@@ -1527,6 +1569,26 @@ gantt
 </ul>
 <hr />
 <p><em>이 문서는 BIP-Pipeline 구축 경험(2026-03~04)을 기반으로 작성되었습니다. 실제 사내 적용 시 도메인에 맞게 조정이 필요합니다.</em></p>
+<hr />
+<h2 id="변경-이력">변경 이력</h2>
+<table>
+<thead>
+<tr>
+<th>날짜</th>
+<th>내용</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>2026-04-19</td>
+<td>초안 작성 (Wren AI + PostgreSQL 기반 사내 적용 가이드)</td>
+</tr>
+<tr>
+<td>2026-04-29</td>
+<td>Phase 2 — 엔진 선택 가이드 추가 (Oracle 19c는 LangGraph 직접 구현 권장). v3 참조 문서 링크.</td>
+</tr>
+</tbody>
+</table>
 </main>
 
 <script>

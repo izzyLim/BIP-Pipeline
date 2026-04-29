@@ -377,7 +377,8 @@ USER["사용자 (브라우저)"]
     GW["FastAPI Gateway\nJWT 검증"]
     AGENT["LangGraph Agent\nState: user_token"]
     MCP["MCP 도구들\n기존 API 래퍼"]
-    end LLM_API["사내 LLM API\n서비스 계정 인증"]
+    end
+    LLM_API["사내 LLM API\n서비스 계정 인증"]
     subgraph Data["데이터 레이어"]
     ORA["Oracle DB"]
     ES["Elasticsearch"]
@@ -404,9 +405,9 @@ USER["사용자 (브라우저)"]
     style Spring fill:#0d0f18,stroke:#5a7af0
     style Python fill:#0d0f18,stroke:#30c880
     style Data fill:#0d0f18,stroke:#e09830
-    style Spring fill:#4f8fea22,stroke:#4f8fea,stroke-width:2px,color:#e6edf3
-    style Python fill:#6c5ce722,stroke:#6c5ce7,stroke-width:2px,color:#e6edf3
-    style Data fill:#00b89422,stroke:#00b894,stroke-width:2px,color:#e6edf3
+    style Spring fill:#4f8fea33,stroke:#4f8fea,stroke-width:2px
+    style Python fill:#6c5ce733,stroke:#6c5ce7,stroke-width:2px
+    style Data fill:#00b89433,stroke:#00b894,stroke-width:2px
 </div>
 
 <p>🔐</p>
@@ -455,15 +456,24 @@ participant U as 사용자
     participant TL as MCP Tool
     participant API as Spring REST API
     participant DB as Oracle/ES
-    U->>SSO: 로그인 SSO-->>U: JWT 발급 U->>UI: /chat (JWT in Cookie/Header)
+    U->>SSO: 로그인
+    SSO-->>U: JWT 발급
+    U->>UI: /chat (JWT in Cookie/Header)
     UI->>PX: 질문 전송 (JWT)
-    Note over PX: JWT 추출 후 Authorization Bearer로 설정 PX->>PY: POST /api/ask\nAuthorization: Bearer {JWT}
+    Note over PX: JWT 추출 후 Authorization Bearer로 설정
+    PX->>PY: POST /api/ask\nAuthorization: Bearer {JWT}
     Note over PY: JWT 검증 (Spring과 동일 공개키)
     PY->>AG: 에이전트 실행\nstate.user_token = JWT
     AG->>TL: 도구 호출 (state에서 JWT 전달)
     TL->>API: GET /api/customers\nAuthorization: Bearer {JWT}
-    Note over API: Spring Security가 JWT 검증\n@PreAuthorize 권한 체크 API->>DB: 사용자 권한 필터 적용 조회 DB-->>API: 필터링된 데이터 API-->>TL: 권한 범위 내 응답 TL-->>AG: 결과 (이미 권한 필터링됨)
-    AG-->>PY: LLM이 해석한 답변 PY-->>PX: 최종 응답 PX-->>UI: JSON
+    Note over API: Spring Security가 JWT 검증\n@PreAuthorize 권한 체크
+    API->>DB: 사용자 권한 필터 적용 조회
+    DB-->>API: 필터링된 데이터
+    API-->>TL: 권한 범위 내 응답
+    TL-->>AG: 결과 (이미 권한 필터링됨)
+    AG-->>PY: LLM이 해석한 답변
+    PY-->>PX: 최종 응답
+    PX-->>UI: JSON
     UI-->>U: 채팅 답변 표시
 </div>
 
@@ -539,8 +549,8 @@ subgraph NoAuth["권한 판단 없음"]
     SPRING -->|필터링된 데이터| MCP
     style NoAuth fill:#0d0f18,stroke:#e09830
     style Auth fill:#0d0f18,stroke:#30c8c0
-    style NoAuth fill:#4f8fea22,stroke:#4f8fea,stroke-width:2px,color:#e6edf3
-    style Auth fill:#6c5ce722,stroke:#6c5ce7,stroke-width:2px,color:#e6edf3
+    style NoAuth fill:#4f8fea33,stroke:#4f8fea,stroke-width:2px
+    style Auth fill:#6c5ce733,stroke:#6c5ce7,stroke-width:2px
 </div>
 
 <p>05요청 처리 흐름 (End-to-End)</p>
@@ -589,11 +599,19 @@ participant AG as LangGraph Agent
     participant SVC as Service Layer
     AG->>MCP: search_customer(name, ctx.user_token)
     MCP->>API: GET /api/customers?name=...\nAuthorization: Bearer {JWT}
-    API->>SS: JWT 검증 SS->>SS: @PreAuthorize 권한 체크
-    alt 권한 있음 SS->>SVC: customerService.search(name, user)
-    SVC->>SVC: 부서/역할 필터 적용 SVC-->>API: 필터링된 고객 목록 API-->>MCP: 200 OK + 데이터 MCP-->>AG: {customers: [...]} else 권한 없음 SS-->>API: 403 Forbidden
-    API-->>MCP: 403
-    MCP-->>AG: {accessible: false,\n message: "접근 권한 없음"} end
+    API->>SS: JWT 검증
+    SS->>SS: @PreAuthorize 권한 체크
+    alt 권한 있음
+        SS->>SVC: customerService.search(name, user)
+        SVC->>SVC: 부서/역할 필터 적용
+        SVC-->>API: 필터링된 고객 목록
+        API-->>MCP: 200 OK + 데이터
+        MCP-->>AG: {customers: [...]}
+    else 권한 없음
+        SS-->>API: 403 Forbidden
+        API-->>MCP: 403
+        MCP-->>AG: {accessible: false, message: "접근 권한 없음"}
+    end
 </div>
 
 <p>PYTHONMCP Tool 구현 패턴</p>
@@ -659,12 +677,17 @@ participant AG as LangGraph Agent
     LLM-->>PY: 생성된 SQL
     PY->>SP: POST /api/nl2sql/execute\n{question, sql}\nAuthorization: Bearer {JWT}
     SP->>VAL: SQL 문법·허용 테이블 검증
-    alt 검증 실패 VAL-->>SP: InvalidSql
-    SP-->>PY: 400 + "쿼리 제한 초과" else 검증 통과 VAL-->>SP: OK
-    SP->>RW: 사용자 권한 기반 WHERE 주입 RW-->>SP: 재작성된 SQL
-    SP->>AUD: 감사 로그 기록 (원본+재작성+사용자)
-    SP->>DB: 전용 NL2SQL role로 실행 DB-->>SP: 결과 (사용자 범위 내)
-    SP-->>PY: 데이터
+    alt 검증 실패
+        VAL-->>SP: InvalidSql
+        SP-->>PY: 400 + "쿼리 제한 초과"
+    else 검증 통과
+        VAL-->>SP: OK
+        SP->>RW: 사용자 권한 기반 WHERE 주입
+        RW-->>SP: 재작성된 SQL
+        SP->>AUD: 감사 로그 기록 (원본+재작성+사용자)
+        SP->>DB: 전용 NL2SQL role로 실행
+        DB-->>SP: 결과 (사용자 범위 내)
+        SP-->>PY: 데이터
     end
     PY-->>AG: 결과 (LLM이 해석)
 </div>
@@ -825,8 +848,9 @@ participant AG as LangGraph Agent
     PERM-->>RT: {roles: [...], depts: [...], max_level: "internal"}
     RT->>VEC: Vector Search\nfilter: acl.roles IN user.roles\n sensitivity <= max_level
     VEC-->>RT: Top-K 청크 (권한 필터 적용)
-    loop 각 청크 RT->>VER: POST /api/rag/verify\n{doc_id}\nAuthorization: Bearer {JWT}
-    VER-->>RT: {accessible: true/false}
+    loop 각 청크
+        RT->>VER: POST /api/rag/verify\n{doc_id}\nAuthorization: Bearer {JWT}
+        VER-->>RT: {accessible: true/false}
     end
     RT-->>AG: 권한 검증 통과한 청크만 반환
 </div>
@@ -1089,8 +1113,8 @@ subgraph Existing["기존 Spring (확장)"]
     PM --> McpTools[tools.py]
     style Existing fill:#0d0f18,stroke:#5a7af0
     style New fill:#0d0f18,stroke:#30c880
-    style Existing fill:#4f8fea22,stroke:#4f8fea,stroke-width:2px,color:#e6edf3
-    style New fill:#6c5ce722,stroke:#6c5ce7,stroke-width:2px,color:#e6edf3
+    style Existing fill:#4f8fea33,stroke:#4f8fea,stroke-width:2px
+    style New fill:#6c5ce733,stroke:#6c5ce7,stroke-width:2px
 </div>
 
 <p>구조디렉토리 트리</p>
