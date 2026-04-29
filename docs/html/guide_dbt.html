@@ -288,58 +288,107 @@
   </div>
   <nav class="toc">
 <ul>
-<li class="toc-h2"><a href="#1-개요">1. 개요</a></li>
-  <li class="toc-h3"><a href="#dbt란-무엇인가">dbt란 무엇인가</a></li>
-  <li class="toc-h3"><a href="#핵심-철학-analytics-as-code">핵심 철학: Analytics as Code</a></li>
-  <li class="toc-h3"><a href="#dbt-core-vs-dbt-cloud">dbt Core vs dbt Cloud</a></li>
-  <li class="toc-h3"><a href="#dbt의-역할">dbt의 역할</a></li>
-<li class="toc-h2"><a href="#2-아키텍처">2. 아키텍처</a></li>
-  <li class="toc-h3"><a href="#전체-동작-흐름">전체 동작 흐름</a></li>
-  <li class="toc-h3"><a href="#동작-방식">동작 방식</a></li>
-  <li class="toc-h3"><a href="#jinja--sql-템플릿-엔진">Jinja + SQL 템플릿 엔진</a></li>
+<li class="toc-h2"><a href="#1-개요--dbt는-왜-필요한가">1. 개요 — dbt는 왜 필요한가?</a></li>
+  <li class="toc-h3"><a href="#한-줄-비유">한 줄 비유</a></li>
+  <li class="toc-h3"><a href="#실제-문제-시나리오--왜-이게-필요한가">실제 문제 시나리오 — 왜 이게 필요한가</a></li>
+  <li class="toc-h3"><a href="#dbt가-해결하는-것">dbt가 해결하는 것</a></li>
+  <li class="toc-h3"><a href="#analytics-as-code-철학">"Analytics as Code" 철학</a></li>
+  <li class="toc-h3"><a href="#dbt-core-vs-dbt-cloud--명확히-구분하자">dbt Core vs dbt Cloud — 명확히 구분하자</a></li>
+  <li class="toc-h3"><a href="#dbt가-하지-않는-것">dbt가 하지 않는 것</a></li>
+<li class="toc-h2"><a href="#2-핵심-가치--왜-sql-그냥-안-쓰고-dbt-거치나">2. 핵심 가치 — 왜 SQL 그냥 안 쓰고 dbt 거치나?</a></li>
+  <li class="toc-h3"><a href="#시나리오-1-같은-변환을-두-번-짜는-문제">시나리오 1: 같은 변환을 두 번 짜는 문제</a></li>
+  <li class="toc-h3"><a href="#시나리오-2-의존성을-사람이-외우는-문제">시나리오 2: 의존성을 사람이 외우는 문제</a></li>
+  <li class="toc-h3"><a href="#시나리오-3-변환-결과를-검증하지-않는-문제">시나리오 3: 변환 결과를 검증하지 않는 문제</a></li>
+  <li class="toc-h3"><a href="#시나리오-4-문서가-코드와-어긋나는-문제">시나리오 4: 문서가 코드와 어긋나는 문제</a></li>
+  <li class="toc-h3"><a href="#정리표--dbt가-주는-가치">정리표 — dbt가 주는 가치</a></li>
+<li class="toc-h2"><a href="#3-아키텍처--dbt가-어떻게-동작하는가">3. 아키텍처 — dbt가 어떻게 동작하는가?</a></li>
+  <li class="toc-h3"><a href="#큰-그림">큰 그림</a></li>
+  <li class="toc-h3"><a href="#dbt-run-실행-시-일어나는-일">dbt run 실행 시 일어나는 일</a></li>
+  <li class="toc-h3"><a href="#jinja--sql-템플릿--왜-sql에-jinja를-얹나">Jinja + SQL 템플릿 — 왜 SQL에 Jinja를 얹나?</a></li>
   <li class="toc-h3"><a href="#dag-기반-의존성-관리">DAG 기반 의존성 관리</a></li>
-<li class="toc-h2"><a href="#3-핵심-개념">3. 핵심 개념</a></li>
-  <li class="toc-h3"><a href="#3-1-models">3-1. Models</a></li>
-    <li class="toc-h4"><a href="#ref-함수">ref() 함수</a></li>
-    <li class="toc-h4"><a href="#materialization-구체화-방식">Materialization (구체화 방식)</a></li>
-  <li class="toc-h3"><a href="#3-2-sources">3-2. Sources</a></li>
-  <li class="toc-h3"><a href="#3-3-tests">3-3. Tests</a></li>
-    <li class="toc-h4"><a href="#schema-tests-yaml-정의">Schema Tests (YAML 정의)</a></li>
-    <li class="toc-h4"><a href="#custom-tests-sql-기반">Custom Tests (SQL 기반)</a></li>
-  <li class="toc-h3"><a href="#3-4-documentation">3-4. Documentation</a></li>
-  <li class="toc-h3"><a href="#3-5-seeds">3-5. Seeds</a></li>
-  <li class="toc-h3"><a href="#3-6-snapshots">3-6. Snapshots</a></li>
-  <li class="toc-h3"><a href="#3-7-macros">3-7. Macros</a></li>
-    <li class="toc-h4"><a href="#패키지">패키지</a></li>
-<li class="toc-h2"><a href="#4-dbt-semantic-layer-metricflow">4. dbt Semantic Layer (MetricFlow)</a></li>
-  <li class="toc-h3"><a href="#4-1-metricflow란">4-1. MetricFlow란</a></li>
-  <li class="toc-h3"><a href="#4-2-semantic-models">4-2. Semantic Models</a></li>
-  <li class="toc-h3"><a href="#4-3-metrics">4-3. Metrics</a></li>
-  <li class="toc-h3"><a href="#4-4-한계">4-4. 한계</a></li>
-<li class="toc-h2"><a href="#5-데이터-소스-연결">5. 데이터 소스 연결</a></li>
-  <li class="toc-h3"><a href="#5-1-지원-어댑터-목록">5-1. 지원 어댑터 목록</a></li>
-  <li class="toc-h3"><a href="#5-2-oracle-연결-설정">5-2. Oracle 연결 설정</a></li>
-  <li class="toc-h3"><a href="#5-3-postgresql-연결-설정">5-3. PostgreSQL 연결 설정</a></li>
-<li class="toc-h2"><a href="#6-docker-컨테이너-설치">6. Docker 컨테이너 설치</a></li>
-  <li class="toc-h3"><a href="#6-1-dbt-core-docker-설치">6-1. dbt Core Docker 설치</a></li>
+<li class="toc-h2"><a href="#4-핵심-개념--각-개념을-비유와-함께">4. 핵심 개념 — 각 개념을 비유와 함께</a></li>
+  <li class="toc-h3"><a href="#4-1-models--변환-sql의-단위">4-1. Models — "변환 SQL의 단위"</a></li>
+    <li class="toc-h4"><a href="#ref-함수--모델-참조의-표준">ref() 함수 — 모델 참조의 표준</a></li>
+    <li class="toc-h4"><a href="#materialization--모델을-어떻게-물리화할-것인가">Materialization — 모델을 어떻게 물리화할 것인가</a></li>
+    <li class="toc-h4"><a href="#incremental-materialization--대용량의-핵심">Incremental Materialization — 대용량의 핵심</a></li>
+  <li class="toc-h3"><a href="#4-2-sources--원본-데이터-등록">4-2. Sources — "원본 데이터 등록"</a></li>
+    <li class="toc-h4"><a href="#왜-sources가-필요한가">왜 sources가 필요한가</a></li>
+    <li class="toc-h4"><a href="#yaml-정의">YAML 정의</a></li>
+    <li class="toc-h4"><a href="#source-함수로-참조">source() 함수로 참조</a></li>
+    <li class="toc-h4"><a href="#freshness-체크">Freshness 체크</a></li>
+  <li class="toc-h3"><a href="#4-3-tests--데이터-품질-자동-검증">4-3. Tests — "데이터 품질 자동 검증"</a></li>
+    <li class="toc-h4"><a href="#왜-테스트가-중요한가--시나리오">왜 테스트가 중요한가 — 시나리오</a></li>
+    <li class="toc-h4"><a href="#schema-tests--yaml로-선언">Schema Tests — YAML로 선언</a></li>
+    <li class="toc-h4"><a href="#custom-tests--비즈니스-규칙을-sql로">Custom Tests — 비즈니스 규칙을 SQL로</a></li>
+    <li class="toc-h4"><a href="#테스트-실행">테스트 실행</a></li>
+  <li class="toc-h3"><a href="#4-4-documentation--sql과-동기화된-문서">4-4. Documentation — "SQL과 동기화된 문서"</a></li>
+    <li class="toc-h4"><a href="#description-필드">description 필드</a></li>
+    <li class="toc-h4"><a href="#doc-blocks--긴-설명을-별도-파일로">Doc Blocks — 긴 설명을 별도 파일로</a></li>
+    <li class="toc-h4"><a href="#dbt-docs-명령어">dbt docs 명령어</a></li>
+  <li class="toc-h3"><a href="#4-5-seeds--참조-데이터-csv--테이블">4-5. Seeds — "참조 데이터 (CSV → 테이블)"</a></li>
+    <li class="toc-h4"><a href="#언제-seeds를-쓰나">언제 seeds를 쓰나</a></li>
+    <li class="toc-h4"><a href="#사용법">사용법</a></li>
+  <li class="toc-h3"><a href="#4-6-snapshots--변경-이력-추적-scd-type-2">4-6. Snapshots — "변경 이력 추적 (SCD Type 2)"</a></li>
+    <li class="toc-h4"><a href="#언제-snapshots를-쓰나">언제 snapshots를 쓰나</a></li>
+    <li class="toc-h4"><a href="#동작-원리">동작 원리</a></li>
+    <li class="toc-h4"><a href="#정의">정의</a></li>
+  <li class="toc-h3"><a href="#4-7-macros--재사용-가능한-sql-함수">4-7. Macros — "재사용 가능한 SQL 함수"</a></li>
+    <li class="toc-h4"><a href="#매크로-정의">매크로 정의</a></li>
+    <li class="toc-h4"><a href="#호출">호출</a></li>
+    <li class="toc-h4"><a href="#외부-패키지--dbt_utils">외부 패키지 — dbt_utils</a></li>
+<li class="toc-h2"><a href="#5-dbt-semantic-layer-metricflow--메트릭-정의-표준">5. dbt Semantic Layer (MetricFlow) — 메트릭 정의 표준</a></li>
+  <li class="toc-h3"><a href="#5-1-metricflow란--왜-추가됐나">5-1. MetricFlow란 — 왜 추가됐나</a></li>
+  <li class="toc-h3"><a href="#5-2-semantic_models-yaml--메트릭의-기반">5-2. semantic_models YAML — 메트릭의 기반</a></li>
+    <li class="toc-h4"><a href="#구성-요소-3가지">구성 요소 3가지</a></li>
+  <li class="toc-h3"><a href="#5-3-metrics--비즈니스-지표-정의">5-3. Metrics — 비즈니스 지표 정의</a></li>
+    <li class="toc-h4"><a href="#메트릭-4가지-유형">메트릭 4가지 유형</a></li>
+    <li class="toc-h4"><a href="#metricflow-쿼리-예시">MetricFlow 쿼리 예시</a></li>
+  <li class="toc-h3"><a href="#5-4-dbt-semantic-layer-api의-한계--매우-중요">5-4. dbt Semantic Layer API의 한계 — 매우 중요</a></li>
+<li class="toc-h2"><a href="#6-데이터-소스-연결-adapter-시스템">6. 데이터 소스 연결 (Adapter 시스템)</a></li>
+  <li class="toc-h3"><a href="#dbt가-다양한-dw를-지원하는-방식">dbt가 다양한 DW를 지원하는 방식</a></li>
+  <li class="toc-h3"><a href="#지원-어댑터">지원 어댑터</a></li>
+  <li class="toc-h3"><a href="#profilesyml--연결-설정의-중앙">profiles.yml — 연결 설정의 중앙</a></li>
+    <li class="toc-h4"><a href="#oracle-연결">Oracle 연결</a></li>
+    <li class="toc-h4"><a href="#postgresql-연결--가장-단순">PostgreSQL 연결 — 가장 단순</a></li>
+<li class="toc-h2"><a href="#7-docker-컨테이너-설치--실전">7. Docker 컨테이너 설치 — 실전</a></li>
+  <li class="toc-h3"><a href="#7-1-왜-docker로-설치하나">7-1. 왜 Docker로 설치하나?</a></li>
+  <li class="toc-h3"><a href="#7-2-dbt-core-docker-설치">7-2. dbt Core Docker 설치</a></li>
     <li class="toc-h4"><a href="#dockerfile">Dockerfile</a></li>
     <li class="toc-h4"><a href="#docker-composeyml">docker-compose.yml</a></li>
-  <li class="toc-h3"><a href="#6-2-oracle-연결-docker-설정">6-2. Oracle 연결 Docker 설정</a></li>
-  <li class="toc-h3"><a href="#6-3-airflow와-연동">6-3. Airflow와 연동</a></li>
-    <li class="toc-h4"><a href="#방법-1-bashoperator">방법 1: BashOperator</a></li>
-    <li class="toc-h4"><a href="#방법-2-cosmos-astronomer">방법 2: Cosmos (Astronomer)</a></li>
-<li class="toc-h2"><a href="#7-프로젝트-구조">7. 프로젝트 구조</a></li>
-  <li class="toc-h3"><a href="#7-1-디렉토리-구조">7-1. 디렉토리 구조</a></li>
-  <li class="toc-h3"><a href="#7-2-dbt_projectyml-예시">7-2. dbt_project.yml 예시</a></li>
-  <li class="toc-h3"><a href="#7-3-medallion-패턴-적용">7-3. Medallion 패턴 적용</a></li>
-<li class="toc-h2"><a href="#8-dbt와-nl2sql-연동">8. dbt와 NL2SQL 연동</a></li>
-  <li class="toc-h3"><a href="#활용-방식">활용 방식</a></li>
-<li class="toc-h2"><a href="#9-cubejs-vs-dbt-비교">9. Cube.js vs dbt 비교</a></li>
+  <li class="toc-h3"><a href="#7-3-oracle-연결-docker--진짜-어려운-부분">7-3. Oracle 연결 Docker — 진짜 어려운 부분</a></li>
+    <li class="toc-h4"><a href="#thin-모드-vs-thick-모드">thin 모드 vs thick 모드</a></li>
+  <li class="toc-h3"><a href="#7-4-airflow와-연동--실무-패턴">7-4. Airflow와 연동 — 실무 패턴</a></li>
+    <li class="toc-h4"><a href="#방법-1-bashoperator--단순하지만-한계">방법 1: BashOperator — 단순하지만 한계</a></li>
+    <li class="toc-h4"><a href="#방법-2-cosmos--dbt-모델--airflow-task">방법 2: Cosmos — dbt 모델 = Airflow task</a></li>
+<li class="toc-h2"><a href="#8-프로젝트-구조--실전-베스트">8. 프로젝트 구조 — 실전 베스트</a></li>
+  <li class="toc-h3"><a href="#8-1-표준-디렉토리-구조">8-1. 표준 디렉토리 구조</a></li>
+  <li class="toc-h3"><a href="#8-2-medallion-패턴-적용--bronzesilvergold">8-2. Medallion 패턴 적용 — Bronze/Silver/Gold</a></li>
+  <li class="toc-h3"><a href="#8-3-dbt_projectyml--한-줄씩-읽기">8-3. dbt_project.yml — 한 줄씩 읽기</a></li>
+<li class="toc-h2"><a href="#9-dbt와-nl2sql--agent에서-어떻게-쓰는가">9. dbt와 NL2SQL — Agent에서 어떻게 쓰는가</a></li>
+  <li class="toc-h3"><a href="#큰-그림_1">큰 그림</a></li>
+  <li class="toc-h3"><a href="#활용-방식-3가지">활용 방식 3가지</a></li>
+  <li class="toc-h3"><a href="#dbt-artifacts를-agent-컨텍스트로">dbt artifacts를 Agent 컨텍스트로</a></li>
+<li class="toc-h2"><a href="#10-cubejs-vs-dbt--언제-어느-쪽">10. Cube.js vs dbt — 언제 어느 쪽?</a></li>
+  <li class="toc-h3"><a href="#한-줄-정리">한 줄 정리</a></li>
+  <li class="toc-h3"><a href="#시나리오별-선택-가이드">시나리오별 선택 가이드</a></li>
+  <li class="toc-h3"><a href="#비교표">비교표</a></li>
   <li class="toc-h3"><a href="#함께-쓰기-dbt--cube-하이브리드">함께 쓰기: dbt + Cube 하이브리드</a></li>
-<li class="toc-h2"><a href="#10-bip-경험과의-매핑">10. BIP 경험과의 매핑</a></li>
+<li class="toc-h2"><a href="#11-bip-경험과의-매핑">11. BIP 경험과의 매핑</a></li>
+  <li class="toc-h3"><a href="#현재-bip-pipeline의-상황">현재 BIP-Pipeline의 상황</a></li>
   <li class="toc-h3"><a href="#마이그레이션-검토-포인트">마이그레이션 검토 포인트</a></li>
-<li class="toc-h2"><a href="#11-주의사항">11. 주의사항</a></li>
-<li class="toc-h2"><a href="#12-참고">12. 참고</a></li>
+<li class="toc-h2"><a href="#12-주의사항">12. 주의사항</a></li>
+  <li class="toc-h3"><a href="#12-1-dbt-semantic-layer-api는-dbt-cloud-유료-전용">12-1. dbt Semantic Layer API는 dbt Cloud 유료 전용</a></li>
+  <li class="toc-h3"><a href="#12-2-dbt-core만으로는-실시간-api-서빙-불가">12-2. dbt Core만으로는 실시간 API 서빙 불가</a></li>
+  <li class="toc-h3"><a href="#12-3-oracle-어댑터는-커뮤니티-지원">12-3. Oracle 어댑터는 커뮤니티 지원</a></li>
+  <li class="toc-h3"><a href="#12-4-profilesyml에-비밀값-직접-기재-금지">12-4. profiles.yml에 비밀값 직접 기재 금지</a></li>
+  <li class="toc-h3"><a href="#12-5-incremental-모델-함정">12-5. Incremental 모델 함정</a></li>
+  <li class="toc-h3"><a href="#12-6-dbt-run과-dbt-test-분리">12-6. dbt run과 dbt test 분리</a></li>
+  <li class="toc-h3"><a href="#12-7-snapshot은-dbt-run에-포함-안-됨">12-7. snapshot은 dbt run에 포함 안 됨</a></li>
+  <li class="toc-h3"><a href="#12-8-ref를-직접-sql-경로로-우회하지-말-것">12-8. ref()를 직접 SQL 경로로 우회하지 말 것</a></li>
+<li class="toc-h2"><a href="#13-참고">13. 참고</a></li>
+  <li class="toc-h3"><a href="#공식-문서">공식 문서</a></li>
+  <li class="toc-h3"><a href="#bip-내부-문서">BIP 내부 문서</a></li>
+  <li class="toc-h3"><a href="#추천-학습-순서">추천 학습 순서</a></li>
 <li class="toc-h2"><a href="#변경-이력">변경 이력</a></li>
 </ul>
 </nav>
@@ -347,18 +396,76 @@
 
 <main class="content">
 <h1 id="dbt-core-개념-및-사용-가이드">dbt Core 개념 및 사용 가이드</h1>
-<h2 id="1-개요">1. 개요</h2>
-<h3 id="dbt란-무엇인가">dbt란 무엇인가</h3>
-<p>dbt(data build tool)는 ELT 파이프라인에서 <strong>T(Transform)</strong> 를 담당하는 데이터 변환 도구다. 데이터 엔지니어와 애널리틱스 엔지니어가 SQL SELECT 문만으로 데이터 웨어하우스 내의 데이터를 변환하고, 테스트하고, 문서화할 수 있게 해준다.</p>
-<h3 id="핵심-철학-analytics-as-code">핵심 철학: Analytics as Code</h3>
-<p>dbt의 핵심 철학은 <strong>"Analytics as Code"</strong> 다.</p>
+<blockquote>
+<p><strong>공식 문서:</strong> https://docs.getdbt.com</p>
+</blockquote>
+<hr />
+<h2 id="1-개요--dbt는-왜-필요한가">1. 개요 — dbt는 왜 필요한가?</h2>
+<h3 id="한-줄-비유">한 줄 비유</h3>
+<blockquote>
+<p><strong>dbt는 "ETL의 T(Transform)를 SQL과 Git으로 관리하는 도구"다.</strong></p>
+<p>더 구체적으로는, <strong>소프트웨어 엔지니어가 코드를 다루듯 데이터 분석가가 SQL을 다룰 수 있게 해주는 프레임워크</strong>다.
+데이터 변환 로직을 Git에 코드로 올리고, 변경 이력을 추적하고, 자동 테스트를 돌리고, 문서를 자동 생성한다.</p>
+</blockquote>
+<h3 id="실제-문제-시나리오--왜-이게-필요한가">실제 문제 시나리오 — 왜 이게 필요한가</h3>
+<p>dbt가 없으면 회사에서 흔히 벌어지는 일은 이렇다.</p>
 <ul>
-<li>SQL 변환 로직을 <strong>코드</strong>로 관리 (Git 버전 관리)</li>
-<li>테스트, 문서, 배포를 소프트웨어 엔지니어링 방식으로 수행</li>
-<li>데이터 품질을 CI/CD 파이프라인에 통합</li>
-<li>모든 변환의 <strong>계보(lineage)</strong> 를 자동 추적</li>
+<li>분석가 A가 "월간 매출"을 계산하는 SQL을 짜서 자기 노트북에 보관한다.</li>
+<li>분석가 B가 같은 지표를 봐야 하는데 A의 SQL을 모른다 → 다시 짠다.</li>
+<li>두 사람의 정의가 살짝 다르다 (A는 환불 포함, B는 제외) → 회의에서 "내 매출은 12억인데 너는 11억이네?"</li>
+<li>어느 날 데이터 변환 SQL이 틀려서 잘못된 숫자가 대시보드에 올라간다.</li>
+<li>누가, 언제, 왜 그 SQL을 바꿨는지 아무도 모른다.</li>
 </ul>
-<h3 id="dbt-core-vs-dbt-cloud">dbt Core vs dbt Cloud</h3>
+<p>이 모든 문제의 근원은 <strong>변환 로직이 코드로 관리되지 않기 때문</strong>이다.</p>
+<h3 id="dbt가-해결하는-것">dbt가 해결하는 것</h3>
+<p>dbt는 위 문제를 다음 4가지 메커니즘으로 푼다.</p>
+<ol>
+<li><strong>변환 로직을 Git에 코드로 보관</strong> → 누가 언제 바꿨는지 추적, PR 리뷰 가능</li>
+<li><strong><code>ref()</code> 함수로 의존성 자동 추적</strong> → "어떤 모델을 먼저 돌려야 하는가"를 dbt가 알아서 결정</li>
+<li><strong>Schema test로 자동 검증</strong> → 매일 빌드 후 자동으로 데이터 품질 점검</li>
+<li><strong>YAML description = 문서</strong> → SQL이 곧 문서, 코드와 문서가 어긋나지 않음</li>
+</ol>
+<h3 id="analytics-as-code-철학">"Analytics as Code" 철학</h3>
+<p>dbt의 핵심 철학은 <strong>"Analytics as Code"</strong> 다. 이 한 마디에 담긴 의미는 이렇다.</p>
+<table>
+<thead>
+<tr>
+<th>소프트웨어 엔지니어링 관행</th>
+<th>dbt에서의 적용</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>모든 코드는 Git에 들어간다</td>
+<td>SQL 모델도 Git에</td>
+</tr>
+<tr>
+<td>코드 리뷰 (PR)</td>
+<td>dbt 모델도 PR 리뷰</td>
+</tr>
+<tr>
+<td>단위 테스트</td>
+<td>dbt schema test / data test</td>
+</tr>
+<tr>
+<td>CI/CD</td>
+<td>dbt 모델 빌드도 CI 파이프라인에</td>
+</tr>
+<tr>
+<td>함수의 인라인 docstring</td>
+<td>YAML description</td>
+</tr>
+<tr>
+<td>패키지 의존성 관리</td>
+<td><code>packages.yml</code></td>
+</tr>
+</tbody>
+</table>
+<blockquote>
+<p><strong>요컨대, "분석 SQL도 일반 소프트웨어처럼 다루자"는 것이 dbt의 본질이다.</strong></p>
+</blockquote>
+<h3 id="dbt-core-vs-dbt-cloud--명확히-구분하자">dbt Core vs dbt Cloud — 명확히 구분하자</h3>
+<p>dbt는 두 가지 형태로 제공되며, 본 가이드에서 다루는 것은 주로 <strong>Core</strong>다.</p>
 <table>
 <thead>
 <tr>
@@ -370,22 +477,22 @@
 <tbody>
 <tr>
 <td>라이선스</td>
-<td>Apache 2.0 (오픈소스)</td>
+<td>Apache 2.0 (오픈소스, 무료)</td>
 <td>유료 SaaS</td>
 </tr>
 <tr>
 <td>실행 방식</td>
-<td>CLI (로컬/컨테이너)</td>
-<td>웹 IDE + 스케줄러</td>
+<td>CLI (로컬/Docker/Airflow에서)</td>
+<td>웹 IDE + 매니지드 스케줄러</td>
 </tr>
 <tr>
-<td>Semantic Layer API</td>
-<td>불가 (CLI만)</td>
-<td>제공</td>
+<td>Semantic Layer <strong>API</strong></td>
+<td><strong>불가</strong> (CLI만)</td>
+<td><strong>제공</strong> (BI/Agent 연동 가능)</td>
 </tr>
 <tr>
 <td>스케줄링</td>
-<td>외부 필요 (Airflow 등)</td>
+<td>외부 도구 필요 (Airflow, cron)</td>
 <td>내장</td>
 </tr>
 <tr>
@@ -393,25 +500,104 @@
 <td>무료</td>
 <td>Developer 무료, Team $100/seat/월</td>
 </tr>
+<tr>
+<td>호스팅</td>
+<td>직접 관리</td>
+<td>dbt Labs 호스팅</td>
+</tr>
 </tbody>
 </table>
-<h3 id="dbt의-역할">dbt의 역할</h3>
-<p>dbt는 데이터를 <strong>추출하거나 적재하지 않는다</strong>. 이미 웨어하우스에 적재된 raw 데이터를 SELECT 문으로 변환하여 새로운 테이블/뷰를 생성하는 것이 전부다.</p>
-<div class="codehilite"><pre><span></span><code><span class="k">[Extract] → [Load] → [Transform (dbt)] → [Serve]</span>
-<span class="w">  </span><span class="na">Airbyte    Airflow     dbt Core       Cube/API</span>
+<blockquote>
+<p><strong>함정 ⚠️</strong>
+"dbt만 깔면 메트릭 API가 나온다"고 오해하기 쉽다. 사실 <strong>API 서빙 기능은 dbt Cloud 유료 플랜 전용</strong>이다.
+dbt Core 사용자가 메트릭을 API로 서빙하려면 Cube.js 같은 별도 도구를 함께 써야 한다 (10절 참고).</p>
+</blockquote>
+<h3 id="dbt가-하지-않는-것">dbt가 하지 않는 것</h3>
+<p>이것 또한 명확히 알아야 한다. dbt는 <strong>데이터를 추출하거나 적재하지 않는다</strong>.</p>
+<div class="codehilite"><pre><span></span><code><span class="k">[Extract]   →   [Load]   →   [Transform (dbt)]   →   [Serve]</span>
+<span class="w"> </span><span class="na">Airbyte/        Airflow        dbt Core               Cube/API/BI</span>
+<span class="w"> </span><span class="na">Fivetran        Singer</span>
 </code></pre></div>
 
+<ul>
+<li><strong>E (Extract):</strong> Airbyte, Fivetran, 직접 작성한 Python 등이 담당</li>
+<li><strong>L (Load):</strong> 같은 도구 또는 Airflow가 담당</li>
+<li><strong>T (Transform):</strong> ★ 이 부분만 dbt가 담당 ★</li>
+<li><strong>Serve:</strong> Cube, FastAPI, Tableau 등이 담당</li>
+</ul>
+<blockquote>
+<p>dbt는 이미 웨어하우스에 들어 있는 raw 데이터를 SELECT 문으로 변환하는 데 특화된 도구다. EL 단계는 dbt의 책임이 아니다.</p>
+</blockquote>
 <hr />
-<h2 id="2-아키텍처">2. 아키텍처</h2>
-<h3 id="전체-동작-흐름">전체 동작 흐름</h3>
+<h2 id="2-핵심-가치--왜-sql-그냥-안-쓰고-dbt-거치나">2. 핵심 가치 — 왜 SQL 그냥 안 쓰고 dbt 거치나?</h2>
+<p>"SQL을 그냥 매일 cron으로 돌리면 되지, 왜 dbt를 거치나?" — 합리적인 질문이다. 실무에서 마주치는 문제 4가지를 보자.</p>
+<h3 id="시나리오-1-같은-변환을-두-번-짜는-문제">시나리오 1: 같은 변환을 두 번 짜는 문제</h3>
+<p>분석가 A가 작성한 SQL이 어느 노트에 묻혀 있고, 분석가 B는 그걸 모른 채 비슷한 SQL을 다시 짠다. <strong>변환 로직이 코드로 공유되지 않기 때문</strong>이다.</p>
+<blockquote>
+<p><strong>dbt 해결책:</strong> 모든 변환은 <code>models/</code> 디렉토리의 SQL 파일 하나가 된다. Git에 올라가고, 모두가 같은 파일을 본다. 정의를 바꾸려면 PR을 올려야 한다.</p>
+</blockquote>
+<h3 id="시나리오-2-의존성을-사람이-외우는-문제">시나리오 2: 의존성을 사람이 외우는 문제</h3>
+<p><code>mart_customer_revenue.sql</code>을 돌리려면 <code>int_orders.sql</code>이 먼저 돌아야 하고, 그 전에 <code>stg_orders.sql</code>이 먼저 돌아야 한다. SQL 파일이 100개쯤 되면 <strong>누가 누구에게 의존하는지 사람이 외우거나 README에 적어두는 수밖에 없다</strong>.</p>
+<blockquote>
+<p><strong>dbt 해결책:</strong> SQL 안에서 다른 모델을 참조할 때 <code>{{ ref('stg_orders') }}</code>라고 적는다. dbt가 이 <code>ref()</code>를 분석해 <strong>DAG(방향 비순환 그래프)</strong> 를 자동으로 만든다. <code>dbt run</code> 한 번이면 dbt가 알아서 올바른 순서로 모델을 빌드한다.</p>
+</blockquote>
+<h3 id="시나리오-3-변환-결과를-검증하지-않는-문제">시나리오 3: 변환 결과를 검증하지 않는 문제</h3>
+<p>자정에 <code>daily_etl.sql</code>이 적재 실패해서 다음날 대시보드에 빈 화면이 뜨거나, 더 무서운 경우 NULL이 채워진 채로 통과한다. <strong>자동 검증이 없으면 잘못된 데이터가 그대로 흘러간다</strong>.</p>
+<blockquote>
+<p><strong>dbt 해결책:</strong> YAML 한 줄로 테스트를 정의한다. <code>tests: [unique, not_null]</code> — 이것만 적어도 매일 빌드 후 dbt가 자동으로 PK 중복과 NULL을 검사한다. 비즈니스 규칙은 SQL로 작성한 custom test로 검증한다.</p>
+</blockquote>
+<h3 id="시나리오-4-문서가-코드와-어긋나는-문제">시나리오 4: 문서가 코드와 어긋나는 문제</h3>
+<p>테이블 설명을 Confluence에 적어두는데, SQL은 계속 바뀌고 Confluence는 안 업데이트된다. <strong>3개월 뒤 문서가 거짓말을 하고 있다</strong>.</p>
+<blockquote>
+<p><strong>dbt 해결책:</strong> description은 SQL과 같은 디렉토리 YAML에 있다. 컬럼을 바꾸면 같은 PR에서 description도 바꾼다. <code>dbt docs generate</code>로 항상 코드와 일치하는 카탈로그가 생성된다.</p>
+</blockquote>
+<h3 id="정리표--dbt가-주는-가치">정리표 — dbt가 주는 가치</h3>
+<table>
+<thead>
+<tr>
+<th>문제</th>
+<th>dbt의 해결 메커니즘</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>변환 로직 공유 안 됨</td>
+<td>Git에 SQL 모델 코드</td>
+</tr>
+<tr>
+<td>의존성 외우기</td>
+<td><code>ref()</code> 함수 + 자동 DAG</td>
+</tr>
+<tr>
+<td>검증 누락</td>
+<td>schema test + custom test</td>
+</tr>
+<tr>
+<td>문서 불일치</td>
+<td>YAML description + <code>dbt docs</code></td>
+</tr>
+<tr>
+<td>어떤 모델이 어디에 영향?</td>
+<td>lineage 자동 추적</td>
+</tr>
+<tr>
+<td>환경 분리 (dev/prod)</td>
+<td>profiles.yml + target</td>
+</tr>
+</tbody>
+</table>
+<hr />
+<h2 id="3-아키텍처--dbt가-어떻게-동작하는가">3. 아키텍처 — dbt가 어떻게 동작하는가?</h2>
+<h3 id="큰-그림">큰 그림</h3>
+<p>dbt가 동작하는 전체 흐름을 한눈에 보자.</p>
 <div class="mermaid">
 graph LR
-    A[Raw Sources] -->|source 함수| B[Staging Models]
-    B -->|ref 함수| C[Intermediate Models]
-    C -->|ref 함수| D[Mart Models]
-    D --> E[Tests]
-    D --> F[Documentation]
-    E --> G["Target DB Tables/Views"]
+    A[Raw Sources\n이미 적재된 테이블] -->|source 함수| B[Staging Models\n정제]
+    B -->|ref 함수| C[Intermediate Models\n비즈니스 로직]
+    C -->|ref 함수| D[Mart Models\n최종 소비]
+    D --> E[Tests\n품질 검증]
+    D --> F[Documentation\n카탈로그]
+    E --> G["Target DW\n테이블/뷰 생성"]
     F --> H[dbt Docs Site]
 
     style A fill:#e74c3c,color:#fff
@@ -421,15 +607,33 @@ graph LR
     style G fill:#9b59b6,color:#fff
 </div>
 
-<h3 id="동작-방식">동작 방식</h3>
-<ol>
-<li>개발자가 SQL 모델 파일을 작성한다</li>
-<li>dbt가 Jinja 템플릿을 컴파일하여 순수 SQL로 변환한다</li>
-<li>모델 간 <code>ref()</code> 참조를 분석하여 DAG(방향 비순환 그래프)를 구성한다</li>
-<li>DAG 순서에 따라 SQL을 데이터베이스에 실행하여 테이블/뷰를 생성한다</li>
-</ol>
-<h3 id="jinja--sql-템플릿-엔진">Jinja + SQL 템플릿 엔진</h3>
-<p>dbt는 Jinja2 템플릿 엔진을 SQL 위에 얹어 <strong>변수, 조건문, 반복문, 매크로</strong> 를 사용할 수 있게 한다.</p>
+<h3 id="dbt-run-실행-시-일어나는-일">dbt run 실행 시 일어나는 일</h3>
+<p><code>dbt run</code> 명령어 하나에 dbt 내부에서 일어나는 일을 단계별로 따라가 보자.</p>
+<div class="mermaid">
+sequenceDiagram
+    participant User as 개발자
+    participant CLI as dbt CLI
+    participant Parser as Jinja Parser
+    participant DAG as DAG Builder
+    participant DB as Data Warehouse
+
+    User->>CLI: dbt run
+    CLI->>Parser: models/ 디렉토리의 모든 .sql 읽기
+    Parser->>Parser: Jinja 템플릿 컴파일\n{{ ref('x') }} → 실제 테이블 경로 치환
+    Parser->>DAG: ref() 호출 분석 → 의존성 그래프 생성
+    DAG->>DAG: 위상 정렬 (실행 순서 결정)
+    loop 각 모델 (병렬 가능한 것은 동시 실행)
+        DAG->>DB: CREATE TABLE/VIEW 실행
+        DB-->>DAG: 결과 반환
+    end
+    DAG->>CLI: 빌드 리포트
+    CLI->>User: 성공/실패 + 소요 시간
+</div>
+
+<h3 id="jinja--sql-템플릿--왜-sql에-jinja를-얹나">Jinja + SQL 템플릿 — 왜 SQL에 Jinja를 얹나?</h3>
+<blockquote>
+<p><strong>이 코드가 하는 일:</strong> 환경(dev/prod)에 따라 다른 계산식을 적용하는 SQL이다. 순수 SQL로는 환경 분기를 표현할 수 없어서 Jinja를 쓴다.</p>
+</blockquote>
 <div class="codehilite"><pre><span></span><code><span class="c1">-- Jinja 조건문 예시</span>
 <span class="k">SELECT</span>
 <span class="w">    </span><span class="n">order_id</span><span class="p">,</span>
@@ -442,7 +646,22 @@ graph LR
 <span class="k">FROM</span><span class="w"> </span><span class="err">{{</span><span class="w"> </span><span class="k">ref</span><span class="p">(</span><span class="s1">&#39;stg_orders&#39;</span><span class="p">)</span><span class="w"> </span><span class="err">}}</span>
 </code></pre></div>
 
+<p>dbt가 위 SQL을 prod 타겟으로 컴파일하면 다음과 같이 변환된다.</p>
+<div class="codehilite"><pre><span></span><code><span class="c1">-- 컴파일된 결과 (prod)</span>
+<span class="k">SELECT</span>
+<span class="w">    </span><span class="n">order_id</span><span class="p">,</span>
+<span class="w">    </span><span class="n">amount</span><span class="p">,</span>
+<span class="w">    </span><span class="n">amount</span><span class="w"> </span><span class="o">*</span><span class="w"> </span><span class="mi">1</span><span class="p">.</span><span class="mi">1</span><span class="w"> </span><span class="k">AS</span><span class="w"> </span><span class="n">amount_with_tax</span>
+<span class="k">FROM</span><span class="w"> </span><span class="ss">&quot;stockdb&quot;</span><span class="p">.</span><span class="ss">&quot;analytics&quot;</span><span class="p">.</span><span class="ss">&quot;stg_orders&quot;</span>
+</code></pre></div>
+
+<p>이렇게 <code>{{ ref('stg_orders') }}</code>가 실제 DB 경로 <code>"stockdb"."analytics"."stg_orders"</code>로 치환되고, 조건문이 펼쳐진다.</p>
+<blockquote>
+<p><strong>실무 팁 💡</strong>
+<code>target/compiled/</code> 디렉토리에 컴파일된 최종 SQL이 저장된다. 디버깅 시 항상 이 폴더를 먼저 확인하자.</p>
+</blockquote>
 <h3 id="dag-기반-의존성-관리">DAG 기반 의존성 관리</h3>
+<p><code>ref()</code> 함수가 만들어내는 DAG는 다음과 같이 시각화된다.</p>
 <div class="mermaid">
 graph TD
     src_orders["source: orders"] --> stg_orders[stg_orders]
@@ -461,12 +680,28 @@ graph TD
     style mart_orders fill:#2ecc71,color:#fff
 </div>
 
+<p>dbt는 이 DAG를 분석해서:</p>
+<ul>
+<li><strong>위상 정렬</strong>로 실행 순서를 결정한다 (stg → int → mart 순서)</li>
+<li>의존하지 않는 모델은 <strong>병렬 실행</strong>한다 (<code>threads</code> 설정에 따라)</li>
+<li>어떤 모델이 실패하면 <strong>다운스트림 모델은 자동 스킵</strong>한다</li>
+</ul>
+<blockquote>
+<p><strong>함정 ⚠️</strong>
+직접 SQL에 <code>FROM stockdb.public.stg_orders</code>라고 하드코딩하지 말 것. 그러면 dbt가 의존성을 인식하지 못하고, dev/prod 환경 전환도 안 된다. 반드시 <code>{{ ref('stg_orders') }}</code>를 써라.</p>
+</blockquote>
 <hr />
-<h2 id="3-핵심-개념">3. 핵심 개념</h2>
-<h3 id="3-1-models">3-1. Models</h3>
-<p>모델은 dbt의 기본 단위다. <strong>SQL 파일 하나가 하나의 모델</strong>이며, 실행하면 데이터베이스에 테이블 또는 뷰가 생성된다.</p>
-<h4 id="ref-함수">ref() 함수</h4>
-<p>모델 간 참조에는 <code>ref()</code> 함수를 사용한다. dbt가 이를 분석하여 실행 순서(DAG)를 자동 결정한다.</p>
+<h2 id="4-핵심-개념--각-개념을-비유와-함께">4. 핵심 개념 — 각 개념을 비유와 함께</h2>
+<p>dbt에는 7가지 핵심 개념이 있다. 하나씩 비유와 함께 살펴보자.</p>
+<h3 id="4-1-models--변환-sql의-단위">4-1. Models — "변환 SQL의 단위"</h3>
+<blockquote>
+<p><strong>비유:</strong> 한 모델 = 한 SELECT 문 = 한 테이블/뷰. 함수 하나가 한 가지 일을 하는 것처럼, 모델 하나가 한 변환을 책임진다.</p>
+</blockquote>
+<p>모델은 dbt의 가장 기본 단위다. <strong>하나의 <code>.sql</code> 파일이 하나의 모델</strong>이며, 실행하면 데이터베이스에 테이블 또는 뷰가 생성된다.</p>
+<h4 id="ref-함수--모델-참조의-표준">ref() 함수 — 모델 참조의 표준</h4>
+<blockquote>
+<p><strong>이 코드가 하는 일:</strong> 정제된 일봉 시세(<code>stg_stock_prices</code>)와 종목 정보(<code>stg_stock_info</code>)를 조인하여 일별 수익률을 계산하는 mart 모델이다. <code>ref()</code>로 다른 모델을 참조한다.</p>
+</blockquote>
 <div class="codehilite"><pre><span></span><code><span class="c1">-- models/marts/mart_daily_returns.sql</span>
 <span class="k">SELECT</span>
 <span class="w">    </span><span class="n">sp</span><span class="p">.</span><span class="n">ticker</span><span class="p">,</span>
@@ -481,38 +716,63 @@ graph TD
 <span class="w">    </span><span class="k">ON</span><span class="w"> </span><span class="n">sp</span><span class="p">.</span><span class="n">ticker</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">si</span><span class="p">.</span><span class="n">ticker</span>
 </code></pre></div>
 
-<h4 id="materialization-구체화-방식">Materialization (구체화 방식)</h4>
+<p><code>ref()</code>가 하는 일을 정리하면:</p>
+<ol>
+<li>dbt에게 "이 모델은 <code>stg_stock_prices</code>에 의존한다"고 선언</li>
+<li>컴파일 시점에 환경에 맞는 실제 경로로 치환 (dev면 <code>dev_schema.stg_stock_prices</code>, prod면 <code>analytics.stg_stock_prices</code>)</li>
+<li>DAG에 의존성 엣지(edge)를 추가</li>
+</ol>
+<h4 id="materialization--모델을-어떻게-물리화할-것인가">Materialization — 모델을 어떻게 물리화할 것인가</h4>
+<p>같은 SELECT 문이라도 어떤 형태로 DB에 만들지 선택할 수 있다. 이것이 <strong>materialization</strong>이다.</p>
+<div class="mermaid">
+graph TD
+    A[모델 SELECT 문] --> B{materialized?}
+    B -->|view| C[CREATE VIEW\n매번 실행 시 계산\n저장 공간 0]
+    B -->|table| D[CREATE TABLE AS\n매번 전체 재생성\n빠른 조회]
+    B -->|incremental| E["INSERT/MERGE\n신규/변경분만\n대용량 효율"]
+    B -->|ephemeral| F[CTE로 인라인 삽입\nDB에 안 만듦\n중간 단계용]
+
+    style C fill:#3498db,color:#fff
+    style D fill:#2ecc71,color:#fff
+    style E fill:#f39c12,color:#fff
+    style F fill:#95a5a6,color:#fff
+</div>
+
 <table>
 <thead>
 <tr>
 <th>방식</th>
-<th>설명</th>
-<th>용도</th>
+<th>어떻게 만들어지나</th>
+<th>언제 쓰나</th>
 </tr>
 </thead>
 <tbody>
 <tr>
 <td><code>view</code></td>
-<td>CREATE VIEW (기본값)</td>
-<td>경량 변환, 자주 변경되는 로직</td>
+<td><code>CREATE VIEW</code> (기본값)</td>
+<td>자주 변경되는 로직, 작은 데이터, 항상 최신이 필요</td>
 </tr>
 <tr>
 <td><code>table</code></td>
-<td>CREATE TABLE AS</td>
-<td>자주 조회되는 집계 테이블</td>
+<td><code>CREATE TABLE AS SELECT</code></td>
+<td>자주 조회되는 집계, 계산 비용이 높은 변환</td>
 </tr>
 <tr>
 <td><code>incremental</code></td>
-<td>INSERT/MERGE (신규분만)</td>
-<td>대용량 팩트 테이블</td>
+<td><code>INSERT/MERGE</code> (신규분만)</td>
+<td>대용량 팩트 테이블, 매일 늘어나는 로그</td>
 </tr>
 <tr>
 <td><code>ephemeral</code></td>
-<td>CTE로 인라인 삽입</td>
-<td>중간 단계, DB에 생성 안 됨</td>
+<td>CTE로 다른 모델에 인라인</td>
+<td>중간 단계, DB에 별도 객체 안 만들고 싶을 때</td>
 </tr>
 </tbody>
 </table>
+<h4 id="incremental-materialization--대용량의-핵심">Incremental Materialization — 대용량의 핵심</h4>
+<blockquote>
+<p><strong>이 코드가 하는 일:</strong> 일봉 시세를 incremental로 적재한다. 첫 실행 시 전체를 만들고, 이후엔 마지막 trade_date 이후 신규분만 INSERT한다.</p>
+</blockquote>
 <div class="codehilite"><pre><span></span><code><span class="c1">-- models/marts/mart_stock_summary.sql</span>
 <span class="err">{{</span><span class="w"> </span><span class="n">config</span><span class="p">(</span><span class="n">materialized</span><span class="o">=</span><span class="s1">&#39;incremental&#39;</span><span class="p">,</span><span class="w"> </span><span class="n">unique_key</span><span class="o">=</span><span class="s1">&#39;ticker || trade_date&#39;</span><span class="p">)</span><span class="w"> </span><span class="err">}}</span>
 
@@ -529,9 +789,30 @@ graph TD
 <span class="err">{</span><span class="o">%</span><span class="w"> </span><span class="n">endif</span><span class="w"> </span><span class="o">%</span><span class="err">}</span>
 </code></pre></div>
 
-<p>모델 설정은 <code>dbt_project.yml</code>에서 일괄 지정하거나 모델 파일 내 <code>config()</code> 블록으로 개별 지정한다 (7-2절 참고).</p>
-<h3 id="3-2-sources">3-2. Sources</h3>
-<p>소스는 dbt 외부에서 적재된 raw 테이블을 참조하는 방법이다. <code>source()</code> 함수로 참조하며, freshness 체크를 통해 데이터 적시성을 모니터링할 수 있다.</p>
+<p><code>{% if is_incremental() %}</code> 블록이 핵심이다. 첫 실행에서는 이 블록이 비활성화되어 전체를 빌드하고, 이후 실행에서는 활성화되어 신규분만 가져온다.</p>
+<blockquote>
+<p><strong>함정 ⚠️</strong>
+<code>unique_key</code>를 잘못 설정하면 INSERT는 잘 되는데 중복 행이 누적된다. 반드시 PK 후보를 정확히 지정해라. dbt는 <code>unique_key</code>를 기준으로 MERGE를 수행한다.</p>
+<p><strong>실무 팁 💡</strong>
+첫 빌드는 <code>--full-refresh</code> 플래그를 줘서 전체 재생성하고, 이후 자동 incremental로 돌리는 패턴이 일반적이다. 데이터 손상 의심 시에도 <code>--full-refresh</code>로 복구한다.</p>
+</blockquote>
+<p>모델 설정은 <code>dbt_project.yml</code>에서 일괄 지정하거나, 모델 파일 내 <code>config()</code> 블록으로 개별 지정한다 (8-3절 참고).</p>
+<h3 id="4-2-sources--원본-데이터-등록">4-2. Sources — "원본 데이터 등록"</h3>
+<blockquote>
+<p><strong>비유:</strong> dbt 프로젝트의 "출입국 신고서". 외부에서 들어온 데이터(raw 테이블)를 dbt에게 정식으로 등록하는 행위.</p>
+</blockquote>
+<h4 id="왜-sources가-필요한가">왜 sources가 필요한가</h4>
+<p>원본 테이블을 그냥 <code>FROM stockdb.public.stock_price_1d</code> 라고 직접 참조해도 SQL은 동작한다. 하지만 그러면 dbt는 다음을 모른다.</p>
+<ul>
+<li>이 테이블이 dbt 외부에서 적재된 raw 데이터인지</li>
+<li>마지막으로 언제 적재됐는지</li>
+<li>어떤 모델이 이 raw 테이블을 쓰고 있는지</li>
+</ul>
+<p><code>sources</code>로 등록하면 dbt가 raw 테이블을 <strong>공식 입구</strong>로 인식하고 lineage에 포함시킨다.</p>
+<h4 id="yaml-정의">YAML 정의</h4>
+<blockquote>
+<p><strong>이 코드가 하는 일:</strong> <code>stockdb.public</code> 스키마의 raw 테이블 2개를 dbt source로 등록한다. freshness 임계값을 설정해 24시간 이상 미적재 시 경고, 48시간 시 에러를 발생시킨다.</p>
+</blockquote>
 <div class="codehilite"><pre><span></span><code><span class="c1"># models/staging/_sources.yml</span>
 <span class="nt">version</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">2</span>
 <span class="nt">sources</span><span class="p">:</span>
@@ -549,16 +830,63 @@ graph TD
 <span class="w">        </span><span class="nt">description</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;종목</span><span class="nv"> </span><span class="s">메타데이터&quot;</span>
 </code></pre></div>
 
+<h4 id="source-함수로-참조">source() 함수로 참조</h4>
+<blockquote>
+<p><strong>이 코드가 하는 일:</strong> raw 테이블 <code>stock_price_1d</code>를 <code>source()</code> 함수로 참조하여 staging 모델을 만든다. 직접 <code>FROM stockdb.public.stock_price_1d</code>를 쓰지 않는 이유는 lineage 추적과 환경 전환을 위해서다.</p>
+</blockquote>
 <div class="codehilite"><pre><span></span><code><span class="c1">-- models/staging/stg_stock_prices.sql</span>
 <span class="k">SELECT</span><span class="w"> </span><span class="n">ticker</span><span class="p">,</span><span class="w"> </span><span class="n">trade_date</span><span class="p">,</span><span class="w"> </span><span class="n">open_price</span><span class="p">,</span><span class="w"> </span><span class="n">high_price</span><span class="p">,</span><span class="w"> </span><span class="n">low_price</span><span class="p">,</span><span class="w"> </span><span class="n">close_price</span><span class="p">,</span><span class="w"> </span><span class="n">volume</span>
 <span class="k">FROM</span><span class="w"> </span><span class="err">{{</span><span class="w"> </span><span class="k">source</span><span class="p">(</span><span class="s1">&#39;stockdb&#39;</span><span class="p">,</span><span class="w"> </span><span class="s1">&#39;stock_price_1d&#39;</span><span class="p">)</span><span class="w"> </span><span class="err">}}</span>
 <span class="k">WHERE</span><span class="w"> </span><span class="n">trade_date</span><span class="w"> </span><span class="o">&gt;=</span><span class="w"> </span><span class="s1">&#39;2020-01-01&#39;</span>
 </code></pre></div>
 
-<p>freshness 체크: <code>dbt source freshness</code></p>
-<h3 id="3-3-tests">3-3. Tests</h3>
-<p>dbt 테스트는 데이터 품질을 검증한다. 실패 시 빌드를 중단할 수 있다.</p>
-<h4 id="schema-tests-yaml-정의">Schema Tests (YAML 정의)</h4>
+<h4 id="freshness-체크">Freshness 체크</h4>
+<div class="codehilite"><pre><span></span><code>dbt<span class="w"> </span><span class="nb">source</span><span class="w"> </span>freshness<span class="w">   </span><span class="c1"># 등록된 source의 최근 적재 시간 점검</span>
+</code></pre></div>
+
+<p>이 명령어를 매일 새벽 빌드 전에 돌리면 EL 단계 실패를 조기에 감지할 수 있다.</p>
+<blockquote>
+<p><strong>실무 팁 💡</strong>
+Airflow에서 EL 작업 직후, dbt 빌드 직전에 <code>dbt source freshness</code>를 끼워 넣자. 새벽에 EL이 실패했는데 그걸 모르고 변환을 돌리는 사고를 막을 수 있다.</p>
+</blockquote>
+<h3 id="4-3-tests--데이터-품질-자동-검증">4-3. Tests — "데이터 품질 자동 검증"</h3>
+<blockquote>
+<p><strong>비유:</strong> 단위 테스트의 데이터 버전. SQL을 짤 때 "이 컬럼은 절대 NULL이 아니다", "이 PK는 유일해야 한다"는 약속을 코드로 명시한다.</p>
+</blockquote>
+<h4 id="왜-테스트가-중요한가--시나리오">왜 테스트가 중요한가 — 시나리오</h4>
+<p>자정에 적재 작업이 부분 실패해서 <code>stg_stock_prices</code>의 절반이 NULL인 채로 통과했다. 다음 모델 <code>mart_daily_returns</code>는 그걸 받아서 NULL 수익률을 계산했다. <strong>다음날 아침 대시보드가 빈 채로 떴고, 비즈니스팀은 회의를 못 했다.</strong></p>
+<p>자동 테스트가 있었다면 빌드 단계에서 <code>not_null</code> 테스트가 실패해 전체 파이프라인이 멈췄을 것이고, 잘못된 데이터가 다운스트림으로 흘러가지 않았을 것이다.</p>
+<h4 id="schema-tests--yaml로-선언">Schema Tests — YAML로 선언</h4>
+<p>dbt가 기본 제공하는 테스트 4종은 다음과 같다.</p>
+<table>
+<thead>
+<tr>
+<th>테스트</th>
+<th>검증 내용</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>unique</code></td>
+<td>컬럼 값이 유일한가 (PK 중복 검사)</td>
+</tr>
+<tr>
+<td><code>not_null</code></td>
+<td>컬럼에 NULL이 없는가</td>
+</tr>
+<tr>
+<td><code>accepted_values</code></td>
+<td>컬럼 값이 허용된 목록에 속하는가</td>
+</tr>
+<tr>
+<td><code>relationships</code></td>
+<td>FK가 다른 테이블의 PK에 존재하는가 (FK 무결성)</td>
+</tr>
+</tbody>
+</table>
+<blockquote>
+<p><strong>이 코드가 하는 일:</strong> <code>stg_stock_prices</code>의 ticker, trade_date에 not_null 검사를 적용하고, (ticker, trade_date) 조합의 유일성을 검증한다. <code>stg_stock_info</code>의 market 컬럼은 4개 값만 허용한다.</p>
+</blockquote>
 <div class="codehilite"><pre><span></span><code><span class="c1"># models/staging/_schema.yml</span>
 <span class="nt">version</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">2</span>
 <span class="nt">models</span><span class="p">:</span>
@@ -582,24 +910,132 @@ graph TD
 <span class="w">              </span><span class="nt">values</span><span class="p">:</span><span class="w"> </span><span class="p p-Indicator">[</span><span class="s">&#39;KOSPI&#39;</span><span class="p p-Indicator">,</span><span class="w"> </span><span class="s">&#39;KOSDAQ&#39;</span><span class="p p-Indicator">,</span><span class="w"> </span><span class="s">&#39;NYSE&#39;</span><span class="p p-Indicator">,</span><span class="w"> </span><span class="s">&#39;NASDAQ&#39;</span><span class="p p-Indicator">]</span>
 </code></pre></div>
 
-<h4 id="custom-tests-sql-기반">Custom Tests (SQL 기반)</h4>
-<p><code>tests/</code> 디렉토리에 SQL 파일로 작성한다. 쿼리 결과가 0행이면 통과, 1행 이상이면 실패다.</p>
+<h4 id="custom-tests--비즈니스-규칙을-sql로">Custom Tests — 비즈니스 규칙을 SQL로</h4>
+<p>기본 4종으로 표현 안 되는 규칙은 SQL로 직접 작성한다.</p>
+<blockquote>
+<p><strong>이 코드가 하는 일:</strong> 종가가 0 이하인 행을 찾는 SQL. dbt 규칙에 따라 결과가 0행이면 통과, 1행 이상이면 테스트 실패다. "종가는 항상 양수여야 한다"는 비즈니스 규칙을 코드로 표현한다.</p>
+</blockquote>
 <div class="codehilite"><pre><span></span><code><span class="c1">-- tests/assert_positive_close_price.sql</span>
 <span class="k">SELECT</span><span class="w"> </span><span class="o">*</span>
 <span class="k">FROM</span><span class="w"> </span><span class="err">{{</span><span class="w"> </span><span class="k">ref</span><span class="p">(</span><span class="s1">&#39;stg_stock_prices&#39;</span><span class="p">)</span><span class="w"> </span><span class="err">}}</span>
 <span class="k">WHERE</span><span class="w"> </span><span class="n">close_price</span><span class="w"> </span><span class="o">&lt;=</span><span class="w"> </span><span class="mi">0</span>
 </code></pre></div>
 
-<div class="codehilite"><pre><span></span><code>dbt<span class="w"> </span><span class="nb">test</span><span class="w">                          </span><span class="c1"># 전체 테스트</span>
-dbt<span class="w"> </span><span class="nb">test</span><span class="w"> </span>--select<span class="w"> </span>stg_stock_prices<span class="w">  </span><span class="c1"># 특정 모델만</span>
+<h4 id="테스트-실행">테스트 실행</h4>
+<div class="codehilite"><pre><span></span><code>dbt<span class="w"> </span><span class="nb">test</span><span class="w">                              </span><span class="c1"># 전체 테스트</span>
+dbt<span class="w"> </span><span class="nb">test</span><span class="w"> </span>--select<span class="w"> </span>stg_stock_prices<span class="w">    </span><span class="c1"># 특정 모델만</span>
+dbt<span class="w"> </span>build<span class="w">                             </span><span class="c1"># run + test 함께</span>
 </code></pre></div>
 
-<h3 id="3-4-documentation">3-4. Documentation</h3>
-<p>YAML의 <code>description</code> 필드에 모델/컬럼 설명을 작성하면, <code>dbt docs generate</code>로 <code>catalog.json</code>, <code>manifest.json</code>이 생성되고 <code>dbt docs serve</code>로 모델 DAG 시각화, 컬럼 설명, 테스트 결과를 포함한 문서 사이트를 확인할 수 있다.</p>
-<h3 id="3-5-seeds">3-5. Seeds</h3>
-<p>Seeds는 CSV 파일을 데이터베이스 테이블로 로드하는 기능이다. 참조 데이터(코드 테이블, 매핑 테이블)에 적합하다. <code>seeds/market_codes.csv</code>를 만들고 <code>dbt seed</code>를 실행하면 테이블이 생성되며, 모델에서 <code>{{ ref('market_codes') }}</code>로 참조한다.</p>
-<h3 id="3-6-snapshots">3-6. Snapshots</h3>
-<p>스냅샷은 <strong>SCD Type 2 (Slowly Changing Dimension)</strong> 를 구현한다. 시간에 따라 변하는 데이터의 이력을 추적한다.</p>
+<blockquote>
+<p><strong>함정 ⚠️</strong>
+<code>dbt build</code>는 모델 빌드와 테스트를 함께 실행해서 편하지만, 실패 지점이 모델 빌드인지 테스트인지 헷갈릴 수 있다. 운영에서는 <code>dbt run</code> 후 <code>dbt test</code>로 분리해서 단계별로 모니터링하는 것을 권장한다.</p>
+</blockquote>
+<h3 id="4-4-documentation--sql과-동기화된-문서">4-4. Documentation — "SQL과 동기화된 문서"</h3>
+<blockquote>
+<p><strong>비유:</strong> Sphinx/JSDoc의 데이터 버전. 코드 옆에 description을 적어두면 자동으로 카탈로그 사이트가 만들어진다.</p>
+</blockquote>
+<h4 id="description-필드">description 필드</h4>
+<p>YAML의 <code>description</code> 필드에 모델/컬럼 설명을 작성한다. 이것이 카탈로그에 그대로 노출된다.</p>
+<div class="codehilite"><pre><span></span><code><span class="nt">models</span><span class="p">:</span>
+<span class="w">  </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="nt">name</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">mart_daily_returns</span>
+<span class="w">    </span><span class="nt">description</span><span class="p">:</span><span class="w"> </span><span class="p p-Indicator">|</span>
+<span class="w">      </span><span class="no">종목별 일일 수익률을 계산한 mart 테이블.</span>
+<span class="w">      </span><span class="no">LAG 함수로 전일 대비 변화율을 산출하며, KOSPI/KOSDAQ만 포함한다.</span>
+<span class="w">    </span><span class="nt">columns</span><span class="p">:</span>
+<span class="w">      </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="nt">name</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">ticker</span>
+<span class="w">        </span><span class="nt">description</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;Yahoo</span><span class="nv"> </span><span class="s">포맷</span><span class="nv"> </span><span class="s">티커</span><span class="nv"> </span><span class="s">(예:</span><span class="nv"> </span><span class="s">005930.KS)&quot;</span>
+<span class="w">      </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="nt">name</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">daily_return</span>
+<span class="w">        </span><span class="nt">description</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;전일</span><span class="nv"> </span><span class="s">종가</span><span class="nv"> </span><span class="s">대비</span><span class="nv"> </span><span class="s">변화율</span><span class="nv"> </span><span class="s">(소수).</span><span class="nv"> </span><span class="s">첫</span><span class="nv"> </span><span class="s">거래일은</span><span class="nv"> </span><span class="s">NULL.&quot;</span>
+</code></pre></div>
+
+<h4 id="doc-blocks--긴-설명을-별도-파일로">Doc Blocks — 긴 설명을 별도 파일로</h4>
+<p>긴 설명이나 마크다운이 필요하면 별도 <code>.md</code> 파일로 분리한다.</p>
+<div class="codehilite"><pre><span></span><code>{% docs ticker_format %}
+티커는 Yahoo Finance 포맷을 따른다.
+<span class="k">-</span><span class="w"> </span>한국: <span class="sb">`{종목코드}.KS`</span> (KOSPI), <span class="sb">`{종목코드}.KQ`</span> (KOSDAQ)
+<span class="k">-</span><span class="w"> </span>미국: <span class="sb">`{심볼}`</span> (예: AAPL, MSFT)
+{% enddocs %}
+</code></pre></div>
+
+<p>YAML에서 참조:</p>
+<div class="codehilite"><pre><span></span><code><span class="nt">columns</span><span class="p">:</span>
+<span class="w">  </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="nt">name</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">ticker</span>
+<span class="w">    </span><span class="nt">description</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;{{</span><span class="nv"> </span><span class="s">doc(&#39;ticker_format&#39;)</span><span class="nv"> </span><span class="s">}}&quot;</span>
+</code></pre></div>
+
+<h4 id="dbt-docs-명령어">dbt docs 명령어</h4>
+<div class="codehilite"><pre><span></span><code>dbt<span class="w"> </span>docs<span class="w"> </span>generate<span class="w">   </span><span class="c1"># catalog.json + manifest.json 생성</span>
+dbt<span class="w"> </span>docs<span class="w"> </span>serve<span class="w">      </span><span class="c1"># 로컬 웹서버에서 카탈로그 사이트 띄우기 (http://localhost:8080)</span>
+</code></pre></div>
+
+<p>생성되는 카탈로그 사이트는 다음을 포함한다.</p>
+<ul>
+<li>모델별 description, 컬럼 설명</li>
+<li>테스트 결과 표시</li>
+<li>DAG 시각화 (lineage 탐색)</li>
+<li>raw SQL과 컴파일된 SQL 비교</li>
+</ul>
+<h3 id="4-5-seeds--참조-데이터-csv--테이블">4-5. Seeds — "참조 데이터 (CSV → 테이블)"</h3>
+<blockquote>
+<p><strong>비유:</strong> Django의 fixture, Rails의 seed. 작은 정적 데이터(코드 매핑, 환율 테이블)를 CSV로 보관하고 DB에 로드한다.</p>
+</blockquote>
+<h4 id="언제-seeds를-쓰나">언제 seeds를 쓰나</h4>
+<ul>
+<li>시장 코드 → 시장명 매핑 (<code>KOSPI</code> → <code>유가증권시장</code>)</li>
+<li>통화 코드 → 환율 (테스트용)</li>
+<li>섹터 코드 → 섹터명</li>
+<li>휴장일 캘린더</li>
+</ul>
+<blockquote>
+<p>큰 데이터(수백만 행)에는 적합하지 않다. CSV 한 줄씩 INSERT하므로 느리다. 보통 수천 행 이하의 정적 lookup 테이블에 쓴다.</p>
+</blockquote>
+<h4 id="사용법">사용법</h4>
+<div class="codehilite"><pre><span></span><code><span class="gh">#</span> seeds/market_codes.csv
+code,name,country
+KOSPI,유가증권시장,KR
+KOSDAQ,코스닥시장,KR
+NYSE,New York Stock Exchange,US
+NASDAQ,NASDAQ,US
+</code></pre></div>
+
+<div class="codehilite"><pre><span></span><code>dbt<span class="w"> </span>seed<span class="w">   </span><span class="c1"># CSV를 테이블로 로드</span>
+</code></pre></div>
+
+<p>모델에서 다른 ref()와 똑같이 참조한다.</p>
+<div class="codehilite"><pre><span></span><code><span class="k">SELECT</span>
+<span class="w">    </span><span class="n">si</span><span class="p">.</span><span class="n">ticker</span><span class="p">,</span>
+<span class="w">    </span><span class="n">mc</span><span class="p">.</span><span class="n">name</span><span class="w"> </span><span class="k">AS</span><span class="w"> </span><span class="n">market_name</span>
+<span class="k">FROM</span><span class="w"> </span><span class="err">{{</span><span class="w"> </span><span class="k">ref</span><span class="p">(</span><span class="s1">&#39;stg_stock_info&#39;</span><span class="p">)</span><span class="w"> </span><span class="err">}}</span><span class="w"> </span><span class="n">si</span>
+<span class="k">LEFT</span><span class="w"> </span><span class="k">JOIN</span><span class="w"> </span><span class="err">{{</span><span class="w"> </span><span class="k">ref</span><span class="p">(</span><span class="s1">&#39;market_codes&#39;</span><span class="p">)</span><span class="w"> </span><span class="err">}}</span><span class="w"> </span><span class="n">mc</span><span class="w"> </span><span class="k">ON</span><span class="w"> </span><span class="n">si</span><span class="p">.</span><span class="n">market</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">mc</span><span class="p">.</span><span class="n">code</span>
+</code></pre></div>
+
+<h3 id="4-6-snapshots--변경-이력-추적-scd-type-2">4-6. Snapshots — "변경 이력 추적 (SCD Type 2)"</h3>
+<blockquote>
+<p><strong>비유:</strong> 사진 찍어 보관하는 행위. 매일 같은 자리에서 사진을 찍어두면 "그 사람이 작년에 어떻게 생겼는지"를 안다. SCD Type 2가 정확히 그것이다.</p>
+</blockquote>
+<h4 id="언제-snapshots를-쓰나">언제 snapshots를 쓰나</h4>
+<p>원본 테이블이 <strong>현재 값만 보관</strong>하고, dbt가 <strong>변경 이력을 보존</strong>해야 하는 상황.</p>
+<ul>
+<li>종목 정보 (회사명 변경, 섹터 재분류 이력)</li>
+<li>고객 정보 (주소 변경, 등급 변경)</li>
+<li>상품 가격 변동 이력</li>
+</ul>
+<h4 id="동작-원리">동작 원리</h4>
+<div class="mermaid">
+graph LR
+    A[원본 테이블\n현재 값만] -->|dbt snapshot| B[Snapshot 테이블\n이력 누적]
+    B --> C[dbt_valid_from\n이 값이 시작된 시점]
+    B --> D[dbt_valid_to\n이 값이 끝난 시점\n현재 행은 NULL]
+    B --> E[dbt_scd_id\n버전 ID]
+
+    style B fill:#9b59b6,color:#fff
+</div>
+
+<h4 id="정의">정의</h4>
+<blockquote>
+<p><strong>이 코드가 하는 일:</strong> stock_info 테이블의 변경을 매일 스냅샷한다. ticker가 같은데 다른 컬럼 값이 바뀌면 새 행을 INSERT하고, 이전 행의 dbt_valid_to를 채운다.</p>
+</blockquote>
 <div class="codehilite"><pre><span></span><code><span class="c1">-- snapshots/snap_stock_info.sql</span>
 <span class="err">{</span><span class="o">%</span><span class="w"> </span><span class="n">snapshot</span><span class="w"> </span><span class="n">snap_stock_info</span><span class="w"> </span><span class="o">%</span><span class="err">}</span>
 <span class="err">{{</span><span class="w"> </span><span class="n">config</span><span class="p">(</span><span class="n">target_schema</span><span class="o">=</span><span class="s1">&#39;snapshots&#39;</span><span class="p">,</span><span class="w"> </span><span class="n">unique_key</span><span class="o">=</span><span class="s1">&#39;ticker&#39;</span><span class="p">,</span>
@@ -609,18 +1045,63 @@ dbt<span class="w"> </span><span class="nb">test</span><span class="w"> </span>-
 <span class="err">{</span><span class="o">%</span><span class="w"> </span><span class="n">endsnapshot</span><span class="w"> </span><span class="o">%</span><span class="err">}</span>
 </code></pre></div>
 
-<p><code>dbt snapshot</code> 실행 시 <code>dbt_valid_from</code>, <code>dbt_valid_to</code> 컬럼이 자동 추가되어 변경 이력이 보존된다.</p>
-<h3 id="3-7-macros">3-7. Macros</h3>
-<p>매크로는 Jinja로 작성하는 <strong>재사용 가능한 SQL 함수</strong>다.</p>
+<p><code>dbt snapshot</code> 실행 시 자동 추가되는 컬럼:</p>
+<table>
+<thead>
+<tr>
+<th>컬럼</th>
+<th>의미</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>dbt_valid_from</code></td>
+<td>이 버전이 시작된 시각</td>
+</tr>
+<tr>
+<td><code>dbt_valid_to</code></td>
+<td>이 버전이 끝난 시각 (현재 행은 NULL)</td>
+</tr>
+<tr>
+<td><code>dbt_scd_id</code></td>
+<td>버전을 구분하는 해시 ID</td>
+</tr>
+</tbody>
+</table>
+<blockquote>
+<p><strong>함정 ⚠️</strong>
+snapshot은 dbt run에 포함되지 않는다. 별도로 <code>dbt snapshot</code>을 호출해야 한다. Airflow DAG 짤 때 누락되기 쉽다.</p>
+</blockquote>
+<h3 id="4-7-macros--재사용-가능한-sql-함수">4-7. Macros — "재사용 가능한 SQL 함수"</h3>
+<blockquote>
+<p><strong>비유:</strong> Python의 함수, Excel의 사용자 정의 함수. 자주 쓰는 SQL 패턴을 한 번 정의하고 여러 모델에서 호출한다.</p>
+</blockquote>
+<h4 id="매크로-정의">매크로 정의</h4>
+<blockquote>
+<p><strong>이 코드가 하는 일:</strong> USD 가격을 KRW로 환산하는 매크로. 환율 1350을 곱해 반올림한다. 컬럼 이름만 인자로 받고, SQL 표현식을 반환한다.</p>
+</blockquote>
 <div class="codehilite"><pre><span></span><code><span class="c1">-- macros/cents_to_won.sql</span>
 <span class="err">{</span><span class="o">%</span><span class="w"> </span><span class="n">macro</span><span class="w"> </span><span class="n">cents_to_won</span><span class="p">(</span><span class="k">column_name</span><span class="p">)</span><span class="w"> </span><span class="o">%</span><span class="err">}</span>
 <span class="w">    </span><span class="n">ROUND</span><span class="p">(</span><span class="err">{{</span><span class="w"> </span><span class="k">column_name</span><span class="w"> </span><span class="err">}}</span><span class="w"> </span><span class="o">*</span><span class="w"> </span><span class="mi">1350</span><span class="p">,</span><span class="w"> </span><span class="mi">0</span><span class="p">)</span>
 <span class="err">{</span><span class="o">%</span><span class="w"> </span><span class="n">endmacro</span><span class="w"> </span><span class="o">%</span><span class="err">}</span>
 </code></pre></div>
 
-<p>모델에서 <code>{{ cents_to_won('close_price_usd') }}</code> 형태로 호출한다.</p>
-<h4 id="패키지">패키지</h4>
-<p>외부 매크로 패키지를 <code>packages.yml</code>로 설치할 수 있다 (<code>dbt deps</code> 실행).</p>
+<h4 id="호출">호출</h4>
+<div class="codehilite"><pre><span></span><code><span class="k">SELECT</span>
+<span class="w">    </span><span class="n">ticker</span><span class="p">,</span>
+<span class="w">    </span><span class="err">{{</span><span class="w"> </span><span class="n">cents_to_won</span><span class="p">(</span><span class="s1">&#39;close_price_usd&#39;</span><span class="p">)</span><span class="w"> </span><span class="err">}}</span><span class="w"> </span><span class="k">AS</span><span class="w"> </span><span class="n">close_price_krw</span>
+<span class="k">FROM</span><span class="w"> </span><span class="err">{{</span><span class="w"> </span><span class="k">ref</span><span class="p">(</span><span class="s1">&#39;stg_us_stock_prices&#39;</span><span class="p">)</span><span class="w"> </span><span class="err">}}</span>
+</code></pre></div>
+
+<p>컴파일 결과:</p>
+<div class="codehilite"><pre><span></span><code><span class="k">SELECT</span>
+<span class="w">    </span><span class="n">ticker</span><span class="p">,</span>
+<span class="w">    </span><span class="n">ROUND</span><span class="p">(</span><span class="n">close_price_usd</span><span class="w"> </span><span class="o">*</span><span class="w"> </span><span class="mi">1350</span><span class="p">,</span><span class="w"> </span><span class="mi">0</span><span class="p">)</span><span class="w"> </span><span class="k">AS</span><span class="w"> </span><span class="n">close_price_krw</span>
+<span class="k">FROM</span><span class="w"> </span><span class="ss">&quot;stockdb&quot;</span><span class="p">.</span><span class="ss">&quot;analytics&quot;</span><span class="p">.</span><span class="ss">&quot;stg_us_stock_prices&quot;</span>
+</code></pre></div>
+
+<h4 id="외부-패키지--dbt_utils">외부 패키지 — dbt_utils</h4>
+<p>매크로를 직접 만들기 전에, <strong>거의 다 있는</strong> dbt_utils 패키지부터 확인하자.</p>
 <div class="codehilite"><pre><span></span><code><span class="c1"># packages.yml</span>
 <span class="nt">packages</span><span class="p">:</span>
 <span class="w">  </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="nt">package</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">dbt-labs/dbt_utils</span>
@@ -629,26 +1110,71 @@ dbt<span class="w"> </span><span class="nb">test</span><span class="w"> </span>-
 <span class="w">    </span><span class="nt">version</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;0.12.1&quot;</span>
 </code></pre></div>
 
+<div class="codehilite"><pre><span></span><code>dbt<span class="w"> </span>deps<span class="w">   </span><span class="c1"># 패키지 설치</span>
+</code></pre></div>
+
+<p>dbt_utils가 제공하는 유용한 매크로:</p>
+<ul>
+<li><code>dbt_utils.surrogate_key([컬럼들])</code> — 여러 컬럼을 해시한 surrogate key</li>
+<li><code>dbt_utils.pivot()</code> / <code>unpivot()</code> — 피벗 SQL 자동 생성</li>
+<li><code>dbt_utils.date_spine()</code> — 날짜 시리즈 테이블 (캘린더 dim)</li>
+<li><code>dbt_utils.star()</code> — 특정 컬럼 제외하고 모두 SELECT</li>
+</ul>
+<blockquote>
+<p><strong>실무 팁 💡</strong>
+자주 쓰는 변환 패턴이 보이면 매크로로 추출하자. 단, <strong>너무 일찍 추상화하면</strong> 오히려 가독성이 떨어진다. 같은 패턴이 3번 나오면 그때 매크로로 빼는 정도가 적당하다.</p>
+</blockquote>
 <hr />
-<h2 id="4-dbt-semantic-layer-metricflow">4. dbt Semantic Layer (MetricFlow)</h2>
-<h3 id="4-1-metricflow란">4-1. MetricFlow란</h3>
-<p>MetricFlow는 dbt에 통합된 <strong>중앙 메트릭 정의 프레임워크</strong>다. 비즈니스 메트릭(매출, 수익률 등)을 YAML로 한 번 정의하면 일관된 방식으로 쿼리할 수 있다.</p>
+<h2 id="5-dbt-semantic-layer-metricflow--메트릭-정의-표준">5. dbt Semantic Layer (MetricFlow) — 메트릭 정의 표준</h2>
+<h3 id="5-1-metricflow란--왜-추가됐나">5-1. MetricFlow란 — 왜 추가됐나</h3>
+<p>dbt 모델만으로는 <strong>메트릭 정의가 흩어진다</strong>. 같은 "월간 매출"이 dashboard마다 다른 SQL로 정의되어 있고, BI 도구마다 또 다른 변형이 있다.</p>
+<p>MetricFlow는 dbt 1.6+에 통합된 <strong>중앙 메트릭 정의 프레임워크</strong>다. <strong>메트릭의 정의를 코드 한 곳에 모아 두고, 모든 도구가 같은 정의를 사용</strong>하게 만든다.</p>
 <div class="mermaid">
 graph LR
-    A[dbt Models] --> B[Semantic Models]
-    B --> C[Metrics 정의]
-    C --> D{dbt Cloud?}
-    D -->|Yes| E[Semantic Layer API]
-    D -->|No| F[MetricFlow CLI만]
-    E --> G["BI Tool / Agent"]
-    F --> H[로컬 쿼리만]
+    A[흩어진 메트릭] -->|문제| B["Tableau: 매출 = SUM amount"]
+    A --> C["Looker: 매출 = SUM amount filter active"]
+    A --> D["Notebook: 매출 = SUM amount * 1.1"]
 
+    E[MetricFlow] -->|해결| F["Metric: revenue 단일 정의"]
+    F --> G["BI / Notebook / Agent\n모두 같은 정의 사용"]
+
+    style A fill:#e74c3c,color:#fff
     style E fill:#2ecc71,color:#fff
-    style F fill:#e74c3c,color:#fff
+    style F fill:#3498db,color:#fff
 </div>
 
-<h3 id="4-2-semantic-models">4-2. Semantic Models</h3>
-<p>Semantic Model은 메트릭 계산의 기반이 되는 논리적 데이터 모델이다.</p>
+<h3 id="5-2-semantic_models-yaml--메트릭의-기반">5-2. semantic_models YAML — 메트릭의 기반</h3>
+<p>Semantic Model은 <strong>메트릭 계산의 기반이 되는 논리적 데이터 모델</strong>이다. 일반 dbt 모델이 SQL이라면, semantic model은 그 위에 의미(semantic)를 얹는다.</p>
+<h4 id="구성-요소-3가지">구성 요소 3가지</h4>
+<table>
+<thead>
+<tr>
+<th>요소</th>
+<th>역할</th>
+<th>종류</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><strong>entities</strong></td>
+<td>조인 키 (PK/FK)</td>
+<td>primary, foreign, natural</td>
+</tr>
+<tr>
+<td><strong>measures</strong></td>
+<td>집계 가능한 수치</td>
+<td>sum, count, average, min, max, count_distinct</td>
+</tr>
+<tr>
+<td><strong>dimensions</strong></td>
+<td>필터/그룹 기준 (집계 안 됨)</td>
+<td>categorical, time</td>
+</tr>
+</tbody>
+</table>
+<blockquote>
+<p><strong>이 코드가 하는 일:</strong> <code>mart_stock_daily</code> 모델 위에 semantic model을 정의한다. 종목(stock)과 시장(market)을 entity로, 거래량/평균종가를 measure로, 거래일과 시장코드를 dimension으로 등록한다.</p>
+</blockquote>
 <div class="codehilite"><pre><span></span><code><span class="c1"># models/semantic/sem_stock_daily.yml</span>
 <span class="nt">semantic_models</span><span class="p">:</span>
 <span class="w">  </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="nt">name</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">stock_daily</span>
@@ -681,35 +1207,43 @@ graph LR
 <span class="w">        </span><span class="nt">type</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">categorical</span>
 </code></pre></div>
 
-<p><strong>구성 요소:</strong></p>
+<h3 id="5-3-metrics--비즈니스-지표-정의">5-3. Metrics — 비즈니스 지표 정의</h3>
+<p>Measure는 단순 집계 수치이고, <strong>Metric은 그 위에 비즈니스 의미를 얹은 지표</strong>다.</p>
+<h4 id="메트릭-4가지-유형">메트릭 4가지 유형</h4>
 <table>
 <thead>
 <tr>
-<th>요소</th>
+<th>유형</th>
 <th>설명</th>
-<th>종류</th>
+<th>예시</th>
 </tr>
 </thead>
 <tbody>
 <tr>
-<td>entities</td>
-<td>조인 키 정의</td>
-<td>primary, foreign, natural</td>
+<td><code>simple</code></td>
+<td>단일 measure 직접 참조</td>
+<td>"총 매출 = sum(amount)"</td>
 </tr>
 <tr>
-<td>measures</td>
-<td>집계 가능한 수치</td>
-<td>sum, count, average, min, max, count_distinct</td>
+<td><code>derived</code></td>
+<td>여러 메트릭의 수식</td>
+<td>"이익률 = revenue - cost / revenue"</td>
 </tr>
 <tr>
-<td>dimensions</td>
-<td>필터/그룹 기준</td>
-<td>categorical, time</td>
+<td><code>cumulative</code></td>
+<td>기간 누적</td>
+<td>"30일 누적 거래량"</td>
+</tr>
+<tr>
+<td><code>ratio</code></td>
+<td>두 measure의 비율</td>
+<td>"전환율 = orders / visits"</td>
 </tr>
 </tbody>
 </table>
-<h3 id="4-3-metrics">4-3. Metrics</h3>
-<p>메트릭은 measure를 조합하여 비즈니스 지표를 정의한다.</p>
+<blockquote>
+<p><strong>이 코드가 하는 일:</strong> KOSPI 종목만 필터링한 평균 종가 메트릭과, 30일 누적 거래량 메트릭을 정의한다. simple/cumulative 두 가지 유형 예시.</p>
+</blockquote>
 <div class="codehilite"><pre><span></span><code><span class="c1"># models/semantic/metrics_stock.yml</span>
 <span class="nt">metrics</span><span class="p">:</span>
 <span class="w">  </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="nt">name</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">daily_avg_close</span>
@@ -729,35 +1263,13 @@ graph LR
 <span class="w">      </span><span class="nt">grain_to_date</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">month</span>
 </code></pre></div>
 
-<p><strong>메트릭 유형:</strong></p>
-<table>
-<thead>
-<tr>
-<th>유형</th>
-<th>설명</th>
-</tr>
-</thead>
-<tbody>
-<tr>
-<td><code>simple</code></td>
-<td>단일 measure 직접 참조</td>
-</tr>
-<tr>
-<td><code>derived</code></td>
-<td>여러 메트릭 조합 (수식)</td>
-</tr>
-<tr>
-<td><code>cumulative</code></td>
-<td>기간 누적</td>
-</tr>
-<tr>
-<td><code>ratio</code></td>
-<td>두 measure의 비율</td>
-</tr>
-</tbody>
-</table>
-<h3 id="4-4-한계">4-4. 한계</h3>
-<p>MetricFlow의 현실적 제약을 이해해야 한다.</p>
+<h4 id="metricflow-쿼리-예시">MetricFlow 쿼리 예시</h4>
+<div class="codehilite"><pre><span></span><code>mf<span class="w"> </span>query<span class="w"> </span>--metrics<span class="w"> </span>daily_avg_close<span class="w"> </span>--group-by<span class="w"> </span>trade_date__day
+</code></pre></div>
+
+<p>이 명령어 하나로 정의된 메트릭이 SQL로 컴파일되어 실행된다.</p>
+<h3 id="5-4-dbt-semantic-layer-api의-한계--매우-중요">5-4. dbt Semantic Layer API의 한계 — 매우 중요</h3>
+<p>MetricFlow의 현실적 제약을 명확히 알아야 한다.</p>
 <table>
 <thead>
 <tr>
@@ -783,12 +1295,12 @@ graph LR
 <td>O</td>
 </tr>
 <tr>
-<td><strong>Semantic Layer API</strong></td>
+<td><strong>Semantic Layer API</strong> (REST/GraphQL)</td>
 <td><strong>불가</strong></td>
 <td><strong>제공</strong></td>
 </tr>
 <tr>
-<td>BI 도구 연동 (Tableau 등)</td>
+<td>BI 도구 연동 (Tableau, Looker 등)</td>
 <td>불가</td>
 <td>제공</td>
 </tr>
@@ -800,11 +1312,42 @@ graph LR
 </tbody>
 </table>
 <blockquote>
-<p>dbt Core만으로는 정의한 메트릭을 API로 서빙할 수 없다. API 서빙이 필요하면 <strong>Cube.js</strong> 같은 별도 도구를 함께 사용해야 한다.</p>
+<p><strong>함정 ⚠️</strong>
+dbt Core에서 메트릭을 정의하는 것은 가능하지만, <strong>외부 도구(BI/Agent)에서 API로 호출하는 것은 불가능</strong>하다. 이게 가장 흔한 오해다.
+API 서빙이 필요하면:
+- <strong>유료</strong>: dbt Cloud + Semantic Layer
+- <strong>오픈소스</strong>: Cube.js를 dbt 위에 얹어 사용</p>
 </blockquote>
+<div class="mermaid">
+graph LR
+    A[dbt Models] --> B[Semantic Models]
+    B --> C[Metrics 정의]
+    C --> D{어디서 쿼리?}
+    D -->|dbt Cloud| E["Semantic Layer API\nREST/GraphQL/JDBC"]
+    D -->|dbt Core| F[MetricFlow CLI만\n로컬 쿼리]
+    E --> G["BI Tool / Agent / API"]
+    F --> H[로컬 사용자]
+
+    style E fill:#2ecc71,color:#fff
+    style F fill:#e74c3c,color:#fff
+</div>
+
 <hr />
-<h2 id="5-데이터-소스-연결">5. 데이터 소스 연결</h2>
-<h3 id="5-1-지원-어댑터-목록">5-1. 지원 어댑터 목록</h3>
+<h2 id="6-데이터-소스-연결-adapter-시스템">6. 데이터 소스 연결 (Adapter 시스템)</h2>
+<h3 id="dbt가-다양한-dw를-지원하는-방식">dbt가 다양한 DW를 지원하는 방식</h3>
+<p>dbt는 <strong>adapter 패턴</strong>으로 데이터 웨어하우스 연결을 추상화한다. 각 DW 별로 별도의 어댑터 패키지가 있고, dbt Core는 어댑터를 통해 SQL을 실행한다.</p>
+<div class="mermaid">
+graph TD
+    A[dbt Core] --> B{Adapter}
+    B -->|dbt-postgres| C[PostgreSQL]
+    B -->|dbt-snowflake| D[Snowflake]
+    B -->|dbt-bigquery| E[BigQuery]
+    B -->|dbt-oracle| F[Oracle]
+    B -->|dbt-databricks| G[Databricks]
+    B -->|dbt-redshift| H[Redshift]
+</div>
+
+<h3 id="지원-어댑터">지원 어댑터</h3>
 <table>
 <thead>
 <tr>
@@ -840,9 +1383,9 @@ graph LR
 <td>Databricks (공식)</td>
 </tr>
 <tr>
-<td>Oracle</td>
+<td><strong>Oracle</strong></td>
 <td><code>pip install dbt-oracle</code></td>
-<td>Oracle (커뮤니티)</td>
+<td><strong>Oracle (커뮤니티)</strong></td>
 </tr>
 <tr>
 <td>SQL Server</td>
@@ -856,7 +1399,16 @@ graph LR
 </tr>
 </tbody>
 </table>
-<h3 id="5-2-oracle-연결-설정">5-2. Oracle 연결 설정</h3>
+<blockquote>
+<p><strong>함정 ⚠️</strong>
+Oracle 어댑터는 Oracle이 직접 유지하지만, <strong>dbt Labs 공식 어댑터가 아니다</strong>. 새 dbt 버전 출시 후 Oracle 어댑터가 호환되기까지 시간이 걸릴 수 있다. 프로덕션에서는 어댑터 버전과 dbt-core 버전을 같이 핀(pin)으로 묶는 것이 안전하다.</p>
+</blockquote>
+<h3 id="profilesyml--연결-설정의-중앙">profiles.yml — 연결 설정의 중앙</h3>
+<p><code>profiles.yml</code>은 dbt의 DB 연결 정보를 담는 파일이다. 보통 <code>~/.dbt/profiles.yml</code> 또는 프로젝트 루트에 둔다.</p>
+<h4 id="oracle-연결">Oracle 연결</h4>
+<blockquote>
+<p><strong>이 코드가 하는 일:</strong> Oracle DB에 연결하는 dev 타겟을 정의한다. 비밀값은 <code>env_var()</code>로 환경 변수에서 읽어온다 (절대 평문 기재 금지).</p>
+</blockquote>
 <div class="codehilite"><pre><span></span><code><span class="c1"># profiles.yml (Oracle)</span>
 <span class="nt">bip_pipeline</span><span class="p">:</span>
 <span class="w">  </span><span class="nt">target</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">dev</span>
@@ -874,7 +1426,10 @@ graph LR
 </code></pre></div>
 
 <p>dbt-oracle 1.7+ 에서 Oracle 19c 이상을 공식 지원한다. <code>python-oracledb</code> (thin 모드)를 사용하면 Oracle Instant Client 없이도 연결 가능하다.</p>
-<h3 id="5-3-postgresql-연결-설정">5-3. PostgreSQL 연결 설정</h3>
+<h4 id="postgresql-연결--가장-단순">PostgreSQL 연결 — 가장 단순</h4>
+<blockquote>
+<p><strong>이 코드가 하는 일:</strong> PostgreSQL의 dev/prod 두 타겟을 정의한다. dev는 로컬 localhost, prod는 컨테이너 네트워크의 <code>bip-postgres</code> 호스트를 본다. <code>--target prod</code> 인자로 전환한다.</p>
+</blockquote>
 <div class="codehilite"><pre><span></span><code><span class="c1"># profiles.yml (PostgreSQL)</span>
 <span class="nt">bip_pipeline</span><span class="p">:</span>
 <span class="w">  </span><span class="nt">target</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">dev</span>
@@ -900,10 +1455,25 @@ graph LR
 <span class="w">      </span><span class="nt">threads</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">8</span>
 </code></pre></div>
 
+<blockquote>
+<p><strong>실무 팁 💡</strong>
+<code>threads</code>는 dbt가 병렬로 실행할 모델 수를 제한한다. PostgreSQL은 4-8, Snowflake/BigQuery는 16-32까지 늘릴 수 있다. DW의 동시 쿼리 제한을 보고 결정한다.</p>
+</blockquote>
 <hr />
-<h2 id="6-docker-컨테이너-설치">6. Docker 컨테이너 설치</h2>
-<h3 id="6-1-dbt-core-docker-설치">6-1. dbt Core Docker 설치</h3>
+<h2 id="7-docker-컨테이너-설치--실전">7. Docker 컨테이너 설치 — 실전</h2>
+<h3 id="7-1-왜-docker로-설치하나">7-1. 왜 Docker로 설치하나?</h3>
+<p>dbt를 로컬에 직접 설치하면:</p>
+<ul>
+<li>Python 버전 충돌 (dbt 1.9는 Python 3.9-3.12)</li>
+<li>어댑터 버전 충돌 (특히 dbt-oracle)</li>
+<li>팀원마다 환경이 달라짐 → "내 PC에선 돌아가는데?"</li>
+</ul>
+<p>Docker로 격리하면 이 문제들이 사라진다.</p>
+<h3 id="7-2-dbt-core-docker-설치">7-2. dbt Core Docker 설치</h3>
 <h4 id="dockerfile">Dockerfile</h4>
+<blockquote>
+<p><strong>이 코드가 하는 일:</strong> Python 3.11 베이스에 dbt-core 1.9 + dbt-postgres 1.9를 설치하는 Dockerfile. dbt 프로젝트 디렉토리를 <code>/dbt</code>로 마운트하고 <code>DBT_PROFILES_DIR</code>로 profiles.yml 위치를 지정한다.</p>
+</blockquote>
 <div class="codehilite"><pre><span></span><code><span class="c"># Dockerfile.dbt</span>
 <span class="k">FROM</span><span class="w"> </span><span class="s">python:3.11-slim</span>
 
@@ -931,6 +1501,9 @@ graph LR
 </code></pre></div>
 
 <h4 id="docker-composeyml">docker-compose.yml</h4>
+<blockquote>
+<p><strong>이 코드가 하는 일:</strong> dbt 서비스와 PostgreSQL을 함께 띄우는 compose 파일. <code>profiles</code> 섹션의 <code>dbt</code> 라벨로 dbt 서비스는 평소엔 안 띄우고 명시적으로만 실행된다.</p>
+</blockquote>
 <div class="codehilite"><pre><span></span><code><span class="c1"># docker-compose.dbt.yml</span>
 <span class="nt">version</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;3.8&quot;</span>
 
@@ -981,8 +1554,42 @@ docker<span class="w"> </span>compose<span class="w"> </span>-f<span class="w"> 
 docker<span class="w"> </span>compose<span class="w"> </span>-f<span class="w"> </span>docker-compose.dbt.yml<span class="w"> </span>run<span class="w"> </span>--rm<span class="w"> </span>dbt<span class="w"> </span>docs<span class="w"> </span>generate<span class="w">  </span><span class="c1"># 문서 생성</span>
 </code></pre></div>
 
-<h3 id="6-2-oracle-연결-docker-설정">6-2. Oracle 연결 Docker 설정</h3>
-<p>Oracle 연결에는 <code>python-oracledb</code> (thin 모드) 또는 Oracle Instant Client가 필요하다. Dockerfile에서 <code>dbt-oracle</code>과 <code>oracledb</code>를 추가 설치하고, 필요 시 <code>libaio1</code>을 포함한다.</p>
+<h3 id="7-3-oracle-연결-docker--진짜-어려운-부분">7-3. Oracle 연결 Docker — 진짜 어려운 부분</h3>
+<p>Oracle 연결은 dbt 도입 시 가장 골치 아픈 부분 중 하나다. 이유는:</p>
+<ol>
+<li>Oracle Instant Client (C 라이브러리) 의존성</li>
+<li>라이선스 동의 절차</li>
+<li>아키텍처별 (x86_64 vs arm64) 바이너리 분리</li>
+</ol>
+<h4 id="thin-모드-vs-thick-모드">thin 모드 vs thick 모드</h4>
+<table>
+<thead>
+<tr>
+<th>모드</th>
+<th>설명</th>
+<th>장점</th>
+<th>단점</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><strong>thin</strong></td>
+<td>순수 Python 구현</td>
+<td>Instant Client 불필요, Docker 단순</td>
+<td>일부 고급 기능 제한</td>
+</tr>
+<tr>
+<td><strong>thick</strong></td>
+<td>Oracle Instant Client 사용</td>
+<td>모든 기능 지원</td>
+<td>C 라이브러리 설치 복잡</td>
+</tr>
+</tbody>
+</table>
+<blockquote>
+<p><strong>실무 팁 💡</strong>
+Oracle 19c 이상을 쓰고 있고 일반적인 read/write만 필요하다면 <strong>thin 모드</strong>를 써라. Docker 이미지 크기가 절반 이하로 줄고 빌드 시간도 짧다.</p>
+</blockquote>
 <div class="codehilite"><pre><span></span><code><span class="c"># Dockerfile.dbt-oracle (PostgreSQL 버전과 차이점만)</span>
 <span class="k">RUN</span><span class="w"> </span>pip<span class="w"> </span>install<span class="w"> </span>--no-cache-dir<span class="w"> </span>dbt-core<span class="o">==</span><span class="m">1</span>.9.*<span class="w"> </span>dbt-oracle<span class="o">==</span><span class="m">1</span>.9.*<span class="w"> </span>oracledb
 <span class="c"># (선택) Oracle Instant Client - thick 모드 필요 시</span>
@@ -991,8 +1598,12 @@ docker<span class="w"> </span>compose<span class="w"> </span>-f<span class="w"> 
 </code></pre></div>
 
 <p>docker-compose에서는 <code>ORACLE_USER</code>, <code>ORACLE_PASSWORD</code> 환경 변수를 전달하고, 외부 Oracle DB는 <code>extra_hosts</code>로 연결한다.</p>
-<h3 id="6-3-airflow와-연동">6-3. Airflow와 연동</h3>
-<h4 id="방법-1-bashoperator">방법 1: BashOperator</h4>
+<h3 id="7-4-airflow와-연동--실무-패턴">7-4. Airflow와 연동 — 실무 패턴</h3>
+<p>dbt를 Airflow에서 트리거하는 방법은 두 가지다.</p>
+<h4 id="방법-1-bashoperator--단순하지만-한계">방법 1: BashOperator — 단순하지만 한계</h4>
+<blockquote>
+<p><strong>이 코드가 하는 일:</strong> 매일 07:00에 dbt deps → run → test 순서로 실행하는 Airflow DAG. 각 단계를 별도 task로 분리해 실패 지점을 명확히 한다.</p>
+</blockquote>
 <div class="codehilite"><pre><span></span><code><span class="c1"># airflow/dags/dag_dbt_run.py</span>
 <span class="kn">from</span><span class="w"> </span><span class="nn">airflow</span><span class="w"> </span><span class="kn">import</span> <span class="n">DAG</span>
 <span class="kn">from</span><span class="w"> </span><span class="nn">airflow.operators.bash</span><span class="w"> </span><span class="kn">import</span> <span class="n">BashOperator</span>
@@ -1006,61 +1617,52 @@ docker<span class="w"> </span>compose<span class="w"> </span>-f<span class="w"> 
     <span class="n">dbt_deps</span> <span class="o">&gt;&gt;</span> <span class="n">dbt_run</span> <span class="o">&gt;&gt;</span> <span class="n">dbt_test</span>
 </code></pre></div>
 
-<h4 id="방법-2-cosmos-astronomer">방법 2: Cosmos (Astronomer)</h4>
-<p>Cosmos(<code>astronomer-cosmos</code>)는 dbt 프로젝트를 Airflow DAG로 자동 변환하는 통합 패키지다. 모델 단위로 task가 생성되어 세밀한 재시도와 모니터링이 가능하다. <code>DbtTaskGroup</code>을 사용하면 dbt 모델 DAG가 Airflow task로 1:1 매핑된다.</p>
+<p><strong>한계:</strong> 모델 100개를 task 3개로 묶기 때문에 한 모델 실패 시 전체 재실행이 비효율적이다.</p>
+<h4 id="방법-2-cosmos--dbt-모델--airflow-task">방법 2: Cosmos — dbt 모델 = Airflow task</h4>
+<p>Cosmos(<code>astronomer-cosmos</code>)는 dbt 프로젝트를 Airflow DAG로 자동 변환하는 통합 패키지다.</p>
+<div class="mermaid">
+graph LR
+    A[dbt 모델 100개] -->|Cosmos| B[Airflow Task 100개]
+    B --> C[모델별 재시도]
+    B --> D[모델별 모니터링]
+    B --> E[부분 재실행]
+
+    style A fill:#3498db,color:#fff
+    style B fill:#2ecc71,color:#fff
+</div>
+
+<p><strong>장점:</strong></p>
+<ul>
+<li>모델 단위로 task가 생성되어 세밀한 재시도와 모니터링 가능</li>
+<li>한 모델 실패 시 그 모델만 재실행</li>
+<li>Airflow UI에서 dbt DAG가 그대로 시각화됨</li>
+<li><code>DbtTaskGroup</code>으로 dbt 모델 DAG가 Airflow task로 1:1 매핑</li>
+</ul>
+<blockquote>
+<p><strong>실무 팁 💡</strong>
+모델이 30개 이상이고 운영 안정성이 중요하면 Cosmos를 권장한다. 모델 5-10개 수준의 작은 프로젝트는 BashOperator로 충분하다.</p>
+</blockquote>
 <hr />
-<h2 id="7-프로젝트-구조">7. 프로젝트 구조</h2>
-<h3 id="7-1-디렉토리-구조">7-1. 디렉토리 구조</h3>
+<h2 id="8-프로젝트-구조--실전-베스트">8. 프로젝트 구조 — 실전 베스트</h2>
+<h3 id="8-1-표준-디렉토리-구조">8-1. 표준 디렉토리 구조</h3>
 <div class="codehilite"><pre><span></span><code><span class="nx">dbt_project</span><span class="o">/</span>
-<span class="err">├──</span><span class="w"> </span><span class="nx">dbt_project</span><span class="p">.</span><span class="nx">yml</span><span class="w">       </span><span class="err">#</span><span class="w"> </span><span class="nx">프로젝트</span><span class="w"> </span><span class="nx">설정</span>
+<span class="err">├──</span><span class="w"> </span><span class="nx">dbt_project</span><span class="p">.</span><span class="nx">yml</span><span class="w">       </span><span class="err">#</span><span class="w"> </span><span class="nx">프로젝트</span><span class="w"> </span><span class="nx">설정</span><span class="w"> </span><span class="p">(</span><span class="nx">이름</span><span class="p">,</span><span class="w"> </span><span class="nx">어댑터</span><span class="p">,</span><span class="w"> </span><span class="nx">materialization</span><span class="w"> </span><span class="nx">기본값</span><span class="p">)</span>
 <span class="err">├──</span><span class="w"> </span><span class="nx">profiles</span><span class="p">.</span><span class="nx">yml</span><span class="w">          </span><span class="err">#</span><span class="w"> </span><span class="nx">DB</span><span class="w"> </span><span class="nx">연결</span><span class="w"> </span><span class="p">(</span><span class="nx">보통</span><span class="w"> </span><span class="o">~/</span><span class="p">.</span><span class="nx">dbt</span><span class="o">/</span><span class="p">)</span>
-<span class="err">├──</span><span class="w"> </span><span class="nx">packages</span><span class="p">.</span><span class="nx">yml</span><span class="w">          </span><span class="err">#</span><span class="w"> </span><span class="nx">외부</span><span class="w"> </span><span class="nx">패키지</span>
+<span class="err">├──</span><span class="w"> </span><span class="nx">packages</span><span class="p">.</span><span class="nx">yml</span><span class="w">          </span><span class="err">#</span><span class="w"> </span><span class="nx">외부</span><span class="w"> </span><span class="nx">패키지</span><span class="w"> </span><span class="nx">의존성</span>
 <span class="err">├──</span><span class="w"> </span><span class="nx">models</span><span class="o">/</span>
-<span class="err">│</span><span class="w">   </span><span class="err">├──</span><span class="w"> </span><span class="nx">staging</span><span class="o">/</span><span class="w">          </span><span class="err">#</span><span class="w"> </span><span class="nx">Bronze</span><span class="p">:</span><span class="w"> </span><span class="nx">raw</span><span class="w"> </span><span class="nx">정제</span><span class="w"> </span><span class="p">(</span><span class="nx">_sources</span><span class="p">.</span><span class="nx">yml</span><span class="p">,</span><span class="w"> </span><span class="nx">_schema</span><span class="p">.</span><span class="nx">yml</span><span class="p">,</span><span class="w"> </span><span class="nx">stg_</span><span class="o">*</span><span class="p">.</span><span class="nx">sql</span><span class="p">)</span>
-<span class="err">│</span><span class="w">   </span><span class="err">├──</span><span class="w"> </span><span class="nx">intermediate</span><span class="o">/</span><span class="w">     </span><span class="err">#</span><span class="w"> </span><span class="nx">Silver</span><span class="p">:</span><span class="w"> </span><span class="nx">비즈니스</span><span class="w"> </span><span class="nx">로직</span><span class="w"> </span><span class="nx">조합</span><span class="w"> </span><span class="p">(</span><span class="nx">int_</span><span class="o">*</span><span class="p">.</span><span class="nx">sql</span><span class="p">)</span>
-<span class="err">│</span><span class="w">   </span><span class="err">├──</span><span class="w"> </span><span class="nx">marts</span><span class="o">/</span><span class="w">            </span><span class="err">#</span><span class="w"> </span><span class="nx">Gold</span><span class="p">:</span><span class="w"> </span><span class="nx">최종</span><span class="w"> </span><span class="nx">소비</span><span class="w"> </span><span class="nx">테이블</span><span class="w"> </span><span class="p">(</span><span class="nx">mart_</span><span class="o">*</span><span class="p">.</span><span class="nx">sql</span><span class="p">)</span>
+<span class="err">│</span><span class="w">   </span><span class="err">├──</span><span class="w"> </span><span class="nx">staging</span><span class="o">/</span><span class="w">          </span><span class="err">#</span><span class="w"> </span><span class="err">★</span><span class="w"> </span><span class="nx">Bronze</span><span class="p">:</span><span class="w"> </span><span class="nx">raw</span><span class="w"> </span><span class="nx">정제</span><span class="w"> </span><span class="p">(</span><span class="nx">_sources</span><span class="p">.</span><span class="nx">yml</span><span class="p">,</span><span class="w"> </span><span class="nx">_schema</span><span class="p">.</span><span class="nx">yml</span><span class="p">,</span><span class="w"> </span><span class="nx">stg_</span><span class="o">*</span><span class="p">.</span><span class="nx">sql</span><span class="p">)</span>
+<span class="err">│</span><span class="w">   </span><span class="err">├──</span><span class="w"> </span><span class="nx">intermediate</span><span class="o">/</span><span class="w">     </span><span class="err">#</span><span class="w"> </span><span class="err">★</span><span class="w"> </span><span class="nx">Silver</span><span class="p">:</span><span class="w"> </span><span class="nx">비즈니스</span><span class="w"> </span><span class="nx">로직</span><span class="w"> </span><span class="nx">조합</span><span class="w"> </span><span class="p">(</span><span class="nx">int_</span><span class="o">*</span><span class="p">.</span><span class="nx">sql</span><span class="p">)</span>
+<span class="err">│</span><span class="w">   </span><span class="err">├──</span><span class="w"> </span><span class="nx">marts</span><span class="o">/</span><span class="w">            </span><span class="err">#</span><span class="w"> </span><span class="err">★</span><span class="w"> </span><span class="nx">Gold</span><span class="p">:</span><span class="w"> </span><span class="nx">최종</span><span class="w"> </span><span class="nx">소비</span><span class="w"> </span><span class="nx">테이블</span><span class="w"> </span><span class="p">(</span><span class="nx">mart_</span><span class="o">*</span><span class="p">.</span><span class="nx">sql</span><span class="p">,</span><span class="w"> </span><span class="nx">dim_</span><span class="o">*</span><span class="p">,</span><span class="w"> </span><span class="nx">fct_</span><span class="o">*</span><span class="p">)</span>
 <span class="err">│</span><span class="w">   </span><span class="err">└──</span><span class="w"> </span><span class="nx">semantic</span><span class="o">/</span><span class="w">         </span><span class="err">#</span><span class="w"> </span><span class="nx">MetricFlow</span><span class="w"> </span><span class="nx">정의</span><span class="w"> </span><span class="p">(</span><span class="nx">sem_</span><span class="o">*</span><span class="p">.</span><span class="nx">yml</span><span class="p">,</span><span class="w"> </span><span class="nx">metrics_</span><span class="o">*</span><span class="p">.</span><span class="nx">yml</span><span class="p">)</span>
 <span class="err">├──</span><span class="w"> </span><span class="nx">tests</span><span class="o">/</span><span class="w">                </span><span class="err">#</span><span class="w"> </span><span class="nx">커스텀</span><span class="w"> </span><span class="nx">SQL</span><span class="w"> </span><span class="nx">테스트</span>
 <span class="err">├──</span><span class="w"> </span><span class="nx">seeds</span><span class="o">/</span><span class="w">                </span><span class="err">#</span><span class="w"> </span><span class="nx">CSV</span><span class="w"> </span><span class="nx">참조</span><span class="w"> </span><span class="nx">데이터</span>
 <span class="err">├──</span><span class="w"> </span><span class="nx">snapshots</span><span class="o">/</span><span class="w">            </span><span class="err">#</span><span class="w"> </span><span class="nx">SCD</span><span class="w"> </span><span class="nx">Type</span><span class="w"> </span><span class="mi">2</span><span class="w"> </span><span class="nx">이력</span><span class="w"> </span><span class="nx">추적</span>
 <span class="err">├──</span><span class="w"> </span><span class="nx">macros</span><span class="o">/</span><span class="w">               </span><span class="err">#</span><span class="w"> </span><span class="nx">재사용</span><span class="w"> </span><span class="nx">SQL</span><span class="w"> </span><span class="nx">함수</span>
-<span class="err">└──</span><span class="w"> </span><span class="nx">docs</span><span class="o">/</span><span class="w">                 </span><span class="err">#</span><span class="w"> </span><span class="nx">doc</span><span class="w"> </span><span class="nx">blocks</span>
+<span class="err">└──</span><span class="w"> </span><span class="nx">docs</span><span class="o">/</span><span class="w">                 </span><span class="err">#</span><span class="w"> </span><span class="nx">doc</span><span class="w"> </span><span class="nx">blocks</span><span class="w"> </span><span class="p">(</span><span class="nx">긴</span><span class="w"> </span><span class="nx">markdown</span><span class="w"> </span><span class="nx">설명</span><span class="p">)</span>
 </code></pre></div>
 
-<h3 id="7-2-dbt_projectyml-예시">7-2. dbt_project.yml 예시</h3>
-<div class="codehilite"><pre><span></span><code><span class="c1"># dbt_project.yml</span>
-<span class="nt">name</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">bip_pipeline</span>
-<span class="nt">version</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;1.0.0&quot;</span>
-<span class="nt">config-version</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">2</span>
-<span class="nt">profile</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">bip_pipeline</span>
-
-<span class="nt">model-paths</span><span class="p">:</span><span class="w"> </span><span class="p p-Indicator">[</span><span class="s">&quot;models&quot;</span><span class="p p-Indicator">]</span>
-<span class="nt">test-paths</span><span class="p">:</span><span class="w"> </span><span class="p p-Indicator">[</span><span class="s">&quot;tests&quot;</span><span class="p p-Indicator">]</span>
-<span class="nt">seed-paths</span><span class="p">:</span><span class="w"> </span><span class="p p-Indicator">[</span><span class="s">&quot;seeds&quot;</span><span class="p p-Indicator">]</span>
-<span class="nt">macro-paths</span><span class="p">:</span><span class="w"> </span><span class="p p-Indicator">[</span><span class="s">&quot;macros&quot;</span><span class="p p-Indicator">]</span>
-<span class="nt">snapshot-paths</span><span class="p">:</span><span class="w"> </span><span class="p p-Indicator">[</span><span class="s">&quot;snapshots&quot;</span><span class="p p-Indicator">]</span>
-
-<span class="nt">clean-targets</span><span class="p">:</span>
-<span class="w">  </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">target</span>
-<span class="w">  </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">dbt_packages</span>
-
-<span class="nt">models</span><span class="p">:</span>
-<span class="w">  </span><span class="nt">bip_pipeline</span><span class="p">:</span>
-<span class="w">    </span><span class="nt">staging</span><span class="p">:</span>
-<span class="w">      </span><span class="nt">+materialized</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">view</span>
-<span class="w">      </span><span class="nt">+schema</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">staging</span>
-<span class="w">    </span><span class="nt">intermediate</span><span class="p">:</span>
-<span class="w">      </span><span class="nt">+materialized</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">ephemeral</span>
-<span class="w">    </span><span class="nt">marts</span><span class="p">:</span>
-<span class="w">      </span><span class="nt">+materialized</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">table</span>
-<span class="w">      </span><span class="nt">+schema</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">analytics</span>
-
-<span class="nt">seeds</span><span class="p">:</span>
-<span class="w">  </span><span class="nt">bip_pipeline</span><span class="p">:</span>
-<span class="w">    </span><span class="nt">+schema</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">seeds</span>
-</code></pre></div>
-
-<h3 id="7-3-medallion-패턴-적용">7-3. Medallion 패턴 적용</h3>
+<h3 id="8-2-medallion-패턴-적용--bronzesilvergold">8-2. Medallion 패턴 적용 — Bronze/Silver/Gold</h3>
+<p>dbt 커뮤니티의 표준 layering 패턴이 Medallion 아키텍처와 1:1로 매핑된다.</p>
 <div class="mermaid">
 graph LR
     subgraph Bronze [staging - Bronze]
@@ -1095,40 +1697,91 @@ graph LR
     style Gold fill:#00b89433,stroke:#00b894,stroke-width:2px
 </div>
 
-<p><strong>네이밍 컨벤션:</strong></p>
+<p><strong>각 레이어의 역할:</strong></p>
 <table>
 <thead>
 <tr>
 <th>레이어</th>
 <th>접두사</th>
-<th>예시</th>
+<th>책임</th>
 <th>규칙</th>
 </tr>
 </thead>
 <tbody>
 <tr>
-<td>Staging</td>
+<td><strong>Staging</strong></td>
 <td><code>stg_</code></td>
-<td><code>stg_stock_prices</code></td>
-<td>소스별 1:1 매핑, 타입 캐스팅/리네이밍만</td>
+<td>소스 정제</td>
+<td>소스별 1:1 매핑, 타입 캐스팅/리네이밍만, 비즈니스 로직 금지</td>
 </tr>
 <tr>
-<td>Intermediate</td>
+<td><strong>Intermediate</strong></td>
 <td><code>int_</code></td>
-<td><code>int_daily_returns</code></td>
-<td>비즈니스 로직 조합, 여러 stg 조인</td>
+<td>비즈니스 로직 조합</td>
+<td>여러 stg 조인, 윈도우 함수, ephemeral materialization 권장</td>
 </tr>
 <tr>
-<td>Marts</td>
-<td><code>mart_</code></td>
-<td><code>mart_stock_summary</code></td>
-<td>최종 소비용, 도메인별 그룹핑</td>
+<td><strong>Marts</strong></td>
+<td><code>mart_</code>, <code>dim_</code>, <code>fct_</code></td>
+<td>최종 소비</td>
+<td>도메인별 그룹핑 (finance, marketing 등), table materialization 권장</td>
 </tr>
 </tbody>
 </table>
+<blockquote>
+<p><strong>함정 ⚠️</strong>
+staging 모델에 비즈니스 로직(JOIN, 복잡한 계산)을 넣지 마라. staging은 "raw 데이터를 깨끗이 닦는" 단계다. 한 번 오염되면 전체 레이어 구조가 무너진다.</p>
+</blockquote>
+<h3 id="8-3-dbt_projectyml--한-줄씩-읽기">8-3. dbt_project.yml — 한 줄씩 읽기</h3>
+<blockquote>
+<p><strong>이 코드가 하는 일:</strong> 프로젝트 설정 파일. 모델 경로, 레이어별 materialization 기본값, 스키마 분리를 정의한다. <code>+materialized: view</code>처럼 <code>+</code> 접두사가 붙은 키는 dbt 설정이다.</p>
+</blockquote>
+<div class="codehilite"><pre><span></span><code><span class="c1"># dbt_project.yml</span>
+<span class="nt">name</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">bip_pipeline</span><span class="w">                </span><span class="c1"># 프로젝트 이름</span>
+<span class="nt">version</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;1.0.0&quot;</span><span class="w">                  </span><span class="c1"># 버전</span>
+<span class="nt">config-version</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">2</span><span class="w">                 </span><span class="c1"># 설정 포맷 버전 (현재 2 고정)</span>
+<span class="nt">profile</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">bip_pipeline</span><span class="w">             </span><span class="c1"># profiles.yml에서 사용할 프로필 이름</span>
+
+<span class="c1"># 디렉토리 경로 (기본값 그대로)</span>
+<span class="nt">model-paths</span><span class="p">:</span><span class="w"> </span><span class="p p-Indicator">[</span><span class="s">&quot;models&quot;</span><span class="p p-Indicator">]</span>
+<span class="nt">test-paths</span><span class="p">:</span><span class="w"> </span><span class="p p-Indicator">[</span><span class="s">&quot;tests&quot;</span><span class="p p-Indicator">]</span>
+<span class="nt">seed-paths</span><span class="p">:</span><span class="w"> </span><span class="p p-Indicator">[</span><span class="s">&quot;seeds&quot;</span><span class="p p-Indicator">]</span>
+<span class="nt">macro-paths</span><span class="p">:</span><span class="w"> </span><span class="p p-Indicator">[</span><span class="s">&quot;macros&quot;</span><span class="p p-Indicator">]</span>
+<span class="nt">snapshot-paths</span><span class="p">:</span><span class="w"> </span><span class="p p-Indicator">[</span><span class="s">&quot;snapshots&quot;</span><span class="p p-Indicator">]</span>
+
+<span class="c1"># dbt clean 명령이 지울 디렉토리</span>
+<span class="nt">clean-targets</span><span class="p">:</span>
+<span class="w">  </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">target</span>
+<span class="w">  </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">dbt_packages</span>
+
+<span class="c1"># 모델별 기본 설정 (디렉토리 단위로 일괄 지정)</span>
+<span class="nt">models</span><span class="p">:</span>
+<span class="w">  </span><span class="nt">bip_pipeline</span><span class="p">:</span>
+<span class="w">    </span><span class="nt">staging</span><span class="p">:</span>
+<span class="w">      </span><span class="nt">+materialized</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">view</span><span class="w">         </span><span class="c1"># Bronze는 view (가벼움)</span>
+<span class="w">      </span><span class="nt">+schema</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">staging</span><span class="w">            </span><span class="c1"># 별도 스키마에 격리</span>
+<span class="w">    </span><span class="nt">intermediate</span><span class="p">:</span>
+<span class="w">      </span><span class="nt">+materialized</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">ephemeral</span><span class="w">    </span><span class="c1"># Silver는 CTE로 인라인 (DB에 안 만듦)</span>
+<span class="w">    </span><span class="nt">marts</span><span class="p">:</span>
+<span class="w">      </span><span class="nt">+materialized</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">table</span><span class="w">        </span><span class="c1"># Gold는 table (조회 빠름)</span>
+<span class="w">      </span><span class="nt">+schema</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">analytics</span><span class="w">          </span><span class="c1"># 분석가가 보는 스키마</span>
+
+<span class="nt">seeds</span><span class="p">:</span>
+<span class="w">  </span><span class="nt">bip_pipeline</span><span class="p">:</span>
+<span class="w">    </span><span class="nt">+schema</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">seeds</span><span class="w">                </span><span class="c1"># CSV 데이터는 별도 스키마</span>
+</code></pre></div>
+
+<p>이 설정의 의미:</p>
+<ul>
+<li>staging 모델은 모두 view로 만들고 staging 스키마에 둔다</li>
+<li>intermediate 모델은 모두 ephemeral (DB에 별도 객체 안 만듦)</li>
+<li>mart 모델은 모두 table로 만들고 analytics 스키마에 둔다</li>
+<li>각 모델 파일에서 개별 override 가능</li>
+</ul>
 <hr />
-<h2 id="8-dbt와-nl2sql-연동">8. dbt와 NL2SQL 연동</h2>
-<p>dbt는 데이터 변환과 메트릭 정의를 담당하고, NL2SQL 엔진(Cube, Agent 등)이 이를 활용하여 자연어 쿼리를 처리하는 구조다.</p>
+<h2 id="9-dbt와-nl2sql--agent에서-어떻게-쓰는가">9. dbt와 NL2SQL — Agent에서 어떻게 쓰는가</h2>
+<h3 id="큰-그림_1">큰 그림</h3>
+<p>dbt가 변환과 메트릭 정의를 담당하고, NL2SQL Agent가 그 결과물을 자연어 쿼리에 활용하는 구조다.</p>
 <div class="mermaid">
 graph LR
     A[Raw Tables] -->|dbt run| B[Gold Tables]
@@ -1143,15 +1796,77 @@ graph LR
     style C fill:#9b59b6,color:#fff
 </div>
 
-<h3 id="활용-방식">활용 방식</h3>
+<h3 id="활용-방식-3가지">활용 방식 3가지</h3>
 <ol>
-<li><strong>dbt가 Gold Table 생성</strong>: mart 레이어의 테이블을 dbt가 주기적으로 빌드</li>
-<li><strong>메타데이터 전달</strong>: <code>manifest.json</code>(모델 정의, 컬럼 설명)과 <code>catalog.json</code>(실제 스키마)을 Agent 컨텍스트로 활용</li>
-<li><strong>Semantic Layer API</strong> (dbt Cloud 전용): Agent가 dbt Semantic Layer API를 Tool로 호출하여 메트릭 쿼리 실행</li>
+<li><strong>dbt가 Gold Table 생성</strong> — mart 레이어의 테이블을 dbt가 주기적으로 빌드. NL2SQL은 잘 정제된 Gold만 본다.</li>
+<li><strong>메타데이터 전달</strong> — dbt가 만드는 <code>manifest.json</code>(모델 정의, 컬럼 설명, lineage)과 <code>catalog.json</code>(실제 스키마, row count)을 Agent의 컨텍스트로 활용. Agent가 "어떤 테이블이 있고, 어떤 컬럼이 무슨 의미인지" 안다.</li>
+<li><strong>Semantic Layer API</strong> (dbt Cloud 전용) — Agent가 dbt Semantic Layer API를 Tool로 호출하여 정의된 메트릭을 일관되게 쿼리.</li>
 </ol>
-<p>dbt Core에서는 Semantic Layer API를 사용할 수 없으므로, Cube.js REST API를 Agent Tool로 호출하는 방식을 권장한다.</p>
+<blockquote>
+<p><strong>함정 ⚠️</strong>
+dbt Core에서는 Semantic Layer API를 사용할 수 없으므로, 메트릭 API가 필요하면 <strong>Cube.js REST API를 Agent Tool로 호출하는 방식</strong>을 권장한다.</p>
+</blockquote>
+<h3 id="dbt-artifacts를-agent-컨텍스트로">dbt artifacts를 Agent 컨텍스트로</h3>
+<p><code>dbt docs generate</code> 결과물인 두 JSON 파일을 Agent가 활용한다.</p>
+<table>
+<thead>
+<tr>
+<th>파일</th>
+<th>내용</th>
+<th>Agent 활용</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>manifest.json</code></td>
+<td>모델 정의, lineage, description, test 정보</td>
+<td>테이블/컬럼 의미를 LLM 프롬프트에 주입</td>
+</tr>
+<tr>
+<td><code>catalog.json</code></td>
+<td>실제 스키마, 컬럼 타입, row count</td>
+<td>"어떤 컬럼이 있는지" 조회</td>
+</tr>
+</tbody>
+</table>
 <hr />
-<h2 id="9-cubejs-vs-dbt-비교">9. Cube.js vs dbt 비교</h2>
+<h2 id="10-cubejs-vs-dbt--언제-어느-쪽">10. Cube.js vs dbt — 언제 어느 쪽?</h2>
+<h3 id="한-줄-정리">한 줄 정리</h3>
+<blockquote>
+<p><strong>dbt는 "변환의 도구", Cube는 "API 서빙의 도구"다.</strong> 둘은 경쟁이 아니라 보완 관계다.</p>
+</blockquote>
+<h3 id="시나리오별-선택-가이드">시나리오별 선택 가이드</h3>
+<table>
+<thead>
+<tr>
+<th>상황</th>
+<th>추천</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>데이터 변환만 필요, BI는 별도</td>
+<td><strong>dbt 단독</strong></td>
+</tr>
+<tr>
+<td>변환은 끝났고 API 서빙만 필요</td>
+<td><strong>Cube 단독</strong></td>
+</tr>
+<tr>
+<td>변환 + 메트릭 + API 모두 필요</td>
+<td><strong>dbt + Cube 하이브리드</strong></td>
+</tr>
+<tr>
+<td>작은 프로젝트, 팀이 SQL에 익숙</td>
+<td><strong>dbt 단독</strong> (Cube 오버킬)</td>
+</tr>
+<tr>
+<td>멀티 BI 도구 + Agent 연동</td>
+<td><strong>dbt + Cube 하이브리드</strong></td>
+</tr>
+</tbody>
+</table>
+<h3 id="비교표">비교표</h3>
 <table>
 <thead>
 <tr>
@@ -1162,54 +1877,54 @@ graph LR
 </thead>
 <tbody>
 <tr>
-<td>역할</td>
+<td><strong>역할</strong></td>
 <td>데이터 변환 + 메트릭 정의</td>
 <td>메트릭 정의 + API 서빙</td>
 </tr>
 <tr>
-<td>실행 방식</td>
+<td><strong>실행 방식</strong></td>
 <td>배치 (SQL 변환, 스케줄 실행)</td>
 <td>실시간 (API 요청 시 쿼리)</td>
 </tr>
 <tr>
-<td>API 제공</td>
+<td><strong>API 제공</strong></td>
 <td>CLI만 (Cloud에서만 API)</td>
 <td>REST / GraphQL / SQL API</td>
 </tr>
 <tr>
-<td>캐싱</td>
+<td><strong>캐싱</strong></td>
 <td>없음 (테이블 구체화로 대체)</td>
 <td>Pre-aggregation 캐싱</td>
 </tr>
 <tr>
-<td>Oracle 지원</td>
+<td><strong>Oracle 지원</strong></td>
 <td>dbt-oracle (Oracle 공식 유지)</td>
 <td>node-oracledb (커뮤니티)</td>
 </tr>
 <tr>
-<td>메트릭 정의</td>
+<td><strong>메트릭 정의</strong></td>
 <td>YAML (MetricFlow)</td>
 <td>JavaScript (cube.js 파일)</td>
 </tr>
 <tr>
-<td>데이터 변환</td>
+<td><strong>데이터 변환</strong></td>
 <td>핵심 기능 (SQL 모델링)</td>
 <td>없음 (쿼리만)</td>
 </tr>
 <tr>
-<td>문서화</td>
+<td><strong>문서화</strong></td>
 <td>내장 (dbt docs)</td>
 <td>별도 구성 필요</td>
 </tr>
 <tr>
-<td>테스트</td>
+<td><strong>테스트</strong></td>
 <td>내장 (schema + custom tests)</td>
 <td>없음</td>
 </tr>
 </tbody>
 </table>
 <h3 id="함께-쓰기-dbt--cube-하이브리드">함께 쓰기: dbt + Cube 하이브리드</h3>
-<p>가장 강력한 조합은 <strong>dbt(변환) + Cube(API 서빙)</strong> 이다.</p>
+<p>가장 강력한 조합은 <strong>dbt(변환) + Cube(API 서빙)</strong> 이다. 각자 잘하는 일을 한다.</p>
 <div class="mermaid">
 graph LR
     A[Raw Data] -->|Airflow| B[Warehouse]
@@ -1217,82 +1932,119 @@ graph LR
     C -->|Cube.js| D[REST API]
     D --> E[Frontend]
     D --> F[NL2SQL Agent]
+    D --> G[BI Tools]
 
     style C fill:#ffd700,color:#000
     style D fill:#8e44ad,color:#fff
 </div>
 
+<p><strong>역할 분담:</strong></p>
 <ul>
-<li>dbt: 스케줄 기반으로 데이터 변환, 테스트, 문서화</li>
-<li>Cube: Gold Table 위에 메트릭 정의, 캐싱, API 서빙</li>
-<li>NL2SQL Agent: Cube API를 Tool로 호출하여 자연어 쿼리 처리</li>
+<li><strong>dbt:</strong> 스케줄 기반 데이터 변환, 테스트, 문서화 (배치)</li>
+<li><strong>Cube:</strong> Gold Table 위에 메트릭 정의, 캐싱, REST API 서빙 (실시간)</li>
+<li><strong>NL2SQL Agent:</strong> Cube API를 Tool로 호출하여 자연어 쿼리 처리</li>
 </ul>
+<blockquote>
+<p><strong>실무 팁 💡</strong>
+둘 다 메트릭을 정의할 수 있어서 처음엔 헷갈린다. 원칙은 <strong>"변환은 dbt, 서빙용 메트릭은 Cube"</strong>. dbt에서 mart 테이블까지 만들고, Cube에서 그 위에 cube/measure를 얹는다.</p>
+</blockquote>
 <hr />
-<h2 id="10-bip-경험과의-매핑">10. BIP 경험과의 매핑</h2>
-<p>현재 BIP-Pipeline에서 Airflow DAG가 수행하는 역할과 dbt의 대응 관계를 정리한다.</p>
+<h2 id="11-bip-경험과의-매핑">11. BIP 경험과의 매핑</h2>
+<h3 id="현재-bip-pipeline의-상황">현재 BIP-Pipeline의 상황</h3>
+<p>현재 BIP-Pipeline에서 Airflow DAG가 dbt의 역할을 일부 대체하고 있다. 변환 로직이 Python DAG 내부 SQL로 흩어져 있다.</p>
 <table>
 <thead>
 <tr>
 <th>현재 (Airflow DAG)</th>
 <th>dbt 대응</th>
+<th>이전 효과</th>
 </tr>
 </thead>
 <tbody>
 <tr>
 <td><code>dag_daily_loader</code> (주가 수집)</td>
 <td>Extract/Load - dbt 범위 밖</td>
+<td>변경 없음</td>
 </tr>
 <tr>
 <td>SQL 변환 로직 (Python 내 SQL)</td>
 <td><code>models/</code> 디렉토리의 SQL 모델</td>
+<td>코드 가독성, lineage 자동</td>
 </tr>
 <tr>
 <td>데이터 품질 체크 (수동)</td>
 <td><code>tests/</code> 자동 테스트</td>
+<td>자정 빌드 후 자동 검증</td>
 </tr>
 <tr>
 <td>테이블 설명 (OM에 수동 등록)</td>
 <td>YAML description (자동 생성)</td>
+<td>코드와 문서 동기화</td>
 </tr>
 <tr>
 <td>DAG lineage (OM 연동)</td>
 <td>dbt lineage (자동 추적)</td>
+<td>컬럼 레벨 lineage</td>
 </tr>
 <tr>
 <td><code>indicator_context_snapshot</code> 생성</td>
 <td><code>models/marts/mart_indicator_context.sql</code></td>
+<td>의존성 명시</td>
 </tr>
 </tbody>
 </table>
 <h3 id="마이그레이션-검토-포인트">마이그레이션 검토 포인트</h3>
+<p>dbt를 즉시 전면 도입하기보다는 다음 단계로 점진 도입하는 것이 안전하다.</p>
 <ol>
-<li><strong>점진적 도입</strong>: 기존 Airflow DAG의 변환 로직만 dbt로 분리하고, 오케스트레이션은 Airflow가 유지</li>
-<li><strong>Cosmos 활용</strong>: Airflow + dbt 통합 시 Cosmos 패키지로 모델별 task 자동 생성</li>
-<li><strong>하이브리드 구성</strong>: dbt(변환/테스트/문서) + Cube(API 서빙) + Airflow(스케줄링)</li>
+<li><strong>점진적 도입</strong> — 기존 Airflow DAG의 변환 로직만 dbt로 분리하고, 오케스트레이션은 Airflow가 유지. EL은 그대로 두고 T만 dbt로 옮긴다.</li>
+<li><strong>Cosmos 활용</strong> — Airflow + dbt 통합 시 Cosmos 패키지로 모델별 task 자동 생성. 기존 Airflow 운영 노하우를 살린다.</li>
+<li><strong>하이브리드 구성</strong> — dbt(변환/테스트/문서) + Cube(API 서빙) + Airflow(스케줄링)로 역할 분리.</li>
+<li><strong>OM 연동 유지</strong> — dbt manifest를 OpenMetadata에 ingest해서 기존 카탈로그를 풍부화.</li>
 </ol>
+<blockquote>
+<p><strong>실무 팁 💡</strong>
+한 번에 다 바꾸려 하지 말고, 새 mart를 만들 때만 dbt로 작성하는 식으로 점진 도입하는 것이 위험을 최소화한다.</p>
+</blockquote>
 <hr />
-<h2 id="11-주의사항">11. 주의사항</h2>
-<ol>
-<li>
-<p><strong>dbt Semantic Layer API는 dbt Cloud 유료 전용</strong>이다. dbt Core만으로는 메트릭을 API로 서빙할 수 없다. API 서빙이 필요하면 Cube.js 등 별도 도구를 사용해야 한다.</p>
-</li>
-<li>
-<p><strong>dbt Core만으로는 실시간 API 서빙 불가</strong>하다. dbt는 배치 변환 도구이므로, 실시간 쿼리 API가 필요하면 Cube.js, Metriql 등을 별도 구성해야 한다.</p>
-</li>
-<li>
-<p><strong>Oracle 어댑터는 커뮤니티 지원</strong>이다. Oracle이 직접 유지하지만, dbt Labs 공식 어댑터 대비 기능 격차나 버전 지연이 있을 수 있다.</p>
-</li>
-<li>
-<p><strong>profiles.yml에 비밀값 직접 기재 금지</strong>. 반드시 <code>env_var()</code> 함수로 환경 변수를 참조해야 한다.</p>
-</li>
-<li>
-<p><strong>incremental 모델 주의</strong>: <code>is_incremental()</code> 조건을 잘못 설정하면 데이터 누락이나 중복이 발생할 수 있다. unique_key 설정을 반드시 확인해야 한다.</p>
-</li>
-<li>
-<p><strong>dbt run과 dbt test 분리</strong>: <code>dbt build</code> 명령은 모델 빌드와 테스트를 함께 실행하지만, 프로덕션에서는 분리 실행하여 실패 지점을 명확히 파악하는 것이 좋다.</p>
-</li>
-</ol>
-<h2 id="12-참고">12. 참고</h2>
+<h2 id="12-주의사항">12. 주의사항</h2>
+<p>dbt 도입 시 자주 마주치는 함정들을 정리한다.</p>
+<h3 id="12-1-dbt-semantic-layer-api는-dbt-cloud-유료-전용">12-1. dbt Semantic Layer API는 dbt Cloud 유료 전용</h3>
+<p>dbt Core만으로는 메트릭을 API로 서빙할 수 없다. API 서빙이 필요하면 Cube.js 등 별도 도구를 사용해야 한다. 이걸 모르고 dbt Core를 도입했다가 <strong>"메트릭 API가 안 되네?"</strong> 라며 당황하는 사례가 흔하다.</p>
+<h3 id="12-2-dbt-core만으로는-실시간-api-서빙-불가">12-2. dbt Core만으로는 실시간 API 서빙 불가</h3>
+<p>dbt는 배치 변환 도구이므로, 실시간 쿼리 API가 필요하면 Cube.js, Metriql 등을 별도 구성해야 한다. dbt 자체는 SQL을 컴파일해서 DW에 실행하고 끝나는 도구다.</p>
+<h3 id="12-3-oracle-어댑터는-커뮤니티-지원">12-3. Oracle 어댑터는 커뮤니티 지원</h3>
+<p>Oracle이 직접 유지하지만, dbt Labs 공식 어댑터 대비 기능 격차나 버전 지연이 있을 수 있다. 새 dbt 버전 출시 후 Oracle 어댑터가 호환되기까지 시간이 걸릴 수 있으므로, 운영에서는 어댑터/dbt-core 버전을 핀(pin)으로 묶어라.</p>
+<h3 id="12-4-profilesyml에-비밀값-직접-기재-금지">12-4. profiles.yml에 비밀값 직접 기재 금지</h3>
+<p>반드시 <code>env_var()</code> 함수로 환경 변수를 참조해야 한다. 평문으로 기재하면 Git에 비밀값이 흘러간다.</p>
+<div class="codehilite"><pre><span></span><code><span class="c1"># 잘못된 예</span>
+<span class="nt">pass</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;my_real_password&quot;</span>
+
+<span class="c1"># 올바른 예</span>
+<span class="nt">pass</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;{{</span><span class="nv"> </span><span class="s">env_var(&#39;POSTGRES_PASSWORD&#39;)</span><span class="nv"> </span><span class="s">}}&quot;</span>
+</code></pre></div>
+
+<h3 id="12-5-incremental-모델-함정">12-5. Incremental 모델 함정</h3>
+<p><code>is_incremental()</code> 조건을 잘못 설정하면 데이터 누락이나 중복이 발생할 수 있다.</p>
+<ul>
+<li><code>unique_key</code> 누락 → 같은 PK가 여러 번 INSERT (중복)</li>
+<li><code>WHERE</code> 조건이 너무 좁음 → 신규분 누락</li>
+<li><code>WHERE</code> 조건이 너무 넓음 → 같은 행 재INSERT (중복)</li>
+</ul>
+<p><strong>유사 시 대응:</strong> <code>dbt run --full-refresh</code>로 전체 재생성 후 다시 incremental로 복귀.</p>
+<h3 id="12-6-dbt-run과-dbt-test-분리">12-6. dbt run과 dbt test 분리</h3>
+<p><code>dbt build</code> 명령은 모델 빌드와 테스트를 함께 실행하지만, 프로덕션에서는 분리 실행하여 실패 지점을 명확히 파악하는 것이 좋다. Airflow에서는 <code>dbt run</code> task → <code>dbt test</code> task로 나눠라.</p>
+<h3 id="12-7-snapshot은-dbt-run에-포함-안-됨">12-7. snapshot은 dbt run에 포함 안 됨</h3>
+<p>별도로 <code>dbt snapshot</code> 호출이 필요하다. Airflow DAG 짤 때 빠뜨리기 쉬운 부분이다.</p>
+<h3 id="12-8-ref를-직접-sql-경로로-우회하지-말-것">12-8. ref()를 직접 SQL 경로로 우회하지 말 것</h3>
+<p><code>{{ ref('stg_orders') }}</code> 대신 <code>FROM stockdb.public.stg_orders</code>라고 하드코딩하면:</p>
+<ul>
+<li>dbt가 의존성을 인식 못 함</li>
+<li>dev/prod 환경 전환 안 됨</li>
+<li>lineage 끊김</li>
+</ul>
+<hr />
+<h2 id="13-참고">13. 참고</h2>
+<h3 id="공식-문서">공식 문서</h3>
 <ul>
 <li>공식 문서: <a href="https://docs.getdbt.com">https://docs.getdbt.com</a></li>
 <li>GitHub: <a href="https://github.com/dbt-labs/dbt-core">https://github.com/dbt-labs/dbt-core</a></li>
@@ -1302,6 +2054,20 @@ graph LR
 <li>dbt 패키지 허브: <a href="https://hub.getdbt.com">https://hub.getdbt.com</a></li>
 <li>Cube.js 공식: <a href="https://cube.dev/docs">https://cube.dev/docs</a></li>
 </ul>
+<h3 id="bip-내부-문서">BIP 내부 문서</h3>
+<ul>
+<li><code>docs/wrenai_technical_guide.md</code> — Wren AI 기술 가이드 (NL2SQL 엔진 비교)</li>
+<li><code>docs/data_architecture_review.md</code> — BIP 전체 데이터 아키텍처</li>
+<li><code>docs/metadata_governance.md</code> — 메타데이터 거버넌스 (dbt 도입 시 영향 범위)</li>
+</ul>
+<h3 id="추천-학습-순서">추천 학습 순서</h3>
+<ol>
+<li>dbt Fundamentals (공식 무료 코스): https://courses.getdbt.com</li>
+<li>Jaffle Shop 예제 프로젝트로 손에 익히기</li>
+<li>dbt-utils 패키지 매크로 둘러보기</li>
+<li>Medallion 패턴(Bronze/Silver/Gold) 적용 실습</li>
+<li>Cosmos로 Airflow 통합 (운영 단계)</li>
+</ol>
 <hr />
 <h2 id="변경-이력">변경 이력</h2>
 <table>
@@ -1315,6 +2081,14 @@ graph LR
 <tr>
 <td>2026-04-18</td>
 <td>초안 작성</td>
+</tr>
+<tr>
+<td>2026-04-19</td>
+<td>표준 포맷 정리</td>
+</tr>
+<tr>
+<td>2026-04-29</td>
+<td>설명 위주로 전면 재작성 (비유, Why-What-How, 함정/실무 팁 박스, 시나리오 추가, 13 섹션 구조)</td>
 </tr>
 </tbody>
 </table>
