@@ -435,12 +435,12 @@ graph TB
         direction LR
         O1[Concept Graph]
         O2[Stock ↔ Sector ↔ Theme]
-        O3[Competitor / Supplier]
+        O3["Competitor / Supplier"]
     end
 
     subgraph L3["Layer 3: NL2SQL Engine (Wren AI)"]
         direction LR
-        S1[MDL: alias / join / metric shell]
+        S1["MDL: alias / join / metric shell"]
         S2[SQL Pairs + Instructions]
         S3[Replaceable NL2SQLEngine Interface]
     end
@@ -469,11 +469,11 @@ graph TB
     L3 <-->|sync| L2
     L4 <-->|MAPS_TO| L2
 
-    style L5 fill:#e1bee7
-    style L4 fill:#c5e1a5
-    style L3 fill:#ffe082
-    style L2 fill:#90caf9
-    style L1 fill:#b0bec5
+    style L5 fill:#e1bee7,color:#1a1a2e
+    style L4 fill:#c5e1a5,color:#1a1a2e
+    style L3 fill:#ffe082,color:#1a1a2e
+    style L2 fill:#90caf9,color:#1a1a2e
+    style L1 fill:#b0bec5,color:#1a1a2e
     style L5 fill:#4f8fea33,stroke:#4f8fea,stroke-width:2px
     style L4 fill:#6c5ce733,stroke:#6c5ce7,stroke-width:2px
     style L3 fill:#00b89433,stroke:#00b894,stroke-width:2px
@@ -725,8 +725,8 @@ sequenceDiagram
 graph LR
     subgraph Semantic["Semantic Layer"]
         G["Gold Tables\n(안정적 base metrics)"]
-        V["Curated Views\n(threshold/분류 SSOT)"]
-        M["Wren AI MDL\n(alias/join/metric shell)"]
+        V["Curated Views\n("threshold/분류 SSOT")"]
+        M["Wren AI MDL\n("alias/join/metric shell")"]
         O["OM description\n(display only)"]
 
         G -->|base data| V
@@ -735,14 +735,14 @@ graph LR
         O -.sync.-> M
     end
 
-    A[Agent / User] -->|NL2SQL query| M
+    A["Agent / User"] -->|NL2SQL query| M
     M -->|SQL SELECT| V
     M -->|SQL SELECT| G
-    V & G -->|reads| DB[(PostgreSQL)]
+    V & G -->|reads| DB["(PostgreSQL)"]
 
-    style G fill:#c8e6c9
-    style V fill:#ffecb3
-    style M fill:#fff59d
+    style G fill:#c8e6c9,color:#1a1a2e
+    style V fill:#ffecb3,color:#1a1a2e
+    style M fill:#fff59d,color:#1a1a2e
     style Semantic fill:#4f8fea33,stroke:#4f8fea,stroke-width:2px
 </div>
 
@@ -814,12 +814,12 @@ graph TB
     A -->|1. 개념 해석| N[Neo4j]
     N -->|candidate 확장| A
     A -->|2. SQL 생성| W[Wren AI]
-    W -->|SELECT ...| PG[(PostgreSQL)]
+    W -->|SELECT ...| PG["(PostgreSQL)"]
     PG -->|결과| A
     A -->|3. 설명| LLM[LLM]
 
-    style N fill:#c5e1a5
-    style W fill:#ffe082
+    style N fill:#c5e1a5,color:#1a1a2e
+    style W fill:#ffe082,color:#1a1a2e
 </div>
 
 <p><strong>Node Labels:</strong></p>
@@ -875,11 +875,11 @@ flowchart LR
     S4 --> S5["Stage 5\nResult Analyzer\n(LLM 1회)"]
     S5 --> R[답변]
 
-    style S1 fill:#b3e5fc
-    style S2 fill:#b3e5fc
-    style S3 fill:#b3e5fc
-    style S4 fill:#ffccbc
-    style S5 fill:#ffccbc
+    style S1 fill:#b3e5fc,color:#1a1a2e
+    style S2 fill:#b3e5fc,color:#1a1a2e
+    style S3 fill:#b3e5fc,color:#1a1a2e
+    style S4 fill:#ffccbc,color:#1a1a2e
+    style S5 fill:#ffccbc,color:#1a1a2e
 </div>
 
 <p>Stage 1-3은 결정론, Stage 4-5만 LLM 호출 (최대 2회).</p>
@@ -1574,11 +1574,11 @@ graph LR
     P3 --> P4["Phase 4\n문서 검색\n공시/리서치"]
     P4 --> P5["Phase 5\n인과/추론\n멀티스텝 종합"]
 
-    style P1 fill:#e8f5e9
-    style P2 fill:#fff9c4
-    style P3 fill:#ffe0b2
-    style P4 fill:#ffccbc
-    style P5 fill:#ffcdd2
+    style P1 fill:#e8f5e9,color:#1a1a2e
+    style P2 fill:#fff9c4,color:#1a1a2e
+    style P3 fill:#ffe0b2,color:#1a1a2e
+    style P4 fill:#ffccbc,color:#1a1a2e
+    style P5 fill:#ffcdd2,color:#1a1a2e
 </div>
 
 <h3 id="13-3-리스크-대응">13-3. 리스크 대응</h3>

@@ -411,7 +411,7 @@ graph LR
     C -->|ref 함수| D[Mart Models]
     D --> E[Tests]
     D --> F[Documentation]
-    E --> G[Target DB Tables/Views]
+    E --> G["Target DB Tables/Views"]
     F --> H[dbt Docs Site]
 
     style A fill:#e74c3c,color:#fff
@@ -445,8 +445,8 @@ graph LR
 <h3 id="dag-기반-의존성-관리">DAG 기반 의존성 관리</h3>
 <div class="mermaid">
 graph TD
-    src_orders[source: orders] --> stg_orders[stg_orders]
-    src_customers[source: customers] --> stg_customers[stg_customers]
+    src_orders["source: orders"] --> stg_orders[stg_orders]
+    src_customers["source: customers"] --> stg_customers[stg_customers]
     stg_orders --> int_order_items[int_order_items]
     stg_customers --> mart_customers[mart_customers]
     int_order_items --> mart_customers
@@ -640,7 +640,7 @@ graph LR
     C --> D{dbt Cloud?}
     D -->|Yes| E[Semantic Layer API]
     D -->|No| F[MetricFlow CLI만]
-    E --> G[BI Tool / Agent]
+    E --> G["BI Tool / Agent"]
     F --> H[로컬 쿼리만]
 
     style E fill:#2ecc71,color:#fff
@@ -1133,7 +1133,7 @@ graph LR
 graph LR
     A[Raw Tables] -->|dbt run| B[Gold Tables]
     B --> C{NL2SQL Engine}
-    C -->|Cube.js| D[REST/GraphQL API]
+    C -->|Cube.js| D["REST/GraphQL API"]
     C -->|LangGraph Agent| E[Tool Call]
 
     F[dbt Artifacts] -->|manifest.json| C

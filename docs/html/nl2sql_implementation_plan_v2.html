@@ -525,7 +525,7 @@ OpenMetadata Oracle Connector
 <div class="mermaid">
 graph TB
     USER[사용자 질문]
-    USER --> API[FastAPI\nChat / REST API]
+    USER --> API["FastAPI\nChat / REST API"]
     API --> AGENT[LangGraph Agent\n오케스트레이션]
 
     AGENT --> IC{Intent 판단}
@@ -534,11 +534,11 @@ graph TB
     IC -->|비정형 검색| RAG_T[RAG Tool]
     IC -->|외부 시스템| MCP_T[MCP Tools]
 
-    CUBE_T --> CUBE[Cube.js\nSemantic Layer\n:4000]
-    OM_T --> OM[OpenMetadata\n메타 허브\n:8585]
-    RAG_T --> VDB[(Vector DB)]
+    CUBE_T --> CUBE["Cube.js\nSemantic Layer\n:4000"]
+    OM_T --> OM["OpenMetadata\n메타 허브\n:8585"]
+    RAG_T --> VDB["(Vector DB)"]
 
-    CUBE --> ORA[(Oracle 19c\n사내 DB)]
+    CUBE --> ORA["(Oracle 19c\n사내 DB)"]
     OM --> ORA
 
     AGENT --> SYNTH[Result Synthesizer]
@@ -991,9 +991,9 @@ graph TB
 <div class="mermaid">
 graph TB
     subgraph Infra["인프라"]
-        ORA[(Oracle 19c)]
-        PG[(PostgreSQL\nOM 저장소)]
-        ES[(Elasticsearch\nOM 검색)]
+        ORA["(Oracle 19c)"]
+        PG["(PostgreSQL\nOM 저장소)"]
+        ES["(Elasticsearch\nOM 검색)"]
     end
 
     subgraph Platform["플랫폼"]
@@ -1004,7 +1004,7 @@ graph TB
     subgraph AI["AI/Agent"]
         LG[LangGraph\nAgent]
         LLM[GPT-4.1-mini\n또는 사내 LLM]
-        VDB[(Vector DB\nRAG)]
+        VDB["(Vector DB\nRAG)"]
     end
 
     subgraph Interface["인터페이스"]
@@ -1186,10 +1186,10 @@ graph TB
     EXEC --> SYNTH[Result Synthesizer]
     SYNTH --> ANSWER[자연어 답변]
 
-    OM[(OpenMetadata)] -.메타.-> RAG
-    DB[(PostgreSQL/Oracle)] --> EXEC
-    PAIRS[(SQL Pairs 70)] -.Few-shot.-> RAG
-    GLOSS[(Glossary 77)] -.용어.-> RAG
+    OM["(OpenMetadata)"] -.메타.-> RAG
+    DB["(PostgreSQL/Oracle)"] --> EXEC
+    PAIRS["(SQL Pairs 70)"] -.Few-shot.-> RAG
+    GLOSS["(Glossary 77)"] -.용어.-> RAG
 </div>
 
 <p><strong>핵심 구성 요소:</strong></p>

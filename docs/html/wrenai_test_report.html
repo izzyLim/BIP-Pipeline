@@ -551,7 +551,7 @@ graph TB
     D4 -->|"최적의 SQL인가?"| D5
     D5 -->|"사용자가 원하는 답인가?"| FINAL[종합 평가]
 
-    style Dimensions fill:#e8eaf6
+    style Dimensions fill:#e8eaf6,color:#1a1a2e
     style Dimensions fill:#4f8fea33,stroke:#4f8fea,stroke-width:2px
 </div>
 
@@ -1480,14 +1480,14 @@ xychart-beta
 <div class="mermaid">
 flowchart LR
     USE[실제 사용]
-    FAIL[실패/부정확 발견]
+    FAIL["실패/부정확 발견"]
     PAIR[SQL Pair 등록]
     TEST[테스트 검증]
     DEPLOY[Deploy\nQdrant 재인덱싱]
 
     USE --> FAIL --> PAIR --> DEPLOY --> TEST --> USE
 
-    style PAIR fill:#c8e6c9
+    style PAIR fill:#c8e6c9,color:#1a1a2e
 </div>
 
 <p><strong>핵심 원칙:</strong>
@@ -1899,9 +1899,9 @@ flowchart LR
 
     T1 --> A1 --> FIX1 --> T2 --> A2 --> FIX2 --> T3 --> R
 
-    style FIX1 fill:#c8e6c9
-    style FIX2 fill:#c8e6c9
-    style R fill:#fff9c4
+    style FIX1 fill:#c8e6c9,color:#1a1a2e
+    style FIX2 fill:#c8e6c9,color:#1a1a2e
+    style R fill:#fff9c4,color:#1a1a2e
 </div>
 
 <p><strong>검증된 개선 사이클:</strong>

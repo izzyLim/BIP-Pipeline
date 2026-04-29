@@ -429,7 +429,7 @@ flowchart LR
     subgraph Sources["📡 외부 데이터 소스"]
         AV[Alpha Vantage\n재무 데이터]
         FH[Finnhub\n뉴스·센티먼트]
-        SM[소셜 미디어\nReddit/Twitter]
+        SM["소셜 미디어\nReddit/Twitter"]
         CH[차트 데이터\n가격·거래량]
     end
 
@@ -454,7 +454,7 @@ flowchart LR
     CH --> TA
     FA & SA & NA & TA --> RES
     RES --> TR --> RM --> FM
-    FM -->|승인| OUT[✅ 매수/매도/보유]
+    FM -->|승인| OUT["✅ 매수/매도/보유"]
     FM -->|거부| BACK[🔄 재검토]
     style Sources fill:#4f8fea33,stroke:#4f8fea,stroke-width:2px
     style Agents fill:#6c5ce733,stroke:#6c5ce7,stroke-width:2px
@@ -480,7 +480,7 @@ flowchart TD
     end
 
     subgraph III["III. 트레이더"]
-        TR[💼 Trader Agent\n매수/매도/보유 결정]
+        TR["💼 Trader Agent\n매수/매도/보유 결정"]
     end
 
     subgraph IV["IV. 리스크 관리"]

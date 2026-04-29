@@ -556,16 +556,16 @@ graph TB
         M[Metadata Management]
         C[Data Catalog]
         G[Data Governance]
-        A[AI/ML Augmentation]
+        A["AI/ML Augmentation"]
     end
 
     subgraph Sources["Heterogeneous Sources"]
-        S1[(Databases)]
-        S2[(Data Lakes)]
-        S3[(SaaS APIs)]
+        S1["(Databases)"]
+        S2["(Data Lakes)"]
+        S3["(SaaS APIs)"]
     end
 
-    Sources --> DataFabric --> Consumers[BI / ML / Apps]
+    Sources --> DataFabric --> Consumers["BI / ML / Apps"]
     style DataFabric fill:#4f8fea33,stroke:#4f8fea,stroke-width:2px
     style Sources fill:#6c5ce733,stroke:#6c5ce7,stroke-width:2px
 </div>
@@ -588,7 +588,7 @@ graph TB
     subgraph Traditional["Traditional (중앙집중)"]
         T1[Domain A] --> TC[Central Data Team]
         T2[Domain B] --> TC
-        TC --> TDW[(Central DW)]
+        TC --> TDW["(Central DW)"]
     end
 
     subgraph Mesh["Data Mesh (분산)"]
@@ -616,9 +616,9 @@ graph TB
     O -->|"스키마 제공"| KG
     SL -.->|"다른 층위"| KG
 
-    style O fill:#e3f2fd
-    style KG fill:#e8f5e9
-    style SL fill:#fff3e0
+    style O fill:#e3f2fd,color:#1a1a2e
+    style KG fill:#e8f5e9,color:#1a1a2e
+    style SL fill:#fff3e0,color:#1a1a2e
     style L1 fill:#4f8fea33,stroke:#4f8fea,stroke-width:2px
 </div>
 
@@ -720,7 +720,7 @@ graph TB
     end
 
     subgraph P2["RAG 기반 (가장 보편적)"]
-        Q2[질문] --> E2[임베딩] --> V2[(Vector DB\n스키마/Few-shot)]
+        Q2[질문] --> E2[임베딩] --> V2["(Vector DB\n스키마/Few-shot)"]
         V2 --> L2[LLM]
         Q2 --> L2
         L2 --> VA2[SQL 검증]
@@ -836,7 +836,7 @@ graph TB
 graph LR
     subgraph dbt["dbt Semantic Layer"]
         D1[YAML 정의] --> D2[dbt run]
-        D2 --> D3[테이블/뷰 생성\n배치 방식]
+        D2 --> D3["테이블/뷰 생성\n배치 방식"]
     end
 
     subgraph Cube["Cube.js"]
@@ -948,15 +948,15 @@ graph TB
     end
 
     subgraph S2["전략 2: 멀티소스"]
-        S2A[(정형 DB)] --> S2D[통합 레이어\nCube.js / Trino]
-        S2B[(NoSQL)] --> S2D
-        S2C[(Elasticsearch)] --> S2D
+        S2A["(정형 DB)"] --> S2D["통합 레이어\nCube.js / Trino"]
+        S2B["(NoSQL)"] --> S2D
+        S2C["(Elasticsearch)"] --> S2D
     end
 
     subgraph S3["전략 3: Ontology 기반"]
-        S3A[(정형)] --> S3D[Ontology\nObject 추상화]
-        S3B[(벡터)] --> S3D
-        S3C[(문서)] --> S3D
+        S3A["(정형)"] --> S3D[Ontology\nObject 추상화]
+        S3B["(벡터)"] --> S3D
+        S3C["(문서)"] --> S3D
         S3D --> S3E[통합 쿼리 API]
     end
     style S1 fill:#4f8fea33,stroke:#4f8fea,stroke-width:2px

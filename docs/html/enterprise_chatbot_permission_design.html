@@ -402,9 +402,9 @@ USER["사용자 (브라우저)"]
     BIZ_API --> ES
     NL2SQL_API --> ORA
     RAG_API --> VEC
-    style Spring fill:#0d0f18,stroke:#5a7af0
-    style Python fill:#0d0f18,stroke:#30c880
-    style Data fill:#0d0f18,stroke:#e09830
+    style Spring fill:#0d0f18,stroke:#5a7af0,color:#1a1a2e
+    style Python fill:#0d0f18,stroke:#30c880,color:#1a1a2e
+    style Data fill:#0d0f18,stroke:#e09830,color:#1a1a2e
     style Spring fill:#4f8fea33,stroke:#4f8fea,stroke-width:2px
     style Python fill:#6c5ce733,stroke:#6c5ce7,stroke-width:2px
     style Data fill:#00b89433,stroke:#00b894,stroke-width:2px
@@ -547,8 +547,8 @@ subgraph NoAuth["권한 판단 없음"]
     end
     PY_G --> AG --> MCP -->|JWT| SPRING
     SPRING -->|필터링된 데이터| MCP
-    style NoAuth fill:#0d0f18,stroke:#e09830
-    style Auth fill:#0d0f18,stroke:#30c8c0
+    style NoAuth fill:#0d0f18,stroke:#e09830,color:#1a1a2e
+    style Auth fill:#0d0f18,stroke:#30c8c0,color:#1a1a2e
     style NoAuth fill:#4f8fea33,stroke:#4f8fea,stroke-width:2px
     style Auth fill:#6c5ce733,stroke:#6c5ce7,stroke-width:2px
 </div>
@@ -564,15 +564,15 @@ START(["사용자 질문\n우리 부서 최근 주문 현황 알려줘"]) --> AU
     BRANCH -->|MCP 기본| T1[get_orders 도구]
     BRANCH -->|NL2SQL| T2[run_sql 도구]
     BRANCH -->|RAG| T3[search_docs 도구]
-    T1 -->|JWT| S1[Spring /api/orders]
-    T2 -->|JWT + SQL| S2[Spring /api/nl2sql/execute]
-    T3 -->|JWT + query| S3[Spring /api/rag/search]
+    T1 -->|JWT| S1["Spring /api/orders"]
+    T2 -->|JWT + SQL| S2["Spring /api/nl2sql/execute"]
+    T3 -->|JWT + query| S3["Spring /api/rag/search"]
     S1 --> AZ{Spring 권한 체크\n@PreAuthorize}
     S2 --> AZ
     S3 --> AZ
     AZ -->|거부| DENY2["403 → 일반화 메시지"]
     AZ -->|허용| FILTER[Service 레이어\n사용자별 필터링]
-    FILTER --> DATA[Oracle / ES / Vector]
+    FILTER --> DATA["Oracle / ES / Vector"]
     DATA -->|필터링된 데이터| RESULT[도구 결과]
     RESULT --> AGENT[에이전트 종합]
     AGENT --> GUARD{Guardrail 검증}
@@ -828,7 +828,7 @@ participant AG as LangGraph Agent
 flowchart LR
 DOC[원본 문서\n사내 시스템] -->|수집| CHUNK[청킹 + 임베딩]
     CHUNK --> META[권한 메타데이터 부착\nacl.roles, acl.depts, sensitivity]
-    META --> VEC[(Vector DB\nQdrant/ES)]
+    META --> VEC["(Vector DB\nQdrant/ES)"]
     DOC -.->|권한 변경 이벤트| SYNC[ACL 동기화 DAG]
     SYNC --> VEC
     style META fill:#201010,stroke:#f05050,color:#f08080
@@ -1107,12 +1107,12 @@ subgraph Existing["기존 Spring (확장)"]
     ST --> ChatPage[chat.html]
     PA --> Main[main.py]
     PA --> Auth[auth.py]
-    PA --> Graph[agents/graph.py]
-    PA --> Tools[tools/]
+    PA --> Graph["agents/graph.py"]
+    PA --> Tools["tools/"]
     PM --> McpSrv[server.py]
     PM --> McpTools[tools.py]
-    style Existing fill:#0d0f18,stroke:#5a7af0
-    style New fill:#0d0f18,stroke:#30c880
+    style Existing fill:#0d0f18,stroke:#5a7af0,color:#1a1a2e
+    style New fill:#0d0f18,stroke:#30c880,color:#1a1a2e
     style Existing fill:#4f8fea33,stroke:#4f8fea,stroke-width:2px
     style New fill:#6c5ce733,stroke:#6c5ce7,stroke-width:2px
 </div>
@@ -1164,12 +1164,12 @@ subgraph Existing["기존 Spring (확장)"]
 <div class="mermaid">
 graph TD
 REQ[사용자 질의] --> GW[Python Gateway]
-    GW -->|요청 로그| PY_AUDIT[(llm_request_log\nPython)]
+    GW -->|요청 로그| PY_AUDIT["(llm_request_log\nPython)"]
     GW --> AG[Agent 실행]
     AG --> TOOL[MCP Tool 호출]
     TOOL -->|JWT로 API 호출| SPRING[Spring API]
-    SPRING -->|기존 감사| SPRING_AUDIT[(기존 access_log\nSpring)]
-    SPRING -->|NL2SQL 시| NL_AUDIT[(nl2sql_audit_log\nSpring)]
+    SPRING -->|기존 감사| SPRING_AUDIT["(기존 access_log\nSpring)"]
+    SPRING -->|NL2SQL 시| NL_AUDIT["(nl2sql_audit_log\nSpring)"]
     AG -->|최종 응답 로그| PY_AUDIT
     style PY_AUDIT fill:#201810,stroke:#e09830,color:#f8b840
     style SPRING_AUDIT fill:#102040,stroke:#5a7af0,color:#7a9aff

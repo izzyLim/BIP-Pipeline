@@ -336,14 +336,14 @@
 graph LR
     subgraph GAN["GAN (원래 구조)"]
         G1[생성자\n이미지 생성]
-        D1[판별자\n진짜/가짜 판정]
+        D1["판별자\n진짜/가짜 판정"]
         G1 -->|생성물| D1
         D1 -->|피드백| G1
     end
 
     subgraph Agent["에이전트 하네스 (적용)"]
         G2[생성자 에이전트\n코드 작성]
-        D2[평가자 에이전트\n테스트/채점]
+        D2["평가자 에이전트\n테스트/채점"]
         G2 -->|코드| D2
         D2 -->|버그 리포트| G2
     end
@@ -390,8 +390,8 @@ graph TD
 
     subgraph Harness["에이전트 하네스"]
         PLANNER[기획자 Planner\n프롬프트 → 상세 스펙 확장\n비즈니스 맥락 + 시스템 아키텍처]
-        GENERATOR[생성자 Generator\n스펙 → 코드 구현\nReact, Vite, FastAPI, SQLite/PG\ngit 버전 관리]
-        EVALUATOR[평가자 Evaluator\nPlaywright MCP로 실제 브라우저 테스트\nUI/API/DB 무결성 검증\n4가지 기준 채점]
+        GENERATOR["생성자 Generator\n스펙 → 코드 구현\nReact, Vite, FastAPI, SQLite/PG\ngit 버전 관리"]
+        EVALUATOR["평가자 Evaluator\nPlaywright MCP로 실제 브라우저 테스트\nUI/API/DB 무결성 검증\n4가지 기준 채점"]
     end
 
     PLANNER -->|상세 스펙 파일| GENERATOR

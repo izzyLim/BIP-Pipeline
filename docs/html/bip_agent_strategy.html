@@ -363,9 +363,9 @@
 <div class="mermaid">
 graph TD
     subgraph Airflow["Airflow (스케줄링)"]
-        DAG1[모닝리포트\n08:10]
-        DAG2[체크리스트 모니터링\n09:30~15:35]
-        DAG3[preopen\n08:40]
+        DAG1["모닝리포트\n08:10"]
+        DAG2["체크리스트 모니터링\n09:30~15:35"]
+        DAG3["preopen\n08:40"]
         DAG4[종목 스크리너]
         DAG5[뉴스 다이제스트\n4시간마다]
     end
@@ -377,15 +377,15 @@ graph TD
     end
 
     subgraph MCP["MCP Server"]
-        KIS[한투 API\n시세/수급/예상체결]
+        KIS["한투 API\n시세/수급/예상체결"]
         UPB[Upbit\n크립토]
-        YF[yfinance\nEWY/글로벌 지수]
-        NV[네이버 금융\n환율/뉴스]
+        YF["yfinance\nEWY/글로벌 지수"]
+        NV["네이버 금융\n환율/뉴스"]
     end
 
     subgraph Data["데이터"]
         WREN[Wren AI\n5모델 + 41 SQL Pairs]
-        PG[(PostgreSQL\n39+ 테이블)]
+        PG["(PostgreSQL\n39+ 테이블)"]
         OM[OpenMetadata\n메타데이터]
     end
 
@@ -420,7 +420,7 @@ graph TD
 <div class="mermaid">
 graph TD
     subgraph UI["사용자 인터페이스"]
-        WEB[웹 채팅\nReact / Open WebUI]
+        WEB["웹 채팅\nReact / Open WebUI"]
         TG2[텔레그램]
         EM2[이메일\n모닝리포트]
     end
@@ -429,16 +429,16 @@ graph TD
 
     subgraph SubAgents["하위 에이전트"]
         NL2SQL[NL2SQL Agent\nWren AI → SQL → DB]
-        RT[Realtime Agent\nMCP 한투/Upbit/yfinance]
+        RT["Realtime Agent\nMCP 한투/Upbit/yfinance"]
         RAG[RAG Agent\n뉴스 다이제스트 + 검색]
-        ANAL[Analysis Agent\n체크리스트/스크리너 재활용]
+        ANAL["Analysis Agent\n체크리스트/스크리너 재활용"]
     end
 
     SYNTH[Synthesizer\n결과 종합 → 최종 답변]
 
     subgraph Infra["기존 인프라 (유지)"]
         AF[Airflow\n스케줄 작업]
-        PG2[(PostgreSQL + OM)]
+        PG2["(PostgreSQL + OM)"]
         WREN2[Wren AI]
         MCP2[MCP Server]
     end

@@ -523,9 +523,9 @@ graph LR
     G3 --> V1 & V2
 
     style Raw fill:#cd7f32,color:white
-    style Derived fill:#c0c0c0
-    style Gold fill:#ffd700
-    style Curated fill:#ffecb3
+    style Derived fill:#c0c0c0,color:#1a1a2e
+    style Gold fill:#ffd700,color:#1a1a2e
+    style Curated fill:#ffecb3,color:#1a1a2e
     style Raw fill:#4f8fea33,stroke:#4f8fea,stroke-width:2px
     style Derived fill:#6c5ce733,stroke:#6c5ce7,stroke-width:2px
     style Gold fill:#00b89433,stroke:#00b894,stroke-width:2px
@@ -986,7 +986,7 @@ View를 만들면 안 되는 2가지 신호:
 <h3 id="6-1-판단-플로우차트">6-1. 판단 플로우차트</h3>
 <div class="mermaid">
 flowchart TB
-    Q[이 계산/분류를\n어디에 넣을까?]
+    Q["이 계산/분류를\n어디에 넣을까?"]
 
     Q --> Q1{계산 로직이 확정적이고\n바뀔 가능성이 거의 없나?}
     Q1 -->|YES| GOLD[Gold 테이블\nDAG SQL에 고정]
@@ -1003,18 +1003,18 @@ flowchart TB
     Q3 -->|YES| VIEW2[Curated View로\ngrain 변환]
     Q3 -->|NO| KEEP2[그대로 사용]
 
-    Q --> Q4{EAV/Pivot이\n필요한가?}
+    Q --> Q4{"EAV/Pivot이\n필요한가?"}
     Q4 -->|YES| GOLD4[Gold 테이블\nDAG에서 pivot]
     Q4 -->|NO| SKIP[해당 없음]
 
-    style GOLD fill:#ffd700
-    style GOLD2 fill:#ffd700
-    style GOLD3 fill:#ffd700
-    style GOLD4 fill:#ffd700
-    style VIEW fill:#ffecb3
-    style VIEW2 fill:#ffecb3
-    style KEEP fill:#c8e6c9
-    style KEEP2 fill:#c8e6c9
+    style GOLD fill:#ffd700,color:#1a1a2e
+    style GOLD2 fill:#ffd700,color:#1a1a2e
+    style GOLD3 fill:#ffd700,color:#1a1a2e
+    style GOLD4 fill:#ffd700,color:#1a1a2e
+    style VIEW fill:#ffecb3,color:#1a1a2e
+    style VIEW2 fill:#ffecb3,color:#1a1a2e
+    style KEEP fill:#c8e6c9,color:#1a1a2e
+    style KEEP2 fill:#c8e6c9,color:#1a1a2e
 </div>
 
 <h3 id="6-2-한눈에-비교">6-2. 한눈에 비교</h3>
@@ -1158,7 +1158,7 @@ graph TB
     HUB -->|1:N| S3[v_technical_signals\nticker FK]
     HUB -->|1:N| S4[v_flow_signals\nticker FK]
 
-    style HUB fill:#90caf9
+    style HUB fill:#90caf9,color:#1a1a2e
 </div>
 
 <p><strong>원칙 2: Grain 호환성 확인</strong></p>
@@ -1473,11 +1473,11 @@ flowchart LR
     LLM -->|SQL| VIEW & GOLD
 
     style RAW fill:#cd7f32,color:white
-    style GOLD fill:#ffd700
-    style VIEW fill:#ffecb3
-    style MDL fill:#fff59d
-    style RAG fill:#e1bee7
-    style LLM fill:#ffccbc
+    style GOLD fill:#ffd700,color:#1a1a2e
+    style VIEW fill:#ffecb3,color:#1a1a2e
+    style MDL fill:#fff59d,color:#1a1a2e
+    style RAG fill:#e1bee7,color:#1a1a2e
+    style LLM fill:#ffccbc,color:#1a1a2e
 </div>
 
 <h3 id="10-2-각-단계의-ssot-역할">10-2. 각 단계의 SSOT 역할</h3>
@@ -1552,14 +1552,14 @@ graph TB
         SSOT_C -->|"MDL에는 계산식 넣지 않음"| NL2SQL
     end
 
-    style GRAIN fill:#e3f2fd
+    style GRAIN fill:#e3f2fd,color:#1a1a2e
     style MEDAL fill:#cd7f32,color:white
-    style GOLD_T fill:#ffd700
-    style CV fill:#ffecb3
-    style BF fill:#c8e6c9
-    style REL fill:#90caf9
-    style SSOT_C fill:#ffcdd2
-    style NL2SQL fill:#fff59d
+    style GOLD_T fill:#ffd700,color:#1a1a2e
+    style CV fill:#ffecb3,color:#1a1a2e
+    style BF fill:#c8e6c9,color:#1a1a2e
+    style REL fill:#90caf9,color:#1a1a2e
+    style SSOT_C fill:#ffcdd2,color:#1a1a2e
+    style NL2SQL fill:#fff59d,color:#1a1a2e
     style Concepts fill:#4f8fea33,stroke:#4f8fea,stroke-width:2px
 </div>
 
@@ -2098,9 +2098,9 @@ LLM: WHERE per &lt; 15  (기준이 바뀜! 일관성 없음)
 <div class="mermaid">
 graph LR
     subgraph Existing["기존 인프라 (변경 안 함)"]
-        SRC[운영 DB / Source]
+        SRC["운영 DB / Source"]
         DW[DW\n정규화 팩트+디멘션]
-        DM[DM\nBI/리포트용 마트]
+        DM["DM\nBI/리포트용 마트"]
     end
 
     subgraph New["NL2SQL 전용 (신규 구축)"]
@@ -2114,8 +2114,8 @@ graph LR
     DM -->|소스| SG
     SG --> CV --> MDL
 
-    style Existing fill:#b0bec5
-    style New fill:#fff59d
+    style Existing fill:#b0bec5,color:#1a1a2e
+    style New fill:#fff59d,color:#1a1a2e
     style Existing fill:#4f8fea33,stroke:#4f8fea,stroke-width:2px
     style New fill:#6c5ce733,stroke:#6c5ce7,stroke-width:2px
 </div>

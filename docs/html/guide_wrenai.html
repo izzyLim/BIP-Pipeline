@@ -493,24 +493,24 @@
 <div class="mermaid">
 graph TB
     subgraph Client["클라이언트"]
-        UI[Wren UI\nNext.js :3000]
-        API_EXT[외부 API 호출\nPOST /v1/asks]
+        UI["Wren UI\nNext.js :3000"]
+        API_EXT["외부 API 호출\nPOST /v1/asks"]
     end
 
     subgraph Core["코어 서비스"]
-        AI[Wren AI Service\nPython/FastAPI :5555]
-        EN[Wren Engine\nJava + Rust/DataFusion :8080]
-        IB[Ibis Server\nPython :8000]
+        AI["Wren AI Service\nPython/FastAPI :5555"]
+        EN["Wren Engine\nJava + Rust/DataFusion :8080"]
+        IB["Ibis Server\nPython :8000"]
     end
 
     subgraph Storage["저장소"]
-        QD[Qdrant\n벡터 DB :6333]
+        QD["Qdrant\n벡터 DB :6333"]
         SQ[SQLite\nUI 메타데이터]
     end
 
     subgraph External["외부"]
-        LLM[LLM Provider\nOpenAI / Anthropic / Ollama]
-        DB[(PostgreSQL\n사용자 데이터)]
+        LLM["LLM Provider\nOpenAI / Anthropic / Ollama"]
+        DB["(PostgreSQL\n사용자 데이터)"]
     end
 
     UI -->|GraphQL| AI
@@ -522,10 +522,10 @@ graph TB
     IB -->|실제 쿼리 실행| DB
     UI -->|모델 관리| SQ
 
-    style Client fill:#e3f2fd
-    style Core fill:#f3e5f5
-    style Storage fill:#e8f5e9
-    style External fill:#fff3e0
+    style Client fill:#e3f2fd,color:#1a1a2e
+    style Core fill:#f3e5f5,color:#1a1a2e
+    style Storage fill:#e8f5e9,color:#1a1a2e
+    style External fill:#fff3e0,color:#1a1a2e
     style Client fill:#4f8fea33,stroke:#4f8fea,stroke-width:2px
     style Core fill:#6c5ce733,stroke:#6c5ce7,stroke-width:2px
     style Storage fill:#00b89433,stroke:#00b894,stroke-width:2px
@@ -694,8 +694,8 @@ flowchart LR
     SQL["입력 SQL\n(AI Service가 생성)"]
     PARSE["SQL Parser\n(Trino fork, Antlr4)"]
     LP["LogicalPlan\n(DataFusion IR)"]
-    REWRITE["MDL Rewriter\n(모델->서브쿼리 변환)"]
-    VALIDATE["Validator\n(테이블/컬럼/타입 검증)"]
+    REWRITE["MDL Rewriter\n("모델->서브쿼리 변환")"]
+    VALIDATE["Validator\n("테이블/컬럼/타입 검증")"]
     OUTPUT["출력 SQL\n(DB 방언으로 변환)"]
 
     SQL --> PARSE --> LP --> REWRITE --> VALIDATE --> OUTPUT
@@ -1010,7 +1010,7 @@ flowchart TB
     end
 
     subgraph Stage5["Stage 5: 실행/응답"]
-        EX[SQL Execution\nEngine -> Ibis -> DB]
+        EX["SQL Execution\nEngine -> Ibis -> DB"]
         AN[Answer Generation\n결과 자연어 변환]
     end
 
@@ -1892,7 +1892,7 @@ flowchart TB
         OM["OpenMetadata\nUI/API에서 편집"]
     end
 
-    subgraph DAG["10_sync_metadata_daily\n(Airflow DAG, 매일 09:00 KST)"]
+    subgraph DAG["10_sync_metadata_daily\n("Airflow DAG, 매일 09:00 KST")"]
         T1["Task 1: sync_om_to_db\nOM API -> COMMENT ON TABLE/COLUMN"]
         T2["Task 2: sync_om_to_wrenai\nOM API -> GraphQL updateModelMetadata -> deploy"]
     end

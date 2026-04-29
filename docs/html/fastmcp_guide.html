@@ -966,11 +966,11 @@ graph TB
     USER[사용자] --> AGENT[LangGraph Agent]
     AGENT --> MCP_CLIENT[MCP Client Adapter]
 
-    MCP_CLIENT --> S1[DB MCP Server\nHTTP :8000]
+    MCP_CLIENT --> S1["DB MCP Server\nHTTP :8000"]
     MCP_CLIENT --> S2[Search MCP Server\nstdio]
     MCP_CLIENT --> S3[File MCP Server\nstdio]
 
-    S1 --> DB[(Database)]
+    S1 --> DB["(Database)"]
     S2 --> API[Search API]
     S3 --> FS[File System]
 </div>

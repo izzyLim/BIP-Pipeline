@@ -380,9 +380,9 @@ REST / GraphQL / SQL API를 통해 모든 애플리케이션에 일관된 데이
 <div class="mermaid">
 graph TB
     subgraph Clients["클라이언트"]
-        APP[웹/모바일 앱]
+        APP["웹/모바일 앱"]
         BI[BI 도구]
-        AGENT[AI Agent / NL2SQL]
+        AGENT["AI Agent / NL2SQL"]
     end
     subgraph CubeServer["Cube Server"]
         API["API Layer\nREST · GraphQL · SQL"]
@@ -392,9 +392,9 @@ graph TB
         STORE["Cube Store\nPre-aggregation 엔진"]
     end
     subgraph DataSources["데이터 소스"]
-        PG[(PostgreSQL)]
-        ORACLE[(Oracle 19c)]
-        BQ[(BigQuery)]
+        PG["(PostgreSQL)"]
+        ORACLE["(Oracle 19c)"]
+        BQ["(BigQuery)"]
     end
     APP --> API
     BI --> API

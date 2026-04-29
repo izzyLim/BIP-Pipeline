@@ -51,9 +51,57 @@ PALETTE = [
 
 
 def inject_mermaid_styles(code):
-    """mermaid 코드에 subgraph/노드 자동 색상 style 삽입"""
+    """mermaid 코드에 subgraph/노드 자동 색상 style 삽입 + 사용자 style 글씨 색 보정"""
     # <br/> → \n 치환 (Mermaid v10/v11 호환)
     code = re.sub(r'<br\s*/?>', r'\\n', code)
+
+    # 노드 라벨에 특수문자(&, /, :, (, ) 등)가 있는데 따옴표로 안 감싸진 경우 자동 감싸기
+    # 패턴: NodeID[content] 또는 NodeID(content) 또는 NodeID{content}
+    # content에 따옴표가 없고 특수문자가 있으면 따옴표 추가
+    SPECIAL = re.compile(r'[&:/(){}|<>]')
+    def quote_label(m):
+        bracket_open = m.group(2)
+        content = m.group(3)
+        bracket_close = m.group(4)
+        if content.startswith('"') and content.endswith('"'):
+            return m.group(0)  # 이미 따옴표 있음
+        if SPECIAL.search(content):
+            # 따옴표 안의 따옴표는 escape
+            content = content.replace('"', '#quot;')
+            return f'{m.group(1)}{bracket_open}"{content}"{bracket_close}'
+        return m.group(0)
+    # NodeID[label] / NodeID(label) / NodeID{label} — 가장 일반적인 형태
+    code = re.sub(
+        r'(\b\w+)(\[)([^\[\]\n]+?)(\])',
+        quote_label,
+        code,
+    )
+    code = re.sub(
+        r'(\b\w+)(\()([^\(\)\n]+?)(\))',
+        quote_label,
+        code,
+    )
+    code = re.sub(
+        r'(\b\w+)(\{)([^\{\}\n]+?)(\})',
+        quote_label,
+        code,
+    )
+
+    # 사용자가 fill만 지정한 style 라인에 color 자동 추가
+    # (다크 모드에서 mermaid 기본 글씨 색이 흰색이라 밝은 fill에 흰 글씨 → 안 보임)
+    # 검정(#1a1a2e)으로 강제 → 밝은 fill 가정 시 라이트/다크 모두 잘 보임
+    def fix_style_color(m):
+        line = m.group(0)
+        if 'color:' in line:
+            return line
+        return line + ',color:#1a1a2e'
+    code = re.sub(
+        r'^[ \t]*style\s+\S+\s+fill:[^\n]+$',
+        fix_style_color,
+        code,
+        flags=re.MULTILINE,
+    )
+
     lines = code.strip().split('\n')
 
     # subgraph 이름 수집

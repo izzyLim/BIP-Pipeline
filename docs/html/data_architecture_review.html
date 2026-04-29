@@ -471,10 +471,10 @@ graph TB
     D10 -->|설명 동기화| WR
     OM -.->|lineage| D01 & D02 & D03 & D04 & D05 & D06 & D07
 
-    style Sources fill:#e1f5fe
-    style DB fill:#e8f5e9
-    style Platform fill:#fff3e0
-    style Consumers fill:#fce4ec
+    style Sources fill:#e1f5fe,color:#1a1a2e
+    style DB fill:#e8f5e9,color:#1a1a2e
+    style Platform fill:#fff3e0,color:#1a1a2e
+    style Consumers fill:#fce4ec,color:#1a1a2e
     style Sources fill:#4f8fea33,stroke:#4f8fea,stroke-width:2px
     style Airflow fill:#6c5ce733,stroke:#6c5ce7,stroke-width:2px
     style DB fill:#00b89433,stroke:#00b894,stroke-width:2px
@@ -2151,10 +2151,10 @@ graph LR
 
     T_SI & T_SP & T_MA & T_NE & T_AS & T_AM --> MR & ML
 
-    style API fill:#e3f2fd
-    style DAG fill:#f3e5f5
-    style Table fill:#e8f5e9
-    style Consumer fill:#fff8e1
+    style API fill:#e3f2fd,color:#1a1a2e
+    style DAG fill:#f3e5f5,color:#1a1a2e
+    style Table fill:#e8f5e9,color:#1a1a2e
+    style Consumer fill:#fff8e1,color:#1a1a2e
     style API fill:#4f8fea33,stroke:#4f8fea,stroke-width:2px
     style DAG fill:#6c5ce733,stroke:#6c5ce7,stroke-width:2px
     style Table fill:#00b89433,stroke:#00b894,stroke-width:2px
@@ -2166,27 +2166,27 @@ graph LR
 graph TB
     subgraph Network["stock-network (Docker Bridge)"]
         subgraph Core["코어 서비스"]
-            PG[(PostgreSQL\n:5432)]
-            AF[Airflow\n:8080]
+            PG["(PostgreSQL\n:5432)"]
+            AF["Airflow\n:8080"]
         end
 
         subgraph Metadata["메타데이터 플랫폼"]
-            OM_S[OM Server\n:8585]
-            OM_I[OM Ingestion\n:8083]
-            ES[Elasticsearch\n:9200]
+            OM_S["OM Server\n:8585"]
+            OM_I["OM Ingestion\n:8083"]
+            ES["Elasticsearch\n:9200"]
         end
 
         subgraph NL2SQL["Wren AI (NL2SQL)"]
-            WE[Wren Engine\n:8080 internal]
-            WA[Wren AI Service\n:5555]
-            WU[Wren UI\n:3000]
-            QD[Qdrant\n:6333]
-            IB[Ibis Server\n:8000]
+            WE["Wren Engine\n:8080 internal"]
+            WA["Wren AI Service\n:5555"]
+            WU["Wren UI\n:3000"]
+            QD["Qdrant\n:6333"]
+            IB["Ibis Server\n:8000"]
         end
 
         subgraph Streaming["스트리밍 (미사용)"]
-            KA[Kafka :9093]
-            ZK[Zookeeper :2181]
+            KA["Kafka :9093"]
+            ZK["Zookeeper :2181"]
         end
     end
 
@@ -2200,10 +2200,10 @@ graph TB
     WU -->|API| WA
     WU -->|MDL| WE
 
-    style Core fill:#c8e6c9
-    style Metadata fill:#ffe0b2
-    style NL2SQL fill:#bbdefb
-    style Streaming fill:#f5f5f5
+    style Core fill:#c8e6c9,color:#1a1a2e
+    style Metadata fill:#ffe0b2,color:#1a1a2e
+    style NL2SQL fill:#bbdefb,color:#1a1a2e
+    style Streaming fill:#f5f5f5,color:#1a1a2e
     style Network fill:#4f8fea33,stroke:#4f8fea,stroke-width:2px
     style Core fill:#6c5ce733,stroke:#6c5ce7,stroke-width:2px
     style Metadata fill:#00b89433,stroke:#00b894,stroke-width:2px
@@ -2233,10 +2233,10 @@ flowchart LR
 
     DAG -->|매일 09:00 KST| OM
 
-    style OM fill:#ffe0b2,stroke:#e65100
-    style DB fill:#c8e6c9
-    style WR fill:#bbdefb
-    style QD fill:#e1bee7
+    style OM fill:#ffe0b2,stroke:#e65100,color:#1a1a2e
+    style DB fill:#c8e6c9,color:#1a1a2e
+    style WR fill:#bbdefb,color:#1a1a2e
+    style QD fill:#e1bee7,color:#1a1a2e
     style DAG fill:#4f8fea33,stroke:#4f8fea,stroke-width:2px
 </div>
 
@@ -2508,13 +2508,13 @@ flowchart TB
         A1[엔티티 해석\nDB에서 종목 조회]
         A2[의도 분류\n주가? 재무? 매크로?]
         A3[SQL 생성\nWren AI API 호출]
-        A4[추가 조회\n관련 지표/뉴스]
+        A4["추가 조회\n관련 지표/뉴스"]
         A5[응답 생성\nLLM 종합 분석]
     end
 
     subgraph Tools["도구"]
         T1[Wren AI API\nNL2SQL 엔진]
-        T2[OM API\n용어집/메타데이터]
+        T2["OM API\n용어집/메타데이터"]
         T3[PostgreSQL\n직접 쿼리]
     end
 
@@ -2526,8 +2526,8 @@ flowchart TB
 
     A5 -->|자연어 응답| U
 
-    style Agent fill:#e8eaf6
-    style Tools fill:#e0f2f1
+    style Agent fill:#e8eaf6,color:#1a1a2e
+    style Tools fill:#e0f2f1,color:#1a1a2e
     style Agent fill:#4f8fea33,stroke:#4f8fea,stroke-width:2px
     style Tools fill:#6c5ce733,stroke:#6c5ce7,stroke-width:2px
 </div>

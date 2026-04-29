@@ -487,24 +487,24 @@ Wren AI: MDL에서 PER 정의 확인 → 적절한 테이블/컬럼 선택 → S
 <div class="mermaid">
 graph TB
     subgraph Client["클라이언트"]
-        UI[Wren UI\nNext.js :3000]
-        API_EXT[외부 API 호출\nPOST /v1/asks]
+        UI["Wren UI\nNext.js :3000"]
+        API_EXT["외부 API 호출\nPOST /v1/asks"]
     end
 
     subgraph Core["코어 서비스"]
-        AI[Wren AI Service\nPython/FastAPI :5555]
-        EN[Wren Engine\nJava + Rust/DataFusion :8080]
-        IB[Ibis Server\nPython :8000]
+        AI["Wren AI Service\nPython/FastAPI :5555"]
+        EN["Wren Engine\nJava + Rust/DataFusion :8080"]
+        IB["Ibis Server\nPython :8000"]
     end
 
     subgraph Storage["저장소"]
-        QD[Qdrant\n벡터 DB :6333]
+        QD["Qdrant\n벡터 DB :6333"]
         SQ[SQLite\nUI 메타데이터]
     end
 
     subgraph External["외부"]
-        LLM[LLM Provider\nOpenAI / Anthropic / Ollama]
-        DB[(PostgreSQL\n사용자 데이터)]
+        LLM["LLM Provider\nOpenAI / Anthropic / Ollama"]
+        DB["(PostgreSQL\n사용자 데이터)"]
     end
 
     UI -->|GraphQL| AI
@@ -516,10 +516,10 @@ graph TB
     IB -->|실제 쿼리 실행| DB
     UI -->|모델 관리| SQ
 
-    style Client fill:#e3f2fd
-    style Core fill:#f3e5f5
-    style Storage fill:#e8f5e9
-    style External fill:#fff3e0
+    style Client fill:#e3f2fd,color:#1a1a2e
+    style Core fill:#f3e5f5,color:#1a1a2e
+    style Storage fill:#e8f5e9,color:#1a1a2e
+    style External fill:#fff3e0,color:#1a1a2e
     style Client fill:#4f8fea33,stroke:#4f8fea,stroke-width:2px
     style Core fill:#6c5ce733,stroke:#6c5ce7,stroke-width:2px
     style Storage fill:#00b89433,stroke:#00b894,stroke-width:2px
@@ -614,12 +614,12 @@ flowchart LR
     PARSE["SQL Parser\n(Trino fork, Antlr4)"]
     LP["LogicalPlan\n(DataFusion IR)"]
     REWRITE["MDL Rewriter\n(모델→서브쿼리 변환)"]
-    VALIDATE["Validator\n(테이블/컬럼/타입 검증)"]
+    VALIDATE["Validator\n("테이블/컬럼/타입 검증")"]
     OUTPUT["출력 SQL\n(DB 방언으로 변환)"]
 
     SQL --> PARSE --> LP --> REWRITE --> VALIDATE --> OUTPUT
 
-    style LP fill:#e1bee7
+    style LP fill:#e1bee7,color:#1a1a2e
 </div>
 
 <p><strong>MDL → SQL 변환 예시:</strong></p>
@@ -849,7 +849,7 @@ graph LR
 
     DB -->|추상화| MDL -->|비즈니스 의미| USER
 
-    style MDL fill:#fff3e0,stroke:#e65100
+    style MDL fill:#fff3e0,stroke:#e65100,color:#1a1a2e
 </div>
 
 <h3 id="4-2-mdl-구조-json">4-2. MDL 구조 (JSON)</h3>
@@ -993,11 +993,11 @@ flowchart TB
     VD_R -->|Yes| EX --> AN
     VD_R -->|No| SC --> VD
 
-    style Stage1 fill:#e3f2fd
-    style Stage2 fill:#e8f5e9
-    style Stage3 fill:#fff3e0
-    style Stage4 fill:#fce4ec
-    style Stage5 fill:#f3e5f5
+    style Stage1 fill:#e3f2fd,color:#1a1a2e
+    style Stage2 fill:#e8f5e9,color:#1a1a2e
+    style Stage3 fill:#fff3e0,color:#1a1a2e
+    style Stage4 fill:#fce4ec,color:#1a1a2e
+    style Stage5 fill:#f3e5f5,color:#1a1a2e
     style Stage1 fill:#4f8fea33,stroke:#4f8fea,stroke-width:2px
     style Stage2 fill:#6c5ce733,stroke:#6c5ce7,stroke-width:2px
     style Stage3 fill:#00b89433,stroke:#00b894,stroke-width:2px
@@ -1498,7 +1498,7 @@ flowchart TB
         OM["OpenMetadata\nUI/API에서 편집"]
     end
 
-    subgraph DAG["10_sync_metadata_daily\n(Airflow DAG, 매일 09:00 KST)"]
+    subgraph DAG["10_sync_metadata_daily\n("Airflow DAG, 매일 09:00 KST")"]
         T1["Task 1: sync_om_to_db\nOM API → COMMENT ON TABLE/COLUMN"]
         T2["Task 2: sync_om_to_wrenai\nOM API → GraphQL updateModelMetadata → deploy"]
     end
@@ -1513,9 +1513,9 @@ flowchart TB
     T1 --> T2
     T2 --> WR --> QD
 
-    style Source fill:#ffe0b2,stroke:#e65100
-    style DAG fill:#e8eaf6
-    style Target fill:#c8e6c9
+    style Source fill:#ffe0b2,stroke:#e65100,color:#1a1a2e
+    style DAG fill:#e8eaf6,color:#1a1a2e
+    style Target fill:#c8e6c9,color:#1a1a2e
     style Source fill:#4f8fea33,stroke:#4f8fea,stroke-width:2px
     style DAG fill:#6c5ce733,stroke:#6c5ce7,stroke-width:2px
     style Target fill:#00b89433,stroke:#00b894,stroke-width:2px
@@ -1922,9 +1922,9 @@ graph TB
         C3 --> C4[1개 SQL] --> C5[JSON 응답]
     end
 
-    style A fill:#e3f2fd
-    style B fill:#e8f5e9
-    style C fill:#fff3e0
+    style A fill:#e3f2fd,color:#1a1a2e
+    style B fill:#e8f5e9,color:#1a1a2e
+    style C fill:#fff3e0,color:#1a1a2e
     style A fill:#4f8fea33,stroke:#4f8fea,stroke-width:2px
     style B fill:#6c5ce733,stroke:#6c5ce7,stroke-width:2px
     style C fill:#00b89433,stroke:#00b894,stroke-width:2px
@@ -2804,13 +2804,13 @@ flowchart TB
         A2[의도 분류\n주가? 재무? 비교?]
         A3[쿼리 계획\n필요한 SQL 수 결정]
         A4[SQL 실행 × N\nWren AI API]
-        A5[메타데이터 보강\nOM API 용어집/태그]
+        A5["메타데이터 보강\nOM API 용어집/태그"]
         A6[결과 종합\nLLM 분석 + 자연어 응답]
     end
 
     subgraph Tools["도구"]
-        W[Wren AI\nPOST /v1/asks]
-        O[OM API\n용어집/메타데이터]
+        W["Wren AI\nPOST /v1/asks"]
+        O["OM API\n용어집/메타데이터"]
         D[PostgreSQL\n직접 쿼리]
     end
 
@@ -2819,8 +2819,8 @@ flowchart TB
     A4 -.-> W
     A5 -.-> O
 
-    style Agent fill:#e8eaf6
-    style Tools fill:#e0f2f1
+    style Agent fill:#e8eaf6,color:#1a1a2e
+    style Tools fill:#e0f2f1,color:#1a1a2e
     style Agent fill:#4f8fea33,stroke:#4f8fea,stroke-width:2px
     style Tools fill:#6c5ce733,stroke:#6c5ce7,stroke-width:2px
 </div>
@@ -2863,9 +2863,9 @@ graph TB
         D5[Mosaic AI\n에이전트]
     end
 
-    style BIP fill:#e8f5e9
-    style PAL fill:#e3f2fd
-    style DBR fill:#fff3e0
+    style BIP fill:#e8f5e9,color:#1a1a2e
+    style PAL fill:#e3f2fd,color:#1a1a2e
+    style DBR fill:#fff3e0,color:#1a1a2e
     style BIP fill:#4f8fea33,stroke:#4f8fea,stroke-width:2px
     style PAL fill:#6c5ce733,stroke:#6c5ce7,stroke-width:2px
     style DBR fill:#00b89433,stroke:#00b894,stroke-width:2px
@@ -2954,13 +2954,13 @@ graph TB
     subgraph Integration["데이터 통합"]
         CONN[200+ 커넥터\nDB, S3, SAP, IoT]
         PB[Pipeline Builder\n노코드 파이프라인]
-        CR[Code Repositories\nPython/SQL 변환]
+        CR["Code Repositories\nPython/SQL 변환"]
     end
 
     subgraph Core["Foundry Core"]
         STORE[Storage Layer\nParquet + 메타데이터]
         ONT[Ontology\nObject Types + Links + Actions]
-        SEC[Dynamic Security\nRow/Object 레벨 접근 제어]
+        SEC["Dynamic Security\nRow/Object 레벨 접근 제어"]
     end
 
     subgraph AI["AIP (AI Platform)"]
@@ -2980,10 +2980,10 @@ graph TB
     ONT --> LOGIC & AGENT
     ONT --> CONT & WORK & QUIV
 
-    style Integration fill:#e3f2fd
-    style Core fill:#e8eaf6
-    style AI fill:#fce4ec
-    style Apps fill:#e8f5e9
+    style Integration fill:#e3f2fd,color:#1a1a2e
+    style Core fill:#e8eaf6,color:#1a1a2e
+    style AI fill:#fce4ec,color:#1a1a2e
+    style Apps fill:#e8f5e9,color:#1a1a2e
     style Integration fill:#4f8fea33,stroke:#4f8fea,stroke-width:2px
     style Core fill:#6c5ce733,stroke:#6c5ce7,stroke-width:2px
     style AI fill:#00b89433,stroke:#00b894,stroke-width:2px
@@ -3046,8 +3046,8 @@ graph LR
     WR_BIP -.->|시맨틱 모델| ONT_P
     LG_BIP -.->|워크플로우/Actions| ONT_P
 
-    style BIP fill:#e8f5e9
-    style Palantir fill:#e3f2fd
+    style BIP fill:#e8f5e9,color:#1a1a2e
+    style Palantir fill:#e3f2fd,color:#1a1a2e
     style BIP fill:#4f8fea33,stroke:#4f8fea,stroke-width:2px
     style Palantir fill:#6c5ce733,stroke:#6c5ce7,stroke-width:2px
 </div>
@@ -3140,8 +3140,8 @@ graph TB
 
     subgraph Analytics["분석"]
         SQL_D[Databricks SQL\n서버리스 SQL]
-        DASH[AI/BI Dashboards\n자연어 대시보드]
-        NB[Notebooks\nPython/SQL/R/Scala]
+        DASH["AI/BI Dashboards\n자연어 대시보드"]
+        NB["Notebooks\nPython/SQL/R/Scala"]
     end
 
     UI_D --> JOB
@@ -3152,10 +3152,10 @@ graph TB
     DL --> GEN
     DL --> MOS & MLF
 
-    style Control fill:#fff3e0
-    style Data fill:#e8f5e9
-    style AI_ML fill:#e3f2fd
-    style Analytics fill:#fce4ec
+    style Control fill:#fff3e0,color:#1a1a2e
+    style Data fill:#e8f5e9,color:#1a1a2e
+    style AI_ML fill:#e3f2fd,color:#1a1a2e
+    style Analytics fill:#fce4ec,color:#1a1a2e
     style Control fill:#4f8fea33,stroke:#4f8fea,stroke-width:2px
     style Data fill:#6c5ce733,stroke:#6c5ce7,stroke-width:2px
     style AI_ML fill:#00b89433,stroke:#00b894,stroke-width:2px
@@ -3213,7 +3213,7 @@ graph TB
 
     subgraph Features["핵심 기능"]
         LIN[자동 Lineage\n테이블 + 컬럼 레벨]
-        ACC[접근 제어\nANSI SQL GRANT/REVOKE]
+        ACC["접근 제어\nANSI SQL GRANT/REVOKE"]
         TAG[메타데이터 태깅\n분류 + 검색]
         AUD[감사 로그\n누가 언제 무엇을]
     end
@@ -3221,9 +3221,9 @@ graph TB
     UC --> CAT --> SCH --> OBJ
     UC --> LIN & ACC & TAG & AUD
 
-    style UC fill:#fff3e0,stroke:#e65100
-    style Namespace fill:#e8f5e9
-    style Features fill:#e3f2fd
+    style UC fill:#fff3e0,stroke:#e65100,color:#1a1a2e
+    style Namespace fill:#e8f5e9,color:#1a1a2e
+    style Features fill:#e3f2fd,color:#1a1a2e
     style Namespace fill:#4f8fea33,stroke:#4f8fea,stroke-width:2px
     style Features fill:#6c5ce733,stroke:#6c5ce7,stroke-width:2px
 </div>
@@ -3378,8 +3378,8 @@ graph LR
     Bronze --> Silver --> Gold
 
     style Bronze fill:#cd7f32,color:white
-    style Silver fill:#c0c0c0
-    style Gold fill:#ffd700
+    style Silver fill:#c0c0c0,color:#1a1a2e
+    style Gold fill:#ffd700,color:#1a1a2e
     style Bronze fill:#4f8fea33,stroke:#4f8fea,stroke-width:2px
     style Silver fill:#6c5ce733,stroke:#6c5ce7,stroke-width:2px
     style Gold fill:#00b89433,stroke:#00b894,stroke-width:2px
@@ -3455,15 +3455,15 @@ graph TB
         OM[OpenMetadata\n카탈로그 + Lineage + 용어집]
         WR[Wren AI\nMDL + NL2SQL]
         LG[LangGraph\n에이전트 오케스트레이션]
-        KA[Kafka/Spark\n스트리밍 (미사용)]
+        KA["Kafka/Spark\n스트리밍 (미사용)"]
     end
 
     subgraph PAL["Palantir 대응"]
         direction TB
         P_PB[Pipeline Builder\n+ Code Repos]
         P_ST[Foundry Storage]
-        P_ON[Ontology\n(카탈로그+시맨틱+액션 통합)]
-        P_AI[AIP\n(LLM+NL2SQL+에이전트 통합)]
+        P_ON["Ontology\n(카탈로그+시맨틱+액션 통합)"]
+        P_AI["AIP\n(LLM+NL2SQL+에이전트 통합)"]
         P_AG[Agent Studio]
         P_MC[Machinery\n프로세스 마이닝]
     end
@@ -3485,9 +3485,9 @@ graph TB
     LG -.-> P_AG -.-> D_MA
     KA -.-> P_MC -.-> D_SS
 
-    style BIP fill:#e8f5e9
-    style PAL fill:#e3f2fd
-    style DBR fill:#fff3e0
+    style BIP fill:#e8f5e9,color:#1a1a2e
+    style PAL fill:#e3f2fd,color:#1a1a2e
+    style DBR fill:#fff3e0,color:#1a1a2e
     style BIP fill:#4f8fea33,stroke:#4f8fea,stroke-width:2px
     style PAL fill:#6c5ce733,stroke:#6c5ce7,stroke-width:2px
     style DBR fill:#00b89433,stroke:#00b894,stroke-width:2px

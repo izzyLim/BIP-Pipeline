@@ -351,14 +351,14 @@
 graph LR
     P0[Phase 0\n현황 파악\n1주] --> P1[Phase 1\n데이터 정비\n2-3주]
     P1 --> P2[Phase 2\nWren AI 구축\n1주]
-    P2 --> P3[Phase 3\n튜닝 & 검증\n2-3주]
-    P3 --> P4[Phase 4\n운영 & 확장\n지속]
+    P2 --> P3["Phase 3\n튜닝 & 검증\n2-3주"]
+    P3 --> P4["Phase 4\n운영 & 확장\n지속"]
 
-    style P0 fill:#e3f2fd
-    style P1 fill:#fff3e0
-    style P2 fill:#e8f5e9
-    style P3 fill:#fce4ec
-    style P4 fill:#f3e5f5
+    style P0 fill:#e3f2fd,color:#1a1a2e
+    style P1 fill:#fff3e0,color:#1a1a2e
+    style P2 fill:#e8f5e9,color:#1a1a2e
+    style P3 fill:#fce4ec,color:#1a1a2e
+    style P4 fill:#f3e5f5,color:#1a1a2e
 </div>
 
 <blockquote>
@@ -389,10 +389,10 @@ graph TB
     D3 --> M3
     D4 --> M4
 
-    style M1 fill:#e8f5e9
-    style M2 fill:#e3f2fd
-    style M3 fill:#fff3e0
-    style M4 fill:#fce4ec
+    style M1 fill:#e8f5e9,color:#1a1a2e
+    style M2 fill:#e3f2fd,color:#1a1a2e
+    style M3 fill:#fff3e0,color:#1a1a2e
+    style M4 fill:#fce4ec,color:#1a1a2e
     style Methods fill:#4f8fea33,stroke:#4f8fea,stroke-width:2px
     style Data fill:#6c5ce733,stroke:#6c5ce7,stroke-width:2px
 </div>
@@ -400,12 +400,12 @@ graph TB
 <h3 id="판단-결정-트리">판단 결정 트리</h3>
 <div class="mermaid">
 graph TB
-    Q[질문 유형 판단] --> Q1{정확한 숫자/집계가\n필요한가?}
+    Q[질문 유형 판단] --> Q1{"정확한 숫자/집계가\n필요한가?"}
     Q1 -->|Yes| Q1a{데이터가\nDB 테이블에 있는가?}
     Q1a -->|Yes| NL["✅ NL2SQL"]
     Q1a -->|No| TOOL["✅ Tool Call\n(외부 API)"]
 
-    Q1 -->|No| Q2{텍스트/문서 내용을\n찾아야 하는가?}
+    Q1 -->|No| Q2{"텍스트/문서 내용을\n찾아야 하는가?"}
     Q2 -->|Yes| RAG["✅ RAG"]
 
     Q2 -->|No| Q3{엔티티 간 관계를\n따라가야 하는가?}
@@ -415,11 +415,11 @@ graph TB
     Q4 -->|Yes| AGENT["✅ Agent\n(복합 조합)"]
     Q4 -->|No| LLM["✅ LLM 직접\n(일반 지식)"]
 
-    style NL fill:#e8f5e9
-    style RAG fill:#e3f2fd
-    style GRAPH fill:#fff3e0
-    style TOOL fill:#fce4ec
-    style AGENT fill:#f3e5f5
+    style NL fill:#e8f5e9,color:#1a1a2e
+    style RAG fill:#e3f2fd,color:#1a1a2e
+    style GRAPH fill:#fff3e0,color:#1a1a2e
+    style TOOL fill:#fce4ec,color:#1a1a2e
+    style AGENT fill:#f3e5f5,color:#1a1a2e
 </div>
 
 <h3 id="방식별-상세-비교">방식별 상세 비교</h3>
@@ -824,15 +824,15 @@ graph TB
     end
 
     subgraph Gold["Gold (NL2SQL용 와이드 테이블)"]
-        G1[daily_sales_summary\n날짜별 매출/수량/제품별 집계]
-        G2[customer_360\n고객별 구매이력/세그먼트/LTV]
+        G1["daily_sales_summary\n날짜별 매출/수량/제품별 집계"]
+        G2["customer_360\n고객별 구매이력/세그먼트/LTV"]
     end
 
     R1 & R2 & R3 --> G1
     R1 & R2 & R4 --> G2
 
-    style Raw fill:#fff3e0
-    style Gold fill:#e8f5e9
+    style Raw fill:#fff3e0,color:#1a1a2e
+    style Gold fill:#e8f5e9,color:#1a1a2e
     style Raw fill:#4f8fea33,stroke:#4f8fea,stroke-width:2px
     style Gold fill:#6c5ce733,stroke:#6c5ce7,stroke-width:2px
 </div>
@@ -1024,9 +1024,9 @@ graph LR
     B -->|의미 필터링| Q2["WHERE is_foreign_net_buy = true"]
     C -->|답변 품질| Q3["LLM: '외국인은 순매도 상태'"]
 
-    style A fill:#fff3e0
-    style B fill:#e8f5e9
-    style C fill:#e3f2fd
+    style A fill:#fff3e0,color:#1a1a2e
+    style B fill:#e8f5e9,color:#1a1a2e
+    style C fill:#e3f2fd,color:#1a1a2e
     style View fill:#4f8fea33,stroke:#4f8fea,stroke-width:2px
 </div>
 
@@ -1146,8 +1146,8 @@ graph TB
     S3 --> S4["4단계: Relationship 설정"]
     S4 --> S5["5단계: Deploy"]
 
-    style S1 fill:#e8f5e9
-    style S3 fill:#fff3e0
+    style S1 fill:#e8f5e9,color:#1a1a2e
+    style S3 fill:#fff3e0,color:#1a1a2e
 </div>
 
 <p><strong>BIP에서 겪은 실수들:</strong></p>

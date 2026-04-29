@@ -360,17 +360,17 @@
 <p><strong>참고:</strong> <a href="https://github.com/TauricResearch/TradingAgents">TradingAgents</a> (48.5k stars)의 Bull/Bear debate discipline 차용</p>
 <div class="mermaid">
 graph LR
-A[Airflow DAG 평일 18:00 KST] -->|HTTP POST| B[BIP-Agents API /api/screener/daily]
+A["Airflow DAG 평일 18:00 KST"] -->|HTTP POST| B["BIP-Agents API /api/screener/daily"]
     B --> C[Phase 1 Deterministic 스크리닝]
     C --> D[Phase 2 멀티 에이전트 토론]
     D --> E[stock_recommendations DB 저장]
     D --> F[텔레그램 발송]
-    style A fill:#dbeafe,stroke:#2563eb
-    style B fill:#dbeafe,stroke:#2563eb
-    style C fill:#d1fae5,stroke:#059669
-    style D fill:#f3e8ff,stroke:#7c3aed
-    style E fill:#fef3c7,stroke:#d97706
-    style F fill:#fef3c7,stroke:#d97706
+    style A fill:#dbeafe,stroke:#2563eb,color:#1a1a2e
+    style B fill:#dbeafe,stroke:#2563eb,color:#1a1a2e
+    style C fill:#d1fae5,stroke:#059669,color:#1a1a2e
+    style D fill:#f3e8ff,stroke:#7c3aed,color:#1a1a2e
+    style E fill:#fef3c7,stroke:#d97706,color:#1a1a2e
+    style F fill:#fef3c7,stroke:#d97706,color:#1a1a2e
 </div>
 
 <p>전체 시스템 흐름</p>
@@ -378,7 +378,7 @@ A[Airflow DAG 평일 18:00 KST] -->|HTTP POST| B[BIP-Agents API /api/screener/da
 <div class="mermaid">
 graph TD
 subgraph Phase1["Phase 1: Deterministic 스크리닝 (2초)"]
-    DB[(analytics_stock_daily + consensus_estimates + analytics_valuation)]
+    DB["(analytics_stock_daily + consensus_estimates + analytics_valuation)"]
     SQL[SQL 기본 필터 시총 5000억+ 거래대금 10억+ 급등 제외]
     PRESET[7개 프리셋 필터 oversold_bounce golden_cross value_momentum breakout deep_value trend_follow vcp_breakout]
     SCORE[4카테고리 스코어링 기술 40 + 수급 25 + 밸류 20 + 매크로 15]
@@ -390,7 +390,7 @@ subgraph Phase1["Phase 1: Deterministic 스크리닝 (2초)"]
     FILTER -->|15개| TOP[상위 5개 선발]
     end
     subgraph Phase2["Phase 2: 멀티 에이전트 토론 (130초, 병렬)"]
-    ANALYST[4 Analyst Memo 기술 / 재무 / 뉴스 / 수급 Haiku + MCP 병렬]
+    ANALYST["4 Analyst Memo 기술 / 재무 / 뉴스 / 수급 Haiku + MCP 병렬"]
     BULL[Bull Researcher 매수 논거 Sonnet]
     BEAR[Bear Researcher 매도 논거 + 한국 반증 Sonnet]
     MGR[Research Manager 방향 판정 Haiku]
@@ -402,12 +402,12 @@ subgraph Phase1["Phase 1: Deterministic 스크리닝 (2초)"]
     BEAR --> MGR
     MGR --> GRADE
     end
-    GRADE --> OUT[Buy / Overweight / Hold Underweight / Sell]
-    style Phase1 fill:#f0fdf4,stroke:#059669
-    style Phase2 fill:#faf5ff,stroke:#7c3aed
-    style DB fill:#dbeafe,stroke:#2563eb
-    style TOP fill:#fef3c7,stroke:#d97706
-    style OUT fill:#fee2e2,stroke:#dc2626
+    GRADE --> OUT["Buy / Overweight / Hold Underweight / Sell"]
+    style Phase1 fill:#f0fdf4,stroke:#059669,color:#1a1a2e
+    style Phase2 fill:#faf5ff,stroke:#7c3aed,color:#1a1a2e
+    style DB fill:#dbeafe,stroke:#2563eb,color:#1a1a2e
+    style TOP fill:#fef3c7,stroke:#d97706,color:#1a1a2e
+    style OUT fill:#fee2e2,stroke:#dc2626,color:#1a1a2e
     style Phase1 fill:#4f8fea33,stroke:#4f8fea,stroke-width:2px
     style Phase2 fill:#6c5ce733,stroke:#6c5ce7,stroke-width:2px
 </div>
@@ -421,12 +421,12 @@ A[전체 종목 ~540개] -->|시총/거래대금/급등 필터| B[기본 후보 
     C -->|스코어링 + 품질 필터| D[품질 통과 31개]
     D -->|섹터 중립 + 상위 제한| E[최종 후보 15개]
     E -->|top_n_debate| F[Phase 2 5개]
-    style A fill:#f1f5f9,stroke:#94a3b8
-    style B fill:#dbeafe,stroke:#2563eb
-    style C fill:#d1fae5,stroke:#059669
-    style D fill:#fef3c7,stroke:#d97706
-    style E fill:#fef3c7,stroke:#d97706
-    style F fill:#f3e8ff,stroke:#7c3aed
+    style A fill:#f1f5f9,stroke:#94a3b8,color:#1a1a2e
+    style B fill:#dbeafe,stroke:#2563eb,color:#1a1a2e
+    style C fill:#d1fae5,stroke:#059669,color:#1a1a2e
+    style D fill:#fef3c7,stroke:#d97706,color:#1a1a2e
+    style E fill:#fef3c7,stroke:#d97706,color:#1a1a2e
+    style F fill:#f3e8ff,stroke:#7c3aed,color:#1a1a2e
 </div>
 
 <p>Phase 1 스크리닝 퍼널</p>
@@ -475,8 +475,8 @@ A[컨센서스 목표가 +10% 이상?] -->|Yes| Z[목표가 확정]
     C -->|+10% 이상?| Z
     C -->|No| D[현재가 x 1.10 Fallback]
     D --> Z
-    style A fill:#dbeafe,stroke:#2563eb
-    style Z fill:#d1fae5,stroke:#059669
+    style A fill:#dbeafe,stroke:#2563eb,color:#1a1a2e
+    style Z fill:#d1fae5,stroke:#059669,color:#1a1a2e
 </div>
 
 <h2 id="4-phase-2-멀티-에이전트-토론">4. Phase 2: 멀티 에이전트 토론</h2>
@@ -510,8 +510,8 @@ graph TD
     D1 --> RESULT[결과 취합 + 등급 결정]
     D2 --> RESULT
     A3 --> RESULT
-    style parallel fill:#faf5ff,stroke:#7c3aed
-    style RESULT fill:#d1fae5,stroke:#059669
+    style parallel fill:#faf5ff,stroke:#7c3aed,color:#1a1a2e
+    style RESULT fill:#d1fae5,stroke:#059669,color:#1a1a2e
     style parallel fill:#4f8fea33,stroke:#4f8fea,stroke-width:2px
     style stock1 fill:#6c5ce733,stroke:#6c5ce7,stroke-width:2px
     style stock2 fill:#00b89433,stroke:#00b894,stroke-width:2px
@@ -540,10 +540,10 @@ MEMO[4개 Analyst Memo] --> BULL["Bull Researcher (Sonnet) 매수 논거 200자"
     BULL --> MGR["Research Manager (Haiku) 방향 판정"]
     BEAR --> MGR
     MGR -->|bull_strong bull_win neutral bear_win bear_strong| GRADE[Deterministic 등급 결정]
-    style BULL fill:#d1fae5,stroke:#059669
-    style BEAR fill:#fee2e2,stroke:#dc2626
-    style MGR fill:#dbeafe,stroke:#2563eb
-    style GRADE fill:#fef3c7,stroke:#d97706
+    style BULL fill:#d1fae5,stroke:#059669,color:#1a1a2e
+    style BEAR fill:#fee2e2,stroke:#dc2626,color:#1a1a2e
+    style MGR fill:#dbeafe,stroke:#2563eb,color:#1a1a2e
+    style GRADE fill:#fef3c7,stroke:#d97706,color:#1a1a2e
 </div>
 
 <p>Bull/Bear 토론 → Manager 판정 → 등급 결정</p>
@@ -578,9 +578,9 @@ P1[Phase 1 스코어] --> BASE{Base Level}
     BUY & OW & HOLD & UW & SELL --> CALC["최종 = clamp(0~4, base + modifier)"]
     P2 & P1M & Z & M1 & M2 --> CALC
     CALC --> FINAL["Buy / Overweight / Hold / Underweight / Sell"]
-    style P1 fill:#d1fae5,stroke:#059669
-    style DIR fill:#f3e8ff,stroke:#7c3aed
-    style FINAL fill:#fef3c7,stroke:#d97706
+    style P1 fill:#d1fae5,stroke:#059669,color:#1a1a2e
+    style DIR fill:#f3e8ff,stroke:#7c3aed,color:#1a1a2e
+    style FINAL fill:#fef3c7,stroke:#d97706,color:#1a1a2e
 </div>
 
 <p>Deterministic 등급 결정: LLM은 방향만, 등급은 코드가 결정</p>
@@ -649,16 +649,16 @@ P1[Phase 1 스코어] --> BASE{Base Level}
 <div class="mermaid">
 graph TD
 ALL[전체 후보 149개] --> P1[1. 과매도 반등 RSI 45이하 + MACD양전환]
-    ALL --> P2[2. 골든크로스 MA5 > MA20 근접]
+    ALL --> P2["2. 골든크로스 MA5 > MA20 근접"]
     ALL --> P3[3. 가치 모멘텀 PER 15이하 + ROE 10이상]
     ALL --> P4[4. 돌파 52주 고점 근접]
     ALL --> P5[5. 심층 가치 PER 7이하 + PBR 0.8이하]
     ALL --> P6[6. 추세 추종 MA 정배열 + 수급]
     ALL --> P7[7. VCP 돌파 완전정배열 + vol200%]
     P1 & P2 & P3 & P4 & P5 & P6 & P7 -->|OR 조건| MERGE[합집합 34개 한 종목이 여러 프리셋 매칭 가능]
-    style ALL fill:#f1f5f9,stroke:#94a3b8
-    style MERGE fill:#d1fae5,stroke:#059669
-    style P7 fill:#fef3c7,stroke:#d97706
+    style ALL fill:#f1f5f9,stroke:#94a3b8,color:#1a1a2e
+    style MERGE fill:#d1fae5,stroke:#059669,color:#1a1a2e
+    style P7 fill:#fef3c7,stroke:#d97706,color:#1a1a2e
 </div>
 
 <p>7개 프리셋은 OR 조건 (하나라도 매칭되면 통과)</p>
@@ -766,11 +766,11 @@ subgraph MCP["MCP 서버 (bip-stock-mcp)"]
     FUND[재무 분석가] -.-> DART
     NEWS_A[뉴스 분석가] -.-> NEWS & DART
     FLOW[수급 분석가] -.-> RT & DB_TOOL
-    style MCP fill:#f1f5f9,stroke:#94a3b8
-    style TECH fill:#dbeafe,stroke:#2563eb
-    style FUND fill:#d1fae5,stroke:#059669
-    style NEWS_A fill:#fef3c7,stroke:#d97706
-    style FLOW fill:#f3e8ff,stroke:#7c3aed
+    style MCP fill:#f1f5f9,stroke:#94a3b8,color:#1a1a2e
+    style TECH fill:#dbeafe,stroke:#2563eb,color:#1a1a2e
+    style FUND fill:#d1fae5,stroke:#059669,color:#1a1a2e
+    style NEWS_A fill:#fef3c7,stroke:#d97706,color:#1a1a2e
+    style FLOW fill:#f3e8ff,stroke:#7c3aed,color:#1a1a2e
     style MCP fill:#4f8fea33,stroke:#4f8fea,stroke-width:2px
 </div>
 
@@ -910,7 +910,7 @@ subgraph BIP_Agents["BIP-Agents / langgraph / screener /"]
     SN[screener_node.py SQL 스크리닝]
     SC[scorer.py 스코어링]
     AN[analysts.py 4 Analyst]
-    DB_F[debate.py Bull/Bear + Manager]
+    DB_F["debate.py Bull/Bear + Manager"]
     EX[explainer.py 메시지 생성]
     MN[main.py 통합 진입점]
     GR[graph.py LangGraph]
@@ -923,8 +923,8 @@ subgraph BIP_Agents["BIP-Agents / langgraph / screener /"]
     MN --> GR
     GR --> SN --> SC --> EX
     MN --> AN --> DB_F
-    style BIP_Agents fill:#faf5ff,stroke:#7c3aed
-    style API fill:#dbeafe,stroke:#2563eb
+    style BIP_Agents fill:#faf5ff,stroke:#7c3aed,color:#1a1a2e
+    style API fill:#dbeafe,stroke:#2563eb,color:#1a1a2e
     style BIP_Agents fill:#4f8fea33,stroke:#4f8fea,stroke-width:2px
     style API fill:#6c5ce733,stroke:#6c5ce7,stroke-width:2px
 </div>

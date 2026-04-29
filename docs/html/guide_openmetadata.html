@@ -418,15 +418,15 @@ graph TB
     end
 
     subgraph Server["OpenMetadata Server"]
-        REST[REST API Layer\nDropwizard/Java]
+        REST["REST API Layer\nDropwizard/Java"]
         SCHEMA[JSON Schema\n엔티티 모델 정의]
-        AUTH[인증/인가\nJWT, SSO, RBAC]
+        AUTH["인증/인가\nJWT, SSO, RBAC"]
         EVENT[이벤트 핸들러\n변경 감지, 알림]
     end
 
     subgraph Storage["저장소"]
-        DB[(MySQL / PostgreSQL\n메타데이터 저장)]
-        ES[(Elasticsearch\n검색 인덱스)]
+        DB["(MySQL / PostgreSQL\n메타데이터 저장)"]
+        ES["(Elasticsearch\n검색 인덱스)"]
     end
 
     subgraph Ingestion["수집 프레임워크"]
@@ -437,7 +437,7 @@ graph TB
     end
 
     subgraph External["외부 시스템"]
-        PG[(PostgreSQL)]
+        PG["(PostgreSQL)"]
         AF[Airflow]
         DASH[대시보드 도구]
         MSG[메시징 시스템]
@@ -457,10 +457,10 @@ graph TB
 
     CONN --> PG & AF & DASH & MSG
 
-    style Server fill:#e3f2fd
-    style Storage fill:#e8f5e9
-    style Ingestion fill:#fff3e0
-    style External fill:#fce4ec
+    style Server fill:#e3f2fd,color:#1a1a2e
+    style Storage fill:#e8f5e9,color:#1a1a2e
+    style Ingestion fill:#fff3e0,color:#1a1a2e
+    style External fill:#fce4ec,color:#1a1a2e
     style Clients fill:#4f8fea33,stroke:#4f8fea,stroke-width:2px
     style Server fill:#6c5ce733,stroke:#6c5ce7,stroke-width:2px
     style Storage fill:#00b89433,stroke:#00b894,stroke-width:2px
@@ -637,7 +637,7 @@ graph LR
     T3 --> C1
     T3 --> C2
 
-    style T3 fill:#c8e6c9
+    style T3 fill:#c8e6c9,color:#1a1a2e
 </div>
 
 <p><strong>자동 계보 수집</strong>
@@ -701,10 +701,10 @@ graph TB
     T1 -.- S1["동의어: Price-to-Earnings Ratio"]
     T2 -.- S2["동의어: Return on Equity"]
 
-    style G fill:#e1bee7
-    style T1 fill:#f3e5f5
-    style T2 fill:#f3e5f5
-    style T3 fill:#f3e5f5
+    style G fill:#e1bee7,color:#1a1a2e
+    style T1 fill:#f3e5f5,color:#1a1a2e
+    style T2 fill:#f3e5f5,color:#1a1a2e
+    style T3 fill:#f3e5f5,color:#1a1a2e
 </div>
 
 <p><strong>계층 구조</strong>
@@ -1296,16 +1296,16 @@ graph TB
 <div class="mermaid">
 graph TB
     R[역할 Role] --> P[정책 Policy]
-    P --> RULE1[규칙 1: 테이블 편집 허용]
-    P --> RULE2[규칙 2: PII 태그 자산 조회 차단]
-    P --> RULE3[규칙 3: Gold 레이어만 접근 허용]
+    P --> RULE1["규칙 1: 테이블 편집 허용"]
+    P --> RULE2["규칙 2: PII 태그 자산 조회 차단"]
+    P --> RULE3["규칙 3: Gold 레이어만 접근 허용"]
 
     RULE1 --> |조건| COND1[소유한 자산만]
     RULE2 --> |조건| COND2[PII.Sensitive 태그]
     RULE3 --> |조건| COND3[DataLayer.gold 태그]
 
-    style R fill:#bbdefb
-    style P fill:#c8e6c9
+    style R fill:#bbdefb,color:#1a1a2e
+    style P fill:#c8e6c9,color:#1a1a2e
 </div>
 
 <ul>
@@ -1654,13 +1654,13 @@ graph LR
         SYNC2["om_sync_wrenai.py"]
     end
 
-    DB[(PostgreSQL\nDB COMMENT)]
+    DB["(PostgreSQL\nDB COMMENT)"]
     WREN[Wren AI\n모델 description]
 
     OM --> SYNC1 --> DB
     OM --> SYNC2 --> WREN
 
-    style OM fill:#fff3e0,stroke:#e65100
+    style OM fill:#fff3e0,stroke:#e65100,color:#1a1a2e
 </div>
 
 <ul>
@@ -1717,7 +1717,7 @@ graph LR
 
     T5 --> C1 & C2 & C3
 
-    style T5 fill:#c8e6c9
+    style T5 fill:#c8e6c9,color:#1a1a2e
 </div>
 
 <p>리니지 등록 방식:

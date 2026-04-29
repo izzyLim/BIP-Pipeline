@@ -341,7 +341,7 @@ graph TB
     subgraph WAY1["방식 1: WrenAI / LangChain SQL Agent"]
         W1[질문] --> W2[LLM]
         W2 -->|SQL 직접 생성| W3[SQL]
-        W3 --> W4[검증/실행]
+        W3 --> W4["검증/실행"]
         W2 -.위험.-> WR1["⚠ 환각: SQL 문법 오류\n⚠ JOIN 경로 오선택\n⚠ DB 방언 혼동"]
     end
 
@@ -357,7 +357,7 @@ graph TB
         Q2 -->|구조화된 의도만| Q3[QuerySpec\nPydantic 모델]
         Q3 --> Q4[규칙 기반\n변환기]
         Q4 --> Q5[SQL]
-        Q5 --> Q6[검증/실행]
+        Q5 --> Q6["검증/실행"]
         Q3 -.이점.-> QR1["✅ LLM은 의도만 파악\n✅ JOIN/방언 결정론\n✅ 인젝션 차단"]
     end
     style WAY1 fill:#4f8fea33,stroke:#4f8fea,stroke-width:2px
@@ -412,14 +412,14 @@ graph LR
     P1[사내 적용 시도\nOracle 19c] -->|ibis-server 23ai만 지원\n호환 불가| P2
     P2[Cube로 전환] -->|7개 모델 OK\n단순 쿼리 OK| P3
     P3[Cube 한계 발견] -->|팩트-팩트 JOIN 불가\n핵심 케이스 실패| P4
-    P4[대안 재검토\n+ DAQUV/논문 조사] -->|Codex 검토\n옵션 C 선정| P5
+    P4["대안 재검토\n+ DAQUV/논문 조사"] -->|Codex 검토\n옵션 C 선정| P5
     P5[LangGraph 직접 구현\n= 현재]
 
-    style P0 fill:#90EE90
-    style P1 fill:#FFB6C1
-    style P2 fill:#FFE4B5
-    style P3 fill:#FFB6C1
-    style P5 fill:#90EE90
+    style P0 fill:#90EE90,color:#1a1a2e
+    style P1 fill:#FFB6C1,color:#1a1a2e
+    style P2 fill:#FFE4B5,color:#1a1a2e
+    style P3 fill:#FFB6C1,color:#1a1a2e
+    style P5 fill:#90EE90,color:#1a1a2e
 </div>
 
 <p>각 전환의 근거는 <code>nl2sql_implementation_plan_v2.md</code> §11에 의사결정 이력으로 기록되어 있다.</p>
@@ -490,13 +490,13 @@ graph TB
     end
 
     subgraph Knowledge["Knowledge Layer"]
-        REG[(Schema Registry\nDB + YAML)]
-        VDB[(pgvector\nRAG)]
+        REG["(Schema Registry\nDB + YAML)"]
+        VDB["(pgvector\nRAG)"]
     end
 
     subgraph Data["Data Layer"]
-        DB[(PostgreSQL / Oracle)]
-        OM[(OpenMetadata)]
+        DB["(PostgreSQL / Oracle)"]
+        OM["(OpenMetadata)"]
     end
 
     USER --> IC
@@ -944,11 +944,11 @@ graph TB
     end
 
     subgraph CODE["코드의 책임"]
-        C1[Schema/JOIN 조회]
+        C1["Schema/JOIN 조회"]
         C2[SQL 생성 — 규칙 기반]
-        C3[검증 — sqlglot/dry-run]
+        C3["검증 — sqlglot/dry-run"]
         C4[실행 — DB connection]
-        C5[보안 — allowlist/audit]
+        C5["보안 — allowlist/audit"]
     end
 
     L1 --> L2
