@@ -288,81 +288,127 @@
   </div>
   <nav class="toc">
 <ul>
-<li class="toc-h2"><a href="#1-개요">1. 개요</a></li>
-  <li class="toc-h3"><a href="#1-1-wren-ai란">1-1. Wren AI란?</a></li>
-  <li class="toc-h3"><a href="#1-2-5대-설계-철학">1-2. 5대 설계 철학</a></li>
-  <li class="toc-h3"><a href="#1-3-wren-ai의-정확한-포지셔닝">1-3. Wren AI의 정확한 포지셔닝</a></li>
-<li class="toc-h2"><a href="#2-아키텍처">2. 아키텍처</a></li>
-  <li class="toc-h3"><a href="#2-1-전체-구조">2-1. 전체 구조</a></li>
-  <li class="toc-h3"><a href="#2-2-각-컴포넌트-역할">2-2. 각 컴포넌트 역할</a></li>
-  <li class="toc-h3"><a href="#2-3-데이터-흐름">2-3. 데이터 흐름</a></li>
-  <li class="toc-h3"><a href="#2-4-docker-compose-구성">2-4. Docker Compose 구성</a></li>
-<li class="toc-h2"><a href="#3-wren-engine">3. Wren Engine</a></li>
-  <li class="toc-h3"><a href="#3-1-mdl-modeling-definition-language">3-1. MDL (Modeling Definition Language)</a></li>
-  <li class="toc-h3"><a href="#3-2-쿼리-처리-파이프라인">3-2. 쿼리 처리 파이프라인</a></li>
-  <li class="toc-h3"><a href="#3-3-dry-run--dry-plan">3-3. Dry Run / Dry Plan</a></li>
-  <li class="toc-h3"><a href="#3-4-mcp-서버-지원">3-4. MCP 서버 지원</a></li>
-<li class="toc-h2"><a href="#4-모델링-modeling">4. 모델링 (Modeling)</a></li>
-  <li class="toc-h3"><a href="#4-1-models">4-1. Models</a></li>
-  <li class="toc-h3"><a href="#4-2-relationships">4-2. Relationships</a></li>
-  <li class="toc-h3"><a href="#4-3-calculated-fields">4-3. Calculated Fields</a></li>
-  <li class="toc-h3"><a href="#4-4-metrics">4-4. Metrics</a></li>
-  <li class="toc-h3"><a href="#4-5-views">4-5. Views</a></li>
-<li class="toc-h2"><a href="#5-nl2sql-기능-ask">5. NL2SQL 기능 (Ask)</a></li>
-  <li class="toc-h3"><a href="#5-1-질문-방법">5-1. 질문 방법</a></li>
-  <li class="toc-h3"><a href="#5-2-sql-생성-파이프라인">5-2. SQL 생성 파이프라인</a></li>
-  <li class="toc-h3"><a href="#5-3-답변-생성-sql_answer">5-3. 답변 생성 (sql_answer)</a></li>
-  <li class="toc-h3"><a href="#5-4-follow-up-질문">5-4. Follow-up 질문</a></li>
-  <li class="toc-h3"><a href="#5-5-차트-생성">5-5. 차트 생성</a></li>
-<li class="toc-h2"><a href="#6-sql-pairs">6. SQL Pairs</a></li>
-  <li class="toc-h3"><a href="#6-1-개념">6-1. 개념</a></li>
-  <li class="toc-h3"><a href="#6-2-생성-방법">6-2. 생성 방법</a></li>
-  <li class="toc-h3"><a href="#6-3-효과">6-3. 효과</a></li>
-  <li class="toc-h3"><a href="#6-4-카테고리별-추천">6-4. 카테고리별 추천</a></li>
-  <li class="toc-h3"><a href="#6-5-bip-실적">6-5. BIP 실적</a></li>
-<li class="toc-h2"><a href="#7-instructions">7. Instructions</a></li>
-  <li class="toc-h3"><a href="#7-1-개념">7-1. 개념</a></li>
-  <li class="toc-h3"><a href="#7-2-3-5개로-최소-유지">7-2. 3-5개로 최소 유지</a></li>
-  <li class="toc-h3"><a href="#7-3-bip에서-등록한-4개">7-3. BIP에서 등록한 4개</a></li>
-<li class="toc-h2"><a href="#8-llm-설정">8. LLM 설정</a></li>
-  <li class="toc-h3"><a href="#8-1-litellm-기반-멀티-프로바이더">8-1. LiteLLM 기반 멀티 프로바이더</a></li>
-  <li class="toc-h3"><a href="#8-2-지원-모델">8-2. 지원 모델</a></li>
-  <li class="toc-h3"><a href="#8-3-configyaml-설정-방법">8-3. config.yaml 설정 방법</a></li>
-  <li class="toc-h3"><a href="#8-4-gpt-5-시리즈-주의사항">8-4. GPT-5 시리즈 주의사항</a></li>
-  <li class="toc-h3"><a href="#8-5-bip-모델-비교-결과">8-5. BIP 모델 비교 결과</a></li>
-  <li class="toc-h3"><a href="#8-6-openai-편향">8-6. OpenAI 편향</a></li>
-<li class="toc-h2"><a href="#9-지원-데이터-소스">9. 지원 데이터 소스</a></li>
-  <li class="toc-h3"><a href="#9-1-11개-데이터-소스">9-1. 11개 데이터 소스</a></li>
-  <li class="toc-h3"><a href="#9-2-연결-설정-방법">9-2. 연결 설정 방법</a></li>
-<li class="toc-h2"><a href="#10-deploy">10. Deploy</a></li>
-  <li class="toc-h3"><a href="#10-1-deploy-버튼의-역할">10-1. Deploy 버튼의 역할</a></li>
-  <li class="toc-h3"><a href="#10-2-모든-변경-후-deploy-필수">10-2. 모든 변경 후 Deploy 필수</a></li>
-  <li class="toc-h3"><a href="#10-3-undeployed-changes-표시">10-3. Undeployed Changes 표시</a></li>
-<li class="toc-h2"><a href="#11-api">11. API</a></li>
-  <li class="toc-h3"><a href="#11-1-rest-api-ai-service-port-5555">11-1. REST API (AI Service: port 5555)</a></li>
-  <li class="toc-h3"><a href="#11-2-graphql-api-ui-port-3000">11-2. GraphQL API (UI: port 3000)</a></li>
-<li class="toc-h2"><a href="#12-best-practices-bip-경험-기반">12. Best Practices (BIP 경험 기반)</a></li>
-  <li class="toc-h3"><a href="#step-0-데이터-전처리가-가장-중요">Step 0: 데이터 전처리가 가장 중요</a></li>
-  <li class="toc-h3"><a href="#step-1-시맨틱-레이어-description-relationship">Step 1: 시맨틱 레이어 (Description, Relationship)</a></li>
-  <li class="toc-h3"><a href="#step-2-sql-pairs--instructions">Step 2: SQL Pairs &gt; Instructions</a></li>
-  <li class="toc-h3"><a href="#boolean-flag-패턴">Boolean flag 패턴</a></li>
-  <li class="toc-h3"><a href="#해석-컬럼-패턴">해석 컬럼 패턴</a></li>
-  <li class="toc-h3"><a href="#컬럼-수-검증-필수">컬럼 수 검증 필수</a></li>
-  <li class="toc-h3"><a href="#deploy-후-테스트">Deploy 후 테스트</a></li>
-<li class="toc-h2"><a href="#13-알려진-한계">13. 알려진 한계</a></li>
-<li class="toc-h2"><a href="#14-bip-pipeline-현재-설정">14. BIP-Pipeline 현재 설정</a></li>
-  <li class="toc-h3"><a href="#14-1-모델-구성">14-1. 모델 구성</a></li>
-  <li class="toc-h3"><a href="#14-2-relationship">14-2. Relationship</a></li>
-  <li class="toc-h3"><a href="#14-3-sql-pairs">14-3. SQL Pairs</a></li>
-  <li class="toc-h3"><a href="#14-4-instructions">14-4. Instructions</a></li>
-  <li class="toc-h3"><a href="#14-5-llm">14-5. LLM</a></li>
-  <li class="toc-h3"><a href="#14-6-성과-지표">14-6. 성과 지표</a></li>
-  <li class="toc-h3"><a href="#14-7-리소스-사용량">14-7. 리소스 사용량</a></li>
-  <li class="toc-h3"><a href="#14-8-메타데이터-동기화-om---wren-ai">14-8. 메타데이터 동기화 (OM -&gt; Wren AI)</a></li>
-<li class="toc-h2"><a href="#15-참고">15. 참고</a></li>
-  <li class="toc-h3"><a href="#공식-문서">공식 문서</a></li>
-  <li class="toc-h3"><a href="#github">GitHub</a></li>
-  <li class="toc-h3"><a href="#bip-pipeline-관련-문서">BIP-Pipeline 관련 문서</a></li>
+<li class="toc-h2"><a href="#1-개요--wren-ai는-왜-필요한가">1. 개요 — Wren AI는 왜 필요한가</a></li>
+  <li class="toc-h3"><a href="#1-1-한-줄-비유">1-1. 한 줄 비유</a></li>
+  <li class="toc-h3"><a href="#1-2-어떤-일을-하는가">1-2. 어떤 일을 하는가</a></li>
+  <li class="toc-h3"><a href="#1-3-5대-설계-철학">1-3. 5대 설계 철학</a></li>
+  <li class="toc-h3"><a href="#1-4-정확한-포지셔닝--시맨틱-레이어라고-부르면-안-된다">1-4. 정확한 포지셔닝 — "시맨틱 레이어"라고 부르면 안 된다</a></li>
+<li class="toc-h2"><a href="#2-핵심-가치--왜-chatgpt에-sql-시키지-않고-wren-ai를-거치나">2. 핵심 가치 — 왜 ChatGPT에 SQL 시키지 않고 Wren AI를 거치나</a></li>
+  <li class="toc-h3"><a href="#2-1-시나리오--chatgpt만-쓰면-어떤-일이-벌어지는가">2-1. 시나리오 — ChatGPT만 쓰면 어떤 일이 벌어지는가</a></li>
+  <li class="toc-h3"><a href="#2-2-wren-ai를-거치면">2-2. Wren AI를 거치면</a></li>
+  <li class="toc-h3"><a href="#2-3-스마트한-sql-생성기">2-3. "스마트한 SQL 생성기"</a></li>
+<li class="toc-h2"><a href="#3-아키텍처--5개-컴포넌트-동작-원리">3. 아키텍처 — 5개 컴포넌트 동작 원리</a></li>
+  <li class="toc-h3"><a href="#3-1-비유--각-컴포넌트는-무엇과-닮았나">3-1. 비유 — 각 컴포넌트는 무엇과 닮았나</a></li>
+  <li class="toc-h3"><a href="#3-2-전체-구조">3-2. 전체 구조</a></li>
+  <li class="toc-h3"><a href="#3-3-각-컴포넌트-상세">3-3. 각 컴포넌트 상세</a></li>
+  <li class="toc-h3"><a href="#3-4-데이터-흐름--한-질문이-처리되는-동안">3-4. 데이터 흐름 — 한 질문이 처리되는 동안</a></li>
+  <li class="toc-h3"><a href="#3-5-docker-compose-구성">3-5. Docker Compose 구성</a></li>
+<li class="toc-h2"><a href="#4-wren-engine--mdlmodeling-definition-language">4. Wren Engine — MDL(Modeling Definition Language)</a></li>
+  <li class="toc-h3"><a href="#4-1-비유--cube의-cubejs와-비슷">4-1. 비유 — Cube의 cube.js와 비슷</a></li>
+  <li class="toc-h3"><a href="#4-2-why--mdl이-왜-필요한가">4-2. Why — MDL이 왜 필요한가</a></li>
+  <li class="toc-h3"><a href="#4-3-what--mdl-json-구조">4-3. What — MDL JSON 구조</a></li>
+  <li class="toc-h3"><a href="#4-4-how--쿼리-처리-파이프라인">4-4. How — 쿼리 처리 파이프라인</a></li>
+  <li class="toc-h3"><a href="#4-5-dry-run--dry-plan--실행-전-검증">4-5. Dry Run / Dry Plan — 실행 전 검증</a></li>
+  <li class="toc-h3"><a href="#4-6-mcp-서버-지원">4-6. MCP 서버 지원</a></li>
+<li class="toc-h2"><a href="#5-모델링-modeling">5. 모델링 (Modeling)</a></li>
+  <li class="toc-h3"><a href="#5-1-models--테이블의-비즈니스-캐릭터">5-1. Models — "테이블의 비즈니스 캐릭터"</a></li>
+    <li class="toc-h4"><a href="#why">Why</a></li>
+    <li class="toc-h4"><a href="#what">What</a></li>
+    <li class="toc-h4"><a href="#how--모델-생성-방법">How — 모델 생성 방법</a></li>
+  <li class="toc-h3"><a href="#5-2-relationships--join-경로-미리-깔아두기">5-2. Relationships — "JOIN 경로 미리 깔아두기"</a></li>
+    <li class="toc-h4"><a href="#why_1">Why</a></li>
+    <li class="toc-h4"><a href="#what_1">What</a></li>
+    <li class="toc-h4"><a href="#관계-유형">관계 유형</a></li>
+    <li class="toc-h4"><a href="#how">How</a></li>
+    <li class="toc-h4"><a href="#제약사항">제약사항</a></li>
+  <li class="toc-h3"><a href="#5-3-calculated-fields--런타임-파생-컬럼">5-3. Calculated Fields — "런타임 파생 컬럼"</a></li>
+    <li class="toc-h4"><a href="#why_2">Why</a></li>
+    <li class="toc-h4"><a href="#what_2">What</a></li>
+    <li class="toc-h4"><a href="#지원-집계-함수">지원 집계 함수</a></li>
+    <li class="toc-h4"><a href="#how_1">How</a></li>
+  <li class="toc-h3"><a href="#5-4-metrics--사전-정의된-kpi">5-4. Metrics — "사전 정의된 KPI"</a></li>
+    <li class="toc-h4"><a href="#why_3">Why</a></li>
+    <li class="toc-h4"><a href="#what_3">What</a></li>
+    <li class="toc-h4"><a href="#구성-요소">구성 요소</a></li>
+    <li class="toc-h4"><a href="#how_2">How</a></li>
+  <li class="toc-h3"><a href="#5-5-views--검증된-답변-캐시-db-view와-다름">5-5. Views — "검증된 답변 캐시" (DB View와 다름)</a></li>
+    <li class="toc-h4"><a href="#why_4">Why</a></li>
+    <li class="toc-h4"><a href="#what_4">What</a></li>
+    <li class="toc-h4"><a href="#how--save-as-view-동작">How — "Save as View" 동작</a></li>
+    <li class="toc-h4"><a href="#view-vs-sql-pairs-차이">View vs SQL Pairs 차이</a></li>
+<li class="toc-h2"><a href="#6-nl2sql-기능-ask--자연어를-어떻게-sql로-만드는가">6. NL2SQL 기능 (Ask) — 자연어를 어떻게 SQL로 만드는가</a></li>
+  <li class="toc-h3"><a href="#6-1-7단계-파이프라인-비유">6-1. 7단계 파이프라인 비유</a></li>
+  <li class="toc-h3"><a href="#6-2-전체-파이프라인">6-2. 전체 파이프라인</a></li>
+  <li class="toc-h3"><a href="#6-3-stage-1--intent-classification-의도-분류">6-3. Stage 1 — Intent Classification (의도 분류)</a></li>
+  <li class="toc-h3"><a href="#6-4-stage-2--context-retrieval-rag">6-4. Stage 2 — Context Retrieval (RAG)</a></li>
+  <li class="toc-h3"><a href="#6-5-stage-3--sql-generation-chain-of-thought">6-5. Stage 3 — SQL Generation (Chain-of-Thought)</a></li>
+    <li class="toc-h4"><a href="#프롬프트-구조">프롬프트 구조</a></li>
+    <li class="toc-h4"><a href="#reasoning-plan">Reasoning Plan</a></li>
+  <li class="toc-h3"><a href="#6-6-stage-4--validation--correction">6-6. Stage 4 — Validation &amp; Correction</a></li>
+  <li class="toc-h3"><a href="#6-7-stage-5--execution">6-7. Stage 5 — Execution</a></li>
+  <li class="toc-h3"><a href="#6-8-stage-6--answer-generation-sql_answer">6-8. Stage 6 — Answer Generation (sql_answer)</a></li>
+    <li class="toc-h4"><a href="#해결-방법">해결 방법</a></li>
+  <li class="toc-h3"><a href="#6-9-follow-up-질문">6-9. Follow-up 질문</a></li>
+  <li class="toc-h3"><a href="#6-10-차트-생성">6-10. 차트 생성</a></li>
+<li class="toc-h2"><a href="#7-sql-pairs--few-shot-학습의-힘">7. SQL Pairs — Few-shot 학습의 힘</a></li>
+  <li class="toc-h3"><a href="#7-1-비유--sql-pair는-llm에게-보여주는-정답지">7-1. 비유 — "SQL Pair는 LLM에게 보여주는 정답지"</a></li>
+  <li class="toc-h3"><a href="#7-2-why--왜-이렇게-효과적인가">7-2. Why — 왜 이렇게 효과적인가</a></li>
+  <li class="toc-h3"><a href="#7-3-few-shot-rag-동작-원리">7-3. Few-shot RAG 동작 원리</a></li>
+  <li class="toc-h3"><a href="#7-4-how--생성-방법">7-4. How — 생성 방법</a></li>
+  <li class="toc-h3"><a href="#7-5-카테고리별-추천-패턴">7-5. 카테고리별 추천 패턴</a></li>
+  <li class="toc-h3"><a href="#7-6-bip-실적--70개-등록--100-a등급">7-6. BIP 실적 — "70개 등록 → 100% A등급"</a></li>
+<li class="toc-h2"><a href="#8-instructions--도메인-규칙-주입">8. Instructions — 도메인 규칙 주입</a></li>
+  <li class="toc-h3"><a href="#8-1-why--instructions가-필요한-이유">8-1. Why — Instructions가 필요한 이유</a></li>
+  <li class="toc-h3"><a href="#8-2-what--동작-방식">8-2. What — 동작 방식</a></li>
+  <li class="toc-h3"><a href="#8-3-핵심-원칙--3-5개로-최소-유지">8-3. 핵심 원칙 — "3-5개로 최소 유지"</a></li>
+  <li class="toc-h3"><a href="#8-4-bip에서-등록한-4개">8-4. BIP에서 등록한 4개</a></li>
+  <li class="toc-h3"><a href="#8-5-안티패턴">8-5. 안티패턴</a></li>
+<li class="toc-h2"><a href="#9-llm-설정--litellm-기반-멀티-프로바이더">9. LLM 설정 — LiteLLM 기반 멀티 프로바이더</a></li>
+  <li class="toc-h3"><a href="#9-1-비유--llm-어댑터-허브">9-1. 비유 — "LLM 어댑터 허브"</a></li>
+  <li class="toc-h3"><a href="#9-2-지원-모델">9-2. 지원 모델</a></li>
+  <li class="toc-h3"><a href="#9-3-configyaml-설정-방법">9-3. config.yaml 설정 방법</a></li>
+  <li class="toc-h3"><a href="#9-4-gpt-5-시리즈-주의사항">9-4. GPT-5 시리즈 주의사항</a></li>
+  <li class="toc-h3"><a href="#9-5-bip-모델-비교-결과--gpt-41-mini가-최적">9-5. BIP 모델 비교 결과 — "GPT-4.1-mini가 최적"</a></li>
+  <li class="toc-h3"><a href="#9-6-openai-편향--claudeollama가-약해지는-이유">9-6. OpenAI 편향 — Claude/Ollama가 약해지는 이유</a></li>
+<li class="toc-h2"><a href="#10-지원-데이터-소스">10. 지원 데이터 소스</a></li>
+  <li class="toc-h3"><a href="#10-1-11개-데이터-소스">10-1. 11개 데이터 소스</a></li>
+  <li class="toc-h3"><a href="#10-2--oracle-19c-미지원--bip-사내-적용-불가-사례">10-2. ⚠️ Oracle 19c 미지원 — BIP 사내 적용 불가 사례</a></li>
+  <li class="toc-h3"><a href="#10-3-연결-설정-방법">10-3. 연결 설정 방법</a></li>
+<li class="toc-h2"><a href="#11-deploy--qdrant-재인덱싱">11. Deploy — Qdrant 재인덱싱</a></li>
+  <li class="toc-h3"><a href="#11-1-why--왜-deploy가-필요한가">11-1. Why — 왜 Deploy가 필요한가</a></li>
+  <li class="toc-h3"><a href="#11-2-what--deploy가-하는-일">11-2. What — Deploy가 하는 일</a></li>
+  <li class="toc-h3"><a href="#11-3-모든-변경-후-deploy-필수">11-3. 모든 변경 후 Deploy 필수</a></li>
+<li class="toc-h2"><a href="#12-api">12. API</a></li>
+  <li class="toc-h3"><a href="#12-1-rest-api-ai-service-port-5555">12-1. REST API (AI Service: port 5555)</a></li>
+    <li class="toc-h4"><a href="#질문-제출--polling">질문 제출 → polling</a></li>
+    <li class="toc-h4"><a href="#기타-엔드포인트">기타 엔드포인트</a></li>
+  <li class="toc-h3"><a href="#12-2-graphql-api-ui-port-3000">12-2. GraphQL API (UI: port 3000)</a></li>
+<li class="toc-h2"><a href="#13-best-practices--bip-4차-검증-결과-100-달성한-방법">13. Best Practices — BIP 4차 검증 결과 100% 달성한 방법</a></li>
+  <li class="toc-h3"><a href="#13-1-결과-요약">13-1. 결과 요약</a></li>
+  <li class="toc-h3"><a href="#13-2-step-0--데이터-전처리가-가장-중요">13-2. Step 0 — 데이터 전처리가 가장 중요</a></li>
+  <li class="toc-h3"><a href="#13-3-step-1--시맨틱-레이어-description-relationship">13-3. Step 1 — 시맨틱 레이어 (Description, Relationship)</a></li>
+  <li class="toc-h3"><a href="#13-4-step-2--sql-pairs--instructions">13-4. Step 2 — SQL Pairs &gt; Instructions</a></li>
+  <li class="toc-h3"><a href="#13-5-boolean-flag-패턴--curated-view의-핵심">13-5. Boolean Flag 패턴 — Curated View의 핵심</a></li>
+  <li class="toc-h3"><a href="#13-6-해석-컬럼-패턴">13-6. 해석 컬럼 패턴</a></li>
+  <li class="toc-h3"><a href="#13-7-컬럼-수-검증-필수">13-7. 컬럼 수 검증 필수</a></li>
+  <li class="toc-h3"><a href="#13-8-deploy-후-테스트">13-8. Deploy 후 테스트</a></li>
+<li class="toc-h2"><a href="#14-알려진-한계">14. 알려진 한계</a></li>
+  <li class="toc-h3"><a href="#14-1--oracle-19c-미지원--bip-의사결정">14-1. ⚠️ Oracle 19c 미지원 — BIP 의사결정</a></li>
+  <li class="toc-h3"><a href="#14-2-1질문--1sql-제약">14-2. 1질문 = 1SQL 제약</a></li>
+<li class="toc-h2"><a href="#15-bip-pipeline-현재-설정">15. BIP-Pipeline 현재 설정</a></li>
+  <li class="toc-h3"><a href="#15-1-모델-구성">15-1. 모델 구성</a></li>
+  <li class="toc-h3"><a href="#15-2-relationship">15-2. Relationship</a></li>
+  <li class="toc-h3"><a href="#15-3-sql-pairs-70개--9개-카테고리">15-3. SQL Pairs (70개 / 9개 카테고리)</a></li>
+  <li class="toc-h3"><a href="#15-4-instructions">15-4. Instructions</a></li>
+  <li class="toc-h3"><a href="#15-5-llm">15-5. LLM</a></li>
+  <li class="toc-h3"><a href="#15-6-성과-지표">15-6. 성과 지표</a></li>
+  <li class="toc-h3"><a href="#15-7-리소스-사용량">15-7. 리소스 사용량</a></li>
+  <li class="toc-h3"><a href="#15-8-메타데이터-동기화-om--wren-ai">15-8. 메타데이터 동기화 (OM → Wren AI)</a></li>
+<li class="toc-h2"><a href="#16-dbtcube와의-관계">16. dbt/Cube와의 관계</a></li>
+<li class="toc-h2"><a href="#17-참고">17. 참고</a></li>
+  <li class="toc-h3"><a href="#17-1-공식-문서">17-1. 공식 문서</a></li>
+  <li class="toc-h3"><a href="#17-2-github">17-2. GitHub</a></li>
+  <li class="toc-h3"><a href="#17-3-bip-pipeline-관련-문서">17-3. BIP-Pipeline 관련 문서</a></li>
 <li class="toc-h2"><a href="#변경-이력">변경 이력</a></li>
 </ul>
 </nav>
@@ -371,21 +417,48 @@
 <main class="content">
 <h1 id="wren-ai-기능-및-사용-가이드">Wren AI 기능 및 사용 가이드</h1>
 <blockquote>
-<p><strong>공식 문서:</strong> https://docs.getwren.ai</p>
+<p><strong>공식 문서:</strong> https://docs.getwren.ai
+<strong>작성 원칙:</strong> Why → What → How. 코드 예시 위에는 항상 "이 코드가 하는 일" 한 줄 설명.</p>
 </blockquote>
 <hr />
-<h2 id="1-개요">1. 개요</h2>
-<h3 id="1-1-wren-ai란">1-1. Wren AI란?</h3>
-<p>Wren AI는 오픈소스 <strong>GenBI(Generative Business Intelligence) Agent</strong>이자 <strong>Text-to-SQL 엔진</strong>이다.
-자연어 질문을 SQL 쿼리로 변환하고, 결과를 실행하여 자연어 응답과 차트로 반환한다.</p>
-<div class="codehilite"><pre><span></span><code><span class="err">사용자</span><span class="o">:</span><span class="w"> </span><span class="s">&quot;PER이 10 이하인 저평가 종목 보여줘&quot;</span>
-<span class="w">         </span><span class="o">|</span>
-<span class="n">Wren</span><span class="w"> </span><span class="n">AI</span><span class="o">:</span><span class="w"> </span><span class="n">MDL에서</span><span class="w"> </span><span class="n">PER</span><span class="w"> </span><span class="err">정의</span><span class="w"> </span><span class="err">확인</span><span class="w"> </span><span class="o">-&gt;</span><span class="w"> </span><span class="err">관련</span><span class="w"> </span><span class="err">테이블</span><span class="o">/</span><span class="err">컬럼</span><span class="w"> </span><span class="err">선택</span><span class="w"> </span><span class="o">-&gt;</span><span class="w"> </span><span class="kr">SQL</span><span class="w"> </span><span class="err">생성</span><span class="w"> </span><span class="o">-&gt;</span><span class="w"> </span><span class="err">실행</span>
-<span class="w">         </span><span class="o">|</span>
-<span class="err">결과</span><span class="o">:</span><span class="w">    </span><span class="err">종목명</span><span class="p">,</span><span class="w"> </span><span class="n">PER</span><span class="p">,</span><span class="w"> </span><span class="n">ROE</span><span class="w"> </span><span class="err">등</span><span class="w"> </span><span class="err">테이블</span><span class="w"> </span><span class="o">+</span><span class="w"> </span><span class="err">자연어</span><span class="w"> </span><span class="err">요약</span><span class="w"> </span><span class="err">반환</span>
+<h2 id="1-개요--wren-ai는-왜-필요한가">1. 개요 — Wren AI는 왜 필요한가</h2>
+<h3 id="1-1-한-줄-비유">1-1. 한 줄 비유</h3>
+<blockquote>
+<p><strong>Wren AI는 "자연어 → SQL 통역사 + 시맨틱 레이어"를 한 묶음으로 제공하는 오픈소스 GenBI Agent다.</strong>
+비유하자면 <strong>Cube + GPT를 합친 것</strong>에 가깝다. Cube처럼 모델/관계를 정의해두면, GPT가 그 모델을 읽어 자연어 질문을 SQL로 번역해준다.</p>
+</blockquote>
+<p>기존에는 두 가지 도구가 따로 필요했다:</p>
+<table>
+<thead>
+<tr>
+<th>역할</th>
+<th>기존 도구</th>
+<th>한계</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>비즈니스 의미 부여 (시맨틱)</td>
+<td>dbt Semantic Layer / Cube.js</td>
+<td>자연어 처리 못함, BI 도구가 따로</td>
+</tr>
+<tr>
+<td>자연어 → SQL 변환</td>
+<td>ChatGPT, Copilot</td>
+<td>스키마 컨텍스트 모름, 매번 다른 SQL</td>
+</tr>
+</tbody>
+</table>
+<p>Wren AI는 이 둘을 하나로 묶었다. 모델링하면 그것이 곧 LLM 컨텍스트가 되고, 질문하면 그것이 곧 SQL이 된다.</p>
+<h3 id="1-2-어떤-일을-하는가">1-2. 어떤 일을 하는가</h3>
+<div class="codehilite"><pre><span></span><code>사용자: &quot;PER이 10 이하인 저평가 종목 보여줘&quot;
+         |
+Wren AI: MDL에서 PER 정의 확인 → 관련 테이블/컬럼 RAG 검색 → SQL 생성 → Engine 검증 → DB 실행
+         |
+결과:    종목명, PER, ROE 테이블 + 자연어 요약 + 자동 차트 반환
 </code></pre></div>
 
-<h3 id="1-2-5대-설계-철학">1-2. 5대 설계 철학</h3>
+<h3 id="1-3-5대-설계-철학">1-3. 5대 설계 철학</h3>
 <table>
 <thead>
 <tr>
@@ -403,7 +476,7 @@
 <tr>
 <td>2</td>
 <td><strong>시맨틱 인덱싱</strong></td>
-<td>MDL에 정의된 테이블/컬럼 설명을 Qdrant 벡터 DB에 임베딩. 질문과 유사한 스키마를 RAG로 검색</td>
+<td>MDL 테이블/컬럼 설명을 Qdrant 벡터 DB에 임베딩. 질문과 유사한 스키마를 RAG로 검색</td>
 </tr>
 <tr>
 <td>3</td>
@@ -413,7 +486,7 @@
 <tr>
 <td>4</td>
 <td><strong>코드 프리</strong></td>
-<td>웹 UI에서 모델링, SQL Pairs 등록, Instructions 설정, 질문까지 코드 없이 가능</td>
+<td>웹 UI에서 모델링/SQL Pairs/Instructions/질문까지 코드 없이 가능</td>
 </tr>
 <tr>
 <td>5</td>
@@ -422,8 +495,8 @@
 </tr>
 </tbody>
 </table>
-<h3 id="1-3-wren-ai의-정확한-포지셔닝">1-3. Wren AI의 정확한 포지셔닝</h3>
-<p>Wren AI는 <strong>"semantic-aware Text-to-SQL engine"</strong>이다. 시맨틱 레이어(dbt Semantic Layer, Cube.js)와는 다르다.</p>
+<h3 id="1-4-정확한-포지셔닝--시맨틱-레이어라고-부르면-안-된다">1-4. 정확한 포지셔닝 — "시맨틱 레이어"라고 부르면 안 된다</h3>
+<p>Wren AI 공식 문서는 <strong>"semantic-aware Text-to-SQL engine"</strong>으로 자칭한다. 이는 dbt Semantic Layer/Cube.js처럼 <strong>진짜 시맨틱 레이어</strong>와는 다르다.</p>
 <table>
 <thead>
 <tr>
@@ -435,7 +508,7 @@
 <tbody>
 <tr>
 <td><strong>메트릭 정의</strong></td>
-<td>한 번 정의하면 모든 도구에서 재사용</td>
+<td>한 번 정의 → 모든 도구에서 재사용</td>
 <td>Calculated Field 집계만, 복잡 수식 불가</td>
 </tr>
 <tr>
@@ -460,6 +533,9 @@
 </tr>
 </tbody>
 </table>
+<blockquote>
+<p>💡 <strong>실무 팁:</strong> Wren AI MDL은 "lightweight semantic shell"로 취급하라. 진짜 비즈니스 로직(PER 계산, 가치주 정의 등)은 PostgreSQL <strong>Gold 테이블 + Curated View</strong>에서 SSOT로 굳혀라. MDL은 그것을 LLM에게 설명해주는 주석일 뿐이다.</p>
+</blockquote>
 <p>BIP-Pipeline에서의 위치:</p>
 <table>
 <thead>
@@ -488,8 +564,134 @@
 </tbody>
 </table>
 <hr />
-<h2 id="2-아키텍처">2. 아키텍처</h2>
-<h3 id="2-1-전체-구조">2-1. 전체 구조</h3>
+<h2 id="2-핵심-가치--왜-chatgpt에-sql-시키지-않고-wren-ai를-거치나">2. 핵심 가치 — 왜 ChatGPT에 SQL 시키지 않고 Wren AI를 거치나</h2>
+<h3 id="2-1-시나리오--chatgpt만-쓰면-어떤-일이-벌어지는가">2-1. 시나리오 — ChatGPT만 쓰면 어떤 일이 벌어지는가</h3>
+<blockquote>
+<p><strong>상황:</strong> 분석가가 "삼성전자 최근 PER 추이"를 ChatGPT에게 묻고, 출력된 SQL을 그대로 DB에 실행한다.</p>
+</blockquote>
+<table>
+<thead>
+<tr>
+<th>회차</th>
+<th>ChatGPT가 만든 SQL</th>
+<th>문제</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>1차</td>
+<td><code>SELECT per FROM stock WHERE name = '삼성전자'</code></td>
+<td>테이블명/컬럼명 환각</td>
+</tr>
+<tr>
+<td>2차</td>
+<td><code>SELECT per_ttm FROM analytics WHERE ticker='005930'</code></td>
+<td>per_ttm vs per_actual 구분 못함</td>
+</tr>
+<tr>
+<td>3차</td>
+<td><code>SELECT * FROM portfolio WHERE user_id=1</code></td>
+<td><strong>민감 테이블 접근</strong> (보안 사고)</td>
+</tr>
+<tr>
+<td>4차</td>
+<td><code>DELETE FROM stock_info WHERE ...</code></td>
+<td><strong>DML 실행</strong> (데이터 손상)</td>
+</tr>
+</tbody>
+</table>
+<p>ChatGPT는 <strong>회차마다 다른 SQL을 생성</strong>하고, 스키마를 모르며, 보안 가드도 없다.</p>
+<h3 id="2-2-wren-ai를-거치면">2-2. Wren AI를 거치면</h3>
+<div class="mermaid">
+flowchart LR
+    Q["자연어 질문"]
+    WA["Wren AI"]
+    SQL["검증된 SQL"]
+    DB["(DB)"]
+
+    Q --> WA
+    WA -->|"1. MDL 컨텍스트 주입\n2. RAG로 정답 패턴 검색\n3. SQL 생성\n4. Engine Dry Run 검증\n5. 실패 시 자동 교정 (3회)"| SQL
+    SQL -->|"SELECT only\n(읽기 전용 계정)"| DB
+
+    style WA fill:#f3e5f5,color:#1a1a2e
+    style SQL fill:#e8f5e9,color:#1a1a2e
+</div>
+
+<table>
+<thead>
+<tr>
+<th>ChatGPT 직접 사용</th>
+<th>Wren AI 경유</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>환각된 컬럼명</td>
+<td>MDL에 정의된 컬럼만 사용</td>
+</tr>
+<tr>
+<td>매번 다른 SQL</td>
+<td>SQL Pairs Few-shot으로 일관성</td>
+</tr>
+<tr>
+<td>민감 테이블 노출</td>
+<td>모델 등록된 테이블만 접근</td>
+</tr>
+<tr>
+<td>DML 실행 위험</td>
+<td>SQL RULES가 SELECT only 강제</td>
+</tr>
+<tr>
+<td>검증 없음</td>
+<td>Engine Dry Run 후 실행</td>
+</tr>
+</tbody>
+</table>
+<h3 id="2-3-스마트한-sql-생성기">2-3. "스마트한 SQL 생성기"</h3>
+<p>Wren AI = LLM + 모델 컨텍스트 + RAG + 검증 + 자동 보정</p>
+<blockquote>
+<p>💡 <strong>실무 팁:</strong> "GPT가 SQL 잘 쓰는데 왜 Wren AI 쓰나"라는 질문이 나오면, 위 시나리오를 보여주면 된다. 정확도가 아니라 <strong>재현성·안전성·운영성</strong>이 핵심이다.</p>
+</blockquote>
+<hr />
+<h2 id="3-아키텍처--5개-컴포넌트-동작-원리">3. 아키텍처 — 5개 컴포넌트 동작 원리</h2>
+<h3 id="3-1-비유--각-컴포넌트는-무엇과-닮았나">3-1. 비유 — 각 컴포넌트는 무엇과 닮았나</h3>
+<table>
+<thead>
+<tr>
+<th>컴포넌트</th>
+<th>비유</th>
+<th>핵심 역할</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><strong>Wren UI</strong></td>
+<td>"운영자 콘솔"</td>
+<td>모델링, 질문, SQL Pairs/Instructions 관리</td>
+</tr>
+<tr>
+<td><strong>Wren AI Service</strong></td>
+<td>"통역사 본부"</td>
+<td>Intent 분류 → RAG → SQL 생성 → 교정</td>
+</tr>
+<tr>
+<td><strong>Wren Engine</strong></td>
+<td>"SQL 검수관"</td>
+<td>MDL 기반 SQL 재작성, Dry Run 검증</td>
+</tr>
+<tr>
+<td><strong>Ibis Server</strong></td>
+<td>"다국적 어댑터"</td>
+<td>12+ DB 방언으로 변환하여 실행</td>
+</tr>
+<tr>
+<td><strong>Qdrant</strong></td>
+<td>"기억 창고"</td>
+<td>스키마/SQL Pairs/Instructions 임베딩 저장</td>
+</tr>
+</tbody>
+</table>
+<h3 id="3-2-전체-구조">3-2. 전체 구조</h3>
 <div class="mermaid">
 graph TB
     subgraph Client["클라이언트"]
@@ -532,7 +734,7 @@ graph TB
     style External fill:#e1705533,stroke:#e17055,stroke-width:2px
 </div>
 
-<h3 id="2-2-각-컴포넌트-역할">2-2. 각 컴포넌트 역할</h3>
+<h3 id="3-3-각-컴포넌트-상세">3-3. 각 컴포넌트 상세</h3>
 <table>
 <thead>
 <tr>
@@ -581,7 +783,7 @@ graph TB
 </tr>
 </tbody>
 </table>
-<h3 id="2-3-데이터-흐름">2-3. 데이터 흐름</h3>
+<h3 id="3-4-데이터-흐름--한-질문이-처리되는-동안">3-4. 데이터 흐름 — 한 질문이 처리되는 동안</h3>
 <div class="mermaid">
 sequenceDiagram
     participant U as 사용자/API
@@ -607,7 +809,7 @@ sequenceDiagram
     QD-->>AI: 적용할 규칙
 
     Note over AI: 3. SQL Generation
-    AI->>LLM: 컨텍스트 + 질문 -> SQL 생성
+    AI->>LLM: 컨텍스트 + 질문 → SQL 생성
     LLM-->>AI: 생성된 SQL
 
     Note over AI: 4. Validation
@@ -628,13 +830,19 @@ sequenceDiagram
     EN-->>AI: 결과
 
     Note over AI: 6. Answer Generation
-    AI->>LLM: 결과 -> 자연어 변환
+    AI->>LLM: 결과 → 자연어 변환
     LLM-->>AI: 자연어 응답
 
     AI-->>U: SQL + 결과 + 자연어 응답 + 차트
 </div>
 
-<h3 id="2-4-docker-compose-구성">2-4. Docker Compose 구성</h3>
+<blockquote>
+<p>⚠️ <strong>함정:</strong> 이 흐름은 <strong>순차적</strong>이라 LLM이 느리면 전체가 느려진다. BIP 실측에서 GPT-4o는 80초/질문이지만 GPT-4.1-mini는 16초였다. 모델 선택이 곧 SLA다.</p>
+</blockquote>
+<h3 id="3-5-docker-compose-구성">3-5. Docker Compose 구성</h3>
+<blockquote>
+<p>이 코드가 하는 일: 6개 컨테이너(bootstrap, engine, ibis, qdrant, ai-service, ui)를 순서대로 기동한다. bootstrap은 1회 실행 후 종료하는 init container다.</p>
+</blockquote>
 <div class="codehilite"><pre><span></span><code><span class="nt">services</span><span class="p">:</span>
 <span class="w">  </span><span class="nt">wren-bootstrap</span><span class="p">:</span><span class="w">      </span><span class="c1"># 초기화 (config.properties 생성 후 종료)</span>
 <span class="w">    </span><span class="nt">image</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">ghcr.io/canner/wren-bootstrap:0.1.5</span>
@@ -664,19 +872,29 @@ sequenceDiagram
 </code></pre></div>
 
 <hr />
-<h2 id="3-wren-engine">3. Wren Engine</h2>
-<h3 id="3-1-mdl-modeling-definition-language">3-1. MDL (Modeling Definition Language)</h3>
-<p>MDL은 Wren AI의 <strong>시맨틱 레이어 정의 언어</strong>로, 물리적 DB 스키마와 사용자 사이에 비즈니스 의미를 부여하는 추상화 계층이다.</p>
-<div class="mermaid">
-graph LR
-    DB["물리적 DB\nstock_info, stock_price_1d, ..."]
-    MDL["MDL 시맨틱 레이어\n모델 + 관계 + 계산 필드 + 메트릭"]
-    USER["사용자 / LLM\n비즈니스 용어로 질문"]
+<h2 id="4-wren-engine--mdlmodeling-definition-language">4. Wren Engine — MDL(Modeling Definition Language)</h2>
+<h3 id="4-1-비유--cube의-cubejs와-비슷">4-1. 비유 — Cube의 cube.js와 비슷</h3>
+<blockquote>
+<p><strong>MDL은 Cube.js의 <code>cube.js</code> 파일 / dbt의 <code>schema.yml</code>과 비슷한 역할을 한다.</strong>
+물리 테이블을 그대로 노출하지 않고, 비즈니스 의미를 입혀 추상화한 JSON 정의다. 차이는 "이 추상화를 누가 소비하느냐"인데, Cube는 BI 도구가 소비하고 Wren AI는 LLM이 소비한다.</p>
+</blockquote>
+<h3 id="4-2-why--mdl이-왜-필요한가">4-2. Why — MDL이 왜 필요한가</h3>
+<p>raw 스키마만 LLM에 던지면 어떤 일이 벌어지는가:</p>
+<div class="codehilite"><pre><span></span><code>LLM 입력: stock_price_1d (ticker, dt, op, hi, lo, cl, vol, ...)
+LLM 추론: &quot;ticker가 종목 코드일까? cl이 close일까 아니면 cluster?&quot;
+결과:    추측 SQL → 환각 → 잘못된 컬럼명 사용
+</code></pre></div>
 
-    DB -->|추상화| MDL -->|비즈니스 의미| USER
-</div>
+<p>MDL을 거치면:</p>
+<div class="codehilite"><pre><span></span><code>LLM 입력: 종목 일봉 시세 (ticker: 종목코드 6자리, close: 종가(원), volume: 거래량(주))
+LLM 추론: 의미 명확
+결과:    정확한 SQL
+</code></pre></div>
 
-<p>MDL JSON 구조:</p>
+<h3 id="4-3-what--mdl-json-구조">4-3. What — MDL JSON 구조</h3>
+<blockquote>
+<p>이 코드가 하는 일: catalog/schema/dataSource를 선언하고, 모델 목록과 관계를 JSON으로 직렬화한다. metrics/macros는 옵션이다.</p>
+</blockquote>
 <div class="codehilite"><pre><span></span><code><span class="p">{</span>
 <span class="w">  </span><span class="nt">&quot;catalog&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;stockdb&quot;</span><span class="p">,</span>
 <span class="w">  </span><span class="nt">&quot;schema&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;public&quot;</span><span class="p">,</span>
@@ -688,13 +906,26 @@ graph LR
 <span class="p">}</span>
 </code></pre></div>
 
-<h3 id="3-2-쿼리-처리-파이프라인">3-2. 쿼리 처리 파이프라인</h3>
+<p>물리 DB와 사용자 사이에 한 겹의 시맨틱 막을 끼우는 구조:</p>
+<div class="mermaid">
+graph LR
+    DB["물리적 DB\nstock_info, stock_price_1d, ..."]
+    MDL["MDL 시맨틱 레이어\n모델 + 관계 + 계산 필드 + 메트릭"]
+    USER["사용자 / LLM\n비즈니스 용어로 질문"]
+
+    DB -->|추상화| MDL -->|비즈니스 의미| USER
+</div>
+
+<h3 id="4-4-how--쿼리-처리-파이프라인">4-4. How — 쿼리 처리 파이프라인</h3>
+<blockquote>
+<p>이 다이어그램이 보여주는 것: AI Service가 만든 SQL이 Engine 내부에서 거치는 5단계.</p>
+</blockquote>
 <div class="mermaid">
 flowchart LR
     SQL["입력 SQL\n(AI Service가 생성)"]
     PARSE["SQL Parser\n(Trino fork, Antlr4)"]
     LP["LogicalPlan\n(DataFusion IR)"]
-    REWRITE["MDL Rewriter\n("모델->서브쿼리 변환")"]
+    REWRITE["MDL Rewriter\n(모델→서브쿼리 변환)"]
     VALIDATE["Validator\n("테이블/컬럼/타입 검증")"]
     OUTPUT["출력 SQL\n(DB 방언으로 변환)"]
 
@@ -707,48 +938,80 @@ flowchart LR
 <li><strong>Relationship</strong>: JOIN 조건을 자동 생성</li>
 <li><strong>DataFusion IR</strong>: Apache DataFusion의 중간 표현 사용, <code>UserDefinedLogicalNode</code>로 MDL 전용 노드 추가</li>
 </ul>
-<h3 id="3-3-dry-run--dry-plan">3-3. Dry Run / Dry Plan</h3>
+<h3 id="4-5-dry-run--dry-plan--실행-전-검증">4-5. Dry Run / Dry Plan — 실행 전 검증</h3>
 <p>Engine은 SQL을 실제 실행하지 않고 <strong>검증만 수행</strong>하는 기능을 제공한다:</p>
-<ul>
-<li><strong>Dry Run</strong>: SQL이 문법적으로 유효하고, 참조된 테이블/컬럼이 MDL에 존재하는지 검증</li>
-<li><strong>Dry Plan</strong>: 실행 계획을 생성하여 최적화 가능성 확인</li>
-</ul>
+<table>
+<thead>
+<tr>
+<th>모드</th>
+<th>역할</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><strong>Dry Run</strong></td>
+<td>SQL이 문법적으로 유효하고, 참조된 테이블/컬럼이 MDL에 존재하는지 검증</td>
+</tr>
+<tr>
+<td><strong>Dry Plan</strong></td>
+<td>실행 계획을 생성하여 최적화 가능성 확인</td>
+</tr>
+</tbody>
+</table>
 <p>AI Service는 SQL 생성 후 Dry Run으로 검증하고, 실패 시 에러 메시지를 LLM에 피드백하여 재생성한다.</p>
-<h3 id="3-4-mcp-서버-지원">3-4. MCP 서버 지원</h3>
+<blockquote>
+<p>💡 <strong>실무 팁:</strong> Dry Run은 LLM이 "그럴듯한" 컬럼을 만들어내도 즉시 잡아준다. 이게 ChatGPT 직접 호출 대비 가장 큰 차이점이다.</p>
+</blockquote>
+<h3 id="4-6-mcp-서버-지원">4-6. MCP 서버 지원</h3>
 <p>Wren Engine은 <strong>MCP(Model Context Protocol) 서버</strong>로 동작할 수 있어, Claude Desktop 등 MCP 클라이언트에서 직접 SQL 질문을 보낼 수 있다.</p>
 <hr />
-<h2 id="4-모델링-modeling">4. 모델링 (Modeling)</h2>
-<h3 id="4-1-models">4-1. Models</h3>
-<p><strong>무엇:</strong> 물리적 DB 테이블 또는 뷰에 매핑되는 논리적 데이터 소스. NL2SQL에서 SQL 생성의 대상으로 직접 참조된다.</p>
-<p><strong>모델 생성 방법:</strong></p>
-<ol>
-<li><strong>데이터 소스 연결 시</strong>: PostgreSQL 연결 후 테이블 선택하면 자동으로 모델 생성</li>
-<li><strong>모델링 페이지</strong>: UI에서 수동으로 모델 추가</li>
-</ol>
-<p><strong>컬럼 관리:</strong></p>
-<ul>
-<li>추가: UI에서 컬럼 추가 또는 GraphQL <code>updateModelMetadata</code></li>
-<li>수정: 컬럼명, 타입, description 변경</li>
-<li>삭제: UI에서 컬럼 제거</li>
-</ul>
-<p><strong>Primary Key 설정:</strong></p>
-<ul>
-<li>모델 생성 후 UI에서 Primary Key 지정</li>
-<li>Relationship 정의 시 JOIN 조건의 기준</li>
-</ul>
-<p><strong>Description 설정:</strong></p>
-<ul>
-<li>테이블 description: 모델의 비즈니스 의미 설명</li>
-<li>컬럼 description: 각 컬럼의 의미, 단위, 계산 힌트 포함 가능</li>
-</ul>
-<p><strong>주의사항 (BIP 경험):</strong></p>
+<h2 id="5-모델링-modeling">5. 모델링 (Modeling)</h2>
+<h3 id="5-1-models--테이블의-비즈니스-캐릭터">5-1. Models — "테이블의 비즈니스 캐릭터"</h3>
+<h4 id="why">Why</h4>
+<p>물리 테이블을 그대로 등록하면 LLM이 컬럼 의미를 모른다. 모델은 테이블에 "이게 뭐 하는 데이터인지" 캐릭터를 부여한다.</p>
+<h4 id="what">What</h4>
+<p>물리적 DB 테이블 또는 뷰에 매핑되는 논리적 데이터 소스. NL2SQL에서 SQL 생성의 대상으로 직접 참조된다.</p>
+<h4 id="how--모델-생성-방법">How — 모델 생성 방법</h4>
+<table>
+<thead>
+<tr>
+<th>방법</th>
+<th>절차</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><strong>자동 생성</strong></td>
+<td>PostgreSQL 연결 → 테이블 선택 → 모델 자동 생성</td>
+</tr>
+<tr>
+<td><strong>수동 추가</strong></td>
+<td>UI 모델링 페이지에서 모델 직접 추가</td>
+</tr>
+</tbody>
+</table>
+<p><strong>컬럼 관리:</strong>
+- 추가: UI에서 컬럼 추가 또는 GraphQL <code>updateModelMetadata</code>
+- 수정: 컬럼명, 타입, description 변경
+- 삭제: UI에서 컬럼 제거</p>
+<p><strong>Primary Key &amp; Description:</strong>
+- 모델 생성 후 UI에서 Primary Key 지정 (Relationship JOIN 기준)
+- 테이블 description: 모델의 비즈니스 의미
+- 컬럼 description: 의미, 단위, 계산 힌트 포함</p>
 <blockquote>
-<p><strong>updateModel API로 컬럼 추가 시 기존 컬럼이 교체된다.</strong> <code>updateModelMetadata</code>를 사용해야 기존 컬럼을 유지하면서 description만 업데이트할 수 있다.</p>
-<p><strong>모델 삭제/재생성 시 해당 모델에 연결된 Relationship이 CASCADE 삭제된다.</strong> 모델을 재생성한 후 Relationship도 다시 정의해야 한다.</p>
+<p>⚠️ <strong>함정 1 — updateModel API 함정:</strong>
+<code>updateModel</code>로 컬럼을 추가하면 <strong>기존 컬럼이 모두 교체된다</strong>. 반드시 <code>updateModelMetadata</code>를 사용해야 기존 컬럼을 유지하면서 description만 업데이트할 수 있다.</p>
+<p>⚠️ <strong>함정 2 — 모델 삭제 시 Relationship CASCADE:</strong>
+모델을 삭제/재생성하면 해당 모델에 연결된 모든 Relationship이 함께 삭제된다. 모델 재생성 후 Relationship도 다시 정의해야 한다.</p>
+<p>💡 <strong>실무 팁 — 컬럼 description 누락 효과:</strong>
+BIP 1차 테스트에서 컬럼 description이 비어 있던 boolean flag(<code>is_value_stock</code>, <code>is_oversold_rsi</code> 등)는 <strong>0% 사용률</strong>을 기록했다. description을 채우자 87% 사용률로 뛰었다. <strong>컬럼 description은 NL2SQL 품질의 1번 변수다.</strong></p>
 </blockquote>
-<h3 id="4-2-relationships">4-2. Relationships</h3>
-<p><strong>무엇:</strong> 모델 간의 JOIN 경로를 명시적으로 정의. LLM이 JOIN SQL을 정확하게 생성하도록 가이드한다.</p>
-<p><strong>관계 유형:</strong></p>
+<h3 id="5-2-relationships--join-경로-미리-깔아두기">5-2. Relationships — "JOIN 경로 미리 깔아두기"</h3>
+<h4 id="why_1">Why</h4>
+<p>LLM이 JOIN을 추론하면 PK/FK를 잘못 매칭하거나 cardinality를 틀릴 수 있다. 미리 명시하면 LLM은 "어느 컬럼으로 JOIN할지"만 따르면 된다.</p>
+<h4 id="what_1">What</h4>
+<p>모델 간의 JOIN 경로를 명시적으로 정의한 메타데이터.</p>
+<h4 id="관계-유형">관계 유형</h4>
 <table>
 <thead>
 <tr>
@@ -760,27 +1023,30 @@ flowchart LR
 <tbody>
 <tr>
 <td>Many-to-one</td>
-<td>N:1 관계</td>
-<td>stock_price_1d -&gt; stock_info (여러 일봉이 하나의 종목 참조)</td>
+<td>N:1</td>
+<td>stock_price_1d → stock_info</td>
 </tr>
 <tr>
 <td>One-to-many</td>
-<td>1:N 관계</td>
-<td>stock_info -&gt; stock_price_1d</td>
+<td>1:N</td>
+<td>stock_info → stock_price_1d</td>
 </tr>
 <tr>
 <td>One-to-one</td>
-<td>1:1 관계</td>
+<td>1:1</td>
 <td>드문 경우</td>
 </tr>
 </tbody>
 </table>
-<p><strong>생성 방법:</strong></p>
-<ul>
-<li>UI: 모델링 페이지에서 두 모델 선택 후 관계 정의</li>
-<li>API: GraphQL <code>saveRelations</code> mutation</li>
-</ul>
-<p><strong>제약사항:</strong></p>
+<h4 id="how">How</h4>
+<blockquote>
+<p>이 코드가 하는 일: GraphQL <code>saveRelations</code> mutation으로 두 모델 사이의 JOIN 조건을 등록한다.</p>
+</blockquote>
+<div class="codehilite"><pre><span></span><code><span class="k">mutation</span><span class="w"> </span><span class="p">{</span><span class="w"> </span><span class="n">saveRelations</span><span class="p">(</span><span class="n">data</span><span class="p">:</span><span class="w"> </span><span class="p">[</span><span class="err">...])</span><span class="w"> </span><span class="err">}</span>
+</code></pre></div>
+
+<p>UI에서는 모델링 페이지에서 두 모델 선택 후 관계 정의.</p>
+<h4 id="제약사항">제약사항</h4>
 <table>
 <thead>
 <tr>
@@ -791,7 +1057,7 @@ flowchart LR
 <tbody>
 <tr>
 <td>2개 모델 간만 정의 가능</td>
-<td>3개 이상 테이블을 spanning하는 단일 Relationship 불가</td>
+<td>3개 이상 spanning 단일 Relationship 불가</td>
 </tr>
 <tr>
 <td>자기참조 불가</td>
@@ -799,11 +1065,11 @@ flowchart LR
 </tr>
 <tr>
 <td>중복 관계 금지</td>
-<td>같은 두 모델 간 동일 조건의 관계를 중복 정의 불가</td>
+<td>같은 두 모델 + 동일 조건 중복 불가</td>
 </tr>
 <tr>
 <td>TO_MANY는 집계 필수</td>
-<td>Primary Key 기준 GROUP BY 없으면 에러</td>
+<td>PK 기준 GROUP BY 없으면 에러</td>
 </tr>
 <tr>
 <td>Cycling Relationship 불가</td>
@@ -811,11 +1077,12 @@ flowchart LR
 </tr>
 </tbody>
 </table>
-<p><strong>BIP 경험 -- Grain 불일치 JOIN 주의:</strong></p>
 <blockquote>
-<p><code>analytics_stock_daily</code>(일별) 와 <code>analytics_valuation</code>(연간)을 직접 Relationship으로 연결하면 grain 불일치로 결과가 부정확해진다. 반드시 <code>v_latest_valuation</code>(1 ticker = 1 row)처럼 grain을 맞춘 View를 중간에 두어야 안전하다.</p>
+<p>⚠️ <strong>함정 — Grain 불일치 JOIN:</strong>
+<code>analytics_stock_daily</code>(일별)와 <code>analytics_valuation</code>(연간)을 직접 Relationship으로 연결하면 grain 불일치로 결과가 부정확해진다. 일별 행마다 연간 데이터가 곱해져 합계가 부풀려진다. 반드시 <code>v_latest_valuation</code>(1 ticker = 1 row) 같이 grain을 맞춘 View를 중간에 두어야 안전하다.</p>
+<p>💡 <strong>실무 팁 — 수정 불가 필드:</strong>
+Relationship 수정은 Type만 변경 가능. 조건(condition)을 바꾸려면 삭제 후 재생성해야 한다.</p>
 </blockquote>
-<p><strong>관리:</strong> 수정은 Type만 변경 가능. 조건(condition)을 바꾸려면 삭제 후 재생성해야 한다.</p>
 <div class="mermaid">
 erDiagram
     public_stock_info ||--o{ public_stock_price_1d : "ticker"
@@ -841,15 +1108,17 @@ erDiagram
     }
 </div>
 
-<h3 id="4-3-calculated-fields">4-3. Calculated Fields</h3>
-<p><strong>무엇:</strong> 런타임에 계산되는 파생 필드. MDL에 <code>isCalculated: true</code>와 <code>expression</code>으로 정의된다.</p>
-<p><strong>지원 집계 함수:</strong> <code>SUM</code>, <code>AVG</code>, <code>COUNT</code>, <code>MAX</code>, <code>MIN</code>, <code>ABS</code></p>
-<p><strong>생성 방법:</strong></p>
-<ul>
-<li>UI: 모델의 컬럼 목록에서 "Add Calculated Field" 클릭</li>
-<li>MDL JSON: <code>isCalculated: true</code> + <code>expression</code> 추가</li>
-</ul>
-<p><strong>예시:</strong></p>
+<h3 id="5-3-calculated-fields--런타임-파생-컬럼">5-3. Calculated Fields — "런타임 파생 컬럼"</h3>
+<h4 id="why_2">Why</h4>
+<p>"등락률" 같은 단순 계산을 매번 LLM이 SQL로 만들게 하는 건 낭비다. 모델 정의에 박아두면 LLM은 컬럼명만 호출하면 된다.</p>
+<h4 id="what_2">What</h4>
+<p>런타임에 계산되는 파생 필드. MDL에 <code>isCalculated: true</code>와 <code>expression</code>으로 정의된다.</p>
+<h4 id="지원-집계-함수">지원 집계 함수</h4>
+<p><code>SUM</code>, <code>AVG</code>, <code>COUNT</code>, <code>MAX</code>, <code>MIN</code>, <code>ABS</code></p>
+<h4 id="how_1">How</h4>
+<blockquote>
+<p>이 코드가 하는 일: close/open으로 등락률을 계산하는 파생 컬럼을 모델에 추가한다. LLM은 <code>price_change_pct</code>를 그냥 컬럼처럼 SELECT할 수 있다.</p>
+</blockquote>
 <div class="codehilite"><pre><span></span><code><span class="p">{</span>
 <span class="w">  </span><span class="nt">&quot;name&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;price_change_pct&quot;</span><span class="p">,</span>
 <span class="w">  </span><span class="nt">&quot;type&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;DECIMAL&quot;</span><span class="p">,</span>
@@ -861,10 +1130,16 @@ erDiagram
 <span class="p">}</span>
 </code></pre></div>
 
-<p><strong>제약:</strong> 복잡한 수식(CASE WHEN, 윈도우 함수 등)은 지원하지 않는다. 복잡한 계산은 PostgreSQL <strong>Curated View</strong>에서 미리 계산하고 컬럼으로 노출하는 것이 권장된다.</p>
-<h3 id="4-4-metrics">4-4. Metrics</h3>
-<p><strong>무엇:</strong> 사전 정의된 집계 KPI. Dimension(분류 기준)과 Measure(집계 대상)를 명시적으로 분리한다.</p>
-<p><strong>구성 요소:</strong></p>
+<blockquote>
+<p>⚠️ <strong>함정 — Calculated Field의 한계:</strong>
+복잡한 수식(CASE WHEN, 윈도우 함수, 서브쿼리)은 지원하지 않는다. RSI, MA20, 볼린저밴드 같은 기술 지표는 <strong>PostgreSQL Curated View에서 미리 계산</strong>하고 컬럼으로 노출하는 것이 권장된다.</p>
+</blockquote>
+<h3 id="5-4-metrics--사전-정의된-kpi">5-4. Metrics — "사전 정의된 KPI"</h3>
+<h4 id="why_3">Why</h4>
+<p>"평균 PER", "총 거래대금" 같은 자주 쓰는 집계는 매번 같은 GROUP BY를 LLM이 만들 필요 없다. Metric으로 박아두면 정의 일관성 확보.</p>
+<h4 id="what_3">What</h4>
+<p>사전 정의된 집계 KPI. Dimension(분류 기준)과 Measure(집계 대상)를 명시적으로 분리한다.</p>
+<h4 id="구성-요소">구성 요소</h4>
 <table>
 <thead>
 <tr>
@@ -896,17 +1171,25 @@ erDiagram
 </tr>
 </tbody>
 </table>
-<p><strong>생성 방법:</strong> UI 모델링 페이지에서 "Add Metric" 클릭 후 Base Object, Dimension, Measure 설정</p>
-<h3 id="4-5-views">4-5. Views</h3>
-<p><strong>무엇:</strong> Wren AI의 View는 <strong>"검증된 답변 캐시"</strong>로, DB View와는 완전히 다른 개념이다.</p>
-<p><strong>"Save as View" 동작:</strong></p>
-<ol>
-<li>사용자가 질문하면 AI가 SQL 생성 후 결과 반환</li>
-<li>사용자가 결과 확인 후 "Save as View" 클릭</li>
-<li>질문 + SQL이 View로 저장됨</li>
-<li>이후 같은/유사 질문이 들어오면 저장된 View에서 직접 반환 (AI 재생성 우회)</li>
-</ol>
-<p><strong>View vs SQL Pairs 비교:</strong></p>
+<h4 id="how_2">How</h4>
+<p>UI 모델링 페이지에서 "Add Metric" → Base Object/Dimension/Measure 설정.</p>
+<h3 id="5-5-views--검증된-답변-캐시-db-view와-다름">5-5. Views — "검증된 답변 캐시" (DB View와 다름)</h3>
+<h4 id="why_4">Why</h4>
+<p>매일 같은 질문("오늘 시장 현황", "현재 VIX")이 들어오는데, 매번 LLM을 거칠 필요는 없다. 한 번 검증된 답을 캐시처럼 박아두면 즉시 응답 + 비용 0.</p>
+<h4 id="what_4">What</h4>
+<p>Wren AI의 View는 <strong>"검증된 답변 캐시"</strong>로, DB View와는 완전히 다른 개념이다.</p>
+<h4 id="how--save-as-view-동작">How — "Save as View" 동작</h4>
+<div class="mermaid">
+flowchart LR
+    Q["사용자 질문"] --> AI["AI 생성 SQL"] --> R["결과 확인"]
+    R -->|"Save as View"| V["(#quot;저장된 질문 + SQL\n(View)#quot;)"]
+    Q2["같은/유사 질문"] --> V --> RR["즉시 반환\n(LLM 우회)"]
+
+    style V fill:#e8f5e9,color:#1a1a2e
+    style RR fill:#fff3e0,color:#1a1a2e
+</div>
+
+<h4 id="view-vs-sql-pairs-차이">View vs SQL Pairs 차이</h4>
 <table>
 <thead>
 <tr>
@@ -943,46 +1226,22 @@ erDiagram
 </tr>
 <tr>
 <td><strong>적합 용도</strong></td>
-<td>고정 반복 질문 ("오늘 시장 현황")</td>
-<td>변형 가능한 패턴 ("종목별 PER 조회")</td>
+<td>고정 반복 질문</td>
+<td>변형 가능한 패턴</td>
 </tr>
 </tbody>
 </table>
-<p><strong>사용 시기:</strong> 매일 같은 질문이 반복되는 고정 FAQ (예: "시가총액 상위 10종목", "현재 VIX")</p>
+<blockquote>
+<p>💡 <strong>실무 팁:</strong> "오늘 시장 현황", "시가총액 상위 10종목" 같이 <strong>변형 없이 매일 반복</strong>되는 질문은 View로. "○○ 종목의 PER 추이" 같이 종목명만 바뀌는 패턴은 SQL Pair로.</p>
+</blockquote>
 <hr />
-<h2 id="5-nl2sql-기능-ask">5. NL2SQL 기능 (Ask)</h2>
-<h3 id="5-1-질문-방법">5-1. 질문 방법</h3>
-<p>UI에서 자연어로 질문을 입력하거나, REST API(<code>POST /v1/asks</code>)로 질문을 제출한다.</p>
-<p><strong>Intent Classification (의도 분류):</strong></p>
-<p>LLM이 질문 유형을 판별한다:</p>
-<table>
-<thead>
-<tr>
-<th>유형</th>
-<th>설명</th>
-<th>후속 처리</th>
-</tr>
-</thead>
-<tbody>
-<tr>
-<td><code>TEXT_TO_SQL</code></td>
-<td>SQL로 변환 가능한 데이터 질문</td>
-<td>SQL 생성 파이프라인 진행</td>
-</tr>
-<tr>
-<td><code>GENERAL</code></td>
-<td>일반 대화/도움 요청</td>
-<td>텍스트 응답</td>
-</tr>
-<tr>
-<td><code>MISLEADING</code></td>
-<td>데이터와 무관한 질문</td>
-<td>거부 응답</td>
-</tr>
-</tbody>
-</table>
-<p><strong>Reasoning Plan 생성:</strong> SQL 생성 전에 Chain-of-Thought 방식으로 추론 계획을 수립한다. 이 과정은 <code>sql_generation_reasoning</code> 파이프라인에서 처리된다.</p>
-<h3 id="5-2-sql-생성-파이프라인">5-2. SQL 생성 파이프라인</h3>
+<h2 id="6-nl2sql-기능-ask--자연어를-어떻게-sql로-만드는가">6. NL2SQL 기능 (Ask) — 자연어를 어떻게 SQL로 만드는가</h2>
+<h3 id="6-1-7단계-파이프라인-비유">6-1. 7단계 파이프라인 비유</h3>
+<blockquote>
+<p><strong>자연어 → SQL은 "통역사가 6단계 검수를 거치는 과정"이다.</strong>
+1단계: 질문 의도 파악 → 2단계: 관련 자료 찾기 → 3단계: 초안 작성 → 4단계: 문법 검사 → 5단계: 실행 → 6단계: 결과 설명.</p>
+</blockquote>
+<h3 id="6-2-전체-파이프라인">6-2. 전체 파이프라인</h3>
 <div class="mermaid">
 flowchart TB
     Q[사용자 질문]
@@ -1010,7 +1269,7 @@ flowchart TB
     end
 
     subgraph Stage5["Stage 5: 실행/응답"]
-        EX["SQL Execution\nEngine -> Ibis -> DB"]
+        EX[SQL Execution\nEngine → Ibis → DB]
         AN[Answer Generation\n결과 자연어 변환]
     end
 
@@ -1028,55 +1287,213 @@ flowchart TB
     style Stage5 fill:#fdcb6e33,stroke:#fdcb6e,stroke-width:2px
 </div>
 
-<p><strong>Stage별 상세:</strong></p>
-<ul>
-<li><strong>Schema RAG (Qdrant 검색)</strong>: 질문을 임베딩하여 관련 테이블(top-10), 컬럼(top-100) 검색</li>
-<li><strong>SQL Pairs Retrieval</strong>: 유사도 0.7 이상인 SQL Pairs를 최대 10개 반환</li>
-<li><strong>SQL Generation</strong>: 시스템 프롬프트(SQL RULES) + 사용자 프롬프트(DATABASE SCHEMA + SQL SAMPLES + INSTRUCTIONS + QUESTION) 구조로 LLM 호출</li>
-<li><strong>SQL Correction</strong>: Dry Run 실패 시 에러 메시지를 LLM에 전달하여 최대 3회 재생성 (<code>max_sql_correction_retries: 3</code>)</li>
-</ul>
-<p><strong>프롬프트 구조 (소스 코드 분석):</strong></p>
+<h3 id="6-3-stage-1--intent-classification-의도-분류">6-3. Stage 1 — Intent Classification (의도 분류)</h3>
+<p>LLM이 질문 유형을 판별한다:</p>
+<table>
+<thead>
+<tr>
+<th>유형</th>
+<th>설명</th>
+<th>후속 처리</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>TEXT_TO_SQL</code></td>
+<td>SQL로 변환 가능한 데이터 질문</td>
+<td>SQL 생성 파이프라인 진행</td>
+</tr>
+<tr>
+<td><code>GENERAL</code></td>
+<td>일반 대화/도움 요청</td>
+<td>텍스트 응답</td>
+</tr>
+<tr>
+<td><code>MISLEADING</code></td>
+<td>데이터와 무관한 질문</td>
+<td>거부 응답</td>
+</tr>
+</tbody>
+</table>
+<blockquote>
+<p>⚠️ <strong>함정 — Intent Classification 비결정성:</strong>
+같은 질문이라도 LLM이 매번 똑같이 분류하지 않는다. "실질금리 추이"가 어떤 날은 <code>TEXT_TO_SQL</code>, 어떤 날은 <code>GENERAL</code>로 가는 사례가 있다. <strong>SQL Pair로 패턴을 박아두면 의도 분류 안정성이 크게 올라간다.</strong></p>
+</blockquote>
+<h3 id="6-4-stage-2--context-retrieval-rag">6-4. Stage 2 — Context Retrieval (RAG)</h3>
+<p>Qdrant 벡터 DB에서 4종 컨텍스트를 동시 검색:</p>
+<table>
+<thead>
+<tr>
+<th>검색 대상</th>
+<th>효과</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Schema (테이블/컬럼 description)</td>
+<td>top-10 테이블, top-100 컬럼</td>
+</tr>
+<tr>
+<td>SQL Pairs (유사 질문-SQL)</td>
+<td>유사도 0.7 이상 최대 10개</td>
+</tr>
+<tr>
+<td>Instructions (전역 규칙)</td>
+<td>매칭된 규칙</td>
+</tr>
+<tr>
+<td>SQL Functions (DB 내장 함수)</td>
+<td>DB별 함수 목록</td>
+</tr>
+</tbody>
+</table>
+<div class="mermaid">
+flowchart LR
+    Q["질문\n'PER 10 이하 저평가'"]
+    EMB["Embedding\n(text-embedding-3)"]
+    QD["Qdrant\n벡터 검색"]
+    CTX["RAG 컨텍스트\n+ 유사 SQL 3개\n+ 관련 테이블 2개\n+ 적용 규칙 4개"]
+
+    Q --> EMB --> QD --> CTX
+</div>
+
+<h3 id="6-5-stage-3--sql-generation-chain-of-thought">6-5. Stage 3 — SQL Generation (Chain-of-Thought)</h3>
+<h4 id="프롬프트-구조">프롬프트 구조</h4>
+<blockquote>
+<p>이 박스가 보여주는 것: SQL Generation 단계에서 LLM에 전달되는 system/user 프롬프트의 구성. 각 블록은 RAG 결과로 동적으로 채워진다.</p>
+</blockquote>
 <div class="codehilite"><pre><span></span><code><span class="k">System</span><span class="w"> </span><span class="n">Prompt</span>
-<span class="w">  </span><span class="err">+</span><span class="c1">-- GENERAL RULES: Instructions/SQL Samples/Reasoning Plan 참조 규칙</span>
-<span class="w">  </span><span class="err">+</span><span class="c1">-- SQL RULES (TEXT_TO_SQL_RULES): SELECT only, JOIN 규칙, quoting 등</span>
-<span class="w">  </span><span class="err">+</span><span class="c1">-- FINAL ANSWER FORMAT: JSON {&quot;sql&quot;: &quot;...&quot;} 형식</span>
+<span class="w">  </span><span class="n">├─</span><span class="w"> </span><span class="n">GENERAL</span><span class="w"> </span><span class="n">RULES</span><span class="err">:</span><span class="w"> </span><span class="n">Instructions</span><span class="o">/</span><span class="k">SQL</span><span class="w"> </span><span class="n">Samples</span><span class="o">/</span><span class="n">Reasoning</span><span class="w"> </span><span class="n">Plan</span><span class="w"> </span><span class="n">참조</span><span class="w"> </span><span class="n">규칙</span>
+<span class="w">  </span><span class="n">├─</span><span class="w"> </span><span class="k">SQL</span><span class="w"> </span><span class="n">RULES</span><span class="w"> </span><span class="p">(</span><span class="n">TEXT_TO_SQL_RULES</span><span class="p">)</span><span class="err">:</span><span class="w"> </span><span class="k">SELECT</span><span class="w"> </span><span class="k">only</span><span class="p">,</span><span class="w"> </span><span class="k">JOIN</span><span class="w"> </span><span class="n">규칙</span><span class="p">,</span><span class="w"> </span><span class="n">quoting</span><span class="w"> </span><span class="n">등</span>
+<span class="w">  </span><span class="n">└─</span><span class="w"> </span><span class="n">FINAL</span><span class="w"> </span><span class="n">ANSWER</span><span class="w"> </span><span class="k">FORMAT</span><span class="err">:</span><span class="w"> </span><span class="kt">JSON</span><span class="w"> </span><span class="err">{</span><span class="s2">&quot;sql&quot;</span><span class="err">:</span><span class="w"> </span><span class="s2">&quot;...&quot;</span><span class="err">}</span><span class="w"> </span><span class="n">형식</span>
 
 <span class="n">User</span><span class="w"> </span><span class="n">Prompt</span>
-<span class="w">  </span><span class="err">+</span><span class="c1">-- DATABASE SCHEMA: Qdrant에서 검색된 관련 테이블 DDL</span>
-<span class="w">  </span><span class="err">+</span><span class="c1">-- CALCULATED FIELD / METRIC / JSON INSTRUCTIONS (조건부)</span>
-<span class="w">  </span><span class="err">+</span><span class="c1">-- SQL FUNCTIONS (조건부)</span>
-<span class="w">  </span><span class="err">+</span><span class="c1">-- SQL SAMPLES: SQL Pairs에서 유사 질문 검색 결과</span>
-<span class="w">  </span><span class="err">+</span><span class="c1">-- USER INSTRUCTIONS: Instructions 목록</span>
-<span class="w">  </span><span class="err">+</span><span class="c1">-- QUESTION: 사용자 질문</span>
-<span class="w">  </span><span class="err">+</span><span class="c1">-- REASONING PLAN (조건부)</span>
-<span class="w">  </span><span class="err">+</span><span class="c1">-- &quot;Let&#39;s think step by step.&quot;</span>
+<span class="w">  </span><span class="n">├─</span><span class="w"> </span><span class="k">DATABASE</span><span class="w"> </span><span class="k">SCHEMA</span><span class="err">:</span><span class="w"> </span><span class="n">Qdrant에서</span><span class="w"> </span><span class="n">검색된</span><span class="w"> </span><span class="n">관련</span><span class="w"> </span><span class="n">테이블</span><span class="w"> </span><span class="n">DDL</span>
+<span class="w">  </span><span class="n">├─</span><span class="w"> </span><span class="n">CALCULATED</span><span class="w"> </span><span class="k">FIELD</span><span class="w"> </span><span class="err">/</span><span class="w"> </span><span class="n">METRIC</span><span class="w"> </span><span class="err">/</span><span class="w"> </span><span class="kt">JSON</span><span class="w"> </span><span class="n">INSTRUCTIONS</span><span class="w"> </span><span class="p">(</span><span class="n">조건부</span><span class="p">)</span>
+<span class="w">  </span><span class="n">├─</span><span class="w"> </span><span class="k">SQL</span><span class="w"> </span><span class="n">FUNCTIONS</span><span class="w"> </span><span class="p">(</span><span class="n">조건부</span><span class="p">)</span>
+<span class="w">  </span><span class="n">├─</span><span class="w"> </span><span class="k">SQL</span><span class="w"> </span><span class="n">SAMPLES</span><span class="err">:</span><span class="w"> </span><span class="k">SQL</span><span class="w"> </span><span class="n">Pairs에서</span><span class="w"> </span><span class="n">유사</span><span class="w"> </span><span class="n">질문</span><span class="w"> </span><span class="n">검색</span><span class="w"> </span><span class="n">결과</span>
+<span class="w">  </span><span class="n">├─</span><span class="w"> </span><span class="n">USER</span><span class="w"> </span><span class="n">INSTRUCTIONS</span><span class="err">:</span><span class="w"> </span><span class="n">Instructions</span><span class="w"> </span><span class="n">목록</span>
+<span class="w">  </span><span class="n">├─</span><span class="w"> </span><span class="n">QUESTION</span><span class="err">:</span><span class="w"> </span><span class="n">사용자</span><span class="w"> </span><span class="n">질문</span>
+<span class="w">  </span><span class="n">├─</span><span class="w"> </span><span class="n">REASONING</span><span class="w"> </span><span class="n">PLAN</span><span class="w"> </span><span class="p">(</span><span class="n">조건부</span><span class="p">)</span>
+<span class="w">  </span><span class="n">└─</span><span class="w"> </span><span class="s2">&quot;Let&#39;s think step by step.&quot;</span>
 </code></pre></div>
 
-<h3 id="5-3-답변-생성-sql_answer">5-3. 답변 생성 (sql_answer)</h3>
-<p>SQL 실행 결과를 LLM이 자연어로 변환하는 단계이다.</p>
-<p><strong>한계:</strong></p>
+<h4 id="reasoning-plan">Reasoning Plan</h4>
+<p>SQL 생성 전에 Chain-of-Thought 방식으로 추론 계획을 수립한다 (<code>sql_generation_reasoning</code> 파이프라인).</p>
 <blockquote>
-<p><strong>sql_answer 프롬프트에 컬럼 description이 포함되지 않는다.</strong> LLM은 컬럼명과 결과값만 보고 해석하므로, 약어나 코드 형태의 컬럼값을 잘못 해석할 수 있다.</p>
-<p><strong>환각 가능성이 있다.</strong> SK하이닉스 데이터가 결과에 포함되어 있는데 "데이터가 없습니다"라고 답변하는 사례가 발견되었다 (BIP 테스트).</p>
+<p>⚠️ <strong>함정 — 프롬프트 커스터마이징 불가:</strong>
+Wren AI는 system/user 프롬프트를 직접 수정할 수 없다. 도메인 규칙은 <strong>Instructions / SQL Pairs / 컬럼 description</strong> 세 가지 통로로만 주입할 수 있다. 그 이상의 제어가 필요하면 LangGraph로 직접 구현해야 한다.</p>
 </blockquote>
-<p><strong>해결 방법:</strong></p>
-<ul>
-<li><strong>해석 컬럼(Interpretation Column) 추가</strong>: <code>foreign_direction</code> 같은 해석 텍스트를 DB에서 미리 생성하여 LLM이 올바르게 읽을 수 있도록 한다</li>
-<li>복잡한 해석이 필요한 경우 LangGraph 에이전트에서 별도 LLM 분석 수행</li>
-</ul>
-<h3 id="5-4-follow-up-질문">5-4. Follow-up 질문</h3>
-<p>이전 질문의 컨텍스트를 유지하여 후속 질문을 처리한다. "그 중에서 코스피만 보여줘" 같은 질문이 가능하다.</p>
-<h3 id="5-5-차트-생성">5-5. 차트 생성</h3>
-<p>SQL 결과를 기반으로 LLM이 적절한 차트 유형(바, 라인, 파이 등)을 자동 선택하여 생성한다.</p>
+<h3 id="6-6-stage-4--validation--correction">6-6. Stage 4 — Validation &amp; Correction</h3>
+<div class="mermaid">
+flowchart LR
+    SQL["생성 SQL"] --> DR["Dry Run"]
+    DR -->|"PASS"| EX["실행"]
+    DR -->|"FAIL"| EM["에러 메시지 추출"]
+    EM --> RG["LLM 재생성\n(에러 + 원래 질문)"]
+    RG --> SQL
+    RG -.->|"3회 시도"| FAIL["NO SQL 응답"]
+
+    style EX fill:#e8f5e9,color:#1a1a2e
+    style FAIL fill:#ffebee,color:#1a1a2e
+</div>
+
+<p><code>max_sql_correction_retries: 3</code>이 기본값. 3회 실패 시 "NO SQL"로 응답한다.</p>
+<h3 id="6-7-stage-5--execution">6-7. Stage 5 — Execution</h3>
+<p>검증 통과한 SQL을 Engine → Ibis → DB로 실제 실행.</p>
+<h3 id="6-8-stage-6--answer-generation-sql_answer">6-8. Stage 6 — Answer Generation (sql_answer)</h3>
+<p>SQL 실행 결과를 LLM이 자연어로 변환하는 단계.</p>
+<blockquote>
+<p>⚠️ <strong>함정 1 — sql_answer에 컬럼 description 미포함:</strong>
+sql_answer 프롬프트에는 컬럼명과 결과값만 들어간다. <strong>컬럼 description이 빠진다.</strong> 약어/코드 컬럼값을 잘못 해석할 수 있다.</p>
+<p>⚠️ <strong>함정 2 — 환각 가능:</strong>
+SK하이닉스 데이터가 결과에 포함되어 있는데 "데이터가 없습니다"라고 답변하는 사례가 BIP 테스트에서 발견됐다. SQL은 정확했지만 답변 LLM이 일부 행을 누락했다.</p>
+</blockquote>
+<h4 id="해결-방법">해결 방법</h4>
+<table>
+<thead>
+<tr>
+<th>방법</th>
+<th>설명</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><strong>해석 컬럼 추가</strong></td>
+<td><code>foreign_direction</code> 같은 텍스트 해석을 DB에서 미리 생성</td>
+</tr>
+<tr>
+<td><strong>LangGraph 분리</strong></td>
+<td>복잡한 해석은 별도 LLM 분석 단계로 분리</td>
+</tr>
+</tbody>
+</table>
+<blockquote>
+<p>💡 <strong>실무 팁 — 해석 컬럼 패턴:</strong>
+<code>sql
+CASE
+  WHEN foreign_net_volume &gt; 0 THEN '순매수'
+  WHEN foreign_net_volume &lt; 0 THEN '순매도'
+  ELSE '중립'
+END AS foreign_direction</code>
+이렇게 텍스트로 박아두면 sql_answer가 환각하지 않는다.</p>
+</blockquote>
+<h3 id="6-9-follow-up-질문">6-9. Follow-up 질문</h3>
+<p>이전 질문의 컨텍스트를 유지하여 후속 질문 처리. "그 중에서 코스피만 보여줘" 같은 질문 가능.</p>
+<h3 id="6-10-차트-생성">6-10. 차트 생성</h3>
+<p>SQL 결과를 기반으로 LLM이 적절한 차트 유형(바, 라인, 파이)을 자동 선택하여 생성.</p>
 <hr />
-<h2 id="6-sql-pairs">6. SQL Pairs</h2>
-<h3 id="6-1-개념">6-1. 개념</h3>
-<p>SQL Pairs는 <strong>질문-SQL 쌍을 Few-shot 예시로 Qdrant에 저장</strong>하는 기능이다. 유사한 질문이 들어오면 RAG로 검색되어 LLM 컨텍스트에 주입된다.</p>
-<h3 id="6-2-생성-방법">6-2. 생성 방법</h3>
+<h2 id="7-sql-pairs--few-shot-학습의-힘">7. SQL Pairs — Few-shot 학습의 힘</h2>
+<h3 id="7-1-비유--sql-pair는-llm에게-보여주는-정답지">7-1. 비유 — "SQL Pair는 LLM에게 보여주는 정답지"</h3>
+<blockquote>
+<p><strong>시험 보기 전에 모범 답안을 5장 보여주고 비슷한 문제를 풀게 하는 것과 같다.</strong>
+Few-shot prompting의 본질이고, NL2SQL에서는 SQL Pair가 그 모범 답안이다.</p>
+</blockquote>
+<h3 id="7-2-why--왜-이렇게-효과적인가">7-2. Why — 왜 이렇게 효과적인가</h3>
+<p>LLM은 "패턴 매칭" 머신이다. 정답 패턴을 몇 개 보면 즉시 따라한다:</p>
+<table>
+<thead>
+<tr>
+<th>상황</th>
+<th>Instructions만</th>
+<th>SQL Pair 추가</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>"실질금리 추이" 질문</td>
+<td>의도 분류 실패 (도메인 용어 모름)</td>
+<td>즉시 SQL 생성 (정답 패턴 참조)</td>
+</tr>
+<tr>
+<td>"신용스프레드 보여줘"</td>
+<td>컬럼 추측 환각</td>
+<td>정확한 컬럼 사용</td>
+</tr>
+</tbody>
+</table>
+<h3 id="7-3-few-shot-rag-동작-원리">7-3. Few-shot RAG 동작 원리</h3>
+<div class="mermaid">
+flowchart TB
+    Q["새 질문\n'POSCO PER'"]
+    EMB["임베딩"]
+    QD["(#quot;Qdrant\nSQL Pair 70개\n벡터 저장#quot;)"]
+    SIM["유사도 검색\n(top-10)"]
+    SAMPLES["검색된 샘플\n1. '삼성전자 PER' → SELECT...\n2. 'SK하이닉스 PER' → SELECT...\n3. '현대차 PER' → SELECT..."]
+    LLM["LLM"]
+    NEW_SQL["새 SQL\n(패턴 차용)"]
+
+    Q --> EMB --> QD --> SIM --> SAMPLES --> LLM --> NEW_SQL
+</div>
+
+<h3 id="7-4-how--생성-방법">7-4. How — 생성 방법</h3>
 <p><strong>UI:</strong>
-- "Ask" 탭에서 질문 후 좋은 결과가 나오면 "Save as SQL Pair" 클릭
+- "Ask" 탭에서 질문 후 좋은 결과 → "Save as SQL Pair" 클릭
 - "SQL Pairs" 메뉴에서 직접 question + SQL 입력</p>
 <p><strong>API:</strong></p>
+<blockquote>
+<p>이 코드가 하는 일: 질문-SQL 쌍을 GraphQL mutation으로 등록한다. Deploy 시 Qdrant에 임베딩된다.</p>
+</blockquote>
 <div class="codehilite"><pre><span></span><code><span class="k">mutation</span><span class="w"> </span><span class="p">{</span>
 <span class="w">  </span><span class="n">createSqlPair</span><span class="p">(</span><span class="n">data</span><span class="p">:</span><span class="w"> </span><span class="p">{</span>
 <span class="w">    </span><span class="n">question</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;PER이 10 이하인 저평가 종목&quot;</span><span class="p">,</span>
@@ -1085,13 +1502,7 @@ flowchart TB
 <span class="p">}</span>
 </code></pre></div>
 
-<h3 id="6-3-효과">6-3. 효과</h3>
-<p>SQL Pairs는 <strong>SQL 정확도 향상의 가장 효과적인 수단</strong>이다.</p>
-<ul>
-<li>전문 용어("실질금리", "신용스프레드")로 의도 분류 실패하던 질문이 SQL Pair 추가만으로 즉시 해결</li>
-<li>Instructions보다 구체적이고 직접적인 효과</li>
-</ul>
-<h3 id="6-4-카테고리별-추천">6-4. 카테고리별 추천</h3>
+<h3 id="7-5-카테고리별-추천-패턴">7-5. 카테고리별 추천 패턴</h3>
 <table>
 <thead>
 <tr>
@@ -1114,7 +1525,7 @@ flowchart TB
 <tr>
 <td>boolean flag</td>
 <td>5+</td>
-<td><code>WHERE is_value_stock = true</code>, <code>WHERE is_oversold_rsi = true</code></td>
+<td><code>WHERE is_value_stock = true</code></td>
 </tr>
 <tr>
 <td>시계열</td>
@@ -1143,21 +1554,32 @@ flowchart TB
 </tr>
 </tbody>
 </table>
-<h3 id="6-5-bip-실적">6-5. BIP 실적</h3>
+<h3 id="7-6-bip-실적--70개-등록--100-a등급">7-6. BIP 실적 — "70개 등록 → 100% A등급"</h3>
 <div class="codehilite"><pre><span></span><code><span class="err">초기</span><span class="o">:</span><span class="w">       </span><span class="mi">29</span><span class="err">개</span><span class="w"> </span><span class="o">(</span><span class="mi">2026</span><span class="o">-</span><span class="mi">04</span><span class="o">-</span><span class="mi">02</span><span class="o">)</span>
 <span class="mi">1</span><span class="err">차</span><span class="w"> </span><span class="err">테스트</span><span class="o">:</span><span class="w"> </span><span class="mi">34</span><span class="err">개</span><span class="w"> </span><span class="o">(+</span><span class="mi">5</span><span class="o">,</span><span class="w"> </span><span class="err">실패</span><span class="w"> </span><span class="err">패턴</span><span class="w"> </span><span class="err">기반</span><span class="o">)</span>
 <span class="mi">2</span><span class="err">차</span><span class="w"> </span><span class="err">테스트</span><span class="o">:</span><span class="w"> </span><span class="mi">41</span><span class="err">개</span><span class="w"> </span><span class="o">(+</span><span class="mi">7</span><span class="o">)</span>
 <span class="err">현재</span><span class="o">:</span><span class="w">       </span><span class="mi">70</span><span class="err">개</span>
-<span class="n">A등급</span><span class="o">:</span><span class="w">      </span><span class="mi">58</span><span class="o">%</span><span class="w"> </span><span class="o">-&gt;</span><span class="w"> </span><span class="mi">100</span><span class="o">%</span>
+<span class="n">A등급</span><span class="o">:</span><span class="w">      </span><span class="mi">58</span><span class="o">%</span><span class="w"> </span><span class="err">→</span><span class="w"> </span><span class="mi">100</span><span class="o">%</span>
 </code></pre></div>
 
+<blockquote>
+<p>💡 <strong>실무 팁 — Few-shot의 ROI:</strong>
+SQL Pair 1개 추가 = LLM 모델 한 단계 업그레이드 효과. 모델 비용 올리는 것보다 SQL Pair 늘리는 게 훨씬 가성비 좋다.</p>
+<p>⚠️ <strong>함정 — 너무 구체적이면 일반화 안됨:</strong>
+"삼성전자 PER" 보다 "종목별 PER" 같은 일반화된 패턴이 좋다. 종목명을 SQL에 하드코딩하지 말고 <code>stock_name ILIKE '%삼성전자%'</code>처럼 작성해라.</p>
+</blockquote>
 <hr />
-<h2 id="7-instructions">7. Instructions</h2>
-<h3 id="7-1-개념">7-1. 개념</h3>
-<p>Instructions는 <strong>LLM에 전역으로 적용되는 규칙</strong>이다. 모든 질문에 대해 검색되어 프롬프트에 주입된다.</p>
-<h3 id="7-2-3-5개로-최소-유지">7-2. 3-5개로 최소 유지</h3>
-<p>Instructions가 너무 많으면 검색 노이즈가 증가하고 관련 없는 규칙이 컨텍스트를 오염시킨다. <strong>범용 규칙만 3-5개로 유지</strong>하는 것이 권장된다.</p>
-<h3 id="7-3-bip에서-등록한-4개">7-3. BIP에서 등록한 4개</h3>
+<h2 id="8-instructions--도메인-규칙-주입">8. Instructions — 도메인 규칙 주입</h2>
+<h3 id="8-1-why--instructions가-필요한-이유">8-1. Why — Instructions가 필요한 이유</h3>
+<p>매번 같은 규칙을 SQL Pair마다 반복할 수는 없다. "응답은 한글로", "ticker 하드코딩 금지" 같은 <strong>전역 규칙</strong>은 Instructions로.</p>
+<h3 id="8-2-what--동작-방식">8-2. What — 동작 방식</h3>
+<p>Instructions는 모든 질문에 대해 RAG 검색되어 프롬프트에 주입되는 <strong>전역 규칙</strong>이다.</p>
+<h3 id="8-3-핵심-원칙--3-5개로-최소-유지">8-3. 핵심 원칙 — "3-5개로 최소 유지"</h3>
+<blockquote>
+<p>⚠️ <strong>함정 — Instructions 남용:</strong>
+Instructions가 너무 많으면 검색 노이즈가 증가하고, 관련 없는 규칙이 컨텍스트를 오염시킨다. <strong>범용 규칙만 3-5개로 유지</strong>하는 것이 권장된다.</p>
+</blockquote>
+<h3 id="8-4-bip에서-등록한-4개">8-4. BIP에서 등록한 4개</h3>
 <table>
 <thead>
 <tr>
@@ -1184,7 +1606,7 @@ flowchart TB
 </tr>
 </tbody>
 </table>
-<p><strong>안티패턴:</strong></p>
+<h3 id="8-5-안티패턴">8-5. 안티패턴</h3>
 <table>
 <thead>
 <tr>
@@ -1211,11 +1633,20 @@ flowchart TB
 </tr>
 </tbody>
 </table>
+<blockquote>
+<p>💡 <strong>실무 팁 — 어디에 어떤 규칙을 둘까:</strong>
+- 컬럼 의미/계산 힌트 → <strong>컬럼 description</strong>
+- 특정 질문 패턴의 정답 SQL → <strong>SQL Pair</strong>
+- 모든 질문에 적용되는 메타 규칙 → <strong>Instructions</strong></p>
+</blockquote>
 <hr />
-<h2 id="8-llm-설정">8. LLM 설정</h2>
-<h3 id="8-1-litellm-기반-멀티-프로바이더">8-1. LiteLLM 기반 멀티 프로바이더</h3>
-<p>Wren AI는 <strong>LiteLLM</strong>을 통해 100+ LLM 제공자를 통일된 API로 호출한다.</p>
-<h3 id="8-2-지원-모델">8-2. 지원 모델</h3>
+<h2 id="9-llm-설정--litellm-기반-멀티-프로바이더">9. LLM 설정 — LiteLLM 기반 멀티 프로바이더</h2>
+<h3 id="9-1-비유--llm-어댑터-허브">9-1. 비유 — "LLM 어댑터 허브"</h3>
+<blockquote>
+<p><strong>LiteLLM은 LLM 세계의 "환전소"다.</strong>
+100+ LLM 제공자(OpenAI/Anthropic/Google/Ollama 등)를 <strong>OpenAI 호환 API 하나</strong>로 통일해준다. 모델 갈아끼울 때 코드 수정 0.</p>
+</blockquote>
+<h3 id="9-2-지원-모델">9-2. 지원 모델</h3>
 <table>
 <thead>
 <tr>
@@ -1257,7 +1688,10 @@ flowchart TB
 </tr>
 </tbody>
 </table>
-<h3 id="8-3-configyaml-설정-방법">8-3. config.yaml 설정 방법</h3>
+<h3 id="9-3-configyaml-설정-방법">9-3. config.yaml 설정 방법</h3>
+<blockquote>
+<p>이 코드가 하는 일: OpenAI/Anthropic/Ollama 3가지 프로바이더 중 하나를 선택하여 default 모델로 설정한다. 둘 중 하나만 활성화하면 된다.</p>
+</blockquote>
 <div class="codehilite"><pre><span></span><code><span class="c1"># OpenAI (기본)</span>
 <span class="nt">type</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">llm</span>
 <span class="nt">provider</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">litellm_llm</span>
@@ -1290,8 +1724,11 @@ flowchart TB
 <span class="w">    </span><span class="nt">context_window_size</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">128000</span>
 </code></pre></div>
 
-<h3 id="8-4-gpt-5-시리즈-주의사항">8-4. GPT-5 시리즈 주의사항</h3>
-<p>GPT-5.x는 reasoning 모델로, 파라미터 구조가 다르다:</p>
+<h3 id="9-4-gpt-5-시리즈-주의사항">9-4. GPT-5 시리즈 주의사항</h3>
+<p>GPT-5.x는 reasoning 모델이라 파라미터 구조가 다르다:</p>
+<blockquote>
+<p>이 코드가 하는 일: GPT-5.x용 파라미터로 변환. <code>max_tokens</code> → <code>max_completion_tokens</code>, <code>temperature</code> 사용 불가, <code>reasoning_effort</code> 명시 필수.</p>
+</blockquote>
 <div class="codehilite"><pre><span></span><code><span class="c1"># GPT-4.x (기존)</span>
 <span class="nt">kwargs</span><span class="p">:</span>
 <span class="w">  </span><span class="nt">max_tokens</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">4096</span>
@@ -1302,14 +1739,15 @@ flowchart TB
 <span class="w">  </span><span class="nt">max_completion_tokens</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">4096</span>
 <span class="w">  </span><span class="nt">reasoning_effort</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">low</span><span class="w">  </span><span class="c1"># none/low/medium/high/xhigh</span>
 <span class="w">  </span><span class="c1"># temperature 설정 불가 (1 고정)</span>
-<span class="w">  </span><span class="c1"># max_tokens -&gt; max_completion_tokens로 변경</span>
+<span class="w">  </span><span class="c1"># max_tokens → max_completion_tokens로 변경</span>
 </code></pre></div>
 
 <blockquote>
-<p>GPT-5.4-mini는 <code>reasoning_effort</code> 미설정 시 과도한 추론으로 느려지고, "NO SQL" 비율이 높아진다.</p>
+<p>⚠️ <strong>함정 — GPT-5.4-mini 기본 reasoning_effort:</strong>
+<code>reasoning_effort</code> 미설정 시 과도한 추론으로 응답이 매우 느려지고, "NO SQL" 비율이 높아진다. 반드시 명시할 것.</p>
 </blockquote>
-<h3 id="8-5-bip-모델-비교-결과">8-5. BIP 모델 비교 결과</h3>
-<p>7개 모델 실측 후 <strong>GPT-4.1-mini</strong> 선정:</p>
+<h3 id="9-5-bip-모델-비교-결과--gpt-41-mini가-최적">9-5. BIP 모델 비교 결과 — "GPT-4.1-mini가 최적"</h3>
+<p>7개 모델 실측 결과:</p>
 <table>
 <thead>
 <tr>
@@ -1372,11 +1810,21 @@ flowchart TB
 </tr>
 </tbody>
 </table>
-<h3 id="8-6-openai-편향">8-6. OpenAI 편향</h3>
-<p>Wren AI는 <code>response_format: json_schema</code>를 사용하는데, 이것은 <strong>OpenAI Structured Outputs</strong> 전용 기능이다. GPT 모델은 스키마에 100% 보장된 JSON을 출력하지만, Claude 모델은 LiteLLM이 json_schema를 텍스트 프롬프트로 변환하여 전달하므로 Instructions 준수율이 낮아질 수 있다.</p>
+<blockquote>
+<p>💡 <strong>실무 팁:</strong> 속도와 품질이 둘 다 중요하면 <strong>GPT-4.1-mini</strong>, 품질만 중요하면 <strong>Claude Sonnet</strong>, 비용 0이 중요하면 <strong>Ollama Llama3.1</strong>.</p>
+</blockquote>
+<h3 id="9-6-openai-편향--claudeollama가-약해지는-이유">9-6. OpenAI 편향 — Claude/Ollama가 약해지는 이유</h3>
+<blockquote>
+<p>⚠️ <strong>함정 — response_format json_schema는 OpenAI 전용:</strong>
+Wren AI는 <code>response_format: json_schema</code>를 사용하는데, 이는 <strong>OpenAI Structured Outputs</strong> 전용 기능이다.
+- GPT 모델: 스키마에 100% 보장된 JSON 출력
+- Claude 모델: LiteLLM이 json_schema를 텍스트 프롬프트로 변환하여 전달 → Instructions 준수율 저하
+- Ollama 모델: 동일한 문제로 약해짐</p>
+</blockquote>
+<p>이 때문에 BIP 테스트에서도 Claude Haiku가 속도는 빨랐지만 Instructions를 잘 안 따랐다.</p>
 <hr />
-<h2 id="9-지원-데이터-소스">9. 지원 데이터 소스</h2>
-<h3 id="9-1-11개-데이터-소스">9-1. 11개 데이터 소스</h3>
+<h2 id="10-지원-데이터-소스">10. 지원 데이터 소스</h2>
+<h3 id="10-1-11개-데이터-소스">10-1. 11개 데이터 소스</h3>
 <table>
 <thead>
 <tr>
@@ -1419,7 +1867,7 @@ flowchart TB
 </tr>
 <tr>
 <td>Oracle</td>
-<td>-</td>
+<td><strong>23ai만 지원</strong> ⚠️</td>
 </tr>
 <tr>
 <td>Athena</td>
@@ -1431,7 +1879,13 @@ flowchart TB
 </tr>
 </tbody>
 </table>
-<h3 id="9-2-연결-설정-방법">9-2. 연결 설정 방법</h3>
+<h3 id="10-2--oracle-19c-미지원--bip-사내-적용-불가-사례">10-2. ⚠️ Oracle 19c 미지원 — BIP 사내 적용 불가 사례</h3>
+<blockquote>
+<p>⚠️ <strong>함정 — Oracle 19c는 ibis-server에서 지원하지 않는다:</strong>
+Wren AI의 ibis-server는 Oracle은 <strong>23ai만</strong> 지원한다. 사내 표준이 19c인 경우 Wren AI 직접 적용이 불가능하다.</p>
+<p><strong>BIP 경험:</strong> 사내 시스템이 Oracle 19c라 Wren AI 도입을 검토했으나 적용 불가. 결국 <strong>LangGraph + LiteLLM으로 NL2SQL을 직접 구현</strong>하기로 전환했다. Wren AI는 BIP-Pipeline(PostgreSQL) 환경에서만 사용한다.</p>
+</blockquote>
+<h3 id="10-3-연결-설정-방법">10-3. 연결 설정 방법</h3>
 <ol>
 <li>UI에서 "Connect Data Source" 클릭</li>
 <li>데이터 소스 유형 선택</li>
@@ -1440,19 +1894,30 @@ flowchart TB
 <li>모델 자동 생성</li>
 </ol>
 <blockquote>
-<p>Docker 내부에서 연결 시 호스트명은 컨테이너명을 사용한다 (예: <code>bip-postgres</code>).</p>
+<p>💡 <strong>실무 팁 — Docker 호스트명:</strong>
+Docker 내부에서 연결 시 호스트명은 컨테이너명을 사용한다 (예: <code>bip-postgres</code>). <code>localhost</code>는 컨테이너 자기 자신을 가리키므로 실패한다.</p>
 </blockquote>
 <hr />
-<h2 id="10-deploy">10. Deploy</h2>
-<h3 id="10-1-deploy-버튼의-역할">10-1. Deploy 버튼의 역할</h3>
-<p>Deploy를 누르면 다음이 수행된다:</p>
-<ol>
-<li><strong>MDL JSON 재생성</strong>: 현재 모델/관계/Calculated Fields/Metrics 정보를 MDL로 직렬화</li>
-<li><strong>Qdrant 임베딩 재생성</strong>: 모든 스키마, SQL Pairs, Instructions를 벡터 DB에 재인덱싱</li>
-<li><strong>Engine 갱신</strong>: 새 MDL을 Engine에 로드</li>
-</ol>
-<h3 id="10-2-모든-변경-후-deploy-필수">10-2. 모든 변경 후 Deploy 필수</h3>
-<p>다음 변경 후에는 반드시 Deploy를 실행해야 변경사항이 NL2SQL에 반영된다:</p>
+<h2 id="11-deploy--qdrant-재인덱싱">11. Deploy — Qdrant 재인덱싱</h2>
+<h3 id="11-1-why--왜-deploy가-필요한가">11-1. Why — 왜 Deploy가 필요한가</h3>
+<p>모델/SQL Pair/Instructions를 추가해도 <strong>Qdrant에 임베딩되기 전까지는 NL2SQL에 반영되지 않는다.</strong> Deploy 버튼이 그 임베딩 트리거다.</p>
+<h3 id="11-2-what--deploy가-하는-일">11-2. What — Deploy가 하는 일</h3>
+<div class="mermaid">
+flowchart TB
+    DEPLOY["Deploy 버튼 클릭"]
+    MDL["1. MDL JSON 재생성\n("모델/관계/CalcField/Metric 직렬화")"]
+    QD["2. Qdrant 임베딩 재생성\n("스키마/SQL Pairs/Instructions 재인덱싱")"]
+    EN["3. Engine 갱신\n(새 MDL 로드)"]
+    READY["NL2SQL 사용 가능"]
+
+    DEPLOY --> MDL --> QD --> EN --> READY
+
+    style DEPLOY fill:#fff3e0,color:#1a1a2e
+    style READY fill:#e8f5e9,color:#1a1a2e
+</div>
+
+<h3 id="11-3-모든-변경-후-deploy-필수">11-3. 모든 변경 후 Deploy 필수</h3>
+<p>다음 변경 후에는 반드시 Deploy:</p>
 <ul>
 <li>모델 추가/삭제</li>
 <li>컬럼 추가/삭제/description 변경</li>
@@ -1461,12 +1926,19 @@ flowchart TB
 <li>Instructions 추가/삭제</li>
 <li>Calculated Fields 추가/삭제</li>
 </ul>
-<h3 id="10-3-undeployed-changes-표시">10-3. Undeployed Changes 표시</h3>
-<p>UI 상단에 "Undeployed changes" 경고가 표시되면 Deploy가 필요하다는 의미이다.</p>
+<blockquote>
+<p>⚠️ <strong>함정 — Undeployed Changes 무시:</strong>
+UI 상단에 "Undeployed changes" 경고가 표시되는데, 이걸 무시하고 질문하면 <strong>변경 전 상태로 응답</strong>한다. 변경 후엔 반드시 Deploy.</p>
+<p>💡 <strong>실무 팁 — 자동화:</strong>
+Airflow <code>10_sync_metadata_daily</code> DAG는 OM 동기화 후 GraphQL <code>deploy</code> mutation을 자동 호출한다. 운영자가 잊어버려도 매일 09:00 KST에 강제 동기화된다.</p>
+</blockquote>
 <hr />
-<h2 id="11-api">11. API</h2>
-<h3 id="11-1-rest-api-ai-service-port-5555">11-1. REST API (AI Service: port 5555)</h3>
-<p><strong>질문 제출:</strong></p>
+<h2 id="12-api">12. API</h2>
+<h3 id="12-1-rest-api-ai-service-port-5555">12-1. REST API (AI Service: port 5555)</h3>
+<h4 id="질문-제출--polling">질문 제출 → polling</h4>
+<blockquote>
+<p>이 코드가 하는 일: (1) 자연어 질문을 POST하여 query_id를 받고, (2) 그 ID로 결과를 polling한다. SQL 생성은 비동기이므로 polling 패턴이 필수.</p>
+</blockquote>
 <div class="codehilite"><pre><span></span><code><span class="c1"># 1) 질문 제출</span>
 POST<span class="w"> </span>http://localhost:5555/v1/asks
 Content-Type:<span class="w"> </span>application/json
@@ -1476,7 +1948,6 @@ Content-Type:<span class="w"> </span>application/json
 <span class="c1"># 응답: {&quot;query_id&quot;: &quot;abc123&quot;}</span>
 </code></pre></div>
 
-<p><strong>결과 조회 (polling):</strong></p>
 <div class="codehilite"><pre><span></span><code><span class="c1"># 2) 결과 polling (3초 간격, 최대 90초)</span>
 GET<span class="w"> </span>http://localhost:5555/v1/asks/abc123/result
 
@@ -1493,7 +1964,7 @@ GET<span class="w"> </span>http://localhost:5555/v1/asks/abc123/result
 <span class="o">}</span>
 </code></pre></div>
 
-<p><strong>기타 엔드포인트:</strong></p>
+<h4 id="기타-엔드포인트">기타 엔드포인트</h4>
 <table>
 <thead>
 <tr>
@@ -1515,7 +1986,10 @@ GET<span class="w"> </span>http://localhost:5555/v1/asks/abc123/result
 </tr>
 </tbody>
 </table>
-<h3 id="11-2-graphql-api-ui-port-3000">11-2. GraphQL API (UI: port 3000)</h3>
+<h3 id="12-2-graphql-api-ui-port-3000">12-2. GraphQL API (UI: port 3000)</h3>
+<blockquote>
+<p>이 코드가 하는 일: UI 백엔드의 GraphQL 엔드포인트로 모델/SQL Pair/Instructions/Relationship/Deploy를 모두 관리한다. Airflow DAG에서 자동 동기화에 활용.</p>
+</blockquote>
 <div class="codehilite"><pre><span></span><code><span class="c"># 모델 조회</span>
 <span class="p">{</span><span class="w"> </span><span class="n">listModels</span><span class="w"> </span><span class="p">{</span><span class="w"> </span><span class="n">id</span><span class="w"> </span><span class="n">displayName</span><span class="w"> </span><span class="n">description</span><span class="w"> </span><span class="p">}</span><span class="w"> </span><span class="p">}</span>
 <span class="p">{</span><span class="w"> </span><span class="n">model</span><span class="p">(</span><span class="n">where</span><span class="p">:</span><span class="w"> </span><span class="p">{</span><span class="n">id</span><span class="p">:</span><span class="w"> </span><span class="mi">1</span><span class="p">})</span><span class="w"> </span><span class="p">{</span><span class="w"> </span><span class="n">fields</span><span class="w"> </span><span class="p">{</span><span class="w"> </span><span class="n">displayName</span><span class="w"> </span><span class="n">type</span><span class="w"> </span><span class="n">properties</span><span class="w"> </span><span class="p">}</span><span class="w"> </span><span class="p">}</span><span class="w"> </span><span class="p">}</span>
@@ -1552,28 +2026,99 @@ GET<span class="w"> </span>http://localhost:5555/v1/asks/abc123/result
 </code></pre></div>
 
 <hr />
-<h2 id="12-best-practices-bip-경험-기반">12. Best Practices (BIP 경험 기반)</h2>
-<h3 id="step-0-데이터-전처리가-가장-중요">Step 0: 데이터 전처리가 가장 중요</h3>
+<h2 id="13-best-practices--bip-4차-검증-결과-100-달성한-방법">13. Best Practices — BIP 4차 검증 결과 100% 달성한 방법</h2>
+<h3 id="13-1-결과-요약">13-1. 결과 요약</h3>
+<table>
+<thead>
+<tr>
+<th>단계</th>
+<th>A등급 비율</th>
+<th>핵심 변화</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>초기 (29 SQL Pairs)</td>
+<td>58%</td>
+<td>컬럼 description 미흡</td>
+</tr>
+<tr>
+<td>1차 테스트 (34)</td>
+<td>75%</td>
+<td>실패 패턴 기반 SQL Pair 추가</td>
+</tr>
+<tr>
+<td>2차 테스트 (41)</td>
+<td>88%</td>
+<td>매크로/수급 SQL Pair 보강</td>
+</tr>
+<tr>
+<td>4차 검증 (70)</td>
+<td><strong>100%</strong></td>
+<td>Curated View + 해석 컬럼 + boolean flag</td>
+</tr>
+</tbody>
+</table>
+<h3 id="13-2-step-0--데이터-전처리가-가장-중요">13-2. Step 0 — 데이터 전처리가 가장 중요</h3>
 <blockquote>
-<p>Build reporting-ready tables with pre-joined dimensions and boolean flags.
-LLMs are much more reliable with explicit columns than with string parsing and ad-hoc logic.</p>
+<p>공식 문서 인용: <em>"Build reporting-ready tables with pre-joined dimensions and boolean flags. LLMs are much more reliable with explicit columns than with string parsing and ad-hoc logic."</em></p>
 </blockquote>
 <p>Wren AI에 모델을 등록하기 <strong>전에</strong> 데이터를 먼저 가공해야 한다:</p>
-<ol>
-<li><strong>Denormalized reporting tables</strong>: 자주 쓰는 JOIN을 미리 처리한 와이드 테이블 (Gold Table)</li>
-<li><strong>Pre-computed boolean flags</strong>: <code>is_value_stock</code>, <code>is_oversold_rsi</code>, <code>is_golden_cross</code> 같은 명시적 분류 컬럼</li>
-<li><strong>Pre-computed metrics</strong>: PER/PBR/ROE를 LLM 추론에 맡기지 말고 컬럼으로 고정</li>
-<li><strong>Meaningful naming</strong>: 컬럼명이 비즈니스 의미를 담아야 LLM이 intent mapping을 잘 함</li>
-</ol>
+<table>
+<thead>
+<tr>
+<th>항목</th>
+<th>설명</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><strong>Denormalized reporting tables</strong></td>
+<td>자주 쓰는 JOIN을 미리 처리한 와이드 테이블 (Gold Table)</td>
+</tr>
+<tr>
+<td><strong>Pre-computed boolean flags</strong></td>
+<td><code>is_value_stock</code>, <code>is_oversold_rsi</code>, <code>is_golden_cross</code> 같은 명시적 분류</td>
+</tr>
+<tr>
+<td><strong>Pre-computed metrics</strong></td>
+<td>PER/PBR/ROE를 LLM 추론에 맡기지 말고 컬럼으로 고정</td>
+</tr>
+<tr>
+<td><strong>Meaningful naming</strong></td>
+<td>컬럼명이 비즈니스 의미를 담아야 LLM intent mapping 정확</td>
+</tr>
+</tbody>
+</table>
 <p>BIP 적용: Gold 테이블(<code>analytics_*</code>)이 이미 reporting-ready. Curated View로 boolean flags 추가.</p>
-<h3 id="step-1-시맨틱-레이어-description-relationship">Step 1: 시맨틱 레이어 (Description, Relationship)</h3>
-<ul>
-<li><strong>Business-first descriptions</strong>: 기술 용어가 아닌 비즈니스 관점 설명</li>
-<li>컬럼 description에 <strong>계산 힌트</strong> 포함: <code>"이격도: (close - ma20) / ma20 * 100"</code></li>
-<li>Relationship을 명시적으로 정의하여 LLM이 JOIN을 정확하게 생성하도록 유도</li>
-<li>컬럼 설명 커버리지 100% 달성이 가장 효과적</li>
-</ul>
-<h3 id="step-2-sql-pairs--instructions">Step 2: SQL Pairs &gt; Instructions</h3>
+<h3 id="13-3-step-1--시맨틱-레이어-description-relationship">13-3. Step 1 — 시맨틱 레이어 (Description, Relationship)</h3>
+<table>
+<thead>
+<tr>
+<th>항목</th>
+<th>설명</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Business-first descriptions</td>
+<td>기술 용어가 아닌 비즈니스 관점</td>
+</tr>
+<tr>
+<td>컬럼 description에 계산 힌트</td>
+<td><code>"이격도: (close - ma20) / ma20 * 100"</code></td>
+</tr>
+<tr>
+<td>Relationship 명시</td>
+<td>LLM이 JOIN을 정확하게 생성하도록 유도</td>
+</tr>
+<tr>
+<td>컬럼 설명 커버리지 100%</td>
+<td>가장 효과적</td>
+</tr>
+</tbody>
+</table>
+<h3 id="13-4-step-2--sql-pairs--instructions">13-4. Step 2 — SQL Pairs &gt; Instructions</h3>
 <table>
 <thead>
 <tr>
@@ -1586,7 +2131,7 @@ LLMs are much more reliable with explicit columns than with string parsing and a
 <tr>
 <td><strong>SQL Pairs</strong></td>
 <td>매우 높음</td>
-<td>전문 용어 실패 -&gt; 즉시 해결. 구체적이고 직접적</td>
+<td>전문 용어 실패 → 즉시 해결. 구체적이고 직접적</td>
 </tr>
 <tr>
 <td><strong>Instructions</strong></td>
@@ -1600,8 +2145,10 @@ LLMs are much more reliable with explicit columns than with string parsing and a
 </tr>
 </tbody>
 </table>
-<h3 id="boolean-flag-패턴">Boolean flag 패턴</h3>
-<p>LLM이 복잡한 조건을 추론하는 것보다 boolean 컬럼을 직접 필터링하는 것이 훨씬 정확하다:</p>
+<h3 id="13-5-boolean-flag-패턴--curated-view의-핵심">13-5. Boolean Flag 패턴 — Curated View의 핵심</h3>
+<blockquote>
+<p>이 코드가 하는 일: 같은 의도("저평가 종목 찾기")를 두 가지 방식으로 표현. 두 번째는 Curated View가 미리 계산한 boolean flag를 사용 → 정확도 ↑.</p>
+</blockquote>
 <div class="codehilite"><pre><span></span><code><span class="c1">-- 나쁜 예: LLM이 조건을 추론</span>
 <span class="k">WHERE</span><span class="w"> </span><span class="n">per</span><span class="w"> </span><span class="o">&lt;</span><span class="w"> </span><span class="mi">10</span><span class="w"> </span><span class="k">AND</span><span class="w"> </span><span class="n">roe</span><span class="w"> </span><span class="o">&gt;</span><span class="w"> </span><span class="mi">15</span><span class="w"> </span><span class="k">AND</span><span class="w"> </span><span class="n">per</span><span class="w"> </span><span class="o">&gt;</span><span class="w"> </span><span class="mi">0</span>
 
@@ -1609,8 +2156,13 @@ LLMs are much more reliable with explicit columns than with string parsing and a
 <span class="k">WHERE</span><span class="w"> </span><span class="n">is_value_stock</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="k">true</span>
 </code></pre></div>
 
-<h3 id="해석-컬럼-패턴">해석 컬럼 패턴</h3>
-<p>sql_answer가 컬럼 description을 참조하지 않으므로, 해석이 필요한 값은 별도 컬럼으로 제공:</p>
+<blockquote>
+<p>💡 <strong>실무 팁:</strong> boolean flag 컬럼이 NL2SQL 품질을 결정한다. BIP에서는 boolean flag 사용률이 0% → 87%로 증가하면서 A등급이 58% → 100%로 뛰었다.</p>
+</blockquote>
+<h3 id="13-6-해석-컬럼-패턴">13-6. 해석 컬럼 패턴</h3>
+<blockquote>
+<p>이 코드가 하는 일: 숫자 컬럼(<code>foreign_net_volume</code>)을 LLM이 해석하지 못하므로, DB에서 미리 한글 텍스트로 변환한 컬럼을 추가한다.</p>
+</blockquote>
 <div class="codehilite"><pre><span></span><code><span class="c1">-- Curated View에서</span>
 <span class="k">CASE</span>
 <span class="w">  </span><span class="k">WHEN</span><span class="w"> </span><span class="n">foreign_net_volume</span><span class="w"> </span><span class="o">&gt;</span><span class="w"> </span><span class="mi">0</span><span class="w"> </span><span class="k">THEN</span><span class="w"> </span><span class="s1">&#39;순매수&#39;</span>
@@ -1619,12 +2171,12 @@ LLMs are much more reliable with explicit columns than with string parsing and a
 <span class="k">END</span><span class="w"> </span><span class="k">AS</span><span class="w"> </span><span class="n">foreign_direction</span>
 </code></pre></div>
 
-<h3 id="컬럼-수-검증-필수">컬럼 수 검증 필수</h3>
+<h3 id="13-7-컬럼-수-검증-필수">13-7. 컬럼 수 검증 필수</h3>
 <p>모델 등록/업데이트 후 반드시 DB의 실제 컬럼 수와 Wren AI에 등록된 컬럼 수를 비교한다. <code>updateModel</code> API 사용 시 기존 컬럼이 교체되는 문제가 있으므로 주의.</p>
-<h3 id="deploy-후-테스트">Deploy 후 테스트</h3>
-<p>모든 변경 후 Deploy를 수행하고, 대표 질문 5-10개로 smoke test를 실행한다.</p>
+<h3 id="13-8-deploy-후-테스트">13-8. Deploy 후 테스트</h3>
+<p>모든 변경 후 Deploy를 수행하고, 대표 질문 5-10개로 smoke test 실행.</p>
 <hr />
-<h2 id="13-알려진-한계">13. 알려진 한계</h2>
+<h2 id="14-알려진-한계">14. 알려진 한계</h2>
 <table>
 <thead>
 <tr>
@@ -1637,57 +2189,87 @@ LLMs are much more reliable with explicit columns than with string parsing and a
 <tbody>
 <tr>
 <td>1</td>
-<td><strong>1질문 = 1SQL</strong></td>
-<td>복합 질문(여러 쿼리 결과 종합)은 처리 불가</td>
-<td>LangGraph 멀티스텝</td>
+<td><strong>Oracle 19c 미지원</strong></td>
+<td>ibis-server가 Oracle 23ai만 지원</td>
+<td>LangGraph 직접 구현 (BIP 사내 사례)</td>
 </tr>
 <tr>
 <td>2</td>
+<td><strong>1질문 = 1SQL</strong></td>
+<td>복합 질문(여러 쿼리 결과 종합) 불가</td>
+<td>LangGraph 멀티스텝</td>
+</tr>
+<tr>
+<td>3</td>
 <td><strong>비정형 데이터 불가</strong></td>
 <td>뉴스, PDF, API 데이터 처리 불가</td>
 <td>LangGraph Tool</td>
 </tr>
 <tr>
-<td>3</td>
+<td>4</td>
 <td><strong>sql_answer에 description 미포함</strong></td>
 <td>결과 해석 시 컬럼 의미를 모름</td>
 <td>해석 컬럼 추가</td>
 </tr>
 <tr>
-<td>4</td>
+<td>5</td>
 <td><strong>프롬프트 커스터마이징 불가</strong></td>
 <td>system/user prompt 직접 수정 불가</td>
 <td>LangGraph 직접 프롬프트</td>
 </tr>
 <tr>
-<td>5</td>
+<td>6</td>
 <td><strong>OpenAI json_schema 편향</strong></td>
 <td>Structured Outputs가 OpenAI 전용</td>
 <td>LangGraph에서 Claude 직접 사용</td>
 </tr>
 <tr>
-<td>6</td>
+<td>7</td>
 <td><strong>Intent Classification 비결정적</strong></td>
 <td>같은 질문도 때로 다른 의도로 분류</td>
 <td>SQL Pair로 패턴 고정</td>
 </tr>
 <tr>
-<td>7</td>
+<td>8</td>
 <td><strong>Calculated Fields 제약</strong></td>
 <td>복잡 수식(CASE, 윈도우 함수) 불가</td>
 <td>Curated View로 해결</td>
 </tr>
 <tr>
-<td>8</td>
-<td><strong>환각 가능</strong></td>
+<td>9</td>
+<td><strong>sql_answer 환각</strong></td>
 <td>데이터가 있는데 "없다"고 답변</td>
 <td>해석 컬럼 + 검증</td>
 </tr>
 </tbody>
 </table>
+<h3 id="14-1--oracle-19c-미지원--bip-의사결정">14-1. ⚠️ Oracle 19c 미지원 — BIP 의사결정</h3>
+<div class="mermaid">
+flowchart TB
+    Q["NL2SQL 도구 검토"]
+    WA["Wren AI 적용 가능?"]
+    OR_TEST["사내 DB = Oracle 19c"]
+    OR_FAIL["ibis-server는 Oracle 23ai만 지원"]
+    LG["LangGraph + LiteLLM 직접 구현"]
+    BIP["BIP-Pipeline(PostgreSQL)에는 Wren AI 유지"]
+
+    Q --> WA --> OR_TEST --> OR_FAIL --> LG
+    OR_FAIL -.->|"BIP에는 영향 없음"| BIP
+
+    style OR_FAIL fill:#ffebee,color:#1a1a2e
+    style LG fill:#fff3e0,color:#1a1a2e
+    style BIP fill:#e8f5e9,color:#1a1a2e
+</div>
+
+<h3 id="14-2-1질문--1sql-제약">14-2. 1질문 = 1SQL 제약</h3>
+<blockquote>
+<p>⚠️ <strong>함정 — 멀티스텝 분석 불가:</strong>
+"최근 1주일 외국인 순매수 상위 10종목의 PER을 같은 업종 평균과 비교" 같은 질문은 SQL 한 방으로 풀 수 없다. Wren AI는 1질문에 1SQL만 생성한다.
+이런 질문은 <strong>LangGraph 멀티스텝</strong>으로 처리해야 한다.</p>
+</blockquote>
 <hr />
-<h2 id="14-bip-pipeline-현재-설정">14. BIP-Pipeline 현재 설정</h2>
-<h3 id="14-1-모델-구성">14-1. 모델 구성</h3>
+<h2 id="15-bip-pipeline-현재-설정">15. BIP-Pipeline 현재 설정</h2>
+<h3 id="15-1-모델-구성">15-1. 모델 구성</h3>
 <table>
 <thead>
 <tr>
@@ -1742,7 +2324,7 @@ LLMs are much more reliable with explicit columns than with string parsing and a
 </tr>
 </tbody>
 </table>
-<h3 id="14-2-relationship">14-2. Relationship</h3>
+<h3 id="15-2-relationship">15-2. Relationship</h3>
 <div class="mermaid">
 erDiagram
     public_stock_info ||--o{ public_stock_price_1d : "ticker"
@@ -1754,8 +2336,7 @@ erDiagram
 </div>
 
 <p>6개 Relationship 정의.</p>
-<h3 id="14-3-sql-pairs">14-3. SQL Pairs</h3>
-<p>70개, 9개 카테고리:</p>
+<h3 id="15-3-sql-pairs-70개--9개-카테고리">15-3. SQL Pairs (70개 / 9개 카테고리)</h3>
 <table>
 <thead>
 <tr>
@@ -1812,11 +2393,11 @@ erDiagram
 </tr>
 </tbody>
 </table>
-<h3 id="14-4-instructions">14-4. Instructions</h3>
+<h3 id="15-4-instructions">15-4. Instructions</h3>
 <p>4개 (계산식, 종목검색, data_type, 한글필수)</p>
-<h3 id="14-5-llm">14-5. LLM</h3>
+<h3 id="15-5-llm">15-5. LLM</h3>
 <p>GPT-4.1-mini (LiteLLM 경유)</p>
-<h3 id="14-6-성과-지표">14-6. 성과 지표</h3>
+<h3 id="15-6-성과-지표">15-6. 성과 지표</h3>
 <table>
 <thead>
 <tr>
@@ -1843,7 +2424,7 @@ erDiagram
 </tr>
 </tbody>
 </table>
-<h3 id="14-7-리소스-사용량">14-7. 리소스 사용량</h3>
+<h3 id="15-7-리소스-사용량">15-7. 리소스 사용량</h3>
 <table>
 <thead>
 <tr>
@@ -1885,7 +2466,10 @@ erDiagram
 </tr>
 </tbody>
 </table>
-<h3 id="14-8-메타데이터-동기화-om---wren-ai">14-8. 메타데이터 동기화 (OM -&gt; Wren AI)</h3>
+<h3 id="15-8-메타데이터-동기화-om--wren-ai">15-8. 메타데이터 동기화 (OM → Wren AI)</h3>
+<blockquote>
+<p>이 다이어그램이 보여주는 것: OpenMetadata가 메타데이터의 SSOT이고, Airflow DAG가 매일 09:00에 OM → DB COMMENT, OM → Wren AI 두 방향으로 일방향 동기화한다. Wren AI 자체는 메타데이터 편집 대상이 아니다.</p>
+</blockquote>
 <div class="mermaid">
 flowchart TB
     subgraph Source["메타데이터 원천"]
@@ -1893,8 +2477,8 @@ flowchart TB
     end
 
     subgraph DAG["10_sync_metadata_daily\n("Airflow DAG, 매일 09:00 KST")"]
-        T1["Task 1: sync_om_to_db\nOM API -> COMMENT ON TABLE/COLUMN"]
-        T2["Task 2: sync_om_to_wrenai\nOM API -> GraphQL updateModelMetadata -> deploy"]
+        T1["Task 1: sync_om_to_db\nOM API → COMMENT ON TABLE/COLUMN"]
+        T2["Task 2: sync_om_to_wrenai\nOM API → GraphQL updateModelMetadata → deploy"]
     end
 
     subgraph Target["동기화 대상"]
@@ -1911,9 +2495,50 @@ flowchart TB
     style Target fill:#00b89433,stroke:#00b894,stroke-width:2px
 </div>
 
+<blockquote>
+<p>💡 <strong>실무 팁 — 일방향 흐름:</strong>
+Wren AI에서 description을 직접 수정하면 다음 날 OM 동기화에 덮어쓰여 사라진다. <strong>반드시 OM에서 수정</strong>하고 동기화를 기다리거나 수동 트리거해라.</p>
+</blockquote>
 <hr />
-<h2 id="15-참고">15. 참고</h2>
-<h3 id="공식-문서">공식 문서</h3>
+<h2 id="16-dbtcube와의-관계">16. dbt/Cube와의 관계</h2>
+<table>
+<thead>
+<tr>
+<th>도구</th>
+<th>역할</th>
+<th>Wren AI와의 관계</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><strong>dbt Core</strong></td>
+<td>SQL 변환 파이프라인</td>
+<td>직교적. dbt가 만든 Gold 테이블을 Wren AI가 모델링</td>
+</tr>
+<tr>
+<td><strong>dbt Semantic Layer</strong></td>
+<td>메트릭 SSOT</td>
+<td>보완적. Semantic Layer 메트릭을 Wren AI가 SQL로 호출 가능</td>
+</tr>
+<tr>
+<td><strong>Cube.js</strong></td>
+<td>시맨틱 레이어 + REST API</td>
+<td>경쟁적. 둘 다 모델 정의를 갖지만 Cube는 BI 소비, Wren은 LLM 소비</td>
+</tr>
+<tr>
+<td><strong>MetricFlow</strong></td>
+<td>dbt의 메트릭 엔진</td>
+<td>보완적. Wren AI MDL은 lightweight, MetricFlow는 heavyweight</td>
+</tr>
+</tbody>
+</table>
+<blockquote>
+<p>💡 <strong>실무 팁 — 결합 사용:</strong>
+dbt(데이터 변환) → Gold/Curated View(SSOT) → Wren AI(NL2SQL UI) 조합이 가장 안정적이다. Cube와 Wren AI를 동시 도입할 필요는 없다 (역할 중복).</p>
+</blockquote>
+<hr />
+<h2 id="17-참고">17. 참고</h2>
+<h3 id="17-1-공식-문서">17-1. 공식 문서</h3>
 <ul>
 <li><strong>메인 문서</strong>: https://docs.getwren.ai</li>
 <li><strong>모델링 가이드</strong>: https://docs.getwren.ai/oss/guide/modeling/models</li>
@@ -1922,16 +2547,16 @@ flowchart TB
 <li><strong>Knowledge (SQL Pairs + Instructions)</strong>: https://docs.getwren.ai/oss/guide/knowledge/overview</li>
 <li><strong>Engine Modeling</strong>: https://docs.getwren.ai/oss/engine/guide/modeling/relation</li>
 </ul>
-<h3 id="github">GitHub</h3>
+<h3 id="17-2-github">17-2. GitHub</h3>
 <ul>
 <li><strong>Wren AI</strong>: https://github.com/Canner/WrenAI</li>
 </ul>
-<h3 id="bip-pipeline-관련-문서">BIP-Pipeline 관련 문서</h3>
+<h3 id="17-3-bip-pipeline-관련-문서">17-3. BIP-Pipeline 관련 문서</h3>
 <ul>
-<li><code>docs/wrenai_technical_guide.md</code> -- 기술 상세 (아키텍처, 소스 분석, 대안 비교)</li>
-<li><code>docs/wrenai_test_report.md</code> -- NL2SQL 품질 테스트 리포트 (평가 프레임워크 포함)</li>
-<li><code>docs/nl2sql_project_plan.md</code> -- NL2SQL 설계 계획 (보안 원칙 포함)</li>
-<li><code>docs/data_architecture_review.md</code> -- 전체 아키텍처 리뷰</li>
+<li><code>docs/wrenai_technical_guide.md</code> — 기술 상세 (아키텍처, 소스 분석, 대안 비교)</li>
+<li><code>docs/wrenai_test_report.md</code> — NL2SQL 품질 테스트 리포트 (평가 프레임워크 포함)</li>
+<li><code>docs/nl2sql_project_plan.md</code> — NL2SQL 설계 계획 (보안 원칙 포함)</li>
+<li><code>docs/data_architecture_review.md</code> — 전체 아키텍처 리뷰</li>
 </ul>
 <hr />
 <h2 id="변경-이력">변경 이력</h2>
@@ -1950,6 +2575,10 @@ flowchart TB
 <tr>
 <td>2026-04-22</td>
 <td>문서 헤더 정리</td>
+</tr>
+<tr>
+<td>2026-04-29</td>
+<td>설명 위주로 전면 재작성 — 비유/Why-What-How 구조/함정·팁 박스/Mermaid 다이어그램 보강. Oracle 19c 미지원 사례, sql_answer 환각, OpenAI 편향, Few-shot RAG 동작 원리 등 BIP 실전 경험 흡수</td>
 </tr>
 </tbody>
 </table>

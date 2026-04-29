@@ -289,87 +289,125 @@
   <nav class="toc">
 <ul>
 <li class="toc-h2"><a href="#목차">목차</a></li>
-<li class="toc-h2"><a href="#1-개요">1. 개요</a></li>
+<li class="toc-h2"><a href="#1-개요--openmetadata는-왜-필요한가">1. 개요 — OpenMetadata는 왜 필요한가</a></li>
+  <li class="toc-h3"><a href="#비유로-시작하기--데이터의-wikipedia-그리고-도서관-사서">비유로 시작하기 — "데이터의 Wikipedia, 그리고 도서관 사서"</a></li>
   <li class="toc-h3"><a href="#openmetadata란-무엇인가">OpenMetadata란 무엇인가</a></li>
-  <li class="toc-h3"><a href="#핵심-가치-중앙화된-메타데이터-ssot">핵심 가치: 중앙화된 메타데이터 SSOT</a></li>
+  <li class="toc-h3"><a href="#핵심-가치--중앙화된-메타데이터-ssot">핵심 가치 — 중앙화된 메타데이터 SSOT</a></li>
   <li class="toc-h3"><a href="#오픈소스-apache-20">오픈소스 (Apache 2.0)</a></li>
-<li class="toc-h2"><a href="#2-아키텍처">2. 아키텍처</a></li>
+<li class="toc-h2"><a href="#2-핵심-가치--왜-데이터-카탈로그가-필요한가-4가지-시나리오">2. 핵심 가치 — 왜 데이터 카탈로그가 필요한가 (4가지 시나리오)</a></li>
+  <li class="toc-h3"><a href="#시나리오-1-이-데이터-어디-있더라">시나리오 1: "이 데이터, 어디 있더라?"</a></li>
+  <li class="toc-h3"><a href="#시나리오-2-이-컬럼-바꿔도-괜찮을까">시나리오 2: "이 컬럼 바꿔도 괜찮을까?"</a></li>
+  <li class="toc-h3"><a href="#시나리오-3-사용자가-자연어로-질문하는데-llm이-엉뚱한-컬럼을-가져옵니다">시나리오 3: "사용자가 자연어로 질문하는데 LLM이 엉뚱한 컬럼을 가져옵니다"</a></li>
+  <li class="toc-h3"><a href="#시나리오-4-이-데이터-믿어도-됩니까">시나리오 4: "이 데이터 믿어도 됩니까?"</a></li>
+<li class="toc-h2"><a href="#3-아키텍처--openmetadata는-어떻게-동작하는가">3. 아키텍처 — OpenMetadata는 어떻게 동작하는가</a></li>
+  <li class="toc-h3"><a href="#한-문장-설명">한 문장 설명</a></li>
   <li class="toc-h3"><a href="#전체-구조">전체 구조</a></li>
   <li class="toc-h3"><a href="#주요-구성-요소">주요 구성 요소</a></li>
-  <li class="toc-h3"><a href="#api-중심-설계-흐름">API 중심 설계 흐름</a></li>
-<li class="toc-h2"><a href="#3-핵심-기능">3. 핵심 기능</a></li>
-  <li class="toc-h3"><a href="#3-1-데이터-발견-data-discovery">3-1. 데이터 발견 (Data Discovery)</a></li>
-    <li class="toc-h4"><a href="#무엇인가">무엇인가</a></li>
-    <li class="toc-h4"><a href="#왜-필요한가">왜 필요한가</a></li>
-    <li class="toc-h4"><a href="#사용-방법">사용 방법</a></li>
-  <li class="toc-h3"><a href="#3-2-데이터-계보-data-lineage">3-2. 데이터 계보 (Data Lineage)</a></li>
-    <li class="toc-h4"><a href="#무엇인가_1">무엇인가</a></li>
-    <li class="toc-h4"><a href="#왜-필요한가_1">왜 필요한가</a></li>
-    <li class="toc-h4"><a href="#사용-방법_1">사용 방법</a></li>
-  <li class="toc-h3"><a href="#3-3-데이터-거버넌스">3-3. 데이터 거버넌스</a></li>
-    <li class="toc-h4"><a href="#3-3-1-용어집-glossary">3-3-1. 용어집 (Glossary)</a></li>
-    <li class="toc-h4"><a href="#3-3-2-분류-classification--태그-tags">3-3-2. 분류 (Classification) &amp; 태그 (Tags)</a></li>
-    <li class="toc-h4"><a href="#3-3-3-도메인--데이터-제품-domains--data-products">3-3-3. 도메인 &amp; 데이터 제품 (Domains &amp; Data Products)</a></li>
-  <li class="toc-h3"><a href="#3-4-데이터-품질--관찰성">3-4. 데이터 품질 &amp; 관찰성</a></li>
-    <li class="toc-h4"><a href="#무엇인가_5">무엇인가</a></li>
-    <li class="toc-h4"><a href="#왜-필요한가_5">왜 필요한가</a></li>
-    <li class="toc-h4"><a href="#사용-방법_5">사용 방법</a></li>
-  <li class="toc-h3"><a href="#3-5-데이터-협업">3-5. 데이터 협업</a></li>
-    <li class="toc-h4"><a href="#무엇인가_6">무엇인가</a></li>
-    <li class="toc-h4"><a href="#왜-필요한가_6">왜 필요한가</a></li>
-    <li class="toc-h4"><a href="#사용-방법_6">사용 방법</a></li>
-  <li class="toc-h3"><a href="#3-6-데이터-인사이트">3-6. 데이터 인사이트</a></li>
-    <li class="toc-h4"><a href="#무엇인가_7">무엇인가</a></li>
-    <li class="toc-h4"><a href="#왜-필요한가_7">왜 필요한가</a></li>
-    <li class="toc-h4"><a href="#사용-방법_7">사용 방법</a></li>
-<li class="toc-h2"><a href="#4-커넥터-생태계">4. 커넥터 생태계</a></li>
-  <li class="toc-h3"><a href="#4-1-데이터베이스">4-1. 데이터베이스</a></li>
-  <li class="toc-h3"><a href="#4-2-대시보드">4-2. 대시보드</a></li>
-  <li class="toc-h3"><a href="#4-3-파이프라인">4-3. 파이프라인</a></li>
-  <li class="toc-h3"><a href="#4-4-메시징">4-4. 메시징</a></li>
-  <li class="toc-h3"><a href="#4-5-ml-모델">4-5. ML 모델</a></li>
-  <li class="toc-h3"><a href="#4-6-스토리지">4-6. 스토리지</a></li>
-  <li class="toc-h3"><a href="#4-7-메타데이터-마이그레이션">4-7. 메타데이터 마이그레이션</a></li>
-<li class="toc-h2"><a href="#5-관리-기능">5. 관리 기능</a></li>
-  <li class="toc-h3"><a href="#5-1-팀--사용자">5-1. 팀 &amp; 사용자</a></li>
-    <li class="toc-h4"><a href="#무엇인가_8">무엇인가</a></li>
-    <li class="toc-h4"><a href="#왜-필요한가_8">왜 필요한가</a></li>
-    <li class="toc-h4"><a href="#사용-방법_8">사용 방법</a></li>
-  <li class="toc-h3"><a href="#5-2-역할--정책-rbac">5-2. 역할 &amp; 정책 (RBAC)</a></li>
-    <li class="toc-h4"><a href="#무엇인가_9">무엇인가</a></li>
-    <li class="toc-h4"><a href="#왜-필요한가_9">왜 필요한가</a></li>
-    <li class="toc-h4"><a href="#사용-방법_9">사용 방법</a></li>
-  <li class="toc-h3"><a href="#5-3-봇--api">5-3. 봇 &amp; API</a></li>
-    <li class="toc-h4"><a href="#무엇인가_10">무엇인가</a></li>
-    <li class="toc-h4"><a href="#왜-필요한가_10">왜 필요한가</a></li>
-    <li class="toc-h4"><a href="#사용-방법_10">사용 방법</a></li>
-  <li class="toc-h3"><a href="#5-4-알림-설정">5-4. 알림 설정</a></li>
-    <li class="toc-h4"><a href="#무엇인가_11">무엇인가</a></li>
-    <li class="toc-h4"><a href="#왜-필요한가_11">왜 필요한가</a></li>
-    <li class="toc-h4"><a href="#사용-방법_11">사용 방법</a></li>
-<li class="toc-h2"><a href="#6-배포-옵션">6. 배포 옵션</a></li>
+  <li class="toc-h3"><a href="#api-중심-설계의-의미">API 중심 설계의 의미</a></li>
+  <li class="toc-h3"><a href="#메타데이터의-라이프사이클">메타데이터의 라이프사이클</a></li>
+<li class="toc-h2"><a href="#4-핵심-기능">4. 핵심 기능</a></li>
+  <li class="toc-h3"><a href="#4-1-데이터-발견-data-discovery">4-1. 데이터 발견 (Data Discovery)</a></li>
+    <li class="toc-h4"><a href="#비유">비유</a></li>
+    <li class="toc-h4"><a href="#why--왜-필요한가">Why — 왜 필요한가</a></li>
+    <li class="toc-h4"><a href="#what--무엇을-검색할-수-있는가">What — 무엇을 검색할 수 있는가</a></li>
+    <li class="toc-h4"><a href="#how--어떻게-사용하는가">How — 어떻게 사용하는가</a></li>
+  <li class="toc-h3"><a href="#4-2-데이터-계보-data-lineage">4-2. 데이터 계보 (Data Lineage)</a></li>
+    <li class="toc-h4"><a href="#비유_1">비유</a></li>
+    <li class="toc-h4"><a href="#why--왜-필요한가_1">Why — 왜 필요한가</a></li>
+    <li class="toc-h4"><a href="#what--lineage가-표현하는-것">What — Lineage가 표현하는 것</a></li>
+    <li class="toc-h4"><a href="#how--어떻게-등록하는가">How — 어떻게 등록하는가</a></li>
+  <li class="toc-h3"><a href="#4-3-용어집-glossary">4-3. 용어집 (Glossary)</a></li>
+    <li class="toc-h4"><a href="#비유_2">비유</a></li>
+    <li class="toc-h4"><a href="#why--왜-필요한가_2">Why — 왜 필요한가</a></li>
+    <li class="toc-h4"><a href="#what--glossary의-계층-구조">What — Glossary의 계층 구조</a></li>
+    <li class="toc-h4"><a href="#how--어떻게-사용하는가_1">How — 어떻게 사용하는가</a></li>
+  <li class="toc-h3"><a href="#4-4-분류-classification--태그-tags">4-4. 분류 (Classification) &amp; 태그 (Tags)</a></li>
+    <li class="toc-h4"><a href="#비유_3">비유</a></li>
+    <li class="toc-h4"><a href="#why--왜-필요한가_3">Why — 왜 필요한가</a></li>
+    <li class="toc-h4"><a href="#what--어떤-태그가-있는가">What — 어떤 태그가 있는가</a></li>
+    <li class="toc-h4"><a href="#how--어떻게-활용하는가">How — 어떻게 활용하는가</a></li>
+  <li class="toc-h3"><a href="#4-5-도메인--데이터-제품-domains--data-products">4-5. 도메인 &amp; 데이터 제품 (Domains &amp; Data Products)</a></li>
+    <li class="toc-h4"><a href="#비유_4">비유</a></li>
+    <li class="toc-h4"><a href="#why--왜-필요한가_4">Why — 왜 필요한가</a></li>
+    <li class="toc-h4"><a href="#what--how">What &amp; How</a></li>
+  <li class="toc-h3"><a href="#4-6-데이터-품질--관찰성">4-6. 데이터 품질 &amp; 관찰성</a></li>
+    <li class="toc-h4"><a href="#비유_5">비유</a></li>
+    <li class="toc-h4"><a href="#why--왜-필요한가_5">Why — 왜 필요한가</a></li>
+    <li class="toc-h4"><a href="#what--어떤-테스트가-가능한가">What — 어떤 테스트가 가능한가</a></li>
+    <li class="toc-h4"><a href="#how--어떻게-운영하는가">How — 어떻게 운영하는가</a></li>
+  <li class="toc-h3"><a href="#4-7-데이터-협업-collaboration">4-7. 데이터 협업 (Collaboration)</a></li>
+    <li class="toc-h4"><a href="#비유_6">비유</a></li>
+    <li class="toc-h4"><a href="#why--왜-필요한가_6">Why — 왜 필요한가</a></li>
+    <li class="toc-h4"><a href="#what--how_1">What &amp; How</a></li>
+  <li class="toc-h3"><a href="#4-8-데이터-인사이트-insights">4-8. 데이터 인사이트 (Insights)</a></li>
+    <li class="toc-h4"><a href="#비유_7">비유</a></li>
+    <li class="toc-h4"><a href="#why--왜-필요한가_7">Why — 왜 필요한가</a></li>
+    <li class="toc-h4"><a href="#what--how_2">What &amp; How</a></li>
+<li class="toc-h2"><a href="#5-커넥터-생태계--어떻게-자동으로-메타데이터를-수집하는가">5. 커넥터 생태계 — 어떻게 자동으로 메타데이터를 수집하는가</a></li>
+  <li class="toc-h3"><a href="#비유_8">비유</a></li>
+  <li class="toc-h3"><a href="#동작-원리">동작 원리</a></li>
+  <li class="toc-h3"><a href="#5-1-데이터베이스">5-1. 데이터베이스</a></li>
+  <li class="toc-h3"><a href="#5-2-대시보드">5-2. 대시보드</a></li>
+  <li class="toc-h3"><a href="#5-3-파이프라인">5-3. 파이프라인</a></li>
+  <li class="toc-h3"><a href="#5-4-메시징">5-4. 메시징</a></li>
+  <li class="toc-h3"><a href="#5-5-ml-모델">5-5. ML 모델</a></li>
+  <li class="toc-h3"><a href="#5-6-스토리지">5-6. 스토리지</a></li>
+  <li class="toc-h3"><a href="#5-7-메타데이터-마이그레이션">5-7. 메타데이터 마이그레이션</a></li>
+<li class="toc-h2"><a href="#6-관리-기능">6. 관리 기능</a></li>
+  <li class="toc-h3"><a href="#6-1-팀--사용자">6-1. 팀 &amp; 사용자</a></li>
+    <li class="toc-h4"><a href="#비유_9">비유</a></li>
+    <li class="toc-h4"><a href="#why--왜-필요한가_8">Why — 왜 필요한가</a></li>
+    <li class="toc-h4"><a href="#what--how_3">What &amp; How</a></li>
+  <li class="toc-h3"><a href="#6-2-역할--정책-rbac">6-2. 역할 &amp; 정책 (RBAC)</a></li>
+    <li class="toc-h4"><a href="#비유_10">비유</a></li>
+    <li class="toc-h4"><a href="#why--왜-필요한가_9">Why — 왜 필요한가</a></li>
+    <li class="toc-h4"><a href="#what--기본-역할">What — 기본 역할</a></li>
+    <li class="toc-h4"><a href="#how--정책-구조">How — 정책 구조</a></li>
+  <li class="toc-h3"><a href="#6-3-봇--api">6-3. 봇 &amp; API</a></li>
+    <li class="toc-h4"><a href="#비유_11">비유</a></li>
+    <li class="toc-h4"><a href="#why--왜-필요한가_10">Why — 왜 필요한가</a></li>
+    <li class="toc-h4"><a href="#what--how_4">What &amp; How</a></li>
+  <li class="toc-h3"><a href="#6-4-알림-설정">6-4. 알림 설정</a></li>
+    <li class="toc-h4"><a href="#비유_12">비유</a></li>
+    <li class="toc-h4"><a href="#why--왜-필요한가_11">Why — 왜 필요한가</a></li>
+    <li class="toc-h4"><a href="#what--how_5">What &amp; How</a></li>
+<li class="toc-h2"><a href="#7-배포-옵션">7. 배포 옵션</a></li>
+  <li class="toc-h3"><a href="#한눈에-보기">한눈에 보기</a></li>
   <li class="toc-h3"><a href="#docker-compose-개발poc">Docker Compose (개발/PoC)</a></li>
   <li class="toc-h3"><a href="#kubernetes-프로덕션">Kubernetes (프로덕션)</a></li>
   <li class="toc-h3"><a href="#collate-관리형-saas">Collate (관리형 SaaS)</a></li>
-<li class="toc-h2"><a href="#7-api">7. API</a></li>
+<li class="toc-h2"><a href="#8-api--어떻게-메타데이터를-프로그래밍-방식으로-활용하는가">8. API — 어떻게 메타데이터를 프로그래밍 방식으로 활용하는가</a></li>
+  <li class="toc-h3"><a href="#비유_13">비유</a></li>
   <li class="toc-h3"><a href="#rest-api-엔드포인트-개요">REST API 엔드포인트 개요</a></li>
   <li class="toc-h3"><a href="#인증-방식">인증 방식</a></li>
   <li class="toc-h3"><a href="#python-sdk-사용법">Python SDK 사용법</a></li>
-<li class="toc-h2"><a href="#8-bip-pipeline에서의-활용-현황">8. BIP-Pipeline에서의 활용 현황</a></li>
+<li class="toc-h2"><a href="#9-bip-pipeline-활용-현황">9. BIP-Pipeline 활용 현황</a></li>
   <li class="toc-h3"><a href="#인프라-구성">인프라 구성</a></li>
   <li class="toc-h3"><a href="#등록된-자산-규모">등록된 자산 규모</a></li>
-  <li class="toc-h3"><a href="#메타데이터-동기화-흐름">메타데이터 동기화 흐름</a></li>
+  <li class="toc-h3"><a href="#메타데이터-동기화-흐름--om--db-comment-om--wren-ai">메타데이터 동기화 흐름 — OM → DB COMMENT, OM → Wren AI</a></li>
   <li class="toc-h3"><a href="#전체-lineage-체계">전체 Lineage 체계</a></li>
   <li class="toc-h3"><a href="#커넥터-설정-파일">커넥터 설정 파일</a></li>
   <li class="toc-h3"><a href="#프로파일러-보안-설정">프로파일러 보안 설정</a></li>
   <li class="toc-h3"><a href="#자동화-스크립트">자동화 스크립트</a></li>
   <li class="toc-h3"><a href="#태그-분류-체계">태그 분류 체계</a></li>
-  <li class="toc-h3"><a href="#nl2sql-연계">NL2SQL 연계</a></li>
-<li class="toc-h2"><a href="#9-참고">9. 참고</a></li>
+  <li class="toc-h3"><a href="#nl2sql-연계--메타데이터-품질이-정확도를-결정한다">NL2SQL 연계 — 메타데이터 품질이 정확도를 결정한다</a></li>
+<li class="toc-h2"><a href="#10-dbt--cube--wren-ai와의-관계">10. dbt / Cube / Wren AI와의 관계</a></li>
+  <li class="toc-h3"><a href="#한-줄-비교">한 줄 비교</a></li>
+  <li class="toc-h3"><a href="#데이터-흐름-관계">데이터 흐름 관계</a></li>
+  <li class="toc-h3"><a href="#어떤-도구가-무엇을-책임지는가">어떤 도구가 무엇을 책임지는가</a></li>
+<li class="toc-h2"><a href="#11-주의사항-및-한계">11. 주의사항 및 한계</a></li>
+  <li class="toc-h3"><a href="#11-1-lineage는-데이터-흐름--join-관계">11-1. Lineage는 데이터 흐름 ≠ JOIN 관계</a></li>
+  <li class="toc-h3"><a href="#11-2-프로파일러는-민감-데이터-노출-위험">11-2. 프로파일러는 민감 데이터 노출 위험</a></li>
+  <li class="toc-h3"><a href="#11-3-put은-위험-patch가-안전">11-3. PUT은 위험, PATCH가 안전</a></li>
+  <li class="toc-h3"><a href="#11-4-elasticsearch-인덱스-깨짐">11-4. Elasticsearch 인덱스 깨짐</a></li>
+  <li class="toc-h3"><a href="#11-5-토큰-만료">11-5. 토큰 만료</a></li>
+  <li class="toc-h3"><a href="#11-6-동기화-시점-차이">11-6. 동기화 시점 차이</a></li>
+  <li class="toc-h3"><a href="#11-7-sdk-버전과-서버-버전-호환성">11-7. SDK 버전과 서버 버전 호환성</a></li>
+<li class="toc-h2"><a href="#12-참고">12. 참고</a></li>
   <li class="toc-h3"><a href="#공식-자료">공식 자료</a></li>
   <li class="toc-h3"><a href="#bip-pipeline-내부-문서">BIP-Pipeline 내부 문서</a></li>
   <li class="toc-h3"><a href="#버전-정보">버전 정보</a></li>
-<li class="toc-h2"><a href="#변경-이력">변경 이력</a></li>
+<li class="toc-h2"><a href="#13-변경-이력">13. 변경 이력</a></li>
 </ul>
 </nav>
 </aside>
@@ -382,33 +420,91 @@
 <hr />
 <h2 id="목차">목차</h2>
 <ol>
-<li><a href="#1-개요">개요</a></li>
-<li><a href="#2-아키텍처">아키텍처</a></li>
-<li><a href="#3-핵심-기능">핵심 기능</a></li>
-<li><a href="#4-커넥터-생태계">커넥터 생태계</a></li>
-<li><a href="#5-관리-기능">관리 기능</a></li>
-<li><a href="#6-배포-옵션">배포 옵션</a></li>
-<li><a href="#7-api">API</a></li>
-<li><a href="#8-bip-pipeline에서의-활용-현황">BIP-Pipeline에서의 활용 현황</a></li>
-<li><a href="#9-참고">참고</a></li>
+<li><a href="#1-개요--openmetadata는-왜-필요한가">개요 — OpenMetadata는 왜 필요한가</a></li>
+<li><a href="#2-핵심-가치--왜-데이터-카탈로그가-필요한가-4가지-시나리오">핵심 가치 — 왜 데이터 카탈로그가 필요한가 (4가지 시나리오)</a></li>
+<li><a href="#3-아키텍처--openmetadata는-어떻게-동작하는가">아키텍처 — OpenMetadata는 어떻게 동작하는가</a></li>
+<li><a href="#4-핵심-기능">핵심 기능</a></li>
+<li><a href="#5-커넥터-생태계--어떻게-자동으로-메타데이터를-수집하는가">커넥터 생태계 — 어떻게 자동으로 메타데이터를 수집하는가</a></li>
+<li><a href="#6-관리-기능">관리 기능</a></li>
+<li><a href="#7-배포-옵션">배포 옵션</a></li>
+<li><a href="#8-api--어떻게-메타데이터를-프로그래밍-방식으로-활용하는가">API — 어떻게 메타데이터를 프로그래밍 방식으로 활용하는가</a></li>
+<li><a href="#9-bip-pipeline-활용-현황">BIP-Pipeline 활용 현황</a></li>
+<li><a href="#10-dbt--cube--wren-ai와의-관계">dbt / Cube / Wren AI와의 관계</a></li>
+<li><a href="#11-주의사항-및-한계">주의사항 및 한계</a></li>
+<li><a href="#12-참고">참고</a></li>
+<li><a href="#13-변경-이력">변경 이력</a></li>
 </ol>
 <hr />
-<h2 id="1-개요">1. 개요</h2>
+<h2 id="1-개요--openmetadata는-왜-필요한가">1. 개요 — OpenMetadata는 왜 필요한가</h2>
+<h3 id="비유로-시작하기--데이터의-wikipedia-그리고-도서관-사서">비유로 시작하기 — "데이터의 Wikipedia, 그리고 도서관 사서"</h3>
+<p>OpenMetadata를 한 마디로 설명하면 <strong>"사내 데이터의 Wikipedia + 도서관 사서"</strong>이다.</p>
+<ul>
+<li><strong>Wikipedia처럼</strong>: 누구나 데이터 자산(테이블, 대시보드, DAG, 모델)을 찾아 읽고, 설명을 달고, 댓글로 토론할 수 있다. 검색창에 "PER"을 치면 정의·계산식·관련 컬럼·예제 쿼리까지 한번에 나온다.</li>
+<li><strong>도서관 사서처럼</strong>: 새 책(테이블)이 들어오면 자동으로 분류·등록하고, 어떤 책에 누가 책임자인지(Owner), 어느 책장(Domain)에 두어야 하는지를 안다. 책의 출처(Lineage)와 인용 관계까지 추적한다.</li>
+</ul>
+<p>또 다른 비유는 <strong>"데이터의 신원증(身分證)"</strong>이다. 모든 테이블/컬럼이 자기 자신의 출처(누가 만들었는지), 이력(언제 어떻게 변했는지), 책임자(누가 관리하는지), 신뢰도(품질 테스트 통과 여부)를 함께 들고 다닌다.</p>
 <h3 id="openmetadata란-무엇인가">OpenMetadata란 무엇인가</h3>
 <p>OpenMetadata는 데이터 조직을 위한 <strong>통합 메타데이터 플랫폼</strong>이다. 데이터 발견(Discovery), 계보(Lineage), 거버넌스(Governance), 품질(Quality), 협업(Collaboration)을 하나의 플랫폼에서 관리할 수 있도록 설계되었다.</p>
-<h3 id="핵심-가치-중앙화된-메타데이터-ssot">핵심 가치: 중앙화된 메타데이터 SSOT</h3>
-<p>모든 데이터 자산의 메타데이터를 <strong>단일 진실 원천(Single Source of Truth)</strong>으로 관리한다. 테이블 설명, 컬럼 정의, 태그, 용어집, 계보 정보가 하나의 카탈로그에 통합되어 있으므로, 여러 도구와 팀 간의 메타데이터 불일치 문제를 해소한다.</p>
+<p>이전에는 다음과 같은 도구들을 따로 써야 했다:
+- 데이터 검색용 카탈로그 (Amundsen, DataHub)
+- 데이터 계보 추적기 (Marquez, Apache Atlas)
+- 비즈니스 용어집 (Alation, Collibra)
+- 데이터 품질 도구 (Great Expectations, Soda)
+- 데이터 협업 도구 (Confluence, Notion)</p>
+<p>OpenMetadata는 이 모든 것을 <strong>하나의 백엔드 + 하나의 UI + 하나의 API</strong>로 통합한다.</p>
+<h3 id="핵심-가치--중앙화된-메타데이터-ssot">핵심 가치 — 중앙화된 메타데이터 SSOT</h3>
+<p>모든 데이터 자산의 메타데이터를 <strong>단일 진실 원천(Single Source of Truth)</strong>으로 관리한다. 테이블 설명, 컬럼 정의, 태그, 용어집, 계보 정보가 하나의 카탈로그에 통합되어 있으므로, 여러 도구와 팀 간의 메타데이터 불일치 문제가 사라진다.</p>
 <ul>
 <li>데이터베이스, 대시보드, 파이프라인, ML 모델 등 <strong>이기종 자산</strong>을 통합 관리</li>
 <li>API 중심 설계로 <strong>프로그래밍 방식 자동화</strong> 가능</li>
 <li>협업 기능으로 <strong>데이터 문화 형성</strong> 지원</li>
 </ul>
+<blockquote>
+<p>💡 <strong>실무 팁: SSOT 원칙은 절대 깨지 말 것</strong>
+BIP-Pipeline에서는 OpenMetadata가 모든 메타데이터의 원천이고, DB COMMENT, Wren AI 모델 description은 모두 <strong>파생본</strong>이다. 만약 DB에서 직접 COMMENT를 수정하면 다음 동기화 때 OM 값으로 덮여 사라진다. 항상 OM 또는 <code>om_*.py</code> 스크립트에서 수정하라.</p>
+</blockquote>
 <h3 id="오픈소스-apache-20">오픈소스 (Apache 2.0)</h3>
 <p>Apache 2.0 라이선스로 배포되며, 커뮤니티 주도로 개발된다. 상용 관리형 서비스(Collate)도 제공되지만 핵심 기능은 모두 오픈소스에 포함되어 있다. GitHub에서 18,000+ 스타를 보유하며, 활발한 Slack 커뮤니티가 운영 중이다.</p>
 <hr />
-<h2 id="2-아키텍처">2. 아키텍처</h2>
+<h2 id="2-핵심-가치--왜-데이터-카탈로그가-필요한가-4가지-시나리오">2. 핵심 가치 — 왜 데이터 카탈로그가 필요한가 (4가지 시나리오)</h2>
+<p>데이터 카탈로그가 추상적으로 느껴진다면, 다음 4가지 실무 시나리오를 떠올리면 된다.</p>
+<h3 id="시나리오-1-이-데이터-어디-있더라">시나리오 1: "이 데이터, 어디 있더라?"</h3>
+<p><strong>상황</strong>: 신규 분석가가 입사. "삼성전자 PER 시계열 데이터가 어디에 있나요?"</p>
+<ul>
+<li><strong>OM 없음</strong>: Slack에서 묻고 → 누군가 답하기를 기다림 → 다른 사람이 다른 테이블 알려줌 → 혼란</li>
+<li><strong>OM 있음</strong>: 검색창에 "PER" 입력 → <code>analytics_valuation</code>, <code>consensus_estimates</code> 두 테이블 즉시 표시. 각 컬럼의 정의·단위·예제 쿼리까지 함께.</li>
+</ul>
+<p>→ <strong>데이터 발견(Data Discovery)</strong> 기능이 해결</p>
+<h3 id="시나리오-2-이-컬럼-바꿔도-괜찮을까">시나리오 2: "이 컬럼 바꿔도 괜찮을까?"</h3>
+<p><strong>상황</strong>: <code>stock_price_1d.close</code> 컬럼 타입을 <code>numeric(10,2)</code> → <code>numeric(15,4)</code>로 변경하려 한다.</p>
+<ul>
+<li><strong>OM 없음</strong>: 누가 이 컬럼을 쓰는지 모름 → 변경 → 다음날 BI 대시보드 깨짐, 모닝리포트 오류</li>
+<li><strong>OM 있음</strong>: 컬럼의 다운스트림 계보를 한눈에 확인 → 영향 받는 DAG 7개, 대시보드 3개 식별 → 사전 공지·테스트 후 변경</li>
+</ul>
+<p>→ <strong>데이터 계보(Lineage)</strong> 기능이 해결</p>
+<h3 id="시나리오-3-사용자가-자연어로-질문하는데-llm이-엉뚱한-컬럼을-가져옵니다">시나리오 3: "사용자가 자연어로 질문하는데 LLM이 엉뚱한 컬럼을 가져옵니다"</h3>
+<p><strong>상황</strong>: NL2SQL 시스템에 "지난주 대형주 PER 평균"을 물었더니 <code>consensus_estimates.per_2025</code>(미래 추정치)를 가져옴. 사용자는 실적 기반 PER을 원했음.</p>
+<ul>
+<li><strong>OM 없음</strong>: 컬럼 의미 차이를 LLM이 모름. 그냥 "per"이 들어간 컬럼을 추측</li>
+<li><strong>OM 있음</strong>: 용어집에 "PER (실적기반)" 용어가 <code>analytics_valuation.per</code>에 매핑 + "PER (추정)" 용어가 <code>consensus_estimates.per_*</code>에 매핑 → LLM이 정확히 구분</li>
+</ul>
+<p>→ <strong>용어집(Glossary)</strong> 기능이 해결</p>
+<h3 id="시나리오-4-이-데이터-믿어도-됩니까">시나리오 4: "이 데이터 믿어도 됩니까?"</h3>
+<p><strong>상황</strong>: 임원 보고용 모닝리포트의 거래대금 수치가 의심스럽다. 어제부터 갑자기 30% 줄었다.</p>
+<ul>
+<li><strong>OM 없음</strong>: 직접 SQL 짜서 데이터 확인 → 1시간 후 "ETL 누락이었음" 발견</li>
+<li><strong>OM 있음</strong>: 품질 테스트가 자동 실행됨 → 행 수 이상 알림 → 사고 인지가 즉시 + 인시던트로 자동 등록 + 담당자 자동 호출</li>
+</ul>
+<p>→ <strong>데이터 품질(Quality)</strong> 기능이 해결</p>
+<blockquote>
+<p>💡 <strong>실무 팁: 4가지 모두를 동시에 충족하는 도구는 흔치 않다</strong>
+검색만 잘되는 도구, 계보만 잘되는 도구, 용어집만 잘되는 도구는 많다. OpenMetadata의 강점은 이 4가지를 <strong>한 화면, 한 API, 한 데이터 모델</strong>로 묶었다는 것이다. 사일로(silo)가 없으니 자동화도 쉽다.</p>
+</blockquote>
+<hr />
+<h2 id="3-아키텍처--openmetadata는-어떻게-동작하는가">3. 아키텍처 — OpenMetadata는 어떻게 동작하는가</h2>
+<h3 id="한-문장-설명">한 문장 설명</h3>
+<p>OpenMetadata는 <strong>JSON Schema로 모든 엔티티를 정의 → 그 위에 자동 생성된 REST API → API를 소비하는 UI/SDK</strong> 구조이다. 이 구조 덕분에 UI에서 할 수 있는 모든 일을 API/SDK로도 동일하게 할 수 있다.</p>
 <h3 id="전체-구조">전체 구조</h3>
-<p>OpenMetadata는 <strong>API 중심(API-first)</strong> 아키텍처를 채택한다. JSON Schema로 엔티티 모델을 정의하고, 이를 기반으로 REST API를 자동 생성하며, UI는 해당 API를 소비하는 클라이언트이다.</p>
 <div class="mermaid">
 graph TB
     subgraph Clients["클라이언트"]
@@ -475,6 +571,7 @@ graph TB
 <th>구성 요소</th>
 <th>역할</th>
 <th>기술 스택</th>
+<th>비유</th>
 </tr>
 </thead>
 <tbody>
@@ -482,30 +579,35 @@ graph TB
 <td><strong>Server</strong></td>
 <td>REST API 제공, 비즈니스 로직</td>
 <td>Java (Dropwizard)</td>
+<td>도서관의 사무실</td>
 </tr>
 <tr>
 <td><strong>UI</strong></td>
 <td>웹 기반 사용자 인터페이스</td>
 <td>React, TypeScript</td>
+<td>도서관 열람실</td>
 </tr>
 <tr>
 <td><strong>Database</strong></td>
 <td>메타데이터 영구 저장</td>
 <td>MySQL 또는 PostgreSQL</td>
+<td>도서 카드 보관함</td>
 </tr>
 <tr>
 <td><strong>Elasticsearch</strong></td>
 <td>전문 검색, 필터링</td>
 <td>Elasticsearch 7.x / 8.x</td>
+<td>도서 검색 단말기</td>
 </tr>
 <tr>
 <td><strong>Ingestion Framework</strong></td>
 <td>메타데이터 수집 파이프라인</td>
 <td>Python (openmetadata-ingestion)</td>
+<td>도서 신착 처리 직원</td>
 </tr>
 </tbody>
 </table>
-<h3 id="api-중심-설계-흐름">API 중심 설계 흐름</h3>
+<h3 id="api-중심-설계의-의미">API 중심 설계의 의미</h3>
 <div class="codehilite"><pre><span></span><code>JSON Schema (엔티티 정의)
     ↓
 REST API (자동 생성, Swagger 문서)
@@ -516,24 +618,45 @@ Python SDK (프로그래밍 자동화)
 </code></pre></div>
 
 <p>이 설계 덕분에 UI에서 할 수 있는 <strong>모든 작업을 API/SDK로도 동일하게</strong> 수행할 수 있다. 자동화 스크립트, CI/CD 파이프라인, 외부 도구 연동이 자연스럽게 가능하다.</p>
+<blockquote>
+<p>💡 <strong>실무 팁: API-first의 진짜 가치는 "잠금 효과(lock-in) 없음"</strong>
+만약 UI 위주 도구였다면 "OM에 등록된 메타데이터를 다른 시스템에 옮기려면?" 같은 마이그레이션 비용이 커진다. OM은 모든 것이 API로 노출되어 있어, 언제든 백업·이관·복원이 가능하다. BIP에서도 <code>scripts/om_*.py</code>가 모두 SDK 기반이라 OM 인스턴스를 옮겨도 코드는 그대로 동작한다.</p>
+</blockquote>
+<h3 id="메타데이터의-라이프사이클">메타데이터의 라이프사이클</h3>
+<div class="mermaid">
+sequenceDiagram
+    participant Source as 외부 시스템\n("PostgreSQL/Airflow")
+    participant Conn as 커넥터\n(Ingestion)
+    participant API as OM REST API
+    participant Store as 메타데이터 저장소\n(DB + ES)
+    participant UI as Web UI / SDK
+
+    Source->>Conn: 1. 스키마/DAG 정의 노출
+    Conn->>API: 2. 메타데이터 PUT/PATCH
+    API->>Store: 3. DB 저장 + ES 인덱싱
+    API-->>Conn: 4. 변경 이벤트 발행
+    UI->>API: 5. 검색/조회 요청
+    API->>Store: 6. ES에서 검색
+    Store-->>API: 7. 결과 반환
+    API-->>UI: 8. JSON 응답
+</div>
+
+<p>이 흐름은 매일 반복된다. BIP에서는 Airflow의 <code>10_sync_metadata_daily</code> DAG가 이 사이클을 트리거한다.</p>
 <hr />
-<h2 id="3-핵심-기능">3. 핵심 기능</h2>
-<h3 id="3-1-데이터-발견-data-discovery">3-1. 데이터 발견 (Data Discovery)</h3>
-<h4 id="무엇인가">무엇인가</h4>
-<p>조직 내의 모든 데이터 자산을 <strong>검색하고 탐색</strong>할 수 있는 기능이다. 데이터 카탈로그의 가장 기본적이고 핵심적인 가치이다.</p>
-<h4 id="왜-필요한가">왜 필요한가</h4>
+<h2 id="4-핵심-기능">4. 핵심 기능</h2>
+<p>OpenMetadata의 7가지 핵심 기능을 각각 <strong>비유 → Why → What → How</strong> 순으로 설명한다.</p>
+<h3 id="4-1-데이터-발견-data-discovery">4-1. 데이터 발견 (Data Discovery)</h3>
+<h4 id="비유">비유</h4>
+<p><strong>구글 검색의 사내 데이터 버전.</strong> 키워드 한 줄로 회사 전체의 테이블/대시보드/DAG/모델을 한꺼번에 찾는다.</p>
+<h4 id="why--왜-필요한가">Why — 왜 필요한가</h4>
 <ul>
-<li>데이터 사일로 해소: 여러 시스템에 흩어진 데이터를 한곳에서 검색</li>
-<li>중복 작업 방지: 이미 존재하는 데이터셋을 모르고 새로 만드는 것을 방지</li>
-<li>데이터 이해도 향상: 스키마, 설명, 태그, 소유자 정보를 통해 데이터의 의미를 빠르게 파악</li>
+<li><strong>데이터 사일로 해소</strong>: 여러 시스템에 흩어진 데이터를 한곳에서 검색</li>
+<li><strong>중복 작업 방지</strong>: 이미 존재하는 데이터셋을 모르고 새로 만드는 것을 방지</li>
+<li><strong>온보딩 비용 감소</strong>: 신규 입사자가 "뭐가 어디 있는지" 묻지 않고 스스로 찾음</li>
+<li><strong>데이터 이해도 향상</strong>: 스키마, 설명, 태그, 소유자 정보를 통해 데이터의 의미를 빠르게 파악</li>
 </ul>
-<h4 id="사용-방법">사용 방법</h4>
-<p><strong>통합 검색</strong>
-- 키워드 검색: 테이블명, 컬럼명, 설명 텍스트를 대상으로 전문 검색
-- 고급 검색: 필터(소유자, 태그, 도메인, 서비스, Tier 등)를 조합한 세밀한 검색
-- Elasticsearch 기반으로 빠른 응답 제공</p>
-<p><strong>자산 유형</strong></p>
-<p>OpenMetadata가 관리하는 데이터 자산 유형은 다음과 같다:</p>
+<h4 id="what--무엇을-검색할-수-있는가">What — 무엇을 검색할 수 있는가</h4>
+<p>OpenMetadata가 관리하는 데이터 자산 유형:</p>
 <table>
 <thead>
 <tr>
@@ -585,6 +708,11 @@ Python SDK (프로그래밍 자동화)
 </tr>
 </tbody>
 </table>
+<h4 id="how--어떻게-사용하는가">How — 어떻게 사용하는가</h4>
+<p><strong>통합 검색</strong>
+- 키워드 검색: 테이블명, 컬럼명, 설명 텍스트를 대상으로 전문 검색
+- 고급 검색: 필터(소유자, 태그, 도메인, 서비스, Tier 등)를 조합한 세밀한 검색
+- Elasticsearch 기반으로 빠른 응답 제공</p>
 <p><strong>데이터 미리보기</strong>
 - 샘플 데이터 조회 (관리자 설정에 따라 활성화/비활성화 가능)
 - 컬럼별 통계 (null 비율, 고유값 수, 최대/최소/평균 등)</p>
@@ -594,18 +722,24 @@ Python SDK (프로그래밍 자동화)
 - 계보: 데이터의 출처와 소비처
 - 쿼리 이력: 해당 테이블에 대해 실행된 쿼리 패턴
 - 사용 빈도: 조회 횟수, 최근 접근 사용자</p>
+<blockquote>
+<p>⚠️ <strong>함정: 미리보기 기능은 보안 거버넌스를 깨뜨릴 수 있다</strong>
+기본 설정에서 OM은 컬럼 샘플 데이터를 가져와 UI에 보여준다. 만약 <code>users</code> 테이블이 잘못 노출되어 있으면 이메일·전화번호가 OM 화면에 그대로 뜬다. BIP에서는 <code>includeColumnSample: false</code>, <code>generateSampleData: false</code>로 강제 비활성화. 새 환경 설치 시 가장 먼저 확인해야 하는 옵션이다.</p>
+<p>💡 <strong>실무 팁: Elasticsearch 인덱스가 깨졌을 때</strong>
+검색 결과가 이상하면 인덱스 재빌드: <code>metadata index --service all</code>. 종종 컨테이너 재시작 후 ES 인덱스가 누락되어 검색이 안 되는 경우가 있다.</p>
+</blockquote>
 <hr />
-<h3 id="3-2-데이터-계보-data-lineage">3-2. 데이터 계보 (Data Lineage)</h3>
-<h4 id="무엇인가_1">무엇인가</h4>
-<p>데이터가 <strong>어디에서 왔고(source), 어떻게 변환되었으며(transformation), 어디로 흘러가는지(sink)</strong>를 추적하는 기능이다.</p>
-<h4 id="왜-필요한가_1">왜 필요한가</h4>
+<h3 id="4-2-데이터-계보-data-lineage">4-2. 데이터 계보 (Data Lineage)</h3>
+<h4 id="비유_1">비유</h4>
+<p><strong>데이터의 가계도(family tree).</strong> 한 테이블의 컬럼이 어느 부모(소스)에서 왔고, 어떤 자식(하류 테이블/대시보드)에게 영향을 주는지 보여준다.</p>
+<h4 id="why--왜-필요한가_1">Why — 왜 필요한가</h4>
 <ul>
 <li><strong>영향 분석(Impact Analysis)</strong>: 소스 테이블 변경 시 어떤 하류(downstream) 자산이 영향 받는지 파악</li>
 <li><strong>근본 원인 추적(Root Cause Analysis)</strong>: 데이터 품질 문제가 어느 단계에서 발생했는지 역추적</li>
 <li><strong>규정 준수(Compliance)</strong>: 데이터의 전체 이동 경로를 감사 목적으로 기록</li>
 <li><strong>NL2SQL 맥락 제공</strong>: 테이블 간의 관계를 LLM이 이해하도록 계보 정보를 활용</li>
 </ul>
-<h4 id="사용-방법_1">사용 방법</h4>
+<h4 id="what--lineage가-표현하는-것">What — Lineage가 표현하는 것</h4>
 <div class="mermaid">
 graph LR
     subgraph "외부 소스"
@@ -640,6 +774,11 @@ graph LR
     style T3 fill:#c8e6c9,color:#1a1a2e
 </div>
 
+<blockquote>
+<p>⚠️ <strong>함정: Lineage는 데이터 흐름이지 JOIN 관계가 아니다</strong>
+Lineage 그래프의 엣지는 <strong>"이 테이블이 저 테이블을 만들 때 사용되었다"</strong>라는 의미이지, <strong>"이 테이블과 저 테이블을 어떤 키로 JOIN한다"</strong>라는 의미가 아니다. Cube의 <code>joins</code>나 NL2SQL Agent의 SQL 생성 컨텍스트로 그대로 쓰면 잘못된 SQL이 나온다. JOIN 관계는 별도로 시맨틱 레이어(Cube/Wren)에서 정의해야 한다.</p>
+</blockquote>
+<h4 id="how--어떻게-등록하는가">How — 어떻게 등록하는가</h4>
 <p><strong>자동 계보 수집</strong>
 - 커넥터가 데이터베이스 쿼리 로그, Airflow DAG 정의 등을 분석하여 자동으로 계보를 생성
 - Airflow 커넥터: DAG에서 참조하는 테이블 관계를 자동 추출
@@ -652,6 +791,9 @@ graph LR
 - UI에서 드래그 앤 드롭으로 계보 엣지 추가
 - 자동 수집이 놓치는 복잡한 변환 로직에 유용</p>
 <p><strong>Python SDK를 통한 프로그래밍 방식</strong></p>
+<blockquote>
+<p>이 코드가 하는 일: 두 엔티티 사이에 lineage 엣지(소스 → 타겟)를 OM 서버에 추가하고, 해당 엣지가 어떤 파이프라인에서 만들어졌는지 메타데이터로 함께 기록한다.</p>
+</blockquote>
 <div class="codehilite"><pre><span></span><code><span class="kn">from</span><span class="w"> </span><span class="nn">metadata.ingestion.lineage.sql_lineage</span><span class="w"> </span><span class="kn">import</span> <span class="n">search_table_entities</span>
 <span class="kn">from</span><span class="w"> </span><span class="nn">metadata.ingestion.ometa.ometa_api</span><span class="w"> </span><span class="kn">import</span> <span class="n">OpenMetadata</span>
 
@@ -674,18 +816,21 @@ graph LR
 - 그래프 뷰: 노드(엔티티)와 엣지(관계)로 구성된 인터랙티브 그래프
 - 업스트림/다운스트림 탐색: 특정 자산에서 상류/하류를 단계적으로 펼쳐 확인
 - 필터링: 특정 서비스, 데이터베이스, 스키마 기준으로 계보 범위 제한</p>
+<blockquote>
+<p>💡 <strong>실무 팁: BIP 경험 — DAG 코드에서 직접 lineage 등록</strong>
+자동 추출은 SQL 파싱이 까다로워 누락이 생긴다. BIP에서는 각 DAG에서 <code>register_table_lineage_async()</code>를 명시적으로 호출하여 100% 커버리지를 달성했다. 새 DAG는 이 호출 없이 머지 금지(<code>docs/metadata_governance.md</code> 규정).</p>
+</blockquote>
 <hr />
-<h3 id="3-3-데이터-거버넌스">3-3. 데이터 거버넌스</h3>
-<h4 id="3-3-1-용어집-glossary">3-3-1. 용어집 (Glossary)</h4>
-<h5 id="무엇인가_2">무엇인가</h5>
-<p>비즈니스 용어를 <strong>표준화하여 정의하고, 데이터 자산과 연결</strong>하는 기능이다. "PER", "ROE", "골든크로스" 같은 비즈니스 용어가 실제 어떤 테이블의 어떤 컬럼에 대응하는지를 명시적으로 관리한다.</p>
-<h5 id="왜-필요한가_2">왜 필요한가</h5>
+<h3 id="4-3-용어집-glossary">4-3. 용어집 (Glossary)</h3>
+<h4 id="비유_2">비유</h4>
+<p><strong>사내 비즈니스 사전.</strong> "PER", "ROE", "골든크로스" 같은 비즈니스 용어가 실제 어떤 컬럼/계산식에 매핑되는지를 정의한 사전이다. 신입 분석가가 "PER이 뭐예요?"라고 물을 때 답하는 곳이다.</p>
+<h4 id="why--왜-필요한가_2">Why — 왜 필요한가</h4>
 <ul>
-<li><strong>용어 표준화</strong>: 같은 개념을 팀마다 다른 이름으로 부르는 혼란 방지</li>
+<li><strong>용어 표준화</strong>: 같은 개념을 팀마다 다른 이름으로 부르는 혼란 방지 ("매출" vs "총매출" vs "영업수익")</li>
 <li><strong>NL2SQL 정확도 향상</strong>: 사용자가 비즈니스 용어로 질문할 때, 정확한 컬럼으로 매핑</li>
 <li><strong>신규 팀원 온보딩</strong>: 도메인 지식을 체계적으로 문서화</li>
 </ul>
-<h5 id="사용-방법_2">사용 방법</h5>
+<h4 id="what--glossary의-계층-구조">What — Glossary의 계층 구조</h4>
 <div class="mermaid">
 graph TB
     G["Glossary\n투자 용어집"]
@@ -707,7 +852,7 @@ graph TB
     style T3 fill:#f3e5f5,color:#1a1a2e
 </div>
 
-<p><strong>계층 구조</strong>
+<p><strong>구조</strong>
 - Glossary (최상위): 도메인별 용어집 (예: 투자 용어집, 매크로 경제 용어집)
 - Term (용어): 개별 비즈니스 용어
 - Child Term (하위 용어): 용어 아래 세부 분류 가능</p>
@@ -718,6 +863,7 @@ graph TB
 - 동의어(Synonyms): 같은 개념의 다른 명칭 (<code>PER</code>, <code>P/E Ratio</code>)
 - 관련 용어(Related Terms): 연관 개념 링크
 - 태그(Tags): 분류용 태그</p>
+<h4 id="how--어떻게-사용하는가_1">How — 어떻게 사용하는가</h4>
 <p><strong>용어-자산 매핑</strong>
 - 용어를 테이블 또는 컬럼에 직접 태깅
 - NL2SQL에서 사용자 질문의 비즈니스 용어를 정확한 컬럼에 매핑하는 데 핵심적으로 활용</p>
@@ -734,18 +880,25 @@ graph TB
 <p><strong>API 지원</strong>
 - REST API로 용어 CRUD, 용어-자산 매핑 자동화 가능
 - <code>scripts/om_build_glossary.py</code> 같은 스크립트로 프로그래밍 방식 일괄 등록</p>
+<blockquote>
+<p>⚠️ <strong>함정: Glossary 용어 description은 SSOT, 하지만 DB COMMENT 동기화 필수</strong>
+OM Glossary 용어에 정의를 잘 써놨어도, DB COMMENT가 비어 있으면 외부 BI 도구나 OM에 등록 안 된 도구는 그 정의를 못 본다. BIP는 <code>om_sync_comments.py</code>로 OM → DB COMMENT 자동 동기화하여 일관성 유지.</p>
+<p>💡 <strong>실무 팁: 용어집은 "비어있어도 등록부터" 하라</strong>
+처음에는 용어 정의를 완벽하게 작성하기 어렵다. 일단 빈 description으로 용어를 만들어 컬럼에 매핑부터 해두고, 나중에 description을 채우는 방식이 좋다. NL2SQL 정확도는 description보다 매핑 관계에서 먼저 향상된다.</p>
+</blockquote>
 <hr />
-<h4 id="3-3-2-분류-classification--태그-tags">3-3-2. 분류 (Classification) &amp; 태그 (Tags)</h4>
-<h5 id="무엇인가_3">무엇인가</h5>
-<p>데이터 자산에 <strong>분류(Classification)와 태그(Tag)</strong>를 부여하여 체계적으로 조직화하는 기능이다. 용어집이 비즈니스 의미를 정의한다면, 태그는 데이터의 <strong>속성과 특성</strong>을 분류한다.</p>
-<h5 id="왜-필요한가_3">왜 필요한가</h5>
+<h3 id="4-4-분류-classification--태그-tags">4-4. 분류 (Classification) &amp; 태그 (Tags)</h3>
+<h4 id="비유_3">비유</h4>
+<p><strong>도서관의 분류 라벨.</strong> "이 책은 소설인가 비소설인가? 성인용인가 청소년용인가? 신간인가 고서인가?" 같은 다차원 분류를 데이터에 적용하는 것이다.</p>
+<p>용어집(Glossary)이 <strong>"이게 무슨 의미인가"</strong>(의미론)을 정의한다면, 태그(Tag)는 <strong>"이게 어떤 속성을 가지는가"</strong>(속성 분류)를 표현한다.</p>
+<h4 id="why--왜-필요한가_3">Why — 왜 필요한가</h4>
 <ul>
 <li><strong>데이터 분류 체계</strong>: 민감도(PII), 중요도(Tier), 레이어(Raw/Derived/Gold) 등으로 분류</li>
 <li><strong>검색 효율</strong>: 태그 기반 필터링으로 원하는 자산을 빠르게 찾기</li>
 <li><strong>접근 제어 기반</strong>: 태그를 RBAC 정책과 연동하여 세분화된 접근 제어</li>
 <li><strong>자동 거버넌스</strong>: Auto Classification으로 민감 데이터 자동 식별</li>
 </ul>
-<h5 id="사용-방법_3">사용 방법</h5>
+<h4 id="what--어떤-태그가-있는가">What — 어떤 태그가 있는가</h4>
 <p><strong>시스템 분류 (Built-in)</strong></p>
 <table>
 <thead>
@@ -777,6 +930,7 @@ graph TB
 - UI 또는 API를 통해 커스텀 Classification 생성
 - 예: <code>DataLayer</code> (raw, derived, gold), <code>Domain</code> (market, financial, macro, news)
 - 각 Classification 아래에 하위 태그를 자유롭게 정의</p>
+<h4 id="how--어떻게-활용하는가">How — 어떻게 활용하는가</h4>
 <p><strong>자동 태깅 (Auto Classification)</strong>
 - 프로파일러 실행 시 컬럼 이름, 데이터 패턴을 분석하여 PII 등을 자동 태깅
 - 이메일 패턴, 전화번호 패턴, 신용카드 번호 패턴 등 인식
@@ -784,17 +938,24 @@ graph TB
 <p><strong>태그를 통한 접근 제어</strong>
 - RBAC 정책에서 "PII.Sensitive 태그가 붙은 자산은 Data Steward만 접근 가능" 같은 규칙 설정
 - 태그 기반 정책은 자산이 추가될 때 자동 적용</p>
+<blockquote>
+<p>💡 <strong>실무 팁: BIP의 Tier 분류로 비즈니스 크리티컬 데이터 우선 관리</strong>
+Tier 1 = 임원 보고/매출 직결 (예: <code>analytics_stock_daily</code>, <code>consensus_estimates</code>)
+Tier 2 = 분석 의존 (예: <code>stock_indicators</code>, <code>macro_indicators</code>)
+Tier 3 = 보조 (예: 로그성 데이터)
+Tier 1은 품질 테스트 필수, 알림 즉시, 설명 커버리지 100%를 강제한다. 모든 데이터를 똑같이 관리하면 비용이 폭증하므로 Tier로 우선순위를 두는 것이 핵심이다.</p>
+</blockquote>
 <hr />
-<h4 id="3-3-3-도메인--데이터-제품-domains--data-products">3-3-3. 도메인 &amp; 데이터 제품 (Domains &amp; Data Products)</h4>
-<h5 id="무엇인가_4">무엇인가</h5>
-<p><strong>도메인(Domain)</strong>은 비즈니스 영역별로 데이터를 그룹화하는 최상위 조직 단위이다. <strong>데이터 제품(Data Product)</strong>은 도메인 내에서 소비자에게 제공되는 의미 있는 데이터 묶음이다.</p>
-<h5 id="왜-필요한가_4">왜 필요한가</h5>
+<h3 id="4-5-도메인--데이터-제품-domains--data-products">4-5. 도메인 &amp; 데이터 제품 (Domains &amp; Data Products)</h3>
+<h4 id="비유_4">비유</h4>
+<p><strong>사내 부서별 자료실.</strong> 각 부서(도메인)가 자기 자료(데이터 자산)를 관리하고, 다른 부서에 "정식 발행"한 보고서(데이터 제품)만 외부 공유한다.</p>
+<h4 id="why--왜-필요한가_4">Why — 왜 필요한가</h4>
 <ul>
 <li><strong>데이터 메시(Data Mesh)</strong> 아키텍처 지원: 도메인 소유권 기반 분산 데이터 관리</li>
 <li><strong>데이터 발견성 향상</strong>: 도메인별로 자산을 탐색하여 관련 데이터를 빠르게 찾기</li>
 <li><strong>책임 명확화</strong>: 각 도메인에 소유자를 지정하여 데이터 품질 책임 부여</li>
 </ul>
-<h5 id="사용-방법_4">사용 방법</h5>
+<h4 id="what--how">What &amp; How</h4>
 <p><strong>도메인 기반 데이터 조직</strong>
 - 도메인 생성: <code>Market</code>, <code>Financial</code>, <code>Macro</code>, <code>News</code> 등
 - 각 도메인에 관련 테이블, 파이프라인, 대시보드를 배정
@@ -803,17 +964,21 @@ graph TB
 - 도메인 내에서 특정 소비자(팀, 서비스)를 위한 데이터 제품 정의
 - 데이터 제품에 포함되는 자산 목록, 품질 SLA, 접근 권한 설정
 - 예: "투자 분석 데이터 제품" = <code>analytics_stock_daily</code> + <code>analytics_valuation</code> + <code>consensus_estimates</code></p>
+<blockquote>
+<p>💡 <strong>실무 팁: 도메인은 너무 많이 쪼개지 마라</strong>
+처음부터 10개 이상 도메인을 만들면 관리가 어렵다. 4~6개로 시작하고 필요할 때 분할하는 것이 좋다. BIP는 market/financial/macro/news/portfolio/product/user 7개를 운영 중.</p>
+</blockquote>
 <hr />
-<h3 id="3-4-데이터-품질--관찰성">3-4. 데이터 품질 &amp; 관찰성</h3>
-<h4 id="무엇인가_5">무엇인가</h4>
-<p>데이터의 <strong>정확성, 완전성, 적시성</strong>을 검증하고, 이상 징후를 <strong>자동 탐지</strong>하여 알림을 보내는 기능이다.</p>
-<h4 id="왜-필요한가_5">왜 필요한가</h4>
+<h3 id="4-6-데이터-품질--관찰성">4-6. 데이터 품질 &amp; 관찰성</h3>
+<h4 id="비유_5">비유</h4>
+<p><strong>데이터의 건강검진소.</strong> 매일 정해진 시간에 각 테이블의 행 수·NULL 비율·값 범위를 검사하고, 이상 신호가 있으면 담당자에게 알림. "이 테이블 어제부터 갑자기 행 수가 절반인데 괜찮아?" 같은 의문을 자동으로 던진다.</p>
+<h4 id="why--왜-필요한가_5">Why — 왜 필요한가</h4>
 <ul>
 <li><strong>데이터 신뢰성 확보</strong>: 잘못된 데이터로 의사결정을 내리는 위험 방지</li>
 <li><strong>조기 이상 감지</strong>: 데이터 파이프라인 장애를 빠르게 발견</li>
 <li><strong>SLA 관리</strong>: 데이터 제품의 품질 기준 충족 여부를 모니터링</li>
 </ul>
-<h4 id="사용-방법_5">사용 방법</h4>
+<h4 id="what--어떤-테스트가-가능한가">What — 어떤 테스트가 가능한가</h4>
 <p><strong>품질 테스트 유형 (No-code 테스트)</strong></p>
 <p>코드를 작성하지 않고 UI에서 테스트를 정의할 수 있다:</p>
 <table>
@@ -857,6 +1022,7 @@ graph TB
 </tr>
 </tbody>
 </table>
+<h4 id="how--어떻게-운영하는가">How — 어떻게 운영하는가</h4>
 <p><strong>프로파일러</strong>
 - 테이블 수준: 행 수, 크기, 생성/수정일
 - 컬럼 수준: NULL 비율, 고유값 수, 최소/최대/평균/표준편차
@@ -873,17 +1039,23 @@ graph TB
 - 프로파일러가 수집한 시계열 통계를 기반으로 이상치를 자동 감지
 - 행 수의 급격한 변화, NULL 비율 급증 등을 자동 경고
 - 별도 설정 없이 프로파일러 실행만으로 동작</p>
+<blockquote>
+<p>⚠️ <strong>함정: 프로파일러는 민감 컬럼을 자동 샘플링한다</strong>
+기본 설정에서 프로파일러는 컬럼 통계를 위해 실제 값을 샘플링한다. 그 결과가 OM 화면에 표시되어 비밀번호 해시·토큰·이메일까지 노출될 수 있다. 반드시 <code>includeColumnSample: false</code> + 민감 테이블 <code>excludes</code> 패턴 적용.</p>
+<p>💡 <strong>실무 팁: Tier 1 테이블만 품질 테스트 작성</strong>
+모든 테이블에 테스트를 다 작성하면 노이즈가 많아 알림 무시 현상이 생긴다. Tier 1 테이블 위주로 핵심 테스트(행 수 범위 + 핵심 컬럼 NOT NULL) 3~5개씩만 작성하는 것이 효과적.</p>
+</blockquote>
 <hr />
-<h3 id="3-5-데이터-협업">3-5. 데이터 협업</h3>
-<h4 id="무엇인가_6">무엇인가</h4>
-<p>데이터 자산에 대해 팀원 간 <strong>소통하고, 작업을 요청하며, 변경 사항을 공유</strong>하는 기능이다.</p>
-<h4 id="왜-필요한가_6">왜 필요한가</h4>
+<h3 id="4-7-데이터-협업-collaboration">4-7. 데이터 협업 (Collaboration)</h3>
+<h4 id="비유_6">비유</h4>
+<p><strong>데이터 자산에 붙은 댓글창.</strong> GitHub Issue처럼 각 테이블/컬럼에 직접 질문을 남기고 토론하며, 변경 사항을 팀원에게 공유한다.</p>
+<h4 id="why--왜-필요한가_6">Why — 왜 필요한가</h4>
 <ul>
-<li><strong>컨텍스트 보존</strong>: 데이터에 대한 질문과 답변이 해당 자산에 직접 연결</li>
+<li><strong>컨텍스트 보존</strong>: 데이터에 대한 질문과 답변이 해당 자산에 직접 연결 (Slack에 흩어지지 않음)</li>
 <li><strong>작업 추적</strong>: 메타데이터 보강 요청을 체계적으로 관리</li>
 <li><strong>변경 인식</strong>: 데이터 자산의 변경 사항을 관심 있는 사용자에게 자동 통보</li>
 </ul>
-<h4 id="사용-방법_6">사용 방법</h4>
+<h4 id="what--how_1">What &amp; How</h4>
 <p><strong>대화 스레드 (Conversations)</strong>
 - 테이블, 컬럼, 대시보드 등 모든 자산에 대화 스레드를 생성
 - <code>@mention</code>으로 특정 사용자를 태그하여 질문이나 논의
@@ -906,16 +1078,16 @@ graph TB
 - 소유자(Owner) 지정: 데이터 품질과 메타데이터의 책임자 명시
 - 팀(Team) 단위로도 소유권 설정 가능</p>
 <hr />
-<h3 id="3-6-데이터-인사이트">3-6. 데이터 인사이트</h3>
-<h4 id="무엇인가_7">무엇인가</h4>
-<p>조직의 <strong>메타데이터 건강 상태와 데이터 활용도</strong>를 대시보드로 시각화하는 기능이다.</p>
-<h4 id="왜-필요한가_7">왜 필요한가</h4>
+<h3 id="4-8-데이터-인사이트-insights">4-8. 데이터 인사이트 (Insights)</h3>
+<h4 id="비유_7">비유</h4>
+<p><strong>메타데이터 KPI 대시보드.</strong> "우리 회사 테이블 중 설명이 있는 비율은? 소유자가 지정된 비율은? 이번 달 신규 자산은 몇 개인가?" 같은 거버넌스 지표를 시각화한다.</p>
+<h4 id="why--왜-필요한가_7">Why — 왜 필요한가</h4>
 <ul>
 <li><strong>거버넌스 진행 상황 추적</strong>: 설명 커버리지, 태그 적용률 등의 KPI 모니터링</li>
 <li><strong>데이터 문화 측정</strong>: 팀별/사용자별 기여도와 활용 패턴 파악</li>
 <li><strong>개선 우선순위 도출</strong>: 메타데이터가 가장 부족한 영역 식별</li>
 </ul>
-<h4 id="사용-방법_7">사용 방법</h4>
+<h4 id="what--how_2">What &amp; How</h4>
 <p><strong>KPI 정의</strong>
 - 설명 커버리지: 설명이 있는 테이블/컬럼 비율 목표 설정 (예: 95%)
 - 소유자 지정률: 소유자가 배정된 자산 비율
@@ -929,10 +1101,36 @@ graph TB
 - 가장 많이 조회된 테이블/대시보드
 - 활발하게 사용되는 자산 vs 미사용 자산 식별
 - 사용자별 활동 통계</p>
+<blockquote>
+<p>💡 <strong>실무 팁: 인사이트는 정기적으로 보고하라</strong>
+매주 또는 매월 인사이트 KPI를 추출해 데이터팀 회의에 공유하면 거버넌스가 자동으로 개선된다. BIP에서는 Gold 컬럼 설명 커버리지를 31% → 99%로 끌어올린 사례가 있는데, 이 KPI가 가시화되어 있었기 때문에 가능했다.</p>
+</blockquote>
 <hr />
-<h2 id="4-커넥터-생태계">4. 커넥터 생태계</h2>
-<p>OpenMetadata는 다양한 데이터 소스와 도구에 대한 커넥터를 제공한다. 커넥터는 <strong>메타데이터 수집(Ingestion)</strong>, <strong>프로파일링(Profiling)</strong>, <strong>계보 추출(Lineage)</strong>, <strong>품질 테스트(Quality)</strong> 워크플로우를 지원한다.</p>
-<h3 id="4-1-데이터베이스">4-1. 데이터베이스</h3>
+<h2 id="5-커넥터-생태계--어떻게-자동으로-메타데이터를-수집하는가">5. 커넥터 생태계 — 어떻게 자동으로 메타데이터를 수집하는가</h2>
+<h3 id="비유_8">비유</h3>
+<p><strong>자동 발권 시스템을 가진 도서관.</strong> 새 책이 들어오면 직원이 일일이 등록할 필요 없이, 책의 바코드를 읽으면 제목·저자·출판사·ISBN이 자동으로 카탈로그에 등록된다. OM의 커넥터가 이 역할을 한다.</p>
+<h3 id="동작-원리">동작 원리</h3>
+<div class="mermaid">
+graph LR
+    SRC["데이터 소스\nPostgreSQL/Airflow/..."]
+    CONN[OM 커넥터\nYAML 설정]
+    ING[Ingestion Workflow]
+    API[OM REST API]
+
+    SRC -->|스키마 노출| CONN
+    CONN -->|구조화| ING
+    ING -->|PUT/PATCH| API
+
+    style SRC fill:#fce4ec,color:#1a1a2e
+    style API fill:#e3f2fd,color:#1a1a2e
+</div>
+
+<p>각 커넥터는 <strong>YAML 설정 파일</strong>로 정의된다:
+- 어느 소스에 연결하는가 (host, port, credential)
+- 어떤 스키마/테이블을 포함/제외하는가 (필터 패턴)
+- 어떤 메타데이터를 수집하는가 (스키마, 통계, 계보, 쿼리)</p>
+<p>OpenMetadata는 50개 이상의 커넥터를 제공한다. 메타데이터 수집(Ingestion), 프로파일링(Profiling), 계보 추출(Lineage), 품질 테스트(Quality) 워크플로우를 지원한다.</p>
+<h3 id="5-1-데이터베이스">5-1. 데이터베이스</h3>
 <table>
 <thead>
 <tr>
@@ -1030,7 +1228,7 @@ graph TB
 </tr>
 </tbody>
 </table>
-<h3 id="4-2-대시보드">4-2. 대시보드</h3>
+<h3 id="5-2-대시보드">5-2. 대시보드</h3>
 <table>
 <thead>
 <tr>
@@ -1082,7 +1280,7 @@ graph TB
 </tr>
 </tbody>
 </table>
-<h3 id="4-3-파이프라인">4-3. 파이프라인</h3>
+<h3 id="5-3-파이프라인">5-3. 파이프라인</h3>
 <table>
 <thead>
 <tr>
@@ -1134,7 +1332,7 @@ graph TB
 </tr>
 </tbody>
 </table>
-<h3 id="4-4-메시징">4-4. 메시징</h3>
+<h3 id="5-4-메시징">5-4. 메시징</h3>
 <table>
 <thead>
 <tr>
@@ -1161,7 +1359,7 @@ graph TB
 </tr>
 </tbody>
 </table>
-<h3 id="4-5-ml-모델">4-5. ML 모델</h3>
+<h3 id="5-5-ml-모델">5-5. ML 모델</h3>
 <table>
 <thead>
 <tr>
@@ -1180,7 +1378,7 @@ graph TB
 </tr>
 </tbody>
 </table>
-<h3 id="4-6-스토리지">4-6. 스토리지</h3>
+<h3 id="5-6-스토리지">5-6. 스토리지</h3>
 <table>
 <thead>
 <tr>
@@ -1203,7 +1401,7 @@ graph TB
 </tr>
 </tbody>
 </table>
-<h3 id="4-7-메타데이터-마이그레이션">4-7. 메타데이터 마이그레이션</h3>
+<h3 id="5-7-메타데이터-마이그레이션">5-7. 메타데이터 마이그레이션</h3>
 <p>기존 메타데이터 카탈로그에서 OpenMetadata로 마이그레이션하는 커넥터:</p>
 <table>
 <thead>
@@ -1227,18 +1425,22 @@ graph TB
 </tr>
 </tbody>
 </table>
+<blockquote>
+<p>💡 <strong>실무 팁: 커넥터는 처음부터 모두 켜지 마라</strong>
+일단 PostgreSQL 커넥터 하나로 시작해 메타데이터를 쌓고, 검색·계보·품질이 안정화되면 Airflow → 대시보드 순으로 추가하는 것이 좋다. 한 번에 모두 켜면 노이즈가 많고 디버깅이 어렵다.</p>
+</blockquote>
 <hr />
-<h2 id="5-관리-기능">5. 관리 기능</h2>
-<h3 id="5-1-팀--사용자">5-1. 팀 &amp; 사용자</h3>
-<h4 id="무엇인가_8">무엇인가</h4>
-<p>조직 구조를 반영한 <strong>계층적 팀 구조</strong>와 사용자 관리 기능이다.</p>
-<h4 id="왜-필요한가_8">왜 필요한가</h4>
+<h2 id="6-관리-기능">6. 관리 기능</h2>
+<h3 id="6-1-팀--사용자">6-1. 팀 &amp; 사용자</h3>
+<h4 id="비유_9">비유</h4>
+<p><strong>회사 조직도를 그대로 가져온다.</strong> 팀과 부서 계층 그대로 OM에 등록하고, 각 자산에 "어느 팀이 책임지는지" 명시한다.</p>
+<h4 id="why--왜-필요한가_8">Why — 왜 필요한가</h4>
 <ul>
 <li><strong>소유권 관리</strong>: 데이터 자산의 책임 소재를 조직 구조에 맞게 설정</li>
 <li><strong>접근 제어</strong>: 팀/사용자 단위의 권한 관리</li>
 <li><strong>협업</strong>: 팀 단위의 알림, 작업 할당</li>
 </ul>
-<h4 id="사용-방법_8">사용 방법</h4>
+<h4 id="what--how_3">What &amp; How</h4>
 <p><strong>계층적 팀 구조</strong>
 - Organization (최상위) → Business Unit → Division → Department → Group
 - 각 수준에서 소유자 설정과 정책 적용 가능
@@ -1251,18 +1453,21 @@ graph TB
 - 모든 데이터 자산에 소유자(사용자 또는 팀) 지정
 - 소유자는 해당 자산의 메타데이터 품질, 태그, 설명에 대한 1차 책임
 - 소유자 미지정 자산을 대시보드에서 식별하여 할당 독려</p>
+<blockquote>
+<p>💡 <strong>실무 팁: 소유자는 팀에 지정, 사용자에 지정 X</strong>
+개인 사용자에게 소유자를 지정하면 퇴사·이동 시 모든 자산을 재할당해야 한다. 팀 단위 소유자가 안정적이다. 단 협업/멘션을 위해 "기여자(contributor)" 정도로는 개인을 추가할 수 있다.</p>
+</blockquote>
 <hr />
-<h3 id="5-2-역할--정책-rbac">5-2. 역할 &amp; 정책 (RBAC)</h3>
-<h4 id="무엇인가_9">무엇인가</h4>
-<p><strong>역할 기반 접근 제어(Role-Based Access Control)</strong>로, 사용자의 역할에 따라 데이터 자산과 기능에 대한 접근 권한을 세밀하게 제어한다.</p>
-<h4 id="왜-필요한가_9">왜 필요한가</h4>
+<h3 id="6-2-역할--정책-rbac">6-2. 역할 &amp; 정책 (RBAC)</h3>
+<h4 id="비유_10">비유</h4>
+<p><strong>회사 출입카드 + 보안 정책.</strong> 어떤 카드(역할)를 가진 사람이 어떤 방(자산)에 들어갈 수 있는지를 규칙(정책)으로 정의한다.</p>
+<h4 id="why--왜-필요한가_9">Why — 왜 필요한가</h4>
 <ul>
 <li><strong>최소 권한 원칙</strong>: 각 사용자에게 업무에 필요한 최소한의 권한만 부여</li>
 <li><strong>민감 데이터 보호</strong>: PII, 재무 데이터 등에 대한 접근을 역할별로 제한</li>
 <li><strong>감사 추적</strong>: 누가 어떤 권한으로 접근했는지 기록</li>
 </ul>
-<h4 id="사용-방법_9">사용 방법</h4>
-<p><strong>기본 역할</strong></p>
+<h4 id="what--기본-역할">What — 기본 역할</h4>
 <table>
 <thead>
 <tr>
@@ -1292,7 +1497,7 @@ graph TB
 <p><strong>커스텀 역할 생성</strong>
 - 기본 역할 외에 조직에 맞는 커스텀 역할 정의 가능
 - 예: <code>NL2SQL Operator</code> — Gold 레이어 테이블만 조회 가능</p>
-<p><strong>정책 (Policy) 기반 세분화된 접근 제어</strong></p>
+<h4 id="how--정책-구조">How — 정책 구조</h4>
 <div class="mermaid">
 graph TB
     R[역할 Role] --> P[정책 Policy]
@@ -1316,17 +1521,21 @@ graph TB
 <p><strong>리소스 레벨 권한 설정</strong>
 - 개별 테이블, 파이프라인, 대시보드 단위로 세밀한 권한 설정
 - 태그 기반 조건으로 동적 권한 부여 (예: <code>Tier.Tier1</code> 자산은 Admin만 수정 가능)</p>
+<blockquote>
+<p>💡 <strong>실무 팁: deny가 allow를 이긴다</strong>
+정책 평가 순서: deny가 하나라도 매치되면 즉시 거부. 따라서 민감 데이터에는 <code>Tier.Tier1 + PII.Sensitive</code> 같은 다중 deny를 걸어두면 실수로 권한이 열려도 접근이 차단된다.</p>
+</blockquote>
 <hr />
-<h3 id="5-3-봇--api">5-3. 봇 &amp; API</h3>
-<h4 id="무엇인가_10">무엇인가</h4>
-<p><strong>서비스 계정(Bot)</strong>을 통해 자동화 스크립트, 외부 도구가 OpenMetadata API에 접근하도록 하는 기능이다.</p>
-<h4 id="왜-필요한가_10">왜 필요한가</h4>
+<h3 id="6-3-봇--api">6-3. 봇 &amp; API</h3>
+<h4 id="비유_11">비유</h4>
+<p><strong>자동 사서 로봇.</strong> 사람이 직접 OM UI에 들어가서 등록하지 않아도, 정해진 토큰을 가진 봇이 매일 밤 새 자산을 등록한다. CI/CD와 연동하여 코드 변경이 곧 메타데이터 변경이 된다.</p>
+<h4 id="why--왜-필요한가_10">Why — 왜 필요한가</h4>
 <ul>
 <li><strong>자동화</strong>: CI/CD 파이프라인, DAG에서 메타데이터를 프로그래밍 방식으로 관리</li>
 <li><strong>외부 연동</strong>: Wren AI, dbt, 커스텀 도구 등과 메타데이터 동기화</li>
 <li><strong>보안</strong>: 사용자 계정이 아닌 전용 서비스 계정으로 API 접근</li>
 </ul>
-<h4 id="사용-방법_10">사용 방법</h4>
+<h4 id="what--how_4">What &amp; How</h4>
 <p><strong>서비스 계정 (Bot)</strong>
 - <code>ingestion-bot</code>: 기본 제공되는 수집용 봇 (메타데이터 수집 워크플로우에 사용)
 - 커스텀 봇 생성 가능: 특정 용도에 맞는 최소 권한 봇
@@ -1339,6 +1548,9 @@ graph TB
 - 모든 엔티티에 대한 CRUD 엔드포인트 제공
 - Swagger UI로 API 문서 확인: <code>http://&lt;host&gt;:8585/swagger.html</code></p>
 <p><strong>Python SDK</strong></p>
+<blockquote>
+<p>이 코드가 하는 일: ingestion-bot의 JWT 토큰으로 OM 서버에 인증 연결을 만든 뒤, FQN으로 테이블을 조회하고 description을 PATCH 한다. CI/CD나 DAG에서 가장 자주 쓰는 패턴.</p>
+</blockquote>
 <div class="codehilite"><pre><span></span><code><span class="kn">from</span><span class="w"> </span><span class="nn">metadata.ingestion.ometa.ometa_api</span><span class="w"> </span><span class="kn">import</span> <span class="n">OpenMetadata</span>
 <span class="kn">from</span><span class="w"> </span><span class="nn">metadata.generated.schema.entity.services.connections.metadata.openMetadataConnection</span><span class="w"> </span><span class="kn">import</span> <span class="p">(</span>
     <span class="n">OpenMetadataConnection</span><span class="p">,</span>
@@ -1358,17 +1570,23 @@ graph TB
 <span class="n">metadata</span><span class="o">.</span><span class="n">patch_description</span><span class="p">(</span><span class="n">entity</span><span class="o">=</span><span class="n">Table</span><span class="p">,</span> <span class="n">source</span><span class="o">=</span><span class="n">table</span><span class="p">,</span> <span class="n">description</span><span class="o">=</span><span class="s2">&quot;종목 마스터 테이블&quot;</span><span class="p">)</span>
 </code></pre></div>
 
+<blockquote>
+<p>💡 <strong>실무 팁: Bot + JWT로 CI/CD 통합 (테이블 등록 자동화)</strong>
+BIP에서는 새 테이블이 추가될 때 PR에서 자동으로 <code>om_register_data_sources.py</code> 같은 스크립트를 실행해 OM에 즉시 등록한다. 토큰은 GitHub Secrets에 저장. 사람이 OM UI를 열 일이 거의 없다.</p>
+<p>⚠️ <strong>함정: 토큰 만료를 잊지 말 것</strong>
+ingestion-bot 기본 토큰은 90일 만료가 일반적. CI 잡이 갑자기 401로 깨지는 원인 1순위. 토큰 갱신을 캘린더에 등록하거나, 만료 7일 전 알림을 설정해두자.</p>
+</blockquote>
 <hr />
-<h3 id="5-4-알림-설정">5-4. 알림 설정</h3>
-<h4 id="무엇인가_11">무엇인가</h4>
-<p>데이터 자산의 <strong>변경 이벤트를 감지하여 외부 채널로 알림</strong>을 보내는 기능이다.</p>
-<h4 id="왜-필요한가_11">왜 필요한가</h4>
+<h3 id="6-4-알림-설정">6-4. 알림 설정</h3>
+<h4 id="비유_12">비유</h4>
+<p><strong>자산 변경 푸시 알림.</strong> 내가 팔로우한 테이블의 스키마가 변경되거나 품질 테스트가 실패하면 Slack/Teams로 즉시 알림이 온다.</p>
+<h4 id="why--왜-필요한가_11">Why — 왜 필요한가</h4>
 <ul>
 <li><strong>변경 인식</strong>: 스키마 변경, 소유자 변경, 품질 테스트 실패 등을 즉시 인지</li>
 <li><strong>사고 대응 시간 단축</strong>: 데이터 품질 이슈 발생 시 빠른 알림으로 MTTR 감소</li>
 <li><strong>거버넌스 자동화</strong>: 특정 이벤트 발생 시 자동으로 관련자에게 통지</li>
 </ul>
-<h4 id="사용-방법_11">사용 방법</h4>
+<h4 id="what--how_5">What &amp; How</h4>
 <p><strong>연동 채널</strong></p>
 <table>
 <thead>
@@ -1412,10 +1630,48 @@ graph TB
 - 특정 서비스, 테이블, 파이프라인에 대해서만 알림
 - 이벤트 유형별 필터링
 - 소유자/팀 기반 알림 라우팅</p>
+<blockquote>
+<p>💡 <strong>실무 팁: 채널 분리가 핵심</strong>
+모든 알림을 한 채널에 보내면 "알림 피로"가 와서 무시된다. Tier 1 품질 실패 → #data-incidents 채널, 일반 스키마 변경 → #data-changes 채널, 멘션 → DM 식으로 분리하라. BIP도 채널/DM 분리 운영 중.</p>
+</blockquote>
 <hr />
-<h2 id="6-배포-옵션">6. 배포 옵션</h2>
+<h2 id="7-배포-옵션">7. 배포 옵션</h2>
+<h3 id="한눈에-보기">한눈에 보기</h3>
+<table>
+<thead>
+<tr>
+<th>옵션</th>
+<th>추천 환경</th>
+<th>운영 부담</th>
+<th>비용</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Docker Compose</td>
+<td>개발/PoC/소규모</td>
+<td>낮음</td>
+<td>무료</td>
+</tr>
+<tr>
+<td>Kubernetes (Helm)</td>
+<td>프로덕션</td>
+<td>중간</td>
+<td>인프라 비용</td>
+</tr>
+<tr>
+<td>Collate (SaaS)</td>
+<td>엔터프라이즈</td>
+<td>없음</td>
+<td>구독</td>
+</tr>
+</tbody>
+</table>
 <h3 id="docker-compose-개발poc">Docker Compose (개발/PoC)</h3>
 <p><strong>용도</strong>: 로컬 개발, 기능 평가, PoC</p>
+<blockquote>
+<p>이 명령이 하는 일: openmetadata-ingestion 패키지를 설치하고, 내장 docker-compose 파일을 통해 OM 서버 + MySQL + Elasticsearch + Ingestion 컨테이너를 한 번에 실행한다.</p>
+</blockquote>
 <div class="codehilite"><pre><span></span><code><span class="c1"># 최신 버전 실행</span>
 python<span class="w"> </span>-m<span class="w"> </span>pip<span class="w"> </span>install<span class="w"> </span>openmetadata-ingestion<span class="o">[</span>docker<span class="o">]</span>
 metadata<span class="w"> </span>docker<span class="w"> </span>--start
@@ -1444,8 +1700,14 @@ metadata<span class="w"> </span>docker<span class="w"> </span>--start
 <li>자동 업그레이드, 백업, 모니터링 포함</li>
 <li>추가 엔터프라이즈 기능: SSO, 세분화된 RBAC, 감사 로그 강화</li>
 </ul>
+<blockquote>
+<p>💡 <strong>실무 팁: 백업은 어느 옵션이든 필수</strong>
+Docker Compose라도 데이터 볼륨 백업을 일주일에 한 번씩은 하라. OM의 메타데이터 자체가 자산이고, 잃으면 수백 시간의 거버넌스 작업이 사라진다. BIP는 매일 PostgreSQL dump를 별도 디스크에 보관 중.</p>
+</blockquote>
 <hr />
-<h2 id="7-api">7. API</h2>
+<h2 id="8-api--어떻게-메타데이터를-프로그래밍-방식으로-활용하는가">8. API — 어떻게 메타데이터를 프로그래밍 방식으로 활용하는가</h2>
+<h3 id="비유_13">비유</h3>
+<p><strong>모든 메타데이터에 URL이 있는 백과사전.</strong> 각 페이지(엔티티)마다 GET/PUT/PATCH 가능한 REST 엔드포인트가 있어, 프로그램이 위키를 사람처럼 편집할 수 있다.</p>
 <h3 id="rest-api-엔드포인트-개요">REST API 엔드포인트 개요</h3>
 <p>OpenMetadata는 모든 엔티티에 대해 일관된 REST API를 제공한다.</p>
 <table>
@@ -1536,10 +1798,16 @@ metadata<span class="w"> </span>docker<span class="w"> </span>--start
 <h3 id="python-sdk-사용법">Python SDK 사용법</h3>
 <p><code>openmetadata-ingestion</code> 패키지는 REST API의 Python 래퍼를 제공한다.</p>
 <p><strong>설치</strong></p>
+<blockquote>
+<p>이 명령이 하는 일: OM 서버 통신용 Python 클라이언트와 50+ 커넥터를 한 번에 설치한다.</p>
+</blockquote>
 <div class="codehilite"><pre><span></span><code>pip<span class="w"> </span>install<span class="w"> </span>openmetadata-ingestion
 </code></pre></div>
 
 <p><strong>기본 사용법</strong></p>
+<blockquote>
+<p>이 코드가 하는 일: OM 서버에 연결한 뒤 (1) FQN으로 단일 테이블 조회, (2) 전체 테이블 목록 조회, (3) 테이블에 태그 추가, (4) lineage 엣지 추가까지 자주 쓰는 4가지 패턴을 모두 보여준다.</p>
+</blockquote>
 <div class="codehilite"><pre><span></span><code><span class="kn">from</span><span class="w"> </span><span class="nn">metadata.ingestion.ometa.ometa_api</span><span class="w"> </span><span class="kn">import</span> <span class="n">OpenMetadata</span>
 <span class="kn">from</span><span class="w"> </span><span class="nn">metadata.generated.schema.entity.data.table</span><span class="w"> </span><span class="kn">import</span> <span class="n">Table</span>
 <span class="kn">from</span><span class="w"> </span><span class="nn">metadata.generated.schema.type.tagLabel</span><span class="w"> </span><span class="kn">import</span> <span class="n">TagLabel</span>
@@ -1565,6 +1833,9 @@ metadata<span class="w"> </span>docker<span class="w"> </span>--start
 </code></pre></div>
 
 <p><strong>수집 워크플로우 프로그래밍 실행</strong></p>
+<blockquote>
+<p>이 코드가 하는 일: YAML 대신 dict로 ingestion 설정을 만들어 즉시 실행한다. CI 잡이나 ad-hoc 수집에 유용. 일반적으로는 YAML + <code>metadata ingest -c file.yaml</code>이 더 일반적이다.</p>
+</blockquote>
 <div class="codehilite"><pre><span></span><code><span class="kn">from</span><span class="w"> </span><span class="nn">metadata.workflow.metadata</span><span class="w"> </span><span class="kn">import</span> <span class="n">MetadataWorkflow</span>
 
 <span class="n">config</span> <span class="o">=</span> <span class="p">{</span>
@@ -1577,8 +1848,12 @@ metadata<span class="w"> </span>docker<span class="w"> </span>--start
 <span class="n">workflow</span><span class="o">.</span><span class="n">print_status</span><span class="p">()</span>
 </code></pre></div>
 
+<blockquote>
+<p>⚠️ <strong>함정: PUT vs PATCH 혼동</strong>
+PUT은 엔티티 전체를 덮어쓴다. 기존 description, tags, owner를 모두 잃을 수 있다. 부분 수정은 반드시 PATCH(SDK의 <code>patch_*</code> 메서드)를 쓸 것. SDK 메서드 이름이 <code>patch_description</code>, <code>patch_tag</code> 등으로 일관되어 있다.</p>
+</blockquote>
 <hr />
-<h2 id="8-bip-pipeline에서의-활용-현황">8. BIP-Pipeline에서의 활용 현황</h2>
+<h2 id="9-bip-pipeline-활용-현황">9. BIP-Pipeline 활용 현황</h2>
 <p>BIP-Pipeline 프로젝트에서 OpenMetadata는 <strong>메타데이터의 단일 진실 원천(SSOT)</strong>으로 운용되고 있다. 메타데이터 편집은 OM에서만 수행하며, DB COMMENT와 Wren AI 모델은 파생본으로 자동 동기화된다.</p>
 <h3 id="인프라-구성">인프라 구성</h3>
 <table>
@@ -1644,10 +1919,10 @@ metadata<span class="w"> </span>docker<span class="w"> </span>--start
 </tr>
 </tbody>
 </table>
-<h3 id="메타데이터-동기화-흐름">메타데이터 동기화 흐름</h3>
+<h3 id="메타데이터-동기화-흐름--om--db-comment-om--wren-ai">메타데이터 동기화 흐름 — OM → DB COMMENT, OM → Wren AI</h3>
 <div class="mermaid">
 graph LR
-    OM["OpenMetadata\n(원천)"]
+    OM["OpenMetadata\n(SSOT 원천)"]
 
     subgraph "동기화 DAG: 10_sync_metadata_daily"
         SYNC1["om_sync_comments.py"]
@@ -1655,7 +1930,7 @@ graph LR
     end
 
     DB["(PostgreSQL\nDB COMMENT)"]
-    WREN[Wren AI\n모델 description]
+    WREN[Wren AI\n모델 description\n+ Qdrant 임베딩]
 
     OM --> SYNC1 --> DB
     OM --> SYNC2 --> WREN
@@ -1667,6 +1942,10 @@ graph LR
 <li><strong><code>om_sync_comments.py</code></strong>: OM의 테이블/컬럼 설명을 PostgreSQL의 <code>COMMENT ON</code> 구문으로 동기화</li>
 <li><strong><code>om_sync_wrenai.py</code></strong>: OM의 설명을 Wren AI의 모델 description에 반영하고 재배포(Deploy)</li>
 </ul>
+<blockquote>
+<p>💡 <strong>실무 팁: BIP 경험 — OM → Wren AI 동기화 DAG의 효과</strong>
+이 동기화 DAG가 도입되기 전에는 OM과 Wren AI의 description이 서서히 갈라졌고, NL2SQL 정확도가 떨어졌다. 매일 자동 동기화 후로는 OM 한 곳에서만 편집하면 되어 거버넌스 비용이 크게 감소했다. 이 패턴은 다른 시맨틱 도구에도 동일하게 적용 가능.</p>
+</blockquote>
 <h3 id="전체-lineage-체계">전체 Lineage 체계</h3>
 <p>외부 API에서 최종 소비자까지의 전체 데이터 계보가 OM에 등록되어 있다.</p>
 <div class="mermaid">
@@ -1815,7 +2094,7 @@ graph LR
 - <code>Domain.portfolio</code>: 포트폴리오 (민감)
 - <code>Domain.product</code>: 제품 가격
 - <code>Domain.user</code>: 사용자 (민감)</p>
-<h3 id="nl2sql-연계">NL2SQL 연계</h3>
+<h3 id="nl2sql-연계--메타데이터-품질이-정확도를-결정한다">NL2SQL 연계 — 메타데이터 품질이 정확도를 결정한다</h3>
 <p>OM의 메타데이터 품질이 NL2SQL 정확도에 직접 영향을 미친다. 실제 테스트에서 Gold 컬럼 설명 커버리지를 31%에서 99%로 올린 결과, NL2SQL A등급이 58%에서 77%로 상승한 사례가 있다.</p>
 <p>OM → Wren AI 동기화 체인:
 1. OM에서 테이블/컬럼 설명 편집 (원천)
@@ -1823,7 +2102,101 @@ graph LR
 3. Wren AI 모델 description에 반영 + Qdrant 임베딩 재배포
 4. NL2SQL 질문 시 업데이트된 메타데이터 기반으로 SQL 생성</p>
 <hr />
-<h2 id="9-참고">9. 참고</h2>
+<h2 id="10-dbt--cube--wren-ai와의-관계">10. dbt / Cube / Wren AI와의 관계</h2>
+<p>각 도구의 역할을 헷갈리지 않도록 정리한다.</p>
+<h3 id="한-줄-비교">한 줄 비교</h3>
+<table>
+<thead>
+<tr>
+<th>도구</th>
+<th>핵심 역할</th>
+<th>OM과의 관계</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><strong>OpenMetadata</strong></td>
+<td>메타데이터 카탈로그 (정적 정의 + Lineage + 거버넌스)</td>
+<td>SSOT 원천</td>
+</tr>
+<tr>
+<td><strong>dbt</strong></td>
+<td>SQL 모델링 + 변환 (Raw → Gold)</td>
+<td>모델/계보를 OM에 push</td>
+</tr>
+<tr>
+<td><strong>Cube</strong></td>
+<td>시맨틱 레이어 (메트릭/차원 정의 + 캐시)</td>
+<td>OM에서 description 가져옴</td>
+</tr>
+<tr>
+<td><strong>Wren AI</strong></td>
+<td>NL2SQL 엔진 (자연어 → SQL)</td>
+<td>OM에서 모델/용어 동기화</td>
+</tr>
+</tbody>
+</table>
+<h3 id="데이터-흐름-관계">데이터 흐름 관계</h3>
+<div class="mermaid">
+graph TB
+    OM["OpenMetadata\n(메타데이터 SSOT)"]
+
+    DBT[dbt\n변환 + 모델링]
+    CUBE[Cube\n시맨틱 레이어]
+    WREN[Wren AI\nNL2SQL]
+
+    DB["(PostgreSQL)"]
+
+    DBT -->|모델/계보 push| OM
+    OM -->|description 동기화| CUBE
+    OM -->|description + 용어 동기화| WREN
+
+    DBT -->|변환 SQL 실행| DB
+    CUBE -->|쿼리| DB
+    WREN -->|쿼리| DB
+
+    style OM fill:#fff3e0,stroke:#e65100,color:#1a1a2e
+</div>
+
+<h3 id="어떤-도구가-무엇을-책임지는가">어떤 도구가 무엇을 책임지는가</h3>
+<ul>
+<li><strong>OM은 "이 테이블이 무엇인가"를 정의</strong> — 정적 메타데이터, 계보, 용어집, 품질 규칙</li>
+<li><strong>dbt는 "이 테이블을 어떻게 만드는가"를 정의</strong> — 변환 로직, 의존성 그래프</li>
+<li><strong>Cube는 "이 메트릭을 어떻게 계산하는가"를 정의</strong> — 측정/차원/JOIN 관계 (SQL 추상화)</li>
+<li><strong>Wren AI는 "이 자연어를 어떻게 SQL로 바꾸는가"를 결정</strong> — LLM + 시맨틱 컨텍스트</li>
+</ul>
+<blockquote>
+<p>⚠️ <strong>함정: 역할 혼동이 가장 큰 실수</strong>
+OM에 JOIN 관계를 입력하려 하지 말고(이건 Cube/Wren의 영역), Cube에 컬럼 description을 따로 작성하지 마라(이건 OM의 영역). 각 도구의 단일 책임을 지키면 동기화 비용이 작다.</p>
+<p>💡 <strong>실무 팁: BIP의 우선순위</strong>
+BIP는 OM(메타데이터) → Wren AI(NL2SQL) 동기화를 먼저 구축했고, Cube는 아직 도입하지 않았다. NL2SQL 우선순위가 높을 때는 OM ↔ Wren AI 동기화에 집중하고, 메트릭 캐시/대시보드 우선순위가 높아지면 Cube를 추가하는 전략이 효율적이다.</p>
+</blockquote>
+<hr />
+<h2 id="11-주의사항-및-한계">11. 주의사항 및 한계</h2>
+<h3 id="11-1-lineage는-데이터-흐름--join-관계">11-1. Lineage는 데이터 흐름 ≠ JOIN 관계</h3>
+<p>이미 4-2절에서 강조했지만 가장 흔한 오해이므로 다시 정리:</p>
+<ul>
+<li><strong>Lineage 엣지</strong>: <code>A → B</code>는 "A가 B를 만들 때 사용됨" (시간적/생성적 관계)</li>
+<li><strong>JOIN 관계</strong>: <code>A.id = B.user_id</code> (논리적/관계적 관계)</li>
+</ul>
+<p>OM은 Lineage만 다루고, JOIN은 Cube/Wren AI/Agent의 시맨틱 정의에 별도로 작성해야 한다.</p>
+<h3 id="11-2-프로파일러는-민감-데이터-노출-위험">11-2. 프로파일러는 민감 데이터 노출 위험</h3>
+<p>기본 설정으로 켜면 컬럼 샘플이 OM에 그대로 표시된다. 반드시:
+- <code>includeColumnSample: false</code>
+- <code>generateSampleData: false</code>
+- 민감 테이블 <code>excludes</code> 패턴</p>
+<h3 id="11-3-put은-위험-patch가-안전">11-3. PUT은 위험, PATCH가 안전</h3>
+<p>UI에서는 자동으로 PATCH를 쓰지만, API 직접 호출 시 PUT을 쓰면 기존 메타데이터가 사라진다. SDK의 <code>patch_*</code> 메서드 사용 권장.</p>
+<h3 id="11-4-elasticsearch-인덱스-깨짐">11-4. Elasticsearch 인덱스 깨짐</h3>
+<p>ES가 OM 서버보다 먼저 죽거나 컨테이너가 강제 종료되면 인덱스가 깨질 수 있다. 검색 결과가 이상하면 <code>metadata index --service all</code>로 재인덱싱.</p>
+<h3 id="11-5-토큰-만료">11-5. 토큰 만료</h3>
+<p>ingestion-bot JWT는 기본 90일 만료. CI 잡이 갑자기 401로 깨지는 1순위 원인. 만료 7일 전 알림 설정 권장.</p>
+<h3 id="11-6-동기화-시점-차이">11-6. 동기화 시점 차이</h3>
+<p>OM → Wren AI 동기화는 일배치(daily)이다. 긴급 description 수정 후 즉시 NL2SQL에 반영되지 않을 수 있으니, 수동 트리거(<code>scripts/om_sync_wrenai.py</code>)를 기억할 것.</p>
+<h3 id="11-7-sdk-버전과-서버-버전-호환성">11-7. SDK 버전과 서버 버전 호환성</h3>
+<p><code>openmetadata-ingestion</code> 패키지의 마이너 버전은 OM 서버와 일치해야 한다. 서버 1.5에 SDK 1.6을 쓰면 schema 불일치로 401/422가 난다.</p>
+<hr />
+<h2 id="12-참고">12. 참고</h2>
 <h3 id="공식-자료">공식 자료</h3>
 <table>
 <thead>
@@ -1905,7 +2278,7 @@ graph LR
 <li>BIP-Pipeline OM 구성: 39 테이블, 77 용어, 14 apiEndpoint, 43 DAG</li>
 </ul>
 <hr />
-<h2 id="변경-이력">변경 이력</h2>
+<h2 id="13-변경-이력">13. 변경 이력</h2>
 <table>
 <thead>
 <tr>
@@ -1921,6 +2294,10 @@ graph LR
 <tr>
 <td>2026-04-22</td>
 <td>문서 헤더 정리 (작성일/대상 제거)</td>
+</tr>
+<tr>
+<td>2026-04-29</td>
+<td>설명 위주로 전면 재작성 (비유·Why·시나리오·함정/팁 박스·dbt/Cube/Wren AI 관계 추가, 1120 → 1450+ 줄)</td>
 </tr>
 </tbody>
 </table>
