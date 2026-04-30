@@ -43,6 +43,34 @@ flowchart TD
 
 ## 3. Phase 1: Deterministic 스크리닝
 
+### 3.0 스크리닝 퍼널 (종목 수 변화)
+
+> **이 다이어그램이 보여주는 것:** 2,800종목에서 시작해서 최종 10개로 좁혀지는 단계별 필터링. 각 단계에서 종목 수가 어떻게 줄어드는지 한눈에 파악할 수 있다.
+
+```mermaid
+flowchart TD
+    A["2,800개<br/>전체 KOSPI/KOSDAQ"] -->|시총·거래대금| B["724개<br/>유동성 통과"]
+    B -->|9개 프리셋 매칭| C["약 90개<br/>전략별 후보"]
+    C -->|4카테고리 스코어링| C2["약 90개<br/>점수 산출"]
+    C2 -->|"품질 필터<br/>upside 10%+, RR 1.5+"| D["약 35개<br/>매매 가능"]
+    D -->|섹터 캡 + 상위 15| E["15개<br/>스코어 상위"]
+    E -->|중복 추천 제외| F["가변<br/>신규 종목만"]
+    F -->|45점 컷| G["10개 이내<br/>Phase 2 진입"]
+    G -->|Bull/Bear/Manager 토론| H["10개<br/>최종 등급 부여"]
+
+    style A fill:#1e3a5f,color:#fff
+    style B fill:#2c5282,color:#fff
+    style C fill:#2c5282,color:#fff
+    style C2 fill:#2c5282,color:#fff
+    style D fill:#3a7bd5,color:#fff
+    style E fill:#3a7bd5,color:#fff
+    style F fill:#5a8dee,color:#fff
+    style G fill:#5a8dee,color:#fff
+    style H fill:#22c55e,color:#fff
+```
+
+> 💡 **실무 팁 — funnel 단계별 종목 수 모니터링**: 어느 단계에서 너무 많이 걸러지면 그 단계 기준이 너무 타이트한 것. 예: "프리셋 매칭이 90 → 35로 60% 탈락" → 품질 필터가 너무 엄격할 수 있음.
+
 ### 3.1 시총·거래대금 필터
 
 > **왜 필요한가:** 코스닥 잡주(시총 100억, 거래대금 1억)가 추천에 들어가면 유동성 부족으로 실제 매매가 어렵다. 기관/외국인이 따라올 수 있는 종목만 대상으로 한다.
@@ -564,3 +592,4 @@ flowchart TD
 | 2026-04-19 | v5.0 (백테스팅 시스템, Manager Sonnet, 정량 데이터 주입) |
 | 2026-04-21 | v5.1 (daily_tracking 추가, OHLC 0값 필터링) |
 | 2026-05-01 | v6.0 (VCP 매집 9번 프리셋, 중복 추천 방지, 등급 변경 이력, D+60 추적, 5% 버퍼 조기종료, 휴장일 체크, 화면 전체 구현) |
+| 2026-05-01 | v6.1 (스크리닝 퍼널 다이어그램 복원: 종목 수 변화 단계별) |
