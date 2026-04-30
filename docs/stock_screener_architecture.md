@@ -92,29 +92,33 @@ AND close * volume > 1000000000  -- 거래대금 10억+
 
 ```mermaid
 flowchart TD
-    Root[9개 프리셋] --> Up[정배열 / 상승 추세]
-    Root --> Down[역배열 / 하락 추세]
-    Root --> Neutral[추세 무관 / 단기 신호]
-    Root --> Value[밸류 중심]
+    Root[9개 프리셋]
 
-    Up --> U1["6. trend_follow<br/>정배열 + 수급<br/>RSI 40~72"]
-    Up --> U2["7. vcp_breakout<br/>완전정배열 + vol 200%+<br/>돌파 순간"]
-    Up --> U3["9. vcp_accumulation<br/>정배열 + 변동폭 수축<br/>매집 단계"]
+    subgraph Up["🟢 정배열 / 상승 추세"]
+        U1["6. trend_follow<br/>정배열 + 수급<br/>RSI 40~72"]
+        U2["7. vcp_breakout<br/>완전정배열 + vol 200%+<br/>돌파 순간"]
+        U3["9. vcp_accumulation<br/>정배열 + 변동폭 수축<br/>매집 단계"]
+    end
 
-    Down --> D1["8. downtrend_pullback<br/>완전역배열 MA5<20<60<120<br/>RSI<45 또는 이격 -3%+"]
+    subgraph Down["🔵 역배열 / 하락 추세"]
+        D1["8. downtrend_pullback<br/>완전역배열 MA5<20<60<120<br/>RSI<45 또는 이격 -3%+"]
+    end
 
-    Neutral --> N1["1. oversold_bounce<br/>RSI<45 + MACD 양전환<br/>풀백존"]
-    Neutral --> N2["2. golden_cross<br/>MA5>MA20 근접<br/>vol>1.2"]
-    Neutral --> N3["4. breakout<br/>52w 고점 -2~-8%<br/>vol>1.5"]
+    subgraph Neutral["🟡 추세 무관 / 단기 신호"]
+        N1["1. oversold_bounce<br/>RSI<45 + MACD 양전환<br/>풀백존"]
+        N2["2. golden_cross<br/>MA5>MA20 근접<br/>vol>1.2"]
+        N3["4. breakout<br/>52w 고점 -2~-8%<br/>vol>1.5"]
+    end
 
-    Value --> V1["3. value_momentum<br/>PER<15 + ROE>10<br/>외국인 3일 연속+"]
-    Value --> V2["5. deep_value<br/>PER<7 + PBR<0.8<br/>ROE>8"]
+    subgraph Value["🟣 밸류 중심"]
+        V1["3. value_momentum<br/>PER<15 + ROE>10<br/>외국인 3일 연속+"]
+        V2["5. deep_value<br/>PER<7 + PBR<0.8<br/>ROE>8"]
+    end
 
-    style Root fill:#1e3a5f,color:#fff
-    style Up fill:#22c55e,color:#fff
-    style Down fill:#3b82f6,color:#fff
-    style Neutral fill:#eab308,color:#000
-    style Value fill:#8b5cf6,color:#fff
+    Root --> Up
+    Up --> Down
+    Down --> Neutral
+    Neutral --> Value
 ```
 
 #### 프리셋 상세 매트릭스

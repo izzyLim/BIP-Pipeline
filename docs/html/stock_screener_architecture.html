@@ -446,29 +446,37 @@ flowchart TD
 </blockquote>
 <div class="mermaid">
 flowchart TD
-    Root[9개 프리셋] --> Up["정배열 / 상승 추세"]
-    Root --> Down["역배열 / 하락 추세"]
-    Root --> Neutral["추세 무관 / 단기 신호"]
-    Root --> Value[밸류 중심]
+    Root[9개 프리셋]
 
-    Up --> U1["6. trend_follow\n정배열 + 수급\nRSI 40~72"]
-    Up --> U2["7. vcp_breakout\n완전정배열 + vol 200%+\n돌파 순간"]
-    Up --> U3["9. vcp_accumulation\n정배열 + 변동폭 수축\n매집 단계"]
+    subgraph Up["🟢 정배열 / 상승 추세"]
+        U1["6. trend_follow\n정배열 + 수급\nRSI 40~72"]
+        U2["7. vcp_breakout\n완전정배열 + vol 200%+\n돌파 순간"]
+        U3["9. vcp_accumulation\n정배열 + 변동폭 수축\n매집 단계"]
+    end
 
-    Down --> D1["8. downtrend_pullback\n완전역배열 MA5<20<60<120\nRSI<45 또는 이격 -3%+"]
+    subgraph Down["🔵 역배열 / 하락 추세"]
+        D1["8. downtrend_pullback\n완전역배열 MA5<20<60<120\nRSI<45 또는 이격 -3%+"]
+    end
 
-    Neutral --> N1["1. oversold_bounce\nRSI<45 + MACD 양전환\n풀백존"]
-    Neutral --> N2["2. golden_cross\nMA5>MA20 근접\nvol>1.2"]
-    Neutral --> N3["4. breakout\n52w 고점 -2~-8%\nvol>1.5"]
+    subgraph Neutral["🟡 추세 무관 / 단기 신호"]
+        N1["1. oversold_bounce\nRSI<45 + MACD 양전환\n풀백존"]
+        N2["2. golden_cross\nMA5>MA20 근접\nvol>1.2"]
+        N3["4. breakout\n52w 고점 -2~-8%\nvol>1.5"]
+    end
 
-    Value --> V1["3. value_momentum\nPER<15 + ROE>10\n외국인 3일 연속+"]
-    Value --> V2["5. deep_value\nPER<7 + PBR<0.8\nROE>8"]
+    subgraph Value["🟣 밸류 중심"]
+        V1["3. value_momentum\nPER<15 + ROE>10\n외국인 3일 연속+"]
+        V2["5. deep_value\nPER<7 + PBR<0.8\nROE>8"]
+    end
 
-    style Root fill:#1e3a5f,color:#fff
-    style Up fill:#22c55e,color:#fff
-    style Down fill:#3b82f6,color:#fff
-    style Neutral fill:#eab308,color:#000
-    style Value fill:#8b5cf6,color:#fff
+    Root --> Up
+    Up --> Down
+    Down --> Neutral
+    Neutral --> Value
+    style Up fill:#4f8fea33,stroke:#4f8fea,stroke-width:2px
+    style Down fill:#6c5ce733,stroke:#6c5ce7,stroke-width:2px
+    style Neutral fill:#00b89433,stroke:#00b894,stroke-width:2px
+    style Value fill:#e1705533,stroke:#e17055,stroke-width:2px
 </div>
 
 <h4 id="프리셋-상세-매트릭스">프리셋 상세 매트릭스</h4>
