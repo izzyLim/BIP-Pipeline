@@ -136,13 +136,12 @@ flowchart TD
 > **이 다이어그램이 보여주는 것:** 한 종목이 여러 프리셋에 동시 매칭될 수 있고, 매칭된 프리셋 목록이 `preset_tags` 배열로 저장된다.
 
 ```mermaid
-flowchart LR
+flowchart TD
     A["KB금융<br/>현재가 162,300"] --> B{9개 프리셋 체크}
     B -->|정배열 ✓ + 수급 ✓| C[6. trend_follow ✓]
-    B -->|MA5>20>60>120 ✓ but vol<2.0| D[7. vcp_breakout ✗]
+    B -->|MA5>20>60>120 ✓<br/>but vol<2.0| D[7. vcp_breakout ✗]
     B -->|PER 6.5 ✓ + ROE 12 ✓| E[3. value_momentum ✓]
-    
-    C --> F["preset_tags = ['trend_follow', 'value_momentum']"]
+    C --> F["preset_tags<br/>['trend_follow',<br/>'value_momentum']"]
     E --> F
 ```
 
@@ -153,14 +152,16 @@ flowchart LR
 > **비유:** 용수철이 압축되다가 튀어오르는 패턴. 7번 vcp_breakout은 "튀는 순간", 9번 vcp_accumulation은 "압축 진행 중"을 잡는다.
 
 ```mermaid
-flowchart LR
+flowchart TD
     A[큰 하락] --> B[작은 반등]
     B --> C[더 작은 하락]
     C --> D[수축 진행]
     D --> E[거래량 폭발 돌파]
+    D -.->|9번 매집 단계| F[vcp_accumulation]
+    E -.->|7번 돌파 순간| G[vcp_breakout]
     
-    D -.->|9번 매집| F[vcp_accumulation]
-    E -.->|7번 돌파| G[vcp_breakout]
+    style F fill:#22c55e,color:#fff
+    style G fill:#ef4444,color:#fff
 ```
 
 > 💡 **실무 팁 — 9번이 7번보다 선행 신호**: 9번에 잡혔다가 며칠 뒤 7번에 잡히는 패턴이 가장 강한 매수 시그널. 데이터 쌓이면 둘의 승률 차이를 비교할 수 있다.
@@ -266,12 +267,12 @@ if existing.grade != new_rec.grade:
 | 수급 분석가 | realtime_investor, realtime_program_trade, db_investor_flow, db_investor_trading, sector_performance |
 
 ```mermaid
-flowchart LR
-    A[종목 + Phase1 정량 데이터] --> B1[기술 분석가]
+flowchart TD
+    A["종목 + Phase1<br/>정량 데이터"] --> B1[기술 분석가]
     A --> B2[재무 분석가]
     A --> B3[뉴스 분석가]
     A --> B4[수급 분석가]
-    B1 --> C[메모 4개]
+    B1 --> C[메모 4개 통합]
     B2 --> C
     B3 --> C
     B4 --> C
@@ -283,21 +284,18 @@ flowchart LR
 
 ```mermaid
 sequenceDiagram
-    participant A as Analyst 메모
-    participant Q as 정량 데이터
+    participant A as Analyst 메모<br/>+ 정량 데이터
     participant Bull
     participant Bear
     participant M as Manager
     participant C as 코드
 
-    A->>Bull: 분석가 의견 + 정량
-    Q->>Bull: 기술/수급/밸류 수치
+    A->>Bull: 의견 + 수치 전달
     Bull->>M: 매수 논거 (불릿)
-    A->>Bear: 분석가 의견 + 정량
-    Q->>Bear: 기술/수급/밸류 수치
+    A->>Bear: 의견 + 수치 전달
     Bear->>M: 매도 논거 (불릿)
     M->>C: 방향 판정
-    C->>C: Phase1 스코어 + 방향 → 등급
+    C->>C: Phase1 스코어 + 방향<br/>→ 등급
 ```
 
 > ⚠️ **함정 — LLM이 등급을 직접 정하면 Hold만 남발**: 처음에는 LLM에게 직접 등급을 매기게 했더니 안전한 Hold만 나왔다. 등급은 코드, LLM은 방향만.
@@ -459,13 +457,12 @@ flowchart LR
 ### 6.1 DAG 체인
 
 ```mermaid
-flowchart LR
+flowchart TD
     A["02_price_kr_ohlcv_daily<br/>일봉 적재 17:00"] --> B["03_indicator_kr_daily<br/>기술 지표 + VCP"]
     B --> C["09_analytics_stock_daily_kr<br/>Gold 적재"]
     C --> D["screener_performance<br/>D+N 성과 업데이트"]
     D --> E["stock_screener_daily<br/>새 추천 + 텔레그램"]
-    
-    F["screener_weekly_review<br/>월요일 09:00"] -.->|독립| G[주간 성과 리포트]
+    F["screener_weekly_review<br/>월요일 09:00"] -.->|독립 스케줄| G[주간 성과 리포트]
 ```
 
 ### 6.2 휴장일 체크
@@ -642,3 +639,4 @@ flowchart TD
 | 2026-05-01 | v6.0 (VCP 매집 9번 프리셋, 중복 추천 방지, 등급 변경 이력, D+60 추적, 5% 버퍼 조기종료, 휴장일 체크, 화면 전체 구현) |
 | 2026-05-01 | v6.1 (스크리닝 퍼널 다이어그램 복원: 종목 수 변화 단계별) |
 | 2026-05-01 | v6.2 (9개 프리셋 분류 다이어그램 + 다중 매칭 동작 다이어그램 추가) |
+| 2026-05-01 | v6.3 (가로로 긴 다이어그램을 세로(TD)로 전환, 시퀀스 actor 축소 — 가독성 개선) |

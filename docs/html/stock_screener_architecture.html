@@ -553,13 +553,12 @@ flowchart TD
 <p><strong>이 다이어그램이 보여주는 것:</strong> 한 종목이 여러 프리셋에 동시 매칭될 수 있고, 매칭된 프리셋 목록이 <code>preset_tags</code> 배열로 저장된다.</p>
 </blockquote>
 <div class="mermaid">
-flowchart LR
+flowchart TD
     A["KB금융\n현재가 162,300"] --> B{9개 프리셋 체크}
     B -->|정배열 ✓ + 수급 ✓| C[6. trend_follow ✓]
-    B -->|MA5>20>60>120 ✓ but vol<2.0| D[7. vcp_breakout ✗]
+    B -->|MA5>20>60>120 ✓\nbut vol<2.0| D[7. vcp_breakout ✗]
     B -->|PER 6.5 ✓ + ROE 12 ✓| E[3. value_momentum ✓]
-    
-    C --> F["preset_tags = ['trend_follow', 'value_momentum']"]
+    C --> F["preset_tags\n['trend_follow',\n'value_momentum']"]
     E --> F
 </div>
 
@@ -571,14 +570,16 @@ flowchart LR
 <p><strong>비유:</strong> 용수철이 압축되다가 튀어오르는 패턴. 7번 vcp_breakout은 "튀는 순간", 9번 vcp_accumulation은 "압축 진행 중"을 잡는다.</p>
 </blockquote>
 <div class="mermaid">
-flowchart LR
+flowchart TD
     A[큰 하락] --> B[작은 반등]
     B --> C[더 작은 하락]
     C --> D[수축 진행]
     D --> E[거래량 폭발 돌파]
+    D -.->|9번 매집 단계| F[vcp_accumulation]
+    E -.->|7번 돌파 순간| G[vcp_breakout]
     
-    D -.->|9번 매집| F[vcp_accumulation]
-    E -.->|7번 돌파| G[vcp_breakout]
+    style F fill:#22c55e,color:#fff
+    style G fill:#ef4444,color:#fff
 </div>
 
 <blockquote>
@@ -742,12 +743,12 @@ flowchart TD
 </tbody>
 </table>
 <div class="mermaid">
-flowchart LR
-    A[종목 + Phase1 정량 데이터] --> B1[기술 분석가]
+flowchart TD
+    A["종목 + Phase1\n정량 데이터"] --> B1[기술 분석가]
     A --> B2[재무 분석가]
     A --> B3[뉴스 분석가]
     A --> B4[수급 분석가]
-    B1 --> C[메모 4개]
+    B1 --> C[메모 4개 통합]
     B2 --> C
     B3 --> C
     B4 --> C
@@ -759,21 +760,18 @@ flowchart LR
 </blockquote>
 <div class="mermaid">
 sequenceDiagram
-    participant A as Analyst 메모
-    participant Q as 정량 데이터
+    participant A as Analyst 메모\n+ 정량 데이터
     participant Bull
     participant Bear
     participant M as Manager
     participant C as 코드
 
-    A->>Bull: 분석가 의견 + 정량
-    Q->>Bull: 기술/수급/밸류 수치
+    A->>Bull: 의견 + 수치 전달
     Bull->>M: 매수 논거 (불릿)
-    A->>Bear: 분석가 의견 + 정량
-    Q->>Bear: 기술/수급/밸류 수치
+    A->>Bear: 의견 + 수치 전달
     Bear->>M: 매도 논거 (불릿)
     M->>C: 방향 판정
-    C->>C: Phase1 스코어 + 방향 → 등급
+    C->>C: Phase1 스코어 + 방향\n→ 등급
 </div>
 
 <blockquote>
@@ -986,13 +984,12 @@ flowchart LR
 <h2 id="6-dag-운영">6. DAG 운영</h2>
 <h3 id="61-dag-체인">6.1 DAG 체인</h3>
 <div class="mermaid">
-flowchart LR
+flowchart TD
     A["02_price_kr_ohlcv_daily\n일봉 적재 17:00"] --> B["03_indicator_kr_daily\n기술 지표 + VCP"]
     B --> C["09_analytics_stock_daily_kr\nGold 적재"]
     C --> D["screener_performance\nD+N 성과 업데이트"]
     D --> E["stock_screener_daily\n새 추천 + 텔레그램"]
-    
-    F["screener_weekly_review\n월요일 09:00"] -.->|독립| G[주간 성과 리포트]
+    F["screener_weekly_review\n월요일 09:00"] -.->|독립 스케줄| G[주간 성과 리포트]
 </div>
 
 <h3 id="62-휴장일-체크">6.2 휴장일 체크</h3>
@@ -1305,6 +1302,10 @@ flowchart TD
 <tr>
 <td>2026-05-01</td>
 <td>v6.2 (9개 프리셋 분류 다이어그램 + 다중 매칭 동작 다이어그램 추가)</td>
+</tr>
+<tr>
+<td>2026-05-01</td>
+<td>v6.3 (가로로 긴 다이어그램을 세로(TD)로 전환, 시퀀스 actor 축소 — 가독성 개선)</td>
 </tr>
 </tbody>
 </table>
