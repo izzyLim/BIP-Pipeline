@@ -40,6 +40,11 @@ def load_env_vars():
 
 def run_daily_screener(**context):
     """종목 스크리닝 + 토론 + 텔레그램 발송"""
+    from utils.market_calendar import is_market_open
+    if not is_market_open():
+        print("휴장일 — 종목 추천 스킵")
+        return {"sent": False, "reason": "market_closed"}
+
     load_env_vars()
 
     import requests

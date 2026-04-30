@@ -25,6 +25,11 @@ default_args = {
 
 def update_performance(**context):
     """미종료 추천의 성과 rolling 업데이트"""
+    from utils.market_calendar import is_market_open
+    if not is_market_open():
+        print("휴장일 — 성과 업데이트 스킵")
+        return {"updated": 0, "reason": "market_closed"}
+
     import os
     from sqlalchemy import create_engine, text
 
