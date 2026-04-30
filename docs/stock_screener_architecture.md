@@ -88,17 +88,65 @@ AND close * volume > 1000000000  -- 거래대금 10억+
 
 ### 3.2 9개 프리셋
 
-| # | 프리셋 | 한 줄 정의 | 핵심 조건 |
-|---|--------|----------|----------|
-| 1 | oversold_bounce | 과매도 반등 | RSI<45 + MACD양전환 + 수급 |
-| 2 | golden_cross | 골든크로스 | MA5>MA20 근접 + vol>1.2 |
-| 3 | value_momentum | 가치 모멘텀 | PER<15 + ROE>10 + 외국인3일+ |
-| 4 | breakout | 돌파 | 52w고점 -2~-8% + vol>1.5 |
-| 5 | deep_value | 심층 가치 | PER<7 + PBR<0.8 + ROE>8 |
-| 6 | trend_follow | 추세 추종 | 정배열(MA20>60>120) + 수급 |
-| 7 | vcp_breakout | VCP 돌파 | 완전정배열 + vol 200%+ |
-| 8 | downtrend_pullback | 역배열 눌림 | 완전역배열 + 눌림 |
-| 9 | **vcp_accumulation** | **VCP 매집** | **정배열 + 변동폭 30%+ 수축 + 거래량 감소** |
+> **이 다이어그램이 보여주는 것:** 9개 프리셋을 추세 방향과 전략 성격으로 분류한 맵. 각 프리셋이 어떤 시장 상황에서 동작하는지 한눈에 파악할 수 있다.
+
+```mermaid
+flowchart TD
+    Root[9개 프리셋] --> Up[정배열 / 상승 추세]
+    Root --> Down[역배열 / 하락 추세]
+    Root --> Neutral[추세 무관 / 단기 신호]
+    Root --> Value[밸류 중심]
+
+    Up --> U1["6. trend_follow<br/>정배열 + 수급<br/>RSI 40~72"]
+    Up --> U2["7. vcp_breakout<br/>완전정배열 + vol 200%+<br/>돌파 순간"]
+    Up --> U3["9. vcp_accumulation<br/>정배열 + 변동폭 수축<br/>매집 단계"]
+
+    Down --> D1["8. downtrend_pullback<br/>완전역배열 MA5<20<60<120<br/>RSI<45 또는 이격 -3%+"]
+
+    Neutral --> N1["1. oversold_bounce<br/>RSI<45 + MACD 양전환<br/>풀백존"]
+    Neutral --> N2["2. golden_cross<br/>MA5>MA20 근접<br/>vol>1.2"]
+    Neutral --> N3["4. breakout<br/>52w 고점 -2~-8%<br/>vol>1.5"]
+
+    Value --> V1["3. value_momentum<br/>PER<15 + ROE>10<br/>외국인 3일 연속+"]
+    Value --> V2["5. deep_value<br/>PER<7 + PBR<0.8<br/>ROE>8"]
+
+    style Root fill:#1e3a5f,color:#fff
+    style Up fill:#22c55e,color:#fff
+    style Down fill:#3b82f6,color:#fff
+    style Neutral fill:#eab308,color:#000
+    style Value fill:#8b5cf6,color:#fff
+```
+
+#### 프리셋 상세 매트릭스
+
+| # | 프리셋 | 한 줄 정의 | 핵심 조건 | 신호 타입 |
+|---|--------|----------|----------|----------|
+| 1 | oversold_bounce | 과매도 반등 | RSI<45 + MACD양전환 + 수급 | 단기 반등 |
+| 2 | golden_cross | 골든크로스 | MA5>MA20 근접 + vol>1.2 | 단기 추세 전환 |
+| 3 | value_momentum | 가치 모멘텀 | PER<15 + ROE>10 + 외국인3일+ | 중장기 가치 |
+| 4 | breakout | 돌파 | 52w고점 -2~-8% + vol>1.5 | 단기 모멘텀 |
+| 5 | deep_value | 심층 가치 | PER<7 + PBR<0.8 + ROE>8 | 장기 가치 |
+| 6 | trend_follow | 추세 추종 | 정배열(MA20>60>120) + 수급 | 중기 추세 |
+| 7 | vcp_breakout | VCP 돌파 | 완전정배열 + vol 200%+ | 단기 돌파 |
+| 8 | downtrend_pullback | 역배열 눌림 | 완전역배열 + 눌림 | 역추세 반등 |
+| 9 | **vcp_accumulation** | **VCP 매집** | **정배열 + 변동폭 30%+ 수축 + 거래량 감소** | **중기 선행** |
+
+#### 프리셋 매칭 동작
+
+> **이 다이어그램이 보여주는 것:** 한 종목이 여러 프리셋에 동시 매칭될 수 있고, 매칭된 프리셋 목록이 `preset_tags` 배열로 저장된다.
+
+```mermaid
+flowchart LR
+    A["KB금융<br/>현재가 162,300"] --> B{9개 프리셋 체크}
+    B -->|정배열 ✓ + 수급 ✓| C[6. trend_follow ✓]
+    B -->|MA5>20>60>120 ✓ but vol<2.0| D[7. vcp_breakout ✗]
+    B -->|PER 6.5 ✓ + ROE 12 ✓| E[3. value_momentum ✓]
+    
+    C --> F["preset_tags = ['trend_follow', 'value_momentum']"]
+    E --> F
+```
+
+> 💡 **실무 팁 — 다중 매칭이 강한 신호**: 한 종목이 3개 이상 프리셋에 동시 매칭되면 그만큼 여러 관점에서 매수 근거가 있다는 뜻. 백테스팅에서 다중 매칭 종목의 승률이 높은지 확인 가능.
 
 #### VCP (Volatility Contraction Pattern) 두 단계
 
@@ -593,3 +641,4 @@ flowchart TD
 | 2026-04-21 | v5.1 (daily_tracking 추가, OHLC 0값 필터링) |
 | 2026-05-01 | v6.0 (VCP 매집 9번 프리셋, 중복 추천 방지, 등급 변경 이력, D+60 추적, 5% 버퍼 조기종료, 휴장일 체크, 화면 전체 구현) |
 | 2026-05-01 | v6.1 (스크리닝 퍼널 다이어그램 복원: 종목 수 변화 단계별) |
+| 2026-05-01 | v6.2 (9개 프리셋 분류 다이어그램 + 다중 매칭 동작 다이어그램 추가) |

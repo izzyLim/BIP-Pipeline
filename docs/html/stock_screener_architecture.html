@@ -295,6 +295,8 @@
   <li class="toc-h3"><a href="#30-스크리닝-퍼널-종목-수-변화">3.0 스크리닝 퍼널 (종목 수 변화)</a></li>
   <li class="toc-h3"><a href="#31-시총거래대금-필터">3.1 시총·거래대금 필터</a></li>
   <li class="toc-h3"><a href="#32-9개-프리셋">3.2 9개 프리셋</a></li>
+    <li class="toc-h4"><a href="#프리셋-상세-매트릭스">프리셋 상세 매트릭스</a></li>
+    <li class="toc-h4"><a href="#프리셋-매칭-동작">프리셋 매칭 동작</a></li>
     <li class="toc-h4"><a href="#vcp-volatility-contraction-pattern-두-단계">VCP (Volatility Contraction Pattern) 두 단계</a></li>
   <li class="toc-h3"><a href="#33-vcp-수축률-계산-사전-계산">3.3 VCP 수축률 계산 (사전 계산)</a></li>
   <li class="toc-h3"><a href="#34-4카테고리-스코어링">3.4 4카테고리 스코어링</a></li>
@@ -439,6 +441,37 @@ flowchart TD
 <p>⚠️ <strong>함정 — KOSPI/KOSDAQ 일괄 기준</strong>: 초기에는 둘 다 5000억으로 했더니 KOSDAQ 종목이 거의 안 잡힘. KOSDAQ 시총 5000억은 상위 15%라 너무 엄격.</p>
 </blockquote>
 <h3 id="32-9개-프리셋">3.2 9개 프리셋</h3>
+<blockquote>
+<p><strong>이 다이어그램이 보여주는 것:</strong> 9개 프리셋을 추세 방향과 전략 성격으로 분류한 맵. 각 프리셋이 어떤 시장 상황에서 동작하는지 한눈에 파악할 수 있다.</p>
+</blockquote>
+<div class="mermaid">
+flowchart TD
+    Root[9개 프리셋] --> Up["정배열 / 상승 추세"]
+    Root --> Down["역배열 / 하락 추세"]
+    Root --> Neutral["추세 무관 / 단기 신호"]
+    Root --> Value[밸류 중심]
+
+    Up --> U1["6. trend_follow\n정배열 + 수급\nRSI 40~72"]
+    Up --> U2["7. vcp_breakout\n완전정배열 + vol 200%+\n돌파 순간"]
+    Up --> U3["9. vcp_accumulation\n정배열 + 변동폭 수축\n매집 단계"]
+
+    Down --> D1["8. downtrend_pullback\n완전역배열 MA5<20<60<120\nRSI<45 또는 이격 -3%+"]
+
+    Neutral --> N1["1. oversold_bounce\nRSI<45 + MACD 양전환\n풀백존"]
+    Neutral --> N2["2. golden_cross\nMA5>MA20 근접\nvol>1.2"]
+    Neutral --> N3["4. breakout\n52w 고점 -2~-8%\nvol>1.5"]
+
+    Value --> V1["3. value_momentum\nPER<15 + ROE>10\n외국인 3일 연속+"]
+    Value --> V2["5. deep_value\nPER<7 + PBR<0.8\nROE>8"]
+
+    style Root fill:#1e3a5f,color:#fff
+    style Up fill:#22c55e,color:#fff
+    style Down fill:#3b82f6,color:#fff
+    style Neutral fill:#eab308,color:#000
+    style Value fill:#8b5cf6,color:#fff
+</div>
+
+<h4 id="프리셋-상세-매트릭스">프리셋 상세 매트릭스</h4>
 <table>
 <thead>
 <tr>
@@ -446,6 +479,7 @@ flowchart TD
 <th>프리셋</th>
 <th>한 줄 정의</th>
 <th>핵심 조건</th>
+<th>신호 타입</th>
 </tr>
 </thead>
 <tbody>
@@ -454,57 +488,84 @@ flowchart TD
 <td>oversold_bounce</td>
 <td>과매도 반등</td>
 <td>RSI&lt;45 + MACD양전환 + 수급</td>
+<td>단기 반등</td>
 </tr>
 <tr>
 <td>2</td>
 <td>golden_cross</td>
 <td>골든크로스</td>
 <td>MA5&gt;MA20 근접 + vol&gt;1.2</td>
+<td>단기 추세 전환</td>
 </tr>
 <tr>
 <td>3</td>
 <td>value_momentum</td>
 <td>가치 모멘텀</td>
 <td>PER&lt;15 + ROE&gt;10 + 외국인3일+</td>
+<td>중장기 가치</td>
 </tr>
 <tr>
 <td>4</td>
 <td>breakout</td>
 <td>돌파</td>
 <td>52w고점 -2~-8% + vol&gt;1.5</td>
+<td>단기 모멘텀</td>
 </tr>
 <tr>
 <td>5</td>
 <td>deep_value</td>
 <td>심층 가치</td>
 <td>PER&lt;7 + PBR&lt;0.8 + ROE&gt;8</td>
+<td>장기 가치</td>
 </tr>
 <tr>
 <td>6</td>
 <td>trend_follow</td>
 <td>추세 추종</td>
 <td>정배열(MA20&gt;60&gt;120) + 수급</td>
+<td>중기 추세</td>
 </tr>
 <tr>
 <td>7</td>
 <td>vcp_breakout</td>
 <td>VCP 돌파</td>
 <td>완전정배열 + vol 200%+</td>
+<td>단기 돌파</td>
 </tr>
 <tr>
 <td>8</td>
 <td>downtrend_pullback</td>
 <td>역배열 눌림</td>
 <td>완전역배열 + 눌림</td>
+<td>역추세 반등</td>
 </tr>
 <tr>
 <td>9</td>
 <td><strong>vcp_accumulation</strong></td>
 <td><strong>VCP 매집</strong></td>
 <td><strong>정배열 + 변동폭 30%+ 수축 + 거래량 감소</strong></td>
+<td><strong>중기 선행</strong></td>
 </tr>
 </tbody>
 </table>
+<h4 id="프리셋-매칭-동작">프리셋 매칭 동작</h4>
+<blockquote>
+<p><strong>이 다이어그램이 보여주는 것:</strong> 한 종목이 여러 프리셋에 동시 매칭될 수 있고, 매칭된 프리셋 목록이 <code>preset_tags</code> 배열로 저장된다.</p>
+</blockquote>
+<div class="mermaid">
+flowchart LR
+    A["KB금융\n현재가 162,300"] --> B{9개 프리셋 체크}
+    B -->|정배열 ✓ + 수급 ✓| C[6. trend_follow ✓]
+    B -->|MA5>20>60>120 ✓ but vol<2.0| D[7. vcp_breakout ✗]
+    B -->|PER 6.5 ✓ + ROE 12 ✓| E[3. value_momentum ✓]
+    
+    C --> F["preset_tags = ['trend_follow', 'value_momentum']"]
+    E --> F
+</div>
+
+<blockquote>
+<p>💡 <strong>실무 팁 — 다중 매칭이 강한 신호</strong>: 한 종목이 3개 이상 프리셋에 동시 매칭되면 그만큼 여러 관점에서 매수 근거가 있다는 뜻. 백테스팅에서 다중 매칭 종목의 승률이 높은지 확인 가능.</p>
+</blockquote>
 <h4 id="vcp-volatility-contraction-pattern-두-단계">VCP (Volatility Contraction Pattern) 두 단계</h4>
 <blockquote>
 <p><strong>비유:</strong> 용수철이 압축되다가 튀어오르는 패턴. 7번 vcp_breakout은 "튀는 순간", 9번 vcp_accumulation은 "압축 진행 중"을 잡는다.</p>
@@ -1240,6 +1301,10 @@ flowchart TD
 <tr>
 <td>2026-05-01</td>
 <td>v6.1 (스크리닝 퍼널 다이어그램 복원: 종목 수 변화 단계별)</td>
+</tr>
+<tr>
+<td>2026-05-01</td>
+<td>v6.2 (9개 프리셋 분류 다이어그램 + 다중 매칭 동작 다이어그램 추가)</td>
 </tr>
 </tbody>
 </table>
