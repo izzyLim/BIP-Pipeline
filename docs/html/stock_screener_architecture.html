@@ -288,735 +288,927 @@
   </div>
   <nav class="toc">
 <ul>
-<li class="toc-h2"><a href="#1-시스템-개요">1. 시스템 개요</a></li>
-<li class="toc-h2"><a href="#2-전체-아키텍처-흐름">2. 전체 아키텍처 흐름</a></li>
+<li class="toc-h2"><a href="#1-개요">1. 개요</a></li>
+  <li class="toc-h3"><a href="#핵심-가치">핵심 가치</a></li>
+<li class="toc-h2"><a href="#2-아키텍처">2. 아키텍처</a></li>
 <li class="toc-h2"><a href="#3-phase-1-deterministic-스크리닝">3. Phase 1: Deterministic 스크리닝</a></li>
-  <li class="toc-h3"><a href="#sql-기반-1차-필터">SQL 기반 1차 필터</a></li>
-  <li class="toc-h3"><a href="#품질-필터-scorer-단계">품질 필터 (scorer 단계)</a></li>
-  <li class="toc-h3"><a href="#목표가-계산-우선순위">목표가 계산 우선순위</a></li>
+  <li class="toc-h3"><a href="#31-시총거래대금-필터">3.1 시총·거래대금 필터</a></li>
+  <li class="toc-h3"><a href="#32-9개-프리셋">3.2 9개 프리셋</a></li>
+    <li class="toc-h4"><a href="#vcp-volatility-contraction-pattern-두-단계">VCP (Volatility Contraction Pattern) 두 단계</a></li>
+  <li class="toc-h3"><a href="#33-vcp-수축률-계산-사전-계산">3.3 VCP 수축률 계산 (사전 계산)</a></li>
+  <li class="toc-h3"><a href="#34-4카테고리-스코어링">3.4 4카테고리 스코어링</a></li>
+  <li class="toc-h3"><a href="#35-품질-필터">3.5 품질 필터</a></li>
+  <li class="toc-h3"><a href="#36-차트-기반-매매포인트-한-세트">3.6 차트 기반 매매포인트 (한 세트)</a></li>
 <li class="toc-h2"><a href="#4-phase-2-멀티-에이전트-토론">4. Phase 2: 멀티 에이전트 토론</a></li>
-  <li class="toc-h3"><a href="#4개-analyst-memo-병렬-haiku--mcp">4개 Analyst Memo (병렬, Haiku + MCP)</a></li>
-  <li class="toc-h3"><a href="#기술-분석가">기술 분석가</a></li>
-  <li class="toc-h3"><a href="#재무-분석가">재무 분석가</a></li>
-  <li class="toc-h3"><a href="#뉴스-분석가">뉴스 분석가</a></li>
-  <li class="toc-h3"><a href="#수급-분석가">수급 분석가</a></li>
-  <li class="toc-h3"><a href="#bull-researcher-sonnet">Bull Researcher (Sonnet)</a></li>
-  <li class="toc-h3"><a href="#bear-researcher-sonnet">Bear Researcher (Sonnet)</a></li>
-<li class="toc-h2"><a href="#5-등급-결정-로직">5. 등급 결정 로직</a></li>
-  <li class="toc-h3"><a href="#등급-매트릭스">등급 매트릭스</a></li>
-<li class="toc-h2"><a href="#6-7개-스크리닝-프리셋">6. 7개 스크리닝 프리셋</a></li>
-<li class="toc-h2"><a href="#7-4카테고리-스코어링">7. 4카테고리 스코어링</a></li>
-  <li class="toc-h3"><a href="#기술적-40점">기술적 (40점)</a></li>
-  <li class="toc-h3"><a href="#수급-25점">수급 (25점)</a></li>
-  <li class="toc-h3"><a href="#밸류에이션-20점">밸류에이션 (20점)</a></li>
-  <li class="toc-h3"><a href="#매크로-15점">매크로 (15점)</a></li>
-<li class="toc-h2"><a href="#8-mcp-도구-분배">8. MCP 도구 분배</a></li>
-<li class="toc-h2"><a href="#9-출력-형식">9. 출력 형식</a></li>
-<li class="toc-h2"><a href="#10-비용--성능">10. 비용 / 성능</a></li>
-  <li class="toc-h3"><a href="#비용-5종목-기준">비용 (5종목 기준)</a></li>
-  <li class="toc-h3"><a href="#성능">성능</a></li>
-<li class="toc-h2"><a href="#11-파일-경로">11. 파일 경로</a></li>
-  <li class="toc-h3"><a href="#bip-agents-스크리너">BIP-Agents (스크리너)</a></li>
-  <li class="toc-h3"><a href="#bip-pipeline-참조">BIP-Pipeline (참조)</a></li>
-<li class="toc-h2"><a href="#12-미구현--todo">12. 미구현 / TODO</a></li>
-  <li class="toc-h3"><a href="#phase-2-고도화">Phase 2 고도화</a></li>
-  <li class="toc-h3"><a href="#phase-3-shadow-mode--학습">Phase 3: Shadow Mode + 학습</a></li>
-  <li class="toc-h3"><a href="#데이터-보강">데이터 보강</a></li>
-<li class="toc-h2"><a href="#13-위험--한계">13. 위험 / 한계</a></li>
+  <li class="toc-h3"><a href="#41-중복-추천-방지">4.1 중복 추천 방지</a></li>
+  <li class="toc-h3"><a href="#42-등급-변경-이력">4.2 등급 변경 이력</a></li>
+  <li class="toc-h3"><a href="#43-4-analyst-병렬-haiku--mcp">4.3 4 Analyst 병렬 (Haiku + MCP)</a></li>
+  <li class="toc-h3"><a href="#44-bullbearmanager-토론-sonnet">4.4 Bull/Bear/Manager 토론 (Sonnet)</a></li>
+  <li class="toc-h3"><a href="#45-정량-데이터-주입">4.5 정량 데이터 주입</a></li>
+  <li class="toc-h3"><a href="#46-deterministic-등급-결정">4.6 Deterministic 등급 결정</a></li>
+  <li class="toc-h3"><a href="#47-deterministic-확신도-6개-조건">4.7 Deterministic 확신도 (6개 조건)</a></li>
+  <li class="toc-h3"><a href="#48-일반-투자자-친화-용어">4.8 일반 투자자 친화 용어</a></li>
+<li class="toc-h2"><a href="#5-백테스팅-일별-성과-추적">5. 백테스팅: 일별 성과 추적</a></li>
+  <li class="toc-h3"><a href="#51-핵심-설계">5.1 핵심 설계</a></li>
+  <li class="toc-h3"><a href="#52-성과-측정-기준">5.2 성과 측정 기준</a></li>
+  <li class="toc-h3"><a href="#53-테이블-구조">5.3 테이블 구조</a></li>
+  <li class="toc-h3"><a href="#54-상태-흐름">5.4 상태 흐름</a></li>
+<li class="toc-h2"><a href="#6-dag-운영">6. DAG 운영</a></li>
+  <li class="toc-h3"><a href="#61-dag-체인">6.1 DAG 체인</a></li>
+  <li class="toc-h3"><a href="#62-휴장일-체크">6.2 휴장일 체크</a></li>
+  <li class="toc-h3"><a href="#63-dag별-스케줄">6.3 DAG별 스케줄</a></li>
+<li class="toc-h2"><a href="#7-비용">7. 비용</a></li>
+<li class="toc-h2"><a href="#8-화면-bip-react-fastapi">8. 화면 (BIP-React-FastAPI)</a></li>
+  <li class="toc-h3"><a href="#81-페이지-구조">8.1 페이지 구조</a></li>
+  <li class="toc-h3"><a href="#82-api-엔드포인트">8.2 API 엔드포인트</a></li>
+  <li class="toc-h3"><a href="#83-ux-디테일">8.3 UX 디테일</a></li>
+<li class="toc-h2"><a href="#9-알려진-한계--함정">9. 알려진 한계 + 함정</a></li>
+<li class="toc-h2"><a href="#10-미구현--todo">10. 미구현 / TODO</a></li>
+  <li class="toc-h3"><a href="#운영-개선">운영 개선</a></li>
+  <li class="toc-h3"><a href="#분석-고도화">분석 고도화</a></li>
+  <li class="toc-h3"><a href="#인프라">인프라</a></li>
+<li class="toc-h2"><a href="#11-핵심-파일">11. 핵심 파일</a></li>
+<li class="toc-h2"><a href="#변경-이력">변경 이력</a></li>
 </ul>
 </nav>
 </aside>
 
 <main class="content">
 <h1 id="bip-종목-추천-에이전트-아키텍처">BIP 종목 추천 에이전트 아키텍처</h1>
-<p>Version 3.0 | Phase 1+2 구현 완료 | TradingAgents debate discipline 차용</p>
-<p>7</p>
-<p>스크리닝 프리셋</p>
-<p>7</p>
-<p>에이전트 (Phase 2)</p>
-<p>~2분</p>
-<p>전체 소요 시간</p>
-<p>$0.08</p>
-<p>1회 비용 (5종목)</p>
-<p><strong>목차</strong></p>
-<ol>
-<li>시스템 개요</li>
-<li>전체 아키텍처 흐름</li>
-<li>Phase 1: Deterministic 스크리닝</li>
-<li>Phase 2: 멀티 에이전트 토론</li>
-<li>등급 결정 로직</li>
-<li>7개 스크리닝 프리셋</li>
-<li>4카테고리 스코어링</li>
-<li>MCP 도구 분배</li>
-<li>출력 형식</li>
-<li>비용/성능</li>
-<li>파일 경로</li>
-<li>미구현 / TODO</li>
-<li>위험/한계</li>
-</ol>
-<h2 id="1-시스템-개요">1. 시스템 개요</h2>
-<p><strong>목표:</strong> 한국 주식(KOSPI/KOSDAQ) 대상으로 매일 자동 종목 스크리닝 + Bull/Bear 토론 기반 투자 의견 제시</p>
-<p><strong>핵심 원칙:</strong> 스코어링/판정은 deterministic, LLM은 분석 메모 + 방향 판정만</p>
-<p><strong>참고:</strong> <a href="https://github.com/TauricResearch/TradingAgents">TradingAgents</a> (48.5k stars)의 Bull/Bear debate discipline 차용</p>
+<blockquote>
+<p><strong>버전:</strong> v6.0 (2026-05-01) | Phase 1+2+백테스팅+VCP매집 운영 중</p>
+</blockquote>
+<h2 id="1-개요">1. 개요</h2>
+<p>BIP-Pipeline의 기술 지표·재무·수급·매크로 데이터를 활용해 매일 한국 주식을 스크리닝하고, LLM 멀티 에이전트가 Bull/Bear 토론을 거쳐 매수 추천 등급을 산출하는 시스템.</p>
+<blockquote>
+<p><strong>비유:</strong> 펀드 매니저 사무실의 "리서치 팀 + 투자 위원회" 구조와 같다.
+- <strong>리서치 팀(Phase 1)</strong>: 수천 종목을 정량 지표로 1차 스크리닝
+- <strong>분석가들(Phase 2 Analyst)</strong>: 통과한 종목을 기술/재무/뉴스/수급 측면에서 심층 분석
+- <strong>Bull/Bear 토론자</strong>: 같은 데이터로 매수/매도 양측 논거 작성
+- <strong>리서치 매니저</strong>: 토론 결과로 방향 판정
+- <strong>백테스팅 팀</strong>: 추천 후 D+60까지 일별 성과 추적</p>
+</blockquote>
+<h3 id="핵심-가치">핵심 가치</h3>
+<table>
+<thead>
+<tr>
+<th>가치</th>
+<th>설명</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><strong>객관성</strong></td>
+<td>Phase 1 deterministic 스코어 기반, LLM은 방향만 보조</td>
+</tr>
+<tr>
+<td><strong>검증 가능성</strong></td>
+<td>모든 추천이 D+1~D+60 일별 추적 → 실제 승률 측정</td>
+</tr>
+<tr>
+<td><strong>일관성</strong></td>
+<td>temperature=0, 같은 데이터에 같은 결과</td>
+</tr>
+<tr>
+<td><strong>재현성</strong></td>
+<td>추천 시점 정량 데이터 + Bull/Bear 메모 + Manager 판정 전부 DB 저장</td>
+</tr>
+</tbody>
+</table>
+<h2 id="2-아키텍처">2. 아키텍처</h2>
 <div class="mermaid">
-graph LR
-A["Airflow DAG 평일 18:00 KST"] -->|HTTP POST| B["BIP-Agents API /api/screener/daily"]
-    B --> C[Phase 1 Deterministic 스크리닝]
-    C --> D[Phase 2 멀티 에이전트 토론]
-    D --> E[stock_recommendations DB 저장]
-    D --> F[텔레그램 발송]
-    style A fill:#dbeafe,stroke:#2563eb,color:#1a1a2e
-    style B fill:#dbeafe,stroke:#2563eb,color:#1a1a2e
-    style C fill:#d1fae5,stroke:#059669,color:#1a1a2e
-    style D fill:#f3e8ff,stroke:#7c3aed,color:#1a1a2e
-    style E fill:#fef3c7,stroke:#d97706,color:#1a1a2e
-    style F fill:#fef3c7,stroke:#d97706,color:#1a1a2e
+flowchart TD
+    A["2,800개 한국 종목"] --> B[휴장일 체크]
+    B -->|개장일만| C["시총·거래대금 필터\nKOSPI 5000억+ / KOSDAQ 2000억+"]
+    C -->|724개 후보| D["Phase 1: 9개 프리셋 매칭"]
+    D -->|약 90개| E["4카테고리 스코어링\n기술40 + 수급25 + 밸류20 + 매크로15"]
+    E --> F["품질 필터\nupside 10%+ / RR 1.5+"]
+    F --> G["중복 추천 방지\nactive 종목 제외"]
+    G --> H["45점 컷 + 상위 10개"]
+    H --> I["Phase 2: 4 Analyst 병렬"]
+    I --> J["Bull / Bear / Manager\nSonnet, temperature=0"]
+    J --> K[Deterministic 등급 결정]
+    K --> L[텔레그램 발송]
+    K --> M[stock_recommendations 저장]
+    M --> N["일별 성과 추적\nD+1 ~ D+60"]
 </div>
 
-<p>전체 시스템 흐름</p>
-<h2 id="2-전체-아키텍처-흐름">2. 전체 아키텍처 흐름</h2>
-<div class="mermaid">
-graph TD
-subgraph Phase1["Phase 1: Deterministic 스크리닝 (2초)"]
-    DB["(analytics_stock_daily + consensus_estimates + analytics_valuation)"]
-    SQL[SQL 기본 필터 시총 5000억+ 거래대금 10억+ 급등 제외]
-    PRESET[7개 프리셋 필터 oversold_bounce golden_cross value_momentum breakout deep_value trend_follow vcp_breakout]
-    SCORE[4카테고리 스코어링 기술 40 + 수급 25 + 밸류 20 + 매크로 15]
-    FILTER[품질 필터 수익률 10%+ 손익비 1.5+]
-    DB --> SQL
-    SQL -->|149개| PRESET
-    PRESET -->|34개| SCORE
-    SCORE --> FILTER
-    FILTER -->|15개| TOP[상위 5개 선발]
-    end
-    subgraph Phase2["Phase 2: 멀티 에이전트 토론 (130초, 병렬)"]
-    ANALYST["4 Analyst Memo 기술 / 재무 / 뉴스 / 수급 Haiku + MCP 병렬"]
-    BULL[Bull Researcher 매수 논거 Sonnet]
-    BEAR[Bear Researcher 매도 논거 + 한국 반증 Sonnet]
-    MGR[Research Manager 방향 판정 Haiku]
-    GRADE[Deterministic 등급 Phase1 스코어 + 방향]
-    TOP --> ANALYST
-    ANALYST --> BULL
-    ANALYST --> BEAR
-    BULL --> MGR
-    BEAR --> MGR
-    MGR --> GRADE
-    end
-    GRADE --> OUT["Buy / Overweight / Hold Underweight / Sell"]
-    style Phase1 fill:#f0fdf4,stroke:#059669,color:#1a1a2e
-    style Phase2 fill:#faf5ff,stroke:#7c3aed,color:#1a1a2e
-    style DB fill:#dbeafe,stroke:#2563eb,color:#1a1a2e
-    style TOP fill:#fef3c7,stroke:#d97706,color:#1a1a2e
-    style OUT fill:#fee2e2,stroke:#dc2626,color:#1a1a2e
-    style Phase1 fill:#4f8fea33,stroke:#4f8fea,stroke-width:2px
-    style Phase2 fill:#6c5ce733,stroke:#6c5ce7,stroke-width:2px
-</div>
-
-<p>Phase 1 + Phase 2 상세 흐름 (숫자는 종목 수)</p>
 <h2 id="3-phase-1-deterministic-스크리닝">3. Phase 1: Deterministic 스크리닝</h2>
-<div class="mermaid">
-graph LR
-A[전체 종목 ~540개] -->|시총/거래대금/급등 필터| B[기본 후보 149개]
-    B -->|7개 프리셋 OR 매칭| C[프리셋 통과 34개]
-    C -->|스코어링 + 품질 필터| D[품질 통과 31개]
-    D -->|섹터 중립 + 상위 제한| E[최종 후보 15개]
-    E -->|top_n_debate| F[Phase 2 5개]
-    style A fill:#f1f5f9,stroke:#94a3b8,color:#1a1a2e
-    style B fill:#dbeafe,stroke:#2563eb,color:#1a1a2e
-    style C fill:#d1fae5,stroke:#059669,color:#1a1a2e
-    style D fill:#fef3c7,stroke:#d97706,color:#1a1a2e
-    style E fill:#fef3c7,stroke:#d97706,color:#1a1a2e
-    style F fill:#f3e8ff,stroke:#7c3aed,color:#1a1a2e
-</div>
+<h3 id="31-시총거래대금-필터">3.1 시총·거래대금 필터</h3>
+<blockquote>
+<p><strong>왜 필요한가:</strong> 코스닥 잡주(시총 100억, 거래대금 1억)가 추천에 들어가면 유동성 부족으로 실제 매매가 어렵다. 기관/외국인이 따라올 수 있는 종목만 대상으로 한다.</p>
+<p><strong>이 코드가 하는 일:</strong> 시장 종류에 따라 시총 기준을 다르게 적용한다.</p>
+</blockquote>
+<div class="codehilite"><pre><span></span><code><span class="k">CASE</span><span class="w"> </span><span class="k">WHEN</span><span class="w"> </span><span class="n">market_type</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s1">&#39;KOSPI&#39;</span><span class="w"> </span><span class="k">THEN</span><span class="w"> </span><span class="n">market_value</span><span class="w"> </span><span class="o">&gt;=</span><span class="w"> </span><span class="mi">5000</span><span class="w">  </span><span class="c1">-- 5000억</span>
+<span class="w">     </span><span class="k">WHEN</span><span class="w"> </span><span class="n">market_type</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s1">&#39;KOSDAQ&#39;</span><span class="w"> </span><span class="k">THEN</span><span class="w"> </span><span class="n">market_value</span><span class="w"> </span><span class="o">&gt;=</span><span class="w"> </span><span class="mi">2000</span><span class="w"> </span><span class="c1">-- 2000억</span>
+<span class="k">END</span>
+<span class="k">AND</span><span class="w"> </span><span class="k">close</span><span class="w"> </span><span class="o">*</span><span class="w"> </span><span class="n">volume</span><span class="w"> </span><span class="o">&gt;</span><span class="w"> </span><span class="mi">1000000000</span><span class="w">  </span><span class="c1">-- 거래대금 10억+</span>
+</code></pre></div>
 
-<p>Phase 1 스크리닝 퍼널</p>
-<h3 id="sql-기반-1차-필터">SQL 기반 1차 필터</h3>
-<ul>
-<li><strong>데이터 소스:</strong> analytics_stock_daily + stock_info + analytics_valuation + consensus_estimates</li>
-<li><strong>유동성 필터:</strong> 시총 5,000억+, 거래대금 10억+</li>
-<li><strong>추격매수 방지:</strong> 당일 +5% 초과 급등주 제외</li>
-<li><strong>수급 데이터:</strong> 최근 5일 외국인/기관 연속 순매수일수, 누적금액</li>
-<li><strong>컨센서스:</strong> consensus_estimates 별도 JOIN (목표가, 투자의견)</li>
-</ul>
-<h3 id="품질-필터-scorer-단계">품질 필터 (scorer 단계)</h3>
-<table>
-<thead>
-<tr>
-<th>필터</th>
-<th>기준</th>
-<th>목적</th>
-</tr>
-</thead>
-<tbody>
-<tr>
-<td>최소 수익률</td>
-<td>목표가 / 현재가 ≥ 1.10 (+10%)</td>
-<td>수익성 없는 추천 배제</td>
-</tr>
-<tr>
-<td>최소 손익비</td>
-<td>RR ≥ 1.50</td>
-<td>위험 대비 수익 불리한 종목 배제</td>
-</tr>
-<tr>
-<td>진입가 &gt; 손절가</td>
-<td>entry_high &gt; stop_loss</td>
-<td>비정상 케이스 배제</td>
-</tr>
-</tbody>
-</table>
-<h3 id="목표가-계산-우선순위">목표가 계산 우선순위</h3>
-<div class="mermaid">
-graph LR
-A[컨센서스 목표가 +10% 이상?] -->|Yes| Z[목표가 확정]
-    A -->|No| B[52주 고점 복귀 +10% 이상?]
-    B -->|Yes| Z
-    B -->|No| C[피보나치 1.618 확장]
-    C -->|+10% 이상?| Z
-    C -->|No| D[현재가 x 1.10 Fallback]
-    D --> Z
-    style A fill:#dbeafe,stroke:#2563eb,color:#1a1a2e
-    style Z fill:#d1fae5,stroke:#059669,color:#1a1a2e
-</div>
-
-<h2 id="4-phase-2-멀티-에이전트-토론">4. Phase 2: 멀티 에이전트 토론</h2>
-<div class="mermaid">
-graph TD
-    subgraph parallel["5종목 병렬 실행 asyncio gather"]
-        subgraph stock1["종목 1"]
-            A1[4 Analyst 병렬]
-            B1[Bull]
-            C1[Bear]
-            D1[Manager]
-            A1 --> B1
-            A1 --> C1
-            B1 --> D1
-            C1 --> D1
-        end
-        subgraph stock2["종목 2"]
-            A2[4 Analyst 병렬]
-            B2[Bull]
-            C2[Bear]
-            D2[Manager]
-            A2 --> B2
-            A2 --> C2
-            B2 --> D2
-            C2 --> D2
-        end
-        subgraph stock3["종목 3~5"]
-            A3[동일 구조 반복]
-        end
-    end
-    D1 --> RESULT[결과 취합 + 등급 결정]
-    D2 --> RESULT
-    A3 --> RESULT
-    style parallel fill:#faf5ff,stroke:#7c3aed,color:#1a1a2e
-    style RESULT fill:#d1fae5,stroke:#059669,color:#1a1a2e
-    style parallel fill:#4f8fea33,stroke:#4f8fea,stroke-width:2px
-    style stock1 fill:#6c5ce733,stroke:#6c5ce7,stroke-width:2px
-    style stock2 fill:#00b89433,stroke:#00b894,stroke-width:2px
-    style stock3 fill:#e1705533,stroke:#e17055,stroke-width:2px
-</div>
-
-<p>Phase 2 병렬 실행 구조 (15분 → 2분으로 단축)</p>
-<h3 id="4개-analyst-memo-병렬-haiku--mcp">4개 Analyst Memo (병렬, Haiku + MCP)</h3>
-<p>각 에이전트가 MCP 도구로 실제 데이터를 수집하고 200자 이내 분석 메모 작성.</p>
-<h3 id="기술-분석가">기술 분석가</h3>
-<p>추세, RSI/MACD<br />
-지지/저항, 패턴</p>
-<h3 id="재무-분석가">재무 분석가</h3>
-<p>매출/영업이익<br />
-PER/PBR, DART공시</p>
-<h3 id="뉴스-분석가">뉴스 분석가</h3>
-<p>최근 뉴스<br />
-DART 공시, 이벤트</p>
-<h3 id="수급-분석가">수급 분석가</h3>
-<p>외국인/기관<br />
-프로그램, 섹터</p>
-<div class="mermaid">
-graph LR
-MEMO[4개 Analyst Memo] --> BULL["Bull Researcher (Sonnet) 매수 논거 200자"]
-    MEMO --> BEAR["Bear Researcher (Sonnet) 매도 논거 + 한국 반증"]
-    BULL --> MGR["Research Manager (Haiku) 방향 판정"]
-    BEAR --> MGR
-    MGR -->|bull_strong bull_win neutral bear_win bear_strong| GRADE[Deterministic 등급 결정]
-    style BULL fill:#d1fae5,stroke:#059669,color:#1a1a2e
-    style BEAR fill:#fee2e2,stroke:#dc2626,color:#1a1a2e
-    style MGR fill:#dbeafe,stroke:#2563eb,color:#1a1a2e
-    style GRADE fill:#fef3c7,stroke:#d97706,color:#1a1a2e
-</div>
-
-<p>Bull/Bear 토론 → Manager 판정 → 등급 결정</p>
-<h3 id="bull-researcher-sonnet">Bull Researcher (Sonnet)</h3>
-<ul>
-<li>4개 analyst memo + Phase 1 스코어 입력</li>
-<li>매수 논거 작성 (200자)</li>
-<li>성장 잠재력, 기술적 반등, 수급 개선, 밸류 매력</li>
-</ul>
-<h3 id="bear-researcher-sonnet">Bear Researcher (Sonnet)</h3>
-<ul>
-<li>매도 논거 + <strong>한국 특화 반증 강제</strong></li>
-<li>대주주 리스크, CB/BW/유상증자</li>
-<li>잠정실적 쇼크, DART 공시 리스크</li>
-<li>외국인 이탈, 프로그램 매도, 커버리지 부족</li>
-</ul>
-<h2 id="5-등급-결정-로직">5. 등급 결정 로직</h2>
-<div class="mermaid">
-graph TD
-P1[Phase 1 스코어] --> BASE{Base Level}
-    BASE -->|75+| BUY[Buy 4]
-    BASE -->|60~74| OW[Overweight 3]
-    BASE -->|45~59| HOLD[Hold 2]
-    BASE -->|30~44| UW[Underweight 1]
-    BASE -->|30미만| SELL[Sell 0]
-    DIR[Manager 방향] --> MOD{Modifier}
-    MOD -->|bull_strong| P2["+2"]
-    MOD -->|bull_win| P1M["+1"]
-    MOD -->|neutral| Z["0"]
-    MOD -->|bear_win| M1["-1"]
-    MOD -->|bear_strong| M2["-2"]
-    BUY & OW & HOLD & UW & SELL --> CALC["최종 = clamp(0~4, base + modifier)"]
-    P2 & P1M & Z & M1 & M2 --> CALC
-    CALC --> FINAL["Buy / Overweight / Hold / Underweight / Sell"]
-    style P1 fill:#d1fae5,stroke:#059669,color:#1a1a2e
-    style DIR fill:#f3e8ff,stroke:#7c3aed,color:#1a1a2e
-    style FINAL fill:#fef3c7,stroke:#d97706,color:#1a1a2e
-</div>
-
-<p>Deterministic 등급 결정: LLM은 방향만, 등급은 코드가 결정</p>
-<h3 id="등급-매트릭스">등급 매트릭스</h3>
-<table>
-<thead>
-<tr>
-<th>Phase 1 스코어</th>
-<th>Base</th>
-<th>+ bull_strong</th>
-<th>+ bull_win</th>
-<th>+ neutral</th>
-<th>+ bear_win</th>
-<th>+ bear_strong</th>
-</tr>
-</thead>
-<tbody>
-<tr>
-<td><strong>75+</strong></td>
-<td>Buy</td>
-<td>Buy</td>
-<td>Buy</td>
-<td>Buy</td>
-<td>Overweight</td>
-<td>Hold</td>
-</tr>
-<tr>
-<td><strong>60~74</strong></td>
-<td>Overweight</td>
-<td>Buy</td>
-<td>Buy</td>
-<td>Overweight</td>
-<td>Hold</td>
-<td>Underweight</td>
-</tr>
-<tr>
-<td><strong>45~59</strong></td>
-<td>Hold</td>
-<td>Buy</td>
-<td>Overweight</td>
-<td>Hold</td>
-<td>Underweight</td>
-<td>Sell</td>
-</tr>
-<tr>
-<td><strong>30~44</strong></td>
-<td>Underweight</td>
-<td>Overweight</td>
-<td>Hold</td>
-<td>Underweight</td>
-<td>Sell</td>
-<td>Sell</td>
-</tr>
-<tr>
-<td><strong>&lt; 30</strong></td>
-<td>Sell</td>
-<td>Hold</td>
-<td>Underweight</td>
-<td>Sell</td>
-<td>Sell</td>
-<td>Sell</td>
-</tr>
-</tbody>
-</table>
-<h2 id="6-7개-스크리닝-프리셋">6. 7개 스크리닝 프리셋</h2>
-<div class="mermaid">
-graph TD
-ALL[전체 후보 149개] --> P1[1. 과매도 반등 RSI 45이하 + MACD양전환]
-    ALL --> P2["2. 골든크로스 MA5 > MA20 근접"]
-    ALL --> P3[3. 가치 모멘텀 PER 15이하 + ROE 10이상]
-    ALL --> P4[4. 돌파 52주 고점 근접]
-    ALL --> P5[5. 심층 가치 PER 7이하 + PBR 0.8이하]
-    ALL --> P6[6. 추세 추종 MA 정배열 + 수급]
-    ALL --> P7[7. VCP 돌파 완전정배열 + vol200%]
-    P1 & P2 & P3 & P4 & P5 & P6 & P7 -->|OR 조건| MERGE[합집합 34개 한 종목이 여러 프리셋 매칭 가능]
-    style ALL fill:#f1f5f9,stroke:#94a3b8,color:#1a1a2e
-    style MERGE fill:#d1fae5,stroke:#059669,color:#1a1a2e
-    style P7 fill:#fef3c7,stroke:#d97706,color:#1a1a2e
-</div>
-
-<p>7개 프리셋은 OR 조건 (하나라도 매칭되면 통과)</p>
+<blockquote>
+<p>⚠️ <strong>함정 — KOSPI/KOSDAQ 일괄 기준</strong>: 초기에는 둘 다 5000억으로 했더니 KOSDAQ 종목이 거의 안 잡힘. KOSDAQ 시총 5000억은 상위 15%라 너무 엄격.</p>
+</blockquote>
+<h3 id="32-9개-프리셋">3.2 9개 프리셋</h3>
 <table>
 <thead>
 <tr>
 <th>#</th>
-<th>전략</th>
+<th>프리셋</th>
+<th>한 줄 정의</th>
 <th>핵심 조건</th>
-<th>스타일</th>
 </tr>
 </thead>
 <tbody>
 <tr>
 <td>1</td>
-<td><strong>과매도 반등</strong></td>
-<td>RSI&lt;45 + MACD양전환 + 수급 + 풀백존(BB≤0.65, 이격≤3%)</td>
-<td>단기</td>
+<td>oversold_bounce</td>
+<td>과매도 반등</td>
+<td>RSI&lt;45 + MACD양전환 + 수급</td>
 </tr>
 <tr>
 <td>2</td>
-<td><strong>골든크로스</strong></td>
-<td>MA5&gt;MA20 2% 이내 + vol&gt;1.2 + 풀백존</td>
-<td>단기</td>
+<td>golden_cross</td>
+<td>골든크로스</td>
+<td>MA5&gt;MA20 근접 + vol&gt;1.2</td>
 </tr>
 <tr>
 <td>3</td>
-<td><strong>가치 모멘텀</strong></td>
-<td>PER&lt;15 + ROE&gt;10 + 외국인3일+ + 이격-5~2 + 목표가+10%</td>
-<td>중기</td>
+<td>value_momentum</td>
+<td>가치 모멘텀</td>
+<td>PER&lt;15 + ROE&gt;10 + 외국인3일+</td>
 </tr>
 <tr>
 <td>4</td>
-<td><strong>돌파</strong></td>
-<td>52w고점-2~-8% + vol&gt;1.5 + MA20위 + MA5*1.03 이내</td>
-<td>단기</td>
+<td>breakout</td>
+<td>돌파</td>
+<td>52w고점 -2~-8% + vol&gt;1.5</td>
 </tr>
 <tr>
 <td>5</td>
-<td><strong>심층 가치</strong></td>
-<td>PER&lt;7 + PBR&lt;0.8 + ROE&gt;8 + MA20근접 + MA60지지</td>
-<td>중기</td>
+<td>deep_value</td>
+<td>심층 가치</td>
+<td>PER&lt;7 + PBR&lt;0.8 + ROE&gt;8</td>
 </tr>
 <tr>
 <td>6</td>
-<td><strong>추세 추종</strong></td>
-<td>정배열(MA20&gt;60&gt;120) + 52w-3~-15% + 수급 + RSI40~72</td>
-<td>중기</td>
+<td>trend_follow</td>
+<td>추세 추종</td>
+<td>정배열(MA20&gt;60&gt;120) + 수급</td>
 </tr>
 <tr>
 <td>7</td>
-<td><strong>VCP 돌파</strong></td>
-<td>완전정배열(MA5&gt;20&gt;60&gt;120) + vol200%+ + 52w-2~-15% + 수급</td>
-<td>단기</td>
+<td>vcp_breakout</td>
+<td>VCP 돌파</td>
+<td>완전정배열 + vol 200%+</td>
+</tr>
+<tr>
+<td>8</td>
+<td>downtrend_pullback</td>
+<td>역배열 눌림</td>
+<td>완전역배열 + 눌림</td>
+</tr>
+<tr>
+<td>9</td>
+<td><strong>vcp_accumulation</strong></td>
+<td><strong>VCP 매집</strong></td>
+<td><strong>정배열 + 변동폭 30%+ 수축 + 거래량 감소</strong></td>
 </tr>
 </tbody>
 </table>
-<h2 id="7-4카테고리-스코어링">7. 4카테고리 스코어링</h2>
+<h4 id="vcp-volatility-contraction-pattern-두-단계">VCP (Volatility Contraction Pattern) 두 단계</h4>
+<blockquote>
+<p><strong>비유:</strong> 용수철이 압축되다가 튀어오르는 패턴. 7번 vcp_breakout은 "튀는 순간", 9번 vcp_accumulation은 "압축 진행 중"을 잡는다.</p>
+</blockquote>
 <div class="mermaid">
-pie
-title 스코어 가중치 (100점 만점) "기술적" : 40 "수급" : 25 "밸류에이션" : 20 "매크로" : 15
+flowchart LR
+    A[큰 하락] --> B[작은 반등]
+    B --> C[더 작은 하락]
+    C --> D[수축 진행]
+    D --> E[거래량 폭발 돌파]
+    
+    D -.->|9번 매집| F[vcp_accumulation]
+    E -.->|7번 돌파| G[vcp_breakout]
 </div>
 
-<h3 id="기술적-40점">기술적 (40점)</h3>
-<ul>
-<li>RSI 과매도: 0~10점</li>
-<li>MACD 양전환: 0~10점</li>
-<li>볼린저밴드 위치: 0~5점</li>
-<li>추세 (MA 기반): 0~5점</li>
-<li>거래량 비율: 0~5점</li>
-<li>52주 위치: 0~5점</li>
-</ul>
-<h3 id="수급-25점">수급 (25점)</h3>
-<ul>
-<li>외국인 순매수: 0~10점</li>
-<li>기관 순매수: 0~8점</li>
-<li>외국인+기관 동반: +4점</li>
-<li>5일 누적 순매수: 0~3점</li>
-</ul>
-<h3 id="밸류에이션-20점">밸류에이션 (20점)</h3>
-<ul>
-<li>PER 매력도: 0~6점</li>
-<li>PBR 저평가: 0~4점</li>
-<li>ROE 수준: 0~4점</li>
-<li>컨센서스 괴리율: 0~6점</li>
-</ul>
-<h3 id="매크로-15점">매크로 (15점)</h3>
-<ul>
-<li>VIX 수준: ±5점</li>
-<li>KOSPI 등락: ±3점</li>
-<li>원/달러 환율: ±2점</li>
-<li>중립 시작 (7.5점)</li>
-</ul>
-<h2 id="8-mcp-도구-분배">8. MCP 도구 분배</h2>
-<div class="mermaid">
-graph LR
-subgraph MCP["MCP 서버 (bip-stock-mcp)"]
-    RT[실시간 도구 realtime_stock_price realtime_index realtime_investor]
-    DB_TOOL[DB 조회 도구 db_investor_flow db_investor_trading db_market_indices]
-    DART[DART 도구 dart_financial_statement dart_disclosure_list dart_corp_search]
-    NEWS[뉴스 도구 news_search_naver news_search_web]
-    CTX[맥락 도구 get_indicator_context]
-    end
-    TECH[기술 분석가] -.-> RT & DB_TOOL & CTX
-    FUND[재무 분석가] -.-> DART
-    NEWS_A[뉴스 분석가] -.-> NEWS & DART
-    FLOW[수급 분석가] -.-> RT & DB_TOOL
-    style MCP fill:#f1f5f9,stroke:#94a3b8,color:#1a1a2e
-    style TECH fill:#dbeafe,stroke:#2563eb,color:#1a1a2e
-    style FUND fill:#d1fae5,stroke:#059669,color:#1a1a2e
-    style NEWS_A fill:#fef3c7,stroke:#d97706,color:#1a1a2e
-    style FLOW fill:#f3e8ff,stroke:#7c3aed,color:#1a1a2e
-    style MCP fill:#4f8fea33,stroke:#4f8fea,stroke-width:2px
-</div>
+<blockquote>
+<p>💡 <strong>실무 팁 — 9번이 7번보다 선행 신호</strong>: 9번에 잡혔다가 며칠 뒤 7번에 잡히는 패턴이 가장 강한 매수 시그널. 데이터 쌓이면 둘의 승률 차이를 비교할 수 있다.</p>
+</blockquote>
+<h3 id="33-vcp-수축률-계산-사전-계산">3.3 VCP 수축률 계산 (사전 계산)</h3>
+<blockquote>
+<p><strong>이 코드가 하는 일:</strong> 매일 indicator DAG가 stock_indicators에 VCP 수축률을 계산해서 저장. 스크리너는 이 값을 SQL로 바로 조회.</p>
+</blockquote>
+<div class="codehilite"><pre><span></span><code><span class="k">def</span><span class="w"> </span><span class="nf">calculate_vcp</span><span class="p">(</span><span class="n">high</span><span class="p">,</span> <span class="n">low</span><span class="p">,</span> <span class="n">volume</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    vcp_contraction = 1 - (최근 5일 고저폭 / 과거 16~20일 고저폭)</span>
+<span class="sd">                     0~1 범위, 1에 가까울수록 변동폭 수축 강함</span>
 
-<p>에이전트별 MCP 도구 접근 권한</p>
-<table>
-<thead>
-<tr>
-<th>에이전트</th>
-<th>허용 도구</th>
-</tr>
-</thead>
-<tbody>
-<tr>
-<td>기술 분석가</td>
-<td><code>realtime_stock_price</code>, <code>realtime_index</code>, <code>db_market_indices</code>, <code>krx_stock_trade_info</code>, <code>get_indicator_context</code></td>
-</tr>
-<tr>
-<td>재무 분석가</td>
-<td><code>dart_financial_statement</code>, <code>dart_corp_search</code>, <code>dart_disclosure_list</code>, <code>krx_stock_base_info</code></td>
-</tr>
-<tr>
-<td>뉴스 분석가</td>
-<td><code>news_search_naver</code>, <code>news_search_web</code>, <code>dart_disclosure_list</code></td>
-</tr>
-<tr>
-<td>수급 분석가</td>
-<td><code>realtime_investor</code>, <code>realtime_program_trade</code>, <code>db_investor_flow</code>, <code>db_investor_trading</code>, <code>sector_performance</code></td>
-</tr>
-<tr>
-<td>Bull / Bear / Manager</td>
-<td>없음 (분석가 메모 기반으로만 작성)</td>
-</tr>
-</tbody>
-</table>
-<h2 id="9-출력-형식">9. 출력 형식</h2>
-<div class="codehilite"><pre><span></span><code>📊 BIP 종목 분석 — 2026-04-11 (데이터: 2026-04-10)
-
-KOSPI 5,859(+1.4%) / KOSDAQ 1,094(+1.6%) / VIX 19.2
-
-🟢 Overweight — 한국앤컴퍼니 (000240) 66점
-현재: 50,500원(+3.1%) / 목표: 72,900원 (+44.3%)
-매수: 47,500~50,500원 | 손절: 46,300원 | RR 5.3
-
-Bull
-  <span class="k">*</span> 사상 최대 실적 + PER 4.5배 극저평가
-  <span class="k">*</span> 외국인+기관 동반 순매수
-  <span class="k">*</span> 타이어 업황 개선 지속
-
-Bear
-  <span class="k">*</span> 대주주 지분 변동 리스크
-  <span class="k">*</span> 원자재 가격 변동성
-  <span class="k">*</span> 글로벌 경쟁 심화
-
-📌 판정: Bull 우세 — 실적 확인 + 수급 개선이 밸류 부담 상쇄
-
-———————————————
-투자 참고용이며, 투자 결정은 본인의 판단과 책임 하에 이루어져야 합니다.
+<span class="sd">    vcp_vol_dry = 1 - (최근 10일 평균 거래량 / 과거 11~20일 평균 거래량)</span>
+<span class="sd">                  0~1 범위, 1에 가까울수록 거래량 감소 강함 (매집)</span>
+<span class="sd">    &quot;&quot;&quot;</span>
 </code></pre></div>
 
-<h2 id="10-비용--성능">10. 비용 / 성능</h2>
-<h3 id="비용-5종목-기준">비용 (5종목 기준)</h3>
-<div class="mermaid">
-pie
-title LLM 비용 배분 "Analyst Haiku x20" : 25 "Bull/Bear Sonnet x10" : 63 "Manager Haiku x5" : 12
-</div>
-
+<blockquote>
+<p>⚠️ <strong>함정 — 매번 SQL로 계산하면 느리다</strong>: 700개 종목 × 20일 = 14,000행 윈도우 함수가 매일 돌면 부담. 사전 계산이 정답.</p>
+</blockquote>
+<h3 id="34-4카테고리-스코어링">3.4 4카테고리 스코어링</h3>
 <table>
 <thead>
 <tr>
-<th>단계</th>
-<th>모델</th>
-<th>호출수</th>
-<th>비용</th>
+<th>카테고리</th>
+<th>만점</th>
+<th>주요 팩터</th>
 </tr>
 </thead>
 <tbody>
 <tr>
-<td>4 Analyst x 5종목</td>
-<td>Haiku</td>
-<td>20회</td>
-<td>~$0.02</td>
+<td>기술적</td>
+<td>40</td>
+<td>RSI, MACD, BB, 추세, 볼륨, 52W 위치</td>
 </tr>
 <tr>
-<td>Bull+Bear x 5종목</td>
-<td>Sonnet</td>
-<td>10회</td>
-<td>~$0.05</td>
+<td>수급</td>
+<td>25</td>
+<td>외국인, 기관, 연속일수, 동반매수</td>
 </tr>
 <tr>
-<td>Manager x 5종목</td>
-<td>Haiku</td>
-<td>5회</td>
-<td>~$0.01</td>
+<td>밸류</td>
+<td>20</td>
+<td>PER, PBR, ROE, 컨센서스 괴리</td>
 </tr>
 <tr>
-<td><strong>합계</strong></td>
-<td></td>
-<td><strong>35회</strong></td>
-<td><strong>~$0.08</strong></td>
+<td>매크로</td>
+<td>15</td>
+<td>VIX, KOSPI 등락, 환율</td>
 </tr>
 </tbody>
 </table>
-<p>월간: $0.08 x 22일 = $1.76</p>
-<h3 id="성능">성능</h3>
+<blockquote>
+<p>⚠️ <strong>함정 — 스코어 분포가 좁다</strong>: 실제 분포는 35~55점 구간에 몰려있음. 75점(Buy)은 거의 안 나옴. 데이터 쌓이면 가중치 재조정 필요.</p>
+</blockquote>
+<h3 id="35-품질-필터">3.5 품질 필터</h3>
+<blockquote>
+<p><strong>이 코드가 하는 일:</strong> 수익 가능성이 낮거나 손익비가 안 맞는 종목을 자동 제외한다.</p>
+</blockquote>
+<div class="codehilite"><pre><span></span><code><span class="n">MIN_UPSIDE_RATIO</span> <span class="o">=</span> <span class="mf">1.10</span>  <span class="c1"># 목표가 대비 +10% 미만 제외</span>
+<span class="n">MIN_RISK_REWARD</span> <span class="o">=</span> <span class="mf">1.50</span>   <span class="c1"># RR 1.5 미만 제외</span>
+</code></pre></div>
+
+<blockquote>
+<p>💡 <strong>실무 팁 — "수익이 X배 유리한 구조"</strong>: R:R 2.5라는 수치보다 "수익이 손실의 2.5배 유리"가 일반 투자자에게 직관적이다.</p>
+</blockquote>
+<h3 id="36-차트-기반-매매포인트-한-세트">3.6 차트 기반 매매포인트 (한 세트)</h3>
+<blockquote>
+<p><strong>비유:</strong> 트레이더 노트의 "진입-목표-손절" 한 페이지. 따로 계산하면 의미 없고, 하나의 시나리오로 묶여야 한다.</p>
+</blockquote>
 <div class="mermaid">
-gantt
-title 실행 시간 (5종목) dateFormat ss axisFormat %S초 section Phase 1 SQL + 스코어링 :a1, 00, 2s section Phase 2 (병렬) 종목1 분석+토론 :a2, 02, 130s 종목2 분석+토론 :a3, 02, 120s 종목3 분석+토론 :a4, 02, 125s 종목4 분석+토론 :a5, 02, 110s 종목5 분석+토론 :a6, 02, 115s
+flowchart TD
+    A[지지선 산출\nBB하단, MA20, MA60] --> B[진입가\nclose 또는 MA20]
+    B --> C{시나리오 분기}
+    C -->|상승| D[목표가\n직전 저항선]
+    C -->|하락| E[손절가\n지지선 - ATR×1.5]
+    D --> F["R:R = 수익 ÷ 손실"]
+    E --> F
 </div>
 
 <table>
 <thead>
 <tr>
 <th>항목</th>
-<th>소요 시간</th>
+<th>산출 방식</th>
 </tr>
 </thead>
 <tbody>
 <tr>
-<td>Phase 1 스크리닝</td>
-<td>~2초</td>
+<td>지지선</td>
+<td>max(BB하단, min(MA20, MA60) × 0.98)</td>
 </tr>
 <tr>
-<td>Phase 2 토론 (5종목 병렬)</td>
-<td>~130초</td>
+<td>손절가</td>
+<td>지지선 - ATR × 1.5 (최대 -15%)</td>
 </tr>
 <tr>
-<td><strong>총 소요</strong></td>
-<td><strong>~2분 15초</strong></td>
+<td>목표가</td>
+<td>직전 저항선 → 52주 고점 50% 복귀 → ATR × 3</td>
+</tr>
+<tr>
+<td>컨센서스</td>
+<td>참고만 (한국 증권사 목표가는 과대계상 성향)</td>
 </tr>
 </tbody>
 </table>
-<p>병렬화 전: ~15분 → 후: ~2분 (7배 개선)</p>
-<h2 id="11-파일-경로">11. 파일 경로</h2>
+<h2 id="4-phase-2-멀티-에이전트-토론">4. Phase 2: 멀티 에이전트 토론</h2>
+<h3 id="41-중복-추천-방지">4.1 중복 추천 방지</h3>
+<blockquote>
+<p><strong>왜 필요한가:</strong> 같은 종목을 매일 추천하면 "이미 들고 있는 건 어쩌나, 추가 매수인가" 혼란. 증권사 리포트도 커버리지 종목은 등급 변경만 발표하지 신규 추천으로 안 낸다.</p>
+<p><strong>이 코드가 하는 일:</strong> 현재 active 상태인 종목을 신규 추천에서 제외한다.</p>
+</blockquote>
+<div class="codehilite"><pre><span></span><code><span class="n">active_tickers</span> <span class="o">=</span> <span class="n">SELECT</span> <span class="n">ticker</span> <span class="n">FROM</span> <span class="n">recommendation_performance</span> <span class="n">WHERE</span> <span class="n">status</span> <span class="o">=</span> <span class="s1">&#39;active&#39;</span>
+<span class="n">new_recs</span> <span class="o">=</span> <span class="p">[</span><span class="n">r</span> <span class="k">for</span> <span class="n">r</span> <span class="ow">in</span> <span class="n">recs</span> <span class="k">if</span> <span class="n">r</span><span class="o">.</span><span class="n">ticker</span> <span class="ow">not</span> <span class="ow">in</span> <span class="n">active_tickers</span><span class="p">]</span>
+</code></pre></div>
+
+<h3 id="42-등급-변경-이력">4.2 등급 변경 이력</h3>
+<blockquote>
+<p><strong>왜 필요한가:</strong> 같은 종목이 매수 추천 → 매수 주의로 바뀌면 사용자에게 알려줘야 한다. 증권사가 "투자의견 하향" 알림 보내는 것과 동일한 역할.</p>
+<p><strong>이 코드가 하는 일:</strong> 기존 active 종목이 다시 스크리닝에 걸렸을 때 등급이 바뀌면 이력을 남기고 텔레그램으로 알림.</p>
+</blockquote>
+<div class="codehilite"><pre><span></span><code><span class="k">if</span> <span class="n">existing</span><span class="o">.</span><span class="n">grade</span> <span class="o">!=</span> <span class="n">new_rec</span><span class="o">.</span><span class="n">grade</span><span class="p">:</span>
+    <span class="n">INSERT</span> <span class="n">INTO</span> <span class="n">recommendation_grade_history</span> <span class="p">(</span>
+        <span class="n">ticker</span><span class="p">,</span> <span class="n">prev_grade</span><span class="p">,</span> <span class="n">new_grade</span><span class="p">,</span> <span class="n">prev_score</span><span class="p">,</span> <span class="n">new_score</span><span class="p">,</span> <span class="n">reason</span>
+    <span class="p">)</span> <span class="n">VALUES</span> <span class="p">(</span><span class="o">...</span><span class="p">)</span>
+
+    <span class="c1"># 텔레그램 알림</span>
+    <span class="s2">&quot;현대해상 매수 추천 → 매수 주의 (스코어 50 → 42)&quot;</span>
+</code></pre></div>
+
+<blockquote>
+<p>💡 <strong>실무 팁 — 이력을 남겨야 가치 검증 가능</strong>: "매수 추천 → 매수 주의로 바꿨는데 실제로 하락했나?" 같은 사후 검증은 이력이 없으면 불가능.</p>
+</blockquote>
+<h3 id="43-4-analyst-병렬-haiku--mcp">4.3 4 Analyst 병렬 (Haiku + MCP)</h3>
+<table>
+<thead>
+<tr>
+<th>에이전트</th>
+<th>허용 MCP 도구</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>기술 분석가</td>
+<td>realtime_stock_price, realtime_index, db_market_indices, krx_stock_trade_info, get_indicator_context</td>
+</tr>
+<tr>
+<td>재무 분석가</td>
+<td>dart_financial_statement, dart_corp_search, dart_disclosure_list, krx_stock_base_info</td>
+</tr>
+<tr>
+<td>뉴스 분석가</td>
+<td>news_search_naver, news_search_web, dart_disclosure_list</td>
+</tr>
+<tr>
+<td>수급 분석가</td>
+<td>realtime_investor, realtime_program_trade, db_investor_flow, db_investor_trading, sector_performance</td>
+</tr>
+</tbody>
+</table>
 <div class="mermaid">
-graph TD
-subgraph BIP_Agents["BIP-Agents / langgraph / screener /"]
-    SN[screener_node.py SQL 스크리닝]
-    SC[scorer.py 스코어링]
-    AN[analysts.py 4 Analyst]
-    DB_F["debate.py Bull/Bear + Manager"]
-    EX[explainer.py 메시지 생성]
-    MN[main.py 통합 진입점]
-    GR[graph.py LangGraph]
-    ST[state.py 상태 정의]
-    end
-    subgraph API["langgraph /"]
-    AP[api.py FastAPI 엔드포인트]
-    end
-    AP --> MN
-    MN --> GR
-    GR --> SN --> SC --> EX
-    MN --> AN --> DB_F
-    style BIP_Agents fill:#faf5ff,stroke:#7c3aed,color:#1a1a2e
-    style API fill:#dbeafe,stroke:#2563eb,color:#1a1a2e
-    style BIP_Agents fill:#4f8fea33,stroke:#4f8fea,stroke-width:2px
-    style API fill:#6c5ce733,stroke:#6c5ce7,stroke-width:2px
+flowchart LR
+    A[종목 + Phase1 정량 데이터] --> B1[기술 분석가]
+    A --> B2[재무 분석가]
+    A --> B3[뉴스 분석가]
+    A --> B4[수급 분석가]
+    B1 --> C[메모 4개]
+    B2 --> C
+    B3 --> C
+    B4 --> C
 </div>
 
-<h3 id="bip-agents-스크리너">BIP-Agents (스크리너)</h3>
+<h3 id="44-bullbearmanager-토론-sonnet">4.4 Bull/Bear/Manager 토론 (Sonnet)</h3>
+<blockquote>
+<p><strong>비유:</strong> 변호사 양측의 변론 → 판사 판정. Bull은 매수 변호인, Bear는 매도 변호인, Manager는 판사.</p>
+</blockquote>
+<div class="mermaid">
+sequenceDiagram
+    participant A as Analyst 메모
+    participant Q as 정량 데이터
+    participant Bull
+    participant Bear
+    participant M as Manager
+    participant C as 코드
+
+    A->>Bull: 분석가 의견 + 정량
+    Q->>Bull: 기술/수급/밸류 수치
+    Bull->>M: 매수 논거 (불릿)
+    A->>Bear: 분석가 의견 + 정량
+    Q->>Bear: 기술/수급/밸류 수치
+    Bear->>M: 매도 논거 (불릿)
+    M->>C: 방향 판정
+    C->>C: Phase1 스코어 + 방향 → 등급
+</div>
+
+<blockquote>
+<p>⚠️ <strong>함정 — LLM이 등급을 직접 정하면 Hold만 남발</strong>: 처음에는 LLM에게 직접 등급을 매기게 했더니 안전한 Hold만 나왔다. 등급은 코드, LLM은 방향만.</p>
+</blockquote>
+<h3 id="45-정량-데이터-주입">4.5 정량 데이터 주입</h3>
+<blockquote>
+<p><strong>왜 필요한가:</strong> Bull/Bear가 Analyst 메모(텍스트)만 보면 정보 손실. Phase 1에서 계산한 모든 수치(RSI, MACD, MA, 수급, 밸류, 매매포인트)를 직접 전달.</p>
+<p><strong>이 코드가 하는 일:</strong> 모든 LLM에 정량 데이터 블록을 system 메시지에 함께 주입한다.</p>
+</blockquote>
+<div class="codehilite"><pre><span></span><code>=== 정량 데이터 ===
+현재가: 51,200원 (+2.1%)
+기술: RSI 65.0 | MACD히스토그램 +120
+이동평균: 정배열(MA5&gt;20&gt;60)
+52주 고점 대비: -8.5%
+수급: 외국인 3일 연속매수 | 기관당일 순매수
+밸류: PER 11.2 | PBR 1.5 | ROE 14.3%
+스코어: 기술22 + 수급15 + 밸류12 + 매크로9 = 58점
+매매포인트: 목표 57,800원(+13%) | 손절 43,500원(-15%) | RR 2.8
+</code></pre></div>
+
+<h3 id="46-deterministic-등급-결정">4.6 Deterministic 등급 결정</h3>
+<blockquote>
+<p><strong>이 코드가 하는 일:</strong> Phase 1 스코어로 base 등급을 정하고, Manager가 판정한 방향으로 ±1~2단계 조정한다.</p>
+</blockquote>
+<div class="codehilite"><pre><span></span><code><span class="n">LEVELS</span> <span class="o">=</span> <span class="p">[</span><span class="s2">&quot;Sell&quot;</span><span class="p">,</span> <span class="s2">&quot;Underweight&quot;</span><span class="p">,</span> <span class="s2">&quot;Hold&quot;</span><span class="p">,</span> <span class="s2">&quot;Overweight&quot;</span><span class="p">,</span> <span class="s2">&quot;Buy&quot;</span><span class="p">]</span>
+
+<span class="c1"># Phase 1 스코어 → base</span>
+<span class="k">if</span> <span class="n">phase1_score</span> <span class="o">&gt;=</span> <span class="mi">75</span><span class="p">:</span> <span class="n">base</span> <span class="o">=</span> <span class="mi">4</span>  <span class="c1"># Buy</span>
+<span class="k">elif</span> <span class="n">phase1_score</span> <span class="o">&gt;=</span> <span class="mi">60</span><span class="p">:</span> <span class="n">base</span> <span class="o">=</span> <span class="mi">3</span>  <span class="c1"># Overweight  </span>
+<span class="k">elif</span> <span class="n">phase1_score</span> <span class="o">&gt;=</span> <span class="mi">45</span><span class="p">:</span> <span class="n">base</span> <span class="o">=</span> <span class="mi">2</span>  <span class="c1"># Hold</span>
+<span class="k">elif</span> <span class="n">phase1_score</span> <span class="o">&gt;=</span> <span class="mi">30</span><span class="p">:</span> <span class="n">base</span> <span class="o">=</span> <span class="mi">1</span>  <span class="c1"># Underweight</span>
+<span class="k">else</span><span class="p">:</span> <span class="n">base</span> <span class="o">=</span> <span class="mi">0</span>  <span class="c1"># Sell</span>
+
+<span class="c1"># Manager 방향 → modifier</span>
+<span class="n">modifier</span> <span class="o">=</span> <span class="p">{</span>
+    <span class="s2">&quot;bull_strong&quot;</span><span class="p">:</span> <span class="o">+</span><span class="mi">2</span><span class="p">,</span> <span class="s2">&quot;bull_win&quot;</span><span class="p">:</span> <span class="o">+</span><span class="mi">1</span><span class="p">,</span>
+    <span class="s2">&quot;neutral&quot;</span><span class="p">:</span> <span class="mi">0</span><span class="p">,</span>
+    <span class="s2">&quot;bear_win&quot;</span><span class="p">:</span> <span class="o">-</span><span class="mi">1</span><span class="p">,</span> <span class="s2">&quot;bear_strong&quot;</span><span class="p">:</span> <span class="o">-</span><span class="mi">2</span>
+<span class="p">}[</span><span class="n">direction</span><span class="p">]</span>
+
+<span class="n">final</span> <span class="o">=</span> <span class="nb">max</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span> <span class="nb">min</span><span class="p">(</span><span class="mi">4</span><span class="p">,</span> <span class="n">base</span> <span class="o">+</span> <span class="n">modifier</span><span class="p">))</span>
+<span class="n">grade</span> <span class="o">=</span> <span class="n">LEVELS</span><span class="p">[</span><span class="n">final</span><span class="p">]</span>
+</code></pre></div>
+
+<h3 id="47-deterministic-확신도-6개-조건">4.7 Deterministic 확신도 (6개 조건)</h3>
+<blockquote>
+<p><strong>왜 코드로 계산:</strong> LLM에게 "확신도 매겨라" 했더니 전부 "중간"만 찍었다. 객관적 조건 충족 개수로 판정.</p>
+<p><strong>이 코드가 하는 일:</strong> 6개 조건 중 몇 개를 충족하는지 세서 높음/중간/낮음 산출.</p>
+</blockquote>
+<div class="codehilite"><pre><span></span><code><span class="n">conditions</span> <span class="o">=</span> <span class="p">[</span>
+    <span class="n">direction</span> <span class="ow">in</span> <span class="p">(</span><span class="s2">&quot;bull_strong&quot;</span><span class="p">,</span> <span class="s2">&quot;bull_win&quot;</span><span class="p">),</span>  <span class="c1"># Manager 긍정</span>
+    <span class="n">rr</span> <span class="o">&gt;=</span> <span class="mf">2.0</span><span class="p">,</span>                                  <span class="c1"># 손익비 유리</span>
+    <span class="n">total_score</span> <span class="o">&gt;=</span> <span class="mi">48</span><span class="p">,</span>                          <span class="c1"># 스코어 평균 이상</span>
+    <span class="n">foreign_buy</span> <span class="ow">or</span> <span class="n">inst_buy</span><span class="p">,</span>                    <span class="c1"># 수급 한쪽 이상</span>
+    <span class="n">tech_score</span> <span class="o">&gt;=</span> <span class="mi">15</span><span class="p">,</span>                           <span class="c1"># 기술적 양호</span>
+    <span class="n">target_upside_pct</span> <span class="o">&gt;=</span> <span class="mi">15</span><span class="p">,</span>                    <span class="c1"># 컨센서스 상승여력</span>
+<span class="p">]</span>
+<span class="n">both_buy_bonus</span> <span class="o">=</span> <span class="mi">1</span> <span class="k">if</span> <span class="p">(</span><span class="n">foreign_buy</span> <span class="ow">and</span> <span class="n">inst_buy</span><span class="p">)</span> <span class="k">else</span> <span class="mi">0</span>
+<span class="n">met</span> <span class="o">=</span> <span class="nb">sum</span><span class="p">(</span><span class="n">conditions</span><span class="p">)</span> <span class="o">+</span> <span class="n">both_buy_bonus</span>
+
+<span class="k">if</span> <span class="n">met</span> <span class="o">&gt;=</span> <span class="mi">5</span><span class="p">:</span> <span class="n">confidence</span> <span class="o">=</span> <span class="s2">&quot;높음&quot;</span>
+<span class="k">elif</span> <span class="n">met</span> <span class="o">&gt;=</span> <span class="mi">3</span><span class="p">:</span> <span class="n">confidence</span> <span class="o">=</span> <span class="s2">&quot;중간&quot;</span>
+<span class="k">else</span><span class="p">:</span> <span class="n">confidence</span> <span class="o">=</span> <span class="s2">&quot;낮음&quot;</span>
+</code></pre></div>
+
+<h3 id="48-일반-투자자-친화-용어">4.8 일반 투자자 친화 용어</h3>
 <table>
 <thead>
 <tr>
-<th><code>screener/screener_node.py</code></th>
-<th>SQL 스크리닝 + 7개 프리셋</th>
+<th>원문</th>
+<th>변환</th>
+<th>색상</th>
 </tr>
 </thead>
 <tbody>
 <tr>
-<td><code>screener/scorer.py</code></td>
-<td>4카테고리 스코어링 + 품질필터</td>
+<td>Buy</td>
+<td>적극 매수</td>
+<td>빨강</td>
 </tr>
 <tr>
-<td><code>screener/analysts.py</code></td>
-<td>4개 전문 애널리스트</td>
+<td>Overweight</td>
+<td>매수 추천</td>
+<td>초록</td>
 </tr>
 <tr>
-<td><code>screener/debate.py</code></td>
-<td>Bull/Bear + Manager + 등급</td>
+<td>Hold</td>
+<td>관망</td>
+<td>노랑</td>
 </tr>
 <tr>
-<td><code>screener/explainer.py</code></td>
-<td>코드 템플릿 메시지 생성</td>
+<td>Underweight</td>
+<td>매수 주의</td>
+<td>주황</td>
 </tr>
 <tr>
-<td><code>screener/main.py</code></td>
-<td>Phase 1+2 통합, 병렬 실행</td>
+<td>Sell</td>
+<td>매도</td>
+<td>파랑</td>
 </tr>
 <tr>
-<td><code>api.py</code></td>
-<td>FastAPI 엔드포인트</td>
+<td>R:R 2.4</td>
+<td>"수익이 2.4배 유리한 구조"</td>
+<td>-</td>
+</tr>
+<tr>
+<td>컨센서스</td>
+<td>증권사 목표가</td>
+<td>-</td>
 </tr>
 </tbody>
 </table>
-<h3 id="bip-pipeline-참조">BIP-Pipeline (참조)</h3>
+<blockquote>
+<p>⚠️ <strong>함정 — 매수 주의를 파랑으로 두면 매도와 헷갈림</strong>: 처음엔 매수 주의=파랑, 매도=빨강이었는데 한국식(파랑=하락)과 충돌. 매수 주의는 주황으로 변경.</p>
+</blockquote>
+<h2 id="5-백테스팅-일별-성과-추적">5. 백테스팅: 일별 성과 추적</h2>
+<h3 id="51-핵심-설계">5.1 핵심 설계</h3>
+<div class="mermaid">
+flowchart TD
+    A[추천 발생] --> B["recommendation_performance 초기화\nstatus=active"]
+    B --> C["매일 18:00 성과 DAG"]
+    C --> D{D+1 시가 있나?}
+    D -->|있음| E["일별 OHLCV 기록\nrecommendation_daily_tracking"]
+    E --> F{목표 도달 or 손절 히트?}
+    F -->|히트| G["status=closed\nscenario 기록"]
+    F -->|미히트| H{D+60 경과?}
+    H -->|미경과| C
+    H -->|경과| I[status=done]
+    G --> J[D+60까지 추적 계속]
+    J --> H
+</div>
+
+<h3 id="52-성과-측정-기준">5.2 성과 측정 기준</h3>
 <table>
 <thead>
 <tr>
-<th><code>postgres/curated_views.sql</code></th>
-<th>시그널 뷰 3개</th>
+<th>항목</th>
+<th>기준</th>
 </tr>
 </thead>
 <tbody>
 <tr>
-<td><code>indicators/calculator.py</code></td>
-<td>기술 지표 계산</td>
+<td><strong>진입가</strong></td>
+<td>D+1 시가 (실제 살 수 있는 가격)</td>
 </tr>
 <tr>
-<td><code>docs/security_governance.md</code></td>
-<td>보안 규칙</td>
+<td><strong>수익률 계산</strong></td>
+<td>종가 기준</td>
+</tr>
+<tr>
+<td><strong>목표 도달 판정</strong></td>
+<td>장중 고가 ≥ 목표가 × <strong>1.05</strong> (5% 버퍼)</td>
+</tr>
+<tr>
+<td><strong>손절 히트 판정</strong></td>
+<td>장중 저가 ≤ 손절가 × <strong>0.95</strong> (5% 버퍼)</td>
+</tr>
+<tr>
+<td><strong>동시 터치</strong></td>
+<td>손절 우선 (보수적)</td>
+</tr>
+<tr>
+<td><strong>추적 기간</strong></td>
+<td>D+60 (약 3개월, 일별 매일 기록)</td>
 </tr>
 </tbody>
 </table>
-<h2 id="12-미구현--todo">12. 미구현 / TODO</h2>
-<h3 id="phase-2-고도화">Phase 2 고도화</h3>
+<blockquote>
+<p><strong>왜 5% 버퍼:</strong> 목표가 정확히 +0.1%에 살짝 닿고 빠진 케이스를 "도달"로 판정하면 노이즈가 많음. "확실히 넘어간 경우"만 closed로 처리.</p>
+</blockquote>
+<h3 id="53-테이블-구조">5.3 테이블 구조</h3>
+<div class="codehilite"><pre><span></span><code>stock_recommendations  (추천 시점 스냅샷, 불변)
+  ├── grade, direction, total_score
+  ├── 4카테고리 개별 점수
+  ├── target/stop/RR/preset_tags
+  └── bull_memo/bear_memo/manager_summary/confidence
+
+recommendation_performance  (요약, 종목당 1행)
+  ├── d1_open (진입가)
+  ├── d5/d10/d20/d60 close + return_pct
+  ├── target_hit_day, stop_hit_day
+  ├── scenario_result (target_first/stop_first/neither)
+  └── status (active/closed/done/expired)
+
+recommendation_daily_tracking  (상세, 종목당 최대 60행)
+  ├── day_n, trade_date
+  ├── open/high/low/close/volume
+  ├── return_pct, cumulative_high/low
+  └── target_hit, stop_hit (해당일 기준)
+
+recommendation_grade_history  (등급 변경 이력)
+  ├── ticker, change_date
+  ├── prev_grade → new_grade
+  └── prev_score → new_score
+</code></pre></div>
+
+<blockquote>
+<p>💡 <strong>실무 팁 — closed 후에도 daily_tracking 계속</strong>: 목표 도달로 closed 됐어도 D+60까지 추적 계속. 나중에 "조기 종료가 옳았나, 더 들고 갔으면 어땠을까" 분석 가능.</p>
+</blockquote>
+<h3 id="54-상태-흐름">5.4 상태 흐름</h3>
+<div class="mermaid">
+flowchart LR
+    A[active\n추적 중] -->|목표/손절 히트| B[closed\n성과 확정]
+    B -->|D+60 도달| D[done]
+    A -->|D+60 도달\n히트 없음| D
+    A -->|30일+ 데이터 없음| E[expired]
+</div>
+
+<h2 id="6-dag-운영">6. DAG 운영</h2>
+<h3 id="61-dag-체인">6.1 DAG 체인</h3>
+<div class="mermaid">
+flowchart LR
+    A["02_price_kr_ohlcv_daily\n일봉 적재 17:00"] --> B["03_indicator_kr_daily\n기술 지표 + VCP"]
+    B --> C["09_analytics_stock_daily_kr\nGold 적재"]
+    C --> D["screener_performance\nD+N 성과 업데이트"]
+    D --> E["stock_screener_daily\n새 추천 + 텔레그램"]
+    
+    F["screener_weekly_review\n월요일 09:00"] -.->|독립| G[주간 성과 리포트]
+</div>
+
+<h3 id="62-휴장일-체크">6.2 휴장일 체크</h3>
+<blockquote>
+<p><strong>왜 필요한가:</strong> 5/1(근로자의날)은 공휴일이 아니지만 증시는 휴장. 주말도 마찬가지. 휴장일에 DAG가 돌면 전일 데이터로 같은 추천이 나와서 의미 없음.</p>
+<p><strong>이 코드가 하는 일:</strong> KST 기준으로 주말/공휴일/근로자의날을 체크해서 휴장일이면 False 반환.</p>
+</blockquote>
+<div class="codehilite"><pre><span></span><code><span class="k">def</span><span class="w"> </span><span class="nf">is_market_open</span><span class="p">(</span><span class="n">check_date</span><span class="o">=</span><span class="kc">None</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">bool</span><span class="p">:</span>
+    <span class="k">if</span> <span class="n">check_date</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+        <span class="n">check_date</span> <span class="o">=</span> <span class="n">datetime</span><span class="o">.</span><span class="n">now</span><span class="p">(</span><span class="n">KST</span><span class="p">)</span><span class="o">.</span><span class="n">date</span><span class="p">()</span>
+
+    <span class="c1"># 1. 주말</span>
+    <span class="k">if</span> <span class="n">check_date</span><span class="o">.</span><span class="n">weekday</span><span class="p">()</span> <span class="o">&gt;=</span> <span class="mi">5</span><span class="p">:</span> <span class="k">return</span> <span class="kc">False</span>
+
+    <span class="c1"># 2. 공휴일 (holidays 라이브러리)</span>
+    <span class="k">if</span> <span class="n">check_date</span> <span class="ow">in</span> <span class="n">holidays</span><span class="o">.</span><span class="n">KR</span><span class="p">():</span> <span class="k">return</span> <span class="kc">False</span>
+
+    <span class="c1"># 3. 증시 추가 휴장일 (근로자의날)</span>
+    <span class="k">if</span> <span class="n">check_date</span> <span class="ow">in</span> <span class="n">EXTRA_MARKET_HOLIDAYS</span><span class="p">:</span> <span class="k">return</span> <span class="kc">False</span>
+
+    <span class="k">return</span> <span class="kc">True</span>
+</code></pre></div>
+
+<blockquote>
+<p>⚠️ <strong>함정 — UTC 기준 today()</strong>: 한국 시간 5/1 새벽인데 UTC로는 4/30. <code>date.today()</code> 대신 <code>datetime.now(KST).date()</code>를 써야 정확.</p>
+<p>⚠️ <strong>함정 — holidays.KR()에 근로자의날 없음</strong>: 근로자의날은 공휴일이 아니라 노동법상 유급휴일. 별도로 <code>EXTRA_MARKET_HOLIDAYS</code>에 추가 필요.</p>
+</blockquote>
+<div class="codehilite"><pre><span></span><code><span class="n">EXTRA_MARKET_HOLIDAYS</span> <span class="o">=</span> <span class="p">{</span>
+    <span class="n">date</span><span class="p">(</span><span class="mi">2025</span><span class="p">,</span> <span class="mi">5</span><span class="p">,</span> <span class="mi">1</span><span class="p">):</span> <span class="s2">&quot;근로자의날&quot;</span><span class="p">,</span>
+    <span class="n">date</span><span class="p">(</span><span class="mi">2026</span><span class="p">,</span> <span class="mi">5</span><span class="p">,</span> <span class="mi">1</span><span class="p">):</span> <span class="s2">&quot;근로자의날&quot;</span><span class="p">,</span>
+    <span class="c1"># ...</span>
+<span class="p">}</span>
+</code></pre></div>
+
+<h3 id="63-dag별-스케줄">6.3 DAG별 스케줄</h3>
+<table>
+<thead>
+<tr>
+<th>DAG</th>
+<th>스케줄</th>
+<th>휴장일 처리</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>stock_screener_daily</td>
+<td>screener_performance에서 트리거</td>
+<td>✅ 휴장일 스킵</td>
+</tr>
+<tr>
+<td>screener_performance</td>
+<td>analytics_stock_daily에서 트리거</td>
+<td>✅ 휴장일 스킵</td>
+</tr>
+<tr>
+<td>screener_weekly_review</td>
+<td>월요일 09:00 KST</td>
+<td>(집계만, 영향 없음)</td>
+</tr>
+</tbody>
+</table>
+<h2 id="7-비용">7. 비용</h2>
+<table>
+<thead>
+<tr>
+<th>구성</th>
+<th>종목당</th>
+<th>10종목</th>
+<th>월간 (22영업일)</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Analyst (Haiku × 4)</td>
+<td>$0.004</td>
+<td>$0.04</td>
+<td></td>
+</tr>
+<tr>
+<td>Bull/Bear (Sonnet × 2)</td>
+<td>$0.014</td>
+<td>$0.14</td>
+<td></td>
+</tr>
+<tr>
+<td>Manager (Sonnet × 1)</td>
+<td>$0.007</td>
+<td>$0.07</td>
+<td></td>
+</tr>
+<tr>
+<td><strong>합계</strong></td>
+<td><strong>~$0.025</strong></td>
+<td><strong>~$0.25</strong></td>
+<td><strong>~$5</strong></td>
+</tr>
+</tbody>
+</table>
+<blockquote>
+<p>💡 <strong>실무 팁 — Manager까지 Sonnet 쓴 이유</strong>: Haiku로 했을 때 같은 데이터에 다른 방향이 자주 나옴. Sonnet + temperature=0이면 일관성 확보.</p>
+</blockquote>
+<h2 id="8-화면-bip-react-fastapi">8. 화면 (BIP-React-FastAPI)</h2>
+<h3 id="81-페이지-구조">8.1 페이지 구조</h3>
+<div class="mermaid">
+flowchart TD
+    A["/marketdata/recommendation"] --> B[오늘의 추천]
+    A --> C[성과 분석]
+    A --> D[추천 이력]
+    
+    B --> B1[추천 종목 리스트]
+    B --> B2["종목 클릭 → Bull/Bear/스코어"]
+    
+    C --> C1[요약 카드]
+    C --> C2[수익률 곡선]
+    C --> C3[프리셋별 바 차트]
+    C --> C4[스코어 vs 수익률 산점도]
+    C --> C5[종목별 성과 추적]
+    
+    D --> D1["날짜/등급/프리셋 필터"]
+</div>
+
+<h3 id="82-api-엔드포인트">8.2 API 엔드포인트</h3>
+<table>
+<thead>
+<tr>
+<th>엔드포인트</th>
+<th>용도</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>GET /api/screener/today</code></td>
+<td>오늘의 추천</td>
+</tr>
+<tr>
+<td><code>GET /api/screener/performance/summary</code></td>
+<td>성과 요약</td>
+</tr>
+<tr>
+<td><code>GET /api/screener/performance/stocks</code></td>
+<td>종목별 성과 (현재 수익률 + 1W/2W/1M)</td>
+</tr>
+<tr>
+<td><code>GET /api/screener/performance/daily/{ticker}</code></td>
+<td>일별 추적</td>
+</tr>
+<tr>
+<td><code>GET /api/screener/history</code></td>
+<td>추천 이력</td>
+</tr>
+<tr>
+<td><code>GET /api/screener/chart/returns</code></td>
+<td>수익률 곡선 데이터</td>
+</tr>
+<tr>
+<td><code>GET /api/screener/chart/scatter</code></td>
+<td>스코어 vs 수익률</td>
+</tr>
+<tr>
+<td><code>GET /api/screener/grade-changes</code></td>
+<td>등급 변경 이력</td>
+</tr>
+</tbody>
+</table>
+<h3 id="83-ux-디테일">8.3 UX 디테일</h3>
 <ul>
-<li>TODO Bull/Bear 요약을 불릿 3개 형식으로 변경</li>
-<li>TODO 메시지에 Manager 판정 근거 1줄 추가</li>
-<li>TODO stock_recommendations DB 저장 로직</li>
-<li>TODO Airflow DAG 생성 (평일 18:00 KST)</li>
+<li><strong>종목명 클릭</strong> → 새 탭에서 Stock 상세 화면 열림</li>
+<li><strong>프리셋 태그 호버</strong> → 한글 이름 + 조건 설명 툴팁</li>
+<li><strong>차트 라인 호버</strong> → 해당 종목 강조 + 전체 종목 수익률 정렬 표시</li>
+<li><strong>현재 수익률 옆 (D+N)</strong> → 며칠째인지 표시</li>
 </ul>
-<h3 id="phase-3-shadow-mode--학습">Phase 3: Shadow Mode + 학습</h3>
+<h2 id="9-알려진-한계--함정">9. 알려진 한계 + 함정</h2>
+<blockquote>
+<p>⚠️ <strong>함정 정리</strong></p>
+</blockquote>
+<table>
+<thead>
+<tr>
+<th>함정</th>
+<th>영향</th>
+<th>해결</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>LLM에 등급 직접 결정 시 Hold 남발</td>
+<td>추천 다양성 손실</td>
+<td>Deterministic 등급 + 방향만 LLM</td>
+</tr>
+<tr>
+<td>LLM에 확신도 직접 결정 시 "중간"만</td>
+<td>차별화 불가</td>
+<td>6개 조건 충족 개수로 코드 계산</td>
+</tr>
+<tr>
+<td>temperature=1 기본값</td>
+<td>같은 데이터에 다른 결과</td>
+<td>모든 LLM에 temperature=0</td>
+</tr>
+<tr>
+<td>KOSPI/KOSDAQ 시총 일괄 기준</td>
+<td>KOSDAQ 종목 누락</td>
+<td>차등 적용 (5000/2000)</td>
+</tr>
+<tr>
+<td>같은 종목 매일 추천</td>
+<td>중복, 액션 불명확</td>
+<td>active 종목 제외 + 등급 변경만 알림</td>
+</tr>
+<tr>
+<td>holidays.KR()에 근로자의날 없음</td>
+<td>5/1 휴장일 미감지</td>
+<td>EXTRA_MARKET_HOLIDAYS 추가</td>
+</tr>
+<tr>
+<td>date.today()는 UTC</td>
+<td>KST 자정 ~ UTC 자정 사이 오판</td>
+<td>datetime.now(KST).date()</td>
+</tr>
+<tr>
+<td>일봉에 OHLC=0 행 (시간외 종가만)</td>
+<td>손절 판정 오류</td>
+<td>insert 시 open/high/low &gt; 0 필터</td>
+</tr>
+</tbody>
+</table>
+<blockquote>
+<p>💡 <strong>실무 팁</strong></p>
+</blockquote>
 <ul>
-<li>TODO recommendation_performance 테이블 (D+1/D+5/D+20)</li>
-<li>TODO Shadow mode 4~8주</li>
-<li>TODO 성과 기반 가중치 캘리브레이션</li>
-<li>TODO BM25 Memory</li>
-<li>TODO 미국 주식 확장</li>
+<li><strong>백테스팅 데이터 4주 이상 쌓이기 전엔 가중치 튜닝 금지</strong> — 표본 부족으로 잘못된 결론 가능</li>
+<li><strong>9번 vcp_accumulation 후보가 며칠 후 7번 vcp_breakout으로 넘어가는지 추적</strong> — VCP 패턴 검증</li>
+<li><strong>현재 스코어 분포는 35~55점 구간</strong> — Buy(75+) 등급은 거의 안 나옴. 데이터 쌓이면 가중치 재조정 필요</li>
+<li><strong>컨센서스(증권사 목표가)는 참고만</strong> — 한국 증권사 목표가는 과대계상 성향, 차트 기반 목표가 우선</li>
+<li><strong>MCP 도구 지연</strong> — Analyst의 뉴스/DART 조회가 종목당 80~290초 소요, 병렬화로 완화</li>
 </ul>
-<h3 id="데이터-보강">데이터 보강</h3>
+<h2 id="10-미구현--todo">10. 미구현 / TODO</h2>
+<h3 id="운영-개선">운영 개선</h3>
 <ul>
-<li>TODO stock_info.sector 데이터 적재</li>
-<li>TODO 캔들스틱 패턴 감지</li>
-<li>TODO MACD 다이버전스 계산</li>
-<li>TODO OM 메타데이터/리니지 등록</li>
+<li>[ ] 스코어링 가중치 재조정 (45점 이상 종목 너무 적음, 데이터 쌓인 후)</li>
+<li>[ ] 뉴스 감성 스코어 추가 (Phase 1 새 카테고리)</li>
+<li>[ ] 임시공휴일 자동 감지 (현재는 수동 추가)</li>
 </ul>
-<h2 id="13-위험--한계">13. 위험 / 한계</h2>
+<h3 id="분석-고도화">분석 고도화</h3>
 <ul>
-<li><strong>백테스트 필수:</strong> Shadow mode 없이 운영 전환 금지</li>
-<li><strong>LLM 환각:</strong> Deterministic 스코어를 baseline으로 유지, LLM은 방향만 판정</li>
-<li><strong>면책 조항:</strong> 모든 출력에 "투자 참고용" disclaimer 필수</li>
-<li><strong>민감 데이터:</strong> portfolio/users 테이블 접근 금지</li>
-<li><strong>섹터 데이터 부재:</strong> stock_info.sector가 전부 NULL</li>
-<li><strong>MCP 도구 지연:</strong> 뉴스/DART 조회 80~290초 → 병렬화로 완화</li>
-<li><strong>비용 통제:</strong> 테스트 반복 시 비용 주의 (~$0.08/회)</li>
+<li>[ ] BM25 Memory (과거 유사 상황 검색)</li>
+<li>[ ] 캔들스틱 패턴 감지 (해머/도지/포식 등)</li>
+<li>[ ] MACD 다이버전스 계산</li>
 </ul>
-<p>마지막 업데이트: 2026-04-11 | v3.0 | Phase 1+2 구현 완료 </p>
+<h3 id="인프라">인프라</h3>
+<ul>
+<li>[ ] OM 메타데이터/리니지 등록 (stock_recommendations, recommendation_performance 등)</li>
+<li>[ ] 감사 로그 저장 (agent_audit_log)</li>
+<li>[ ] 미국 주식 확장</li>
+<li>[ ] stock_info.sector 데이터 적재 (현재 NULL → 섹터 중립 제한적)</li>
+</ul>
+<h2 id="11-핵심-파일">11. 핵심 파일</h2>
+<p><strong>스크리너 (BIP-Agents):</strong>
+- <code>langgraph/screener/screener_node.py</code> — SQL + 9개 프리셋
+- <code>langgraph/screener/scorer.py</code> — 4카테고리 스코어링 + 매매포인트
+- <code>langgraph/screener/analysts.py</code> — 4 Analyst (Haiku + MCP)
+- <code>langgraph/screener/debate.py</code> — Bull/Bear/Manager (Sonnet)
+- <code>langgraph/screener/main.py</code> — Phase 1+2 통합 + 메시지 빌더</p>
+<p><strong>DAG (BIP-Pipeline):</strong>
+- <code>airflow/dags/dag_stock_screener.py</code> — 추천 + 텔레그램 + DB 저장 + 등급 변경
+- <code>airflow/dags/dag_screener_performance.py</code> — D+1~D+60 성과 추적 + 트리거 체인
+- <code>airflow/dags/dag_screener_review.py</code> — 주간 리뷰
+- <code>airflow/dags/utils/market_calendar.py</code> — 휴장일 체크
+- <code>airflow/dags/indicators/calculator.py</code> — VCP 수축률 계산</p>
+<p><strong>API (BIP-React-FastAPI):</strong>
+- <code>backend/app/api/screener.py</code> — 8개 엔드포인트
+- <code>frontend/src/pages/RecommendationPage.jsx</code> — 3탭 화면</p>
+<p><strong>참조:</strong>
+- <code>docs/security_governance.md</code> — 보안 규칙
+- <code>docs/bip_agents_architecture.html</code> — 전체 BIP-Agents 아키텍처</p>
+<hr />
+<h2 id="변경-이력">변경 이력</h2>
+<table>
+<thead>
+<tr>
+<th>날짜</th>
+<th>내용</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>2026-04-11</td>
+<td>v3.0 초안 (Phase 1+2 구현 완료)</td>
+</tr>
+<tr>
+<td>2026-04-16</td>
+<td>v4.0 (Bull/Bear 불릿, 차트 기반 매매포인트, 친화 용어)</td>
+</tr>
+<tr>
+<td>2026-04-19</td>
+<td>v5.0 (백테스팅 시스템, Manager Sonnet, 정량 데이터 주입)</td>
+</tr>
+<tr>
+<td>2026-04-21</td>
+<td>v5.1 (daily_tracking 추가, OHLC 0값 필터링)</td>
+</tr>
+<tr>
+<td>2026-05-01</td>
+<td>v6.0 (VCP 매집 9번 프리셋, 중복 추천 방지, 등급 변경 이력, D+60 추적, 5% 버퍼 조기종료, 휴장일 체크, 화면 전체 구현)</td>
+</tr>
+</tbody>
+</table>
 </main>
 
 <script>
