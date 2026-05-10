@@ -79,7 +79,37 @@ flowchart TB
 - 단점: 자체 구현이라 초기 개발 부담. SQL Converter/Validator 품질이 곧 시스템 품질
 - 결과: **선정** (Codex 검토에서도 "장기 도달점" 으로 동의, DAQUV/Function Calling 논문이 같은 방향)
 
-### 1-4. 핵심 아이디어 — QuerySpec 중간 표현
+### 1-4. 환경·응용에 따른 도구 선택 트리
+
+> ⚠️ **v3가 모든 환경의 정답은 아닙니다.** 사내 Oracle 19c라는 제약 때문에 v3가 선택됐을 뿐, **다른 환경/응용이라면 다른 도구가 더 적합**할 수 있습니다. 시맨틱 레이어 본체(DB View)는 어떤 도구를 쓰든 재사용 가능하니, 환경이 바뀌면 변환 레이어만 교체하면 됩니다.
+
+```mermaid
+flowchart TD
+    Q["NL2SQL/시맨틱 레이어 도입"]
+    Q --> Q1{"주된 응용?"}
+
+    Q1 -->|변환 자동화 + Git 거버넌스| C1[dbt Core]
+    Q1 -->|BI 대시보드 임베디드 API| C2[Cube]
+    Q1 -->|자연어 챗봇| Q2{"DB 환경?"}
+    Q1 -->|복합 모두 도입| C3["dbt + Cube + WrenAI"]
+
+    Q2 -->|PostgreSQL 또는 Oracle 23ai| C4[WrenAI]
+    Q2 -->|Oracle 19c 특수 환경| Q3{"복합 쿼리 빈도?"}
+
+    Q3 -->|단순 조회 위주| C4
+    Q3 -->|팩트-팩트 JOIN 멀티스텝 빈번| C5["✅ v3<br/>LangGraph + QuerySpec"]
+
+    style C1 fill:#fbbf24,color:#1a1a2e
+    style C2 fill:#3b82f6,color:#fff
+    style C4 fill:#22c55e,color:#fff
+    style C5 fill:#a78bfa,color:#fff
+```
+
+**사내 환경의 결정 경로:** 자연어 챗봇 → Oracle 19c → 복합 쿼리(저평가 + 외국인 순매수 같은 팩트-팩트 JOIN) → **v3 선정**.
+
+> 💡 **시맨틱 레이어 본체는 도구 무관:** Phase 1에서 만드는 Gold View + Curated View는 dbt, Cube, WrenAI, v3 어느 것을 쓰든 그대로 재사용된다. 도구는 그 위 변환 레이어일 뿐. **Phase 1 산출물을 잘 만드는 것이 도구보다 중요한 이유.**
+
+### 1-5. 핵심 아이디어 — QuerySpec 중간 표현
 
 **일반적인 NL2SQL:** LLM이 질문을 받아 SQL을 직접 생성 → 문법 오류, 컬럼 환각, 보안 검증 실패가 빈번.
 
@@ -322,6 +352,15 @@ flowchart TB
 
 > **이 단계가 전체 품질의 80%를 결정한다. 도구를 바꿔도 이 산출물은 재사용된다.**
 
+> 🎯 **이 Phase가 만드는 것 = 시맨틱 레이어 본체**
+>
+> Phase 1에서 만드는 **Gold View + Curated View가 곧 시맨틱 레이어**다. dbt/Cube/WrenAI/v3 어떤 도구를 쓰든 결국 그 위에서 돌아간다. 즉:
+> - 환경이 PostgreSQL이면 같은 View 위에 WrenAI를 띄울 수 있다
+> - BI 통합이 필요하면 같은 View 위에 Cube를 띄울 수 있다
+> - 사내 Oracle 19c라 v3로 가더라도 **Phase 1 산출물은 그대로 재사용**
+>
+> 도구 교체 시 비용은 Phase 2(엔진 구축)뿐. **Phase 1 자체가 자산.**
+
 ### 5-1. Oracle Gold View 설계
 
 **목표:** Raw 테이블을 pre-join하여 NL2SQL 친화적인 와이드 View를 만든다.
@@ -398,6 +437,31 @@ COMMENT ON COLUMN V_DAILY_SALES_SUMMARY.PROFIT_MARGIN_PCT IS
 ```
 
 > **이 View가 하는 일:** 4개 테이블을 미리 JOIN + 집계 + 단위 통일. LLM은 `SELECT * FROM V_DAILY_SALES_SUMMARY WHERE ...`만 하면 됨.
+
+#### dbt를 활용한 변환 자동화 (선택)
+
+위 예시는 `CREATE OR REPLACE VIEW`를 직접 작성한 형태다. View가 5–10개를 넘어가면 의존성 관리·테스트·문서화 부담이 커지는데, **dbt를 도입하면 이 부분을 자동화**할 수 있다. dbt 도입 여부는 v3 본 흐름과 직교 — 채택해도 Phase 1 산출물(View)은 동일하게 나오고 Phase 2 이후는 변하지 않는다.
+
+| 측면 | 직접 SQL (현재 v3 기본) | dbt 도입 시 |
+|------|:-:|:-:|
+| 의존성 관리 | 수동 (CREATE 순서 신경 써야 함) | `{{ ref() }}` 자동 |
+| 변환 테스트 | 별도 스크립트 | `dbt test` 내장 (not_null, unique 등) |
+| 문서 자동화 | 수동 | `dbt docs generate` |
+| 형상 관리 | SQL 파일 단순 Git | dbt 프로젝트 단위 (PR 단위 lineage 검증) |
+| 인력 | SQL만 | dbt CLI 학습 필요 |
+| 인프라 | 없음 | dbt-oracle 어댑터 (community) |
+
+**dbt 도입 권장 시나리오:**
+- View 수가 10개를 넘어 의존성이 복잡해질 때
+- 이미 dbt를 쓰는 다른 도메인이 있을 때 (전사 표준화)
+- 분석가가 직접 변환 모델을 추가하는 셀프서비스가 필요할 때
+
+**도입 안 함 권장 시나리오:**
+- View 수가 5개 이하로 단순한 초기 단계
+- Oracle DBA가 SQL/PLSQL로 직접 관리하는 게 더 빠른 경우
+- dbt-oracle community 어댑터 검증 부담을 피하고 싶을 때
+
+> 💡 **사내 단계적 도입 패턴:** Phase 1은 `CREATE VIEW`로 빠르게 구축 → Phase 4 운영 안정화 후 dbt로 마이그레이션. 처음부터 dbt를 강제할 필요는 없다.
 
 ### 5-2. Curated View — Boolean Flag
 
@@ -1107,9 +1171,51 @@ async def retrieve_pairs(question: str, k: int = 5) -> list[dict]:
 
 > 💡 **Phase 3 튜닝 사이클의 핵심:** 실패한 질문 → 사람이 정답 QuerySpec 작성 → SQL Pair로 등록 → 다음번부터 자동으로 Few-shot 검색됨. **Pair가 늘수록 시스템이 똑똑해진다.**
 
-### 6-7. LangGraph Agent — 노드 구성
+### 6-7. LangGraph Agent — 멀티 에이전트 서비스 레이어
 
-**목표:** 위 모듈을 LangGraph 그래프로 묶어 멀티스텝 + 자동 보정 흐름을 구현.
+> 🎯 **LangGraph는 NL2SQL 전용이 아니다.** 사용자 질문이 들어오면 **NL2SQL/RAG/MCP 중 어떤 도구로 답할지 라우팅**하고, 필요하면 여러 도구를 조합해 합성 답변을 만드는 **최상단 서비스 레이어**다. NL2SQL은 그 안의 한 도구일 뿐.
+
+#### 전체 서비스 레이어 청사진
+
+사용자 질문 → Intent Classifier → 적합한 Tool(들) 호출 → Result Synthesizer가 답변. NL2SQL/RAG/MCP는 동등한 노드.
+
+```mermaid
+flowchart TB
+    USER["사용자 질문"] --> IC["Intent Classifier<br/>NL2SQL? RAG? MCP? 복합?"]
+
+    IC -->|정형 숫자/집계| NL["NL2SQL Tool<br/>(Phase 2 핵심)"]
+    IC -->|문서/회의록 검색| RAG["RAG Tool<br/>(Phase 4 확장)"]
+    IC -->|외부 시스템 실시간| MCP["MCP Tool<br/>(Phase 4 확장)"]
+    IC -->|복합| MULTI["복합 라우팅<br/>여러 Tool 순차/병렬"]
+
+    NL --> SYNTH["Result Synthesizer<br/>여러 Tool 결과 합성"]
+    RAG --> SYNTH
+    MCP --> SYNTH
+    MULTI --> SYNTH
+
+    SYNTH --> AUDIT["Audit Log<br/>(필수)"]
+    AUDIT --> ANS["사용자 답변"]
+
+    style IC fill:#fbbf24,color:#1a1a2e
+    style NL fill:#22c55e,color:#fff
+    style SYNTH fill:#3b82f6,color:#fff
+    style AUDIT fill:#fce4ec,color:#1a1a2e
+```
+
+**Phase별 단계적 활성화:**
+
+| Phase | 활성 노드 | 처리 가능한 질문 |
+|:-----:|---------|----------------|
+| Phase 2 (현재 v3 핵심) | NL2SQL Tool, Synthesizer, Audit | "이번 분기 매출", "VIP 고객 명단" — 정형 |
+| Phase 4-A | + RAG Tool | "ISO 인증 절차", "회의록 검색" — 비정형 |
+| Phase 4-B | + MCP Tool | "Jira 미해결 티켓", "Jenkins 빌드 상태" — 외부 |
+| Phase 4-C | + 복합 라우팅 | "매출 하락 팀의 클레임 요약" — NL2SQL + RAG 조합 |
+
+> 💡 **이 그림이 의미하는 것:** Phase 2에서 만드는 NL2SQL Tool은 LangGraph 서비스 레이어의 **첫 번째 도구**일 뿐이다. RAG/MCP가 추가될 때 NL2SQL을 갈아엎을 필요 없이 **노드 추가만으로 확장 가능**한 구조.
+
+#### NL2SQL Tool 내부 흐름 (Phase 2 핵심 구현)
+
+위 청사진에서 "NL2SQL Tool" 노드를 펼치면 다음과 같은 7단계 서브그래프가 된다.
 
 ```mermaid
 flowchart TD
@@ -1388,6 +1494,10 @@ flowchart LR
 
 ### 7-5. WrenAI 결과 비교 (BIP 환경 벤치마크)
 
+> 📋 **상태: Phase 3 산출물 — 아직 미실행 (계획 단계)**
+>
+> v3 측 ? 칸은 **현재 미수행**. Phase 2 (LangGraph Agent 구축) 완료 후 동일 평가셋 23개를 양쪽에서 실행하여 채워질 비교표다. 이 섹션이 의미하는 것은 "이렇게 비교할 계획"이지 "이런 결과가 나왔다"가 아님.
+
 **목적:** v3 LangGraph 구현이 WrenAI(BIP에서 100% 달성한 엔진) 대비 어느 수준인지 객관 비교.
 
 **방법:**
@@ -1395,15 +1505,21 @@ flowchart LR
 2. 5차원 채점 (실행/의미/결과/효율/의도)
 3. 실패 패턴이 다른 부분을 분석 → v3 어느 모듈이 약한지 식별
 
-**비교 매트릭스 예시:**
+**비교 매트릭스 (실행 후 채울 형식):**
 
-| 차원 | WrenAI | v3 | 차이 분석 |
+| 차원 | WrenAI (확정) | v3 (Phase 3에 측정) | 차이 분석 |
 |------|:-:|:-:|------|
-| 실행 | 100% | ? | sqlglot 검증이 ibis-engine 대비 강함/약함 |
-| 의미 | 100% | ? | Function Calling이 MDL+RAG 대비 |
-| 결과 | 100% | ? | JOIN 자동 처리가 Wren Relationship 대비 |
-| 효율 | A | ? | 불필요 컬럼/JOIN 발생 여부 |
-| 의도 | 87% | ? | Synthesizer가 sql_answer 대비 |
+| 실행 | 100% | TBD | sqlglot 검증이 ibis-engine 대비 강함/약함 |
+| 의미 | 100% | TBD | Function Calling이 MDL+RAG 대비 |
+| 결과 | 100% | TBD | JOIN 자동 처리가 Wren Relationship 대비 |
+| 효율 | A | TBD | 불필요 컬럼/JOIN 발생 여부 |
+| 의도 | 87% | TBD | Synthesizer가 sql_answer 대비 |
+
+**완료 조건:**
+- [ ] Phase 2 LangGraph Agent 구축 완료
+- [ ] 평가셋 23개를 v3에서 실행
+- [ ] 5차원 채점 결과 표 완성
+- [ ] 실패 패턴 분석 리포트 작성
 
 > **이 비교가 끝나면 사내 적용 의사결정 자료로 활용.** "v3가 WrenAI 대비 X% 정확도, Oracle 19c는 v3로만 가능 → 채택" 형태로 보고.
 
@@ -1719,3 +1835,5 @@ BIP PostgreSQL에 Cube를 연결하여 7개 시맨틱 모델을 구축하고 테
 | 2026-04-22 | 문서 헤더 정리 |
 | 2026-04-26 | v3 방향 전환 추가 (Cube 탈락 + LangGraph 직접 구현). DAQUV/논문 분석 반영 |
 | 2026-05-11 | **enterprise_playbook 스타일로 전면 재작성**. Phase 0–4 단계별 구체화, QuerySpec/Converter/Validator 실제 코드 통합, Oracle 19c 방언 명시, 5-Layer 보안, 의사결정 이력 단일 위치 통합 |
+| 2026-05-11 | v2와 분리하여 v3 신규 파일로 정리 (v2는 OM+Cube 검토 이력 보존) |
+| 2026-05-11 | 세미나 자료 일관성 보완: ① 1장 의사결정 트리 추가(환경별 다른 답) ② Phase 1 도입부 "시맨틱 레이어 본체" 강조 + dbt 자동화 옵션 ③ §6-7 LangGraph를 NL2SQL 전용 → 멀티 에이전트 서비스 레이어로 격상 (RAG/MCP 동등 노드 청사진) ④ §7-5 WrenAI 비교 미실행 명시 |
