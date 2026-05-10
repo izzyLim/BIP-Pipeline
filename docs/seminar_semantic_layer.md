@@ -66,16 +66,16 @@
 
 ```mermaid
 flowchart TD
-    SL[Semantic Layer]
-    SL --> M[Metrics<br/>측정값/지표]
-    SL --> D[Dimensions<br/>분석 축]
-    SL --> E[Entities<br/>비즈니스 객체]
-    SL --> R[Relationships<br/>객체 간 관계]
+    SL["Semantic Layer"]
+    SL --> M["Metrics<br/>측정값·지표"]
+    SL --> D["Dimensions<br/>분석 축"]
+    SL --> E["Entities<br/>비즈니스 객체"]
+    SL --> R["Relationships<br/>객체 간 관계"]
 
-    M --> M1["예: 월매출 = SUM(amount) WHERE status='paid'"]
+    M --> M1["예: 월매출 = SUM amount WHERE status paid"]
     D --> D1["예: 지역, 월, 고객등급"]
     E --> E1["예: Customer, Order, Product"]
-    R --> R1["예: Customer 1:N Order"]
+    R --> R1["예: Customer 1대N Order"]
 ```
 
 ### Metrics (측정값/지표)
@@ -675,11 +675,11 @@ A: SELECT DATE_TRUNC('month', created_at) AS month,
 
 ```mermaid
 flowchart TD
-    Q["사용자 질문"] --> S1["1. Intent 분류<br/>(SQL 생성? 일반 질문?)"]
-    S1 --> S2["2. RAG 검색<br/>(관련 테이블/컬럼/SQL Pair)"]
-    S2 --> S3["3. SQL 생성<br/>(LLM)"]
-    S3 --> S4["4. SQL 검증<br/>(Engine dry-run)"]
-    S4 -->|실패 (3회)| S3
+    Q["사용자 질문"] --> S1["1. Intent 분류<br/>SQL 생성 vs 일반 질문"]
+    S1 --> S2["2. RAG 검색<br/>관련 테이블/컬럼/SQL Pair"]
+    S2 --> S3["3. SQL 생성<br/>LLM"]
+    S3 --> S4["4. SQL 검증<br/>Engine dry-run"]
+    S4 -->|실패 최대 3회| S3
     S4 -->|성공| S5["5. 실행 + 답변 생성"]
     S5 --> A["사용자 답변"]
 ```
@@ -726,14 +726,14 @@ flowchart TD
 
 ```mermaid
 flowchart TD
-    Q["시맨틱 레이어 도입 결정"] --> Q1{주된 목적?}
+    Q["시맨틱 레이어 도입 결정"] --> Q1{"주된 목적?"}
 
     Q1 -->|변환 자동화 + Git 거버넌스| D[dbt]
-    Q1 -->|BI/대시보드/임베디드 API| C[Cube]
-    Q1 -->|자연어 챗봇 (NL2SQL)| W[WrenAI]
+    Q1 -->|BI 대시보드 임베디드 API| C[Cube]
+    Q1 -->|자연어 챗봇 NL2SQL| W[WrenAI]
     Q1 -->|복합| H[하이브리드]
 
-    H --> H1["dbt(변환) + Cube(API 서빙) + WrenAI(NL2SQL)"]
+    H --> H1["dbt 변환 + Cube API + WrenAI NL2SQL"]
 
     style D fill:#fbbf24,color:#1a1a2e
     style C fill:#3b82f6,color:#fff
@@ -770,18 +770,20 @@ flowchart TD
 
 ```mermaid
 flowchart TD
-    Q["사용자 질문<br/>'저평가주 + 외국인 매수 +<br/>관련 뉴스'"]
+    Q["사용자 질문<br/>저평가주 + 외국인 매수 +<br/>관련 뉴스"]
 
-    Q --> Agent["멀티 에이전트<br/>(오케스트레이터)"]
+    Q --> Agent["멀티 에이전트<br/>오케스트레이터"]
 
-    Agent --> P1["1. 질문 분해<br/>'정형 + 비정형 + 맥락'"]
+    Agent --> P1["1. 질문 분해<br/>정형 + 비정형 + 맥락"]
     P1 --> R["2. Tool 선택"]
 
     R --> T1["NL2SQL Tool<br/>WrenAI/Cube/직접"]
     R --> T2["RAG Tool<br/>뉴스 검색"]
     R --> T3["메타 Tool<br/>OpenMetadata"]
 
-    T1 & T2 & T3 --> S["3. 결과 합성<br/>+ 자연어 답변"]
+    T1 --> S["3. 결과 합성<br/>+ 자연어 답변"]
+    T2 --> S
+    T3 --> S
     S --> Q
 
     style Agent fill:#fbbf24,color:#1a1a2e
@@ -1292,19 +1294,19 @@ flowchart LR
 
 ```mermaid
 flowchart TD
-    Q[NL2SQL/시맨틱 레이어 도입]
-    Q --> Q1{주된 응용?}
+    Q["NL2SQL 시맨틱 레이어 도입"]
+    Q --> Q1{"주된 응용?"}
 
-    Q1 -->|① 변환 자동화 + Git| C1[dbt Core]
-    Q1 -->|② BI/대시보드/임베디드 API| C2[Cube]
-    Q1 -->|③ 자연어 챗봇| Q2{DB 환경?}
-    Q1 -->|④ 복합 (모두)| C3[dbt + Cube + WrenAI]
+    Q1 -->|변환 자동화 + Git| C1[dbt Core]
+    Q1 -->|BI 대시보드 임베디드 API| C2[Cube]
+    Q1 -->|자연어 챗봇| Q2{"DB 환경?"}
+    Q1 -->|복합 모두 도입| C3["dbt + Cube + WrenAI"]
 
-    Q2 -->|PostgreSQL/Oracle 23ai| C4[WrenAI]
-    Q2 -->|Oracle 19c/특수 환경| Q3{복합 쿼리?}
+    Q2 -->|PostgreSQL 또는 Oracle 23ai| C4[WrenAI]
+    Q2 -->|Oracle 19c 특수 환경| Q3{"복합 쿼리?"}
 
     Q3 -->|단순 조회| C4
-    Q3 -->|팩트-팩트 JOIN, 멀티스텝| C5[자체 구현<br/>LangGraph + QuerySpec]
+    Q3 -->|팩트-팩트 JOIN 멀티스텝| C5["자체 구현<br/>LangGraph + QuerySpec"]
 
     style C1 fill:#fbbf24,color:#1a1a2e
     style C2 fill:#3b82f6,color:#fff
