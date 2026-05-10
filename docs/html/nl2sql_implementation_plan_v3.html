@@ -1,0 +1,2821 @@
+<!DOCTYPE html>
+<html lang="ko" data-theme="dark">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>NL2SQL 사내 적용 구현 계획 v3 — LangGraph + QuerySpec</title>
+<script src="https://cdn.jsdelivr.net/npm/mermaid@11/dist/mermaid.min.js"></script>
+<style>
+  /* ── 테마 변수 ── */
+  :root[data-theme="dark"] {
+    --bg: #0d1117;
+    --bg-sidebar: #161b22;
+    --fg: #e6edf3;
+    --fg-muted: #8b949e;
+    --border: #30363d;
+    --accent: #58a6ff;
+    --accent-hover: #79c0ff;
+    --code-bg: #1e293b;
+    --code-fg: #e2e8f0;
+    --table-header: #161b22;
+    --table-even: #0d1117;
+    --table-odd: #161b22;
+    --blockquote-bg: #161b22;
+    --blockquote-border: #3b82f6;
+    --link: #58a6ff;
+    --strong: #79c0ff;
+    --card-bg: #21262d;
+  }
+  :root[data-theme="light"] {
+    --bg: #ffffff;
+    --bg-sidebar: #f6f8fa;
+    --fg: #1f2937;
+    --fg-muted: #6b7280;
+    --border: #e5e7eb;
+    --accent: #2563eb;
+    --accent-hover: #1d4ed8;
+    --code-bg: #f3f4f6;
+    --code-fg: #1e293b;
+    --table-header: #f8fafc;
+    --table-even: #ffffff;
+    --table-odd: #f9fafb;
+    --blockquote-bg: #eff6ff;
+    --blockquote-border: #3b82f6;
+    --link: #2563eb;
+    --strong: #1e40af;
+    --card-bg: #f3f4f6;
+  }
+
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+
+  body {
+    font-family: 'Pretendard', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+    background: var(--bg);
+    color: var(--fg);
+    line-height: 1.75;
+    display: flex;
+    min-height: 100vh;
+  }
+
+  /* ── 사이드바 ── */
+  .sidebar {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 280px;
+    height: 100vh;
+    background: var(--bg-sidebar);
+    border-right: 1px solid var(--border);
+    overflow-y: auto;
+    padding: 20px 0;
+    z-index: 100;
+    transition: transform 0.3s ease;
+  }
+
+  .sidebar-header {
+    padding: 0 20px 16px;
+    border-bottom: 1px solid var(--border);
+    margin-bottom: 12px;
+  }
+
+  .sidebar-title {
+    font-size: 0.95rem;
+    font-weight: 700;
+    color: var(--fg);
+    line-height: 1.3;
+  }
+
+  .sidebar-controls {
+    display: flex;
+    gap: 8px;
+    margin-top: 12px;
+  }
+
+  .theme-btn {
+    background: var(--card-bg);
+    border: 1px solid var(--border);
+    color: var(--fg-muted);
+    padding: 4px 10px;
+    border-radius: 6px;
+    font-size: 0.7rem;
+    cursor: pointer;
+    transition: all 0.2s;
+  }
+  .theme-btn:hover {
+    border-color: var(--accent);
+    color: var(--accent);
+  }
+  .theme-btn.active {
+    background: var(--accent);
+    color: #fff;
+    border-color: var(--accent);
+  }
+
+  .back-link {
+    display: block;
+    margin-top: 10px;
+    font-size: 0.75rem;
+    color: var(--fg-muted);
+    text-decoration: none;
+  }
+  .back-link:hover {
+    color: var(--accent);
+  }
+
+  /* ── TOC ── */
+  .toc {
+    padding: 0 12px;
+  }
+  .toc ul {
+    list-style: none;
+    padding: 0;
+  }
+  .toc li {
+    margin: 0;
+  }
+  .toc a {
+    display: block;
+    padding: 4px 8px;
+    color: var(--fg-muted);
+    text-decoration: none;
+    font-size: 0.78rem;
+    border-radius: 4px;
+    border-left: 2px solid transparent;
+    transition: all 0.15s;
+    line-height: 1.4;
+  }
+  .toc a:hover {
+    color: var(--accent);
+    background: var(--card-bg);
+    border-left-color: var(--accent);
+  }
+  .toc a.active {
+    color: var(--accent);
+    border-left-color: var(--accent);
+    font-weight: 600;
+  }
+  .toc-h3 a { padding-left: 20px; font-size: 0.75rem; }
+  .toc-h4 a { padding-left: 32px; font-size: 0.72rem; }
+
+  /* ── 본문 ── */
+  .content {
+    margin-left: 280px;
+    flex: 1;
+    max-width: 860px;
+    padding: 40px 48px 80px;
+  }
+
+  /* ── 모바일 ── */
+  .menu-toggle {
+    display: none;
+    position: fixed;
+    top: 12px;
+    left: 12px;
+    z-index: 200;
+    background: var(--bg-sidebar);
+    border: 1px solid var(--border);
+    color: var(--fg);
+    padding: 8px 12px;
+    border-radius: 6px;
+    cursor: pointer;
+    font-size: 1.1rem;
+  }
+
+  @media (max-width: 900px) {
+    .sidebar {
+      transform: translateX(-100%);
+    }
+    .sidebar.open {
+      transform: translateX(0);
+    }
+    .content {
+      margin-left: 0;
+      padding: 60px 20px 60px;
+    }
+    .menu-toggle {
+      display: block;
+    }
+  }
+
+  /* ── 타이포그래피 ── */
+  h1 { font-size: 1.9rem; margin: 2rem 0 1rem; padding-bottom: 0.5rem; border-bottom: 2px solid var(--accent); }
+  h2 { font-size: 1.45rem; margin: 2.5rem 0 0.8rem; padding-bottom: 0.3rem; border-bottom: 1px solid var(--border); color: var(--accent); }
+  h3 { font-size: 1.15rem; margin: 1.8rem 0 0.5rem; }
+  h4 { font-size: 1rem; margin: 1.3rem 0 0.4rem; color: var(--fg-muted); }
+  p { margin: 0.6rem 0; }
+  hr { border: none; border-top: 1px solid var(--border); margin: 2rem 0; }
+  strong { color: var(--strong); }
+  a { color: var(--link); text-decoration: none; }
+  a:hover { text-decoration: underline; }
+  ul, ol { margin: 0.5rem 0 0.5rem 1.5rem; }
+  li { margin: 0.25rem 0; }
+
+  /* ── 테이블 ── */
+  table { width: 100%; border-collapse: collapse; margin: 1rem 0; font-size: 0.85rem; }
+  th, td { border: 1px solid var(--border); padding: 0.5rem 0.75rem; text-align: left; }
+  th { background: var(--table-header); font-weight: 600; }
+  tr:nth-child(even) { background: var(--table-even); }
+  tr:nth-child(odd) { background: var(--table-odd); }
+
+  /* ── 코드 ── */
+  code {
+    background: var(--code-bg);
+    color: var(--code-fg);
+    padding: 0.15rem 0.4rem;
+    border-radius: 4px;
+    font-size: 0.82em;
+    font-family: 'JetBrains Mono', 'Fira Code', 'Cascadia Code', monospace;
+  }
+  pre {
+    background: var(--code-bg);
+    color: var(--code-fg);
+    padding: 1rem 1.2rem;
+    border-radius: 8px;
+    overflow-x: auto;
+    margin: 1rem 0;
+    border: 1px solid var(--border);
+  }
+  pre code {
+    background: none;
+    padding: 0;
+    font-size: 0.82rem;
+    line-height: 1.5;
+  }
+
+  /* ── 인용 ── */
+  blockquote {
+    border-left: 4px solid var(--blockquote-border);
+    padding: 0.6rem 1rem;
+    margin: 1rem 0;
+    background: var(--blockquote-bg);
+    border-radius: 0 6px 6px 0;
+  }
+  blockquote p { margin: 0.3rem 0; }
+
+  /* ── Mermaid ── */
+  .mermaid {
+    margin: 1.5rem 0;
+    text-align: center;
+    background: var(--card-bg);
+    padding: 1rem;
+    border-radius: 8px;
+    border: 1px solid var(--border);
+  }
+  .mermaid svg { max-width: 100%; }
+
+  /* ── Footer ── */
+  footer {
+    margin-top: 3rem;
+    padding-top: 1rem;
+    border-top: 1px solid var(--border);
+    color: var(--fg-muted);
+    font-size: 0.8rem;
+  }
+</style>
+</head>
+<body>
+
+<button class="menu-toggle" onclick="document.querySelector('.sidebar').classList.toggle('open')">☰</button>
+
+<aside class="sidebar">
+  <div class="sidebar-header">
+    <div class="sidebar-title">NL2SQL 사내 적용 구현 계획 v3 — LangGraph + QuerySpec</div>
+    <div class="sidebar-controls">
+      <button class="theme-btn" onclick="setTheme('dark')" id="btn-dark">🌙 Dark</button>
+      <button class="theme-btn" onclick="setTheme('light')" id="btn-light">☀️ Light</button>
+    </div>
+    <a class="back-link" href="index.html">← 문서 목록으로</a>
+  </div>
+  <nav class="toc">
+<ul>
+<li class="toc-h2"><a href="#1-배경--왜-이-아키텍처인가">1. 배경 — 왜 이 아키텍처인가</a></li>
+  <li class="toc-h3"><a href="#1-1-bip-pipeline에서-먼저-검증한-것">1-1. BIP-Pipeline에서 먼저 검증한 것</a></li>
+  <li class="toc-h3"><a href="#1-2-사내-환경-제약">1-2. 사내 환경 제약</a></li>
+  <li class="toc-h3"><a href="#1-3-후보-도구-검토-결과">1-3. 후보 도구 검토 결과</a></li>
+  <li class="toc-h3"><a href="#1-4-핵심-아이디어--queryspec-중간-표현">1-4. 핵심 아이디어 — QuerySpec 중간 표현</a></li>
+<li class="toc-h2"><a href="#2-전체-로드맵">2. 전체 로드맵</a></li>
+<li class="toc-h2"><a href="#3-사전-지식--데이터질문-유형-분류">3. 사전 지식 — 데이터/질문 유형 분류</a></li>
+  <li class="toc-h3"><a href="#3-1-4가지-처리-방식">3-1. 4가지 처리 방식</a></li>
+  <li class="toc-h3"><a href="#3-2-판단-결정-트리">3-2. 판단 결정 트리</a></li>
+  <li class="toc-h3"><a href="#3-3-핵심-판단-원칙">3-3. 핵심 판단 원칙</a></li>
+  <li class="toc-h3"><a href="#3-4-사내-질문-분류-예시">3-4. 사내 질문 분류 예시</a></li>
+<li class="toc-h2"><a href="#4-phase-0--현황-파악-1주">4. Phase 0 — 현황 파악 (1주)</a></li>
+  <li class="toc-h3"><a href="#4-1-대상-데이터-인벤토리">4-1. 대상 데이터 인벤토리</a></li>
+  <li class="toc-h3"><a href="#4-2-질문-유형-수집">4-2. 질문 유형 수집</a></li>
+  <li class="toc-h3"><a href="#4-3-보안-요구사항-정리">4-3. 보안 요구사항 정리</a></li>
+<li class="toc-h2"><a href="#5-phase-1--데이터-정비-2-3주">5. Phase 1 — 데이터 정비 (2-3주)</a></li>
+  <li class="toc-h3"><a href="#5-1-oracle-gold-view-설계">5-1. Oracle Gold View 설계</a></li>
+  <li class="toc-h3"><a href="#5-2-curated-view--boolean-flag">5-2. Curated View — Boolean Flag</a></li>
+  <li class="toc-h3"><a href="#5-3-해석-컬럼-interpretation-column">5-3. 해석 컬럼 (Interpretation Column)</a></li>
+  <li class="toc-h3"><a href="#5-4-컬럼-description--db-comment">5-4. 컬럼 Description + DB COMMENT</a></li>
+  <li class="toc-h3"><a href="#5-5-nl2sql-전용-oracle-role">5-5. NL2SQL 전용 Oracle Role</a></li>
+  <li class="toc-h3"><a href="#5-6-join-관계-yaml">5-6. JOIN 관계 YAML</a></li>
+<li class="toc-h2"><a href="#6-phase-2--nl2sql-엔진-구축-2-3주">6. Phase 2 — NL2SQL 엔진 구축 (2-3주)</a></li>
+  <li class="toc-h3"><a href="#6-1-모듈-구조">6-1. 모듈 구조</a></li>
+  <li class="toc-h3"><a href="#6-2-schema-registry--db-comment--yaml-자동-로드">6-2. Schema Registry — DB COMMENT + YAML 자동 로드</a></li>
+  <li class="toc-h3"><a href="#6-3-queryspec--llm-출력-구조">6-3. QuerySpec — LLM 출력 구조</a></li>
+  <li class="toc-h3"><a href="#6-4-sql-converter--oracle-방언-처리">6-4. SQL Converter — Oracle 방언 처리</a></li>
+  <li class="toc-h3"><a href="#6-5-validator--4-layer-검증">6-5. Validator — 4-Layer 검증</a></li>
+  <li class="toc-h3"><a href="#6-6-schema-rag--few-shot-예시-검색">6-6. Schema RAG — Few-shot 예시 검색</a></li>
+  <li class="toc-h3"><a href="#6-7-langgraph-agent--노드-구성">6-7. LangGraph Agent — 노드 구성</a></li>
+  <li class="toc-h3"><a href="#6-8-감사-로그">6-8. 감사 로그</a></li>
+<li class="toc-h2"><a href="#7-phase-3--튜닝--검증-2-3주">7. Phase 3 — 튜닝 &amp; 검증 (2-3주)</a></li>
+  <li class="toc-h3"><a href="#7-1-평가셋-구성">7-1. 평가셋 구성</a></li>
+  <li class="toc-h3"><a href="#7-2-평가-자동화-스크립트">7-2. 평가 자동화 스크립트</a></li>
+  <li class="toc-h3"><a href="#7-3-테스트-개선-사이클">7-3. 테스트-개선 사이클</a></li>
+  <li class="toc-h3"><a href="#7-4-흔한-실패-패턴--대응">7-4. 흔한 실패 패턴 + 대응</a></li>
+  <li class="toc-h3"><a href="#7-5-wrenai-결과-비교-bip-환경-벤치마크">7-5. WrenAI 결과 비교 (BIP 환경 벤치마크)</a></li>
+<li class="toc-h2"><a href="#8-phase-4--운영--확장-지속">8. Phase 4 — 운영 &amp; 확장 (지속)</a></li>
+  <li class="toc-h3"><a href="#8-1-fastapi-서빙">8-1. FastAPI 서빙</a></li>
+  <li class="toc-h3"><a href="#8-2-일상-운영">8-2. 일상 운영</a></li>
+  <li class="toc-h3"><a href="#8-3-확장-시-고려사항">8-3. 확장 시 고려사항</a></li>
+<li class="toc-h2"><a href="#9-보안-아키텍처">9. 보안 아키텍처</a></li>
+  <li class="toc-h3"><a href="#9-1-5-layer-방어-bip-4-layer-확장">9-1. 5-Layer 방어 (BIP 4-Layer 확장)</a></li>
+  <li class="toc-h3"><a href="#9-2-감사--모니터링">9-2. 감사 + 모니터링</a></li>
+<li class="toc-h2"><a href="#10-wrenai-경험--v3-해결-매핑">10. WrenAI 경험 → v3 해결 매핑</a></li>
+<li class="toc-h2"><a href="#11-리스크-및-대응">11. 리스크 및 대응</a></li>
+<li class="toc-h2"><a href="#12-성공-기준">12. 성공 기준</a></li>
+<li class="toc-h2"><a href="#13-의사결정-이력-2026-04--2026-05">13. 의사결정 이력 (2026-04 ~ 2026-05)</a></li>
+  <li class="toc-h3"><a href="#13-1-wrenai-oracle-19c-검증-2026-04-15">13-1. WrenAI Oracle 19c 검증 (2026-04-15)</a></li>
+  <li class="toc-h3"><a href="#13-2-cube-검증-2026-04-18--2026-04-25">13-2. Cube 검증 (2026-04-18 ~ 2026-04-25)</a></li>
+  <li class="toc-h3"><a href="#13-3-langgraph--queryspec-선정-2026-04-26">13-3. LangGraph + QuerySpec 선정 (2026-04-26)</a></li>
+  <li class="toc-h3"><a href="#13-4-v2--v3-변경점-정리">13-4. v2 → v3 변경점 정리</a></li>
+<li class="toc-h2"><a href="#14-진행-현황-2026-05-11-기준">14. 진행 현황 (2026-05-11 기준)</a></li>
+<li class="toc-h2"><a href="#15-체크리스트-전체">15. 체크리스트 (전체)</a></li>
+  <li class="toc-h3"><a href="#phase-0-완료-조건">Phase 0 완료 조건</a></li>
+  <li class="toc-h3"><a href="#phase-1-완료-조건">Phase 1 완료 조건</a></li>
+  <li class="toc-h3"><a href="#phase-2-완료-조건">Phase 2 완료 조건</a></li>
+  <li class="toc-h3"><a href="#phase-3-완료-조건">Phase 3 완료 조건</a></li>
+  <li class="toc-h3"><a href="#phase-4-완료-조건">Phase 4 완료 조건</a></li>
+<li class="toc-h2"><a href="#16-참고-문서">16. 참고 문서</a></li>
+<li class="toc-h2"><a href="#변경-이력">변경 이력</a></li>
+</ul>
+</nav>
+</aside>
+
+<main class="content">
+<h1 id="nl2sql-사내-적용-구현-계획-v3--langgraph--queryspec">NL2SQL 사내 적용 구현 계획 v3 — LangGraph + QuerySpec</h1>
+<blockquote>
+<p><strong>목적:</strong> 사내 Oracle 19c 환경에서 NL2SQL을 실제로 구축하는 <strong>단계별 실행 가이드</strong>. BIP-Pipeline 검증 경험 + WrenAI/Cube 후보 검토 + LangGraph 직접 구현 결정 이력을 단일 문서로 통합.</p>
+<p><strong>v2와의 관계:</strong> <code>nl2sql_implementation_plan_v2.md</code>는 OM + Cube + LangGraph 조합으로 진행하던 계획이었으나, Cube 검증 결과 팩트-팩트 JOIN 한계가 발견되어 본 v3 (LangGraph 직접 구현)로 방향 전환. v2는 의사결정 이력 보존 차원에서 유지.</p>
+<p><strong>이 문서가 답하는 것:</strong>
+- 어떤 아키텍처를 왜 골랐는가 (1장)
+- 무엇을, 언제, 어떻게 만들 것인가 (Phase 0–4)
+- 무엇을 검증해야 하는가 (체크리스트, 평가셋)</p>
+<p><strong>자매 문서:</strong>
+- <code>docs/nl2sql_enterprise_playbook.md</code> — 데이터 정비 일반 가이드 (Phase 0~1은 본 문서와 거의 동일)
+- <code>docs/nl2sql_implementation_plan_v2.md</code> — v2 (OM + Cube + Agent) 의사결정 이력
+- <code>docs/nl2sql_agent_design.md</code> — LangGraph Agent + QuerySpec 상세 설계
+- <code>docs/nl2sql_design.md</code> — BIP-Pipeline NL2SQL 아키텍처 (WrenAI 기반 레퍼런스)
+- <code>docs/seminar_semantic_layer.md</code> — 시맨틱 레이어 개념·도구 비교 세미나</p>
+</blockquote>
+<hr />
+<h2 id="1-배경--왜-이-아키텍처인가">1. 배경 — 왜 이 아키텍처인가</h2>
+<h3 id="1-1-bip-pipeline에서-먼저-검증한-것">1-1. BIP-Pipeline에서 먼저 검증한 것</h3>
+<p>사내 적용 전 <strong>사외 BIP-Pipeline(PostgreSQL)</strong> 에서 WrenAI 기반 NL2SQL을 구축하여 다음을 검증했다.</p>
+<table>
+<thead>
+<tr>
+<th>항목</th>
+<th>결과</th>
+<th>의의</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Gold Table + Curated View 설계</td>
+<td>품질의 80% 좌우</td>
+<td>데이터 정비가 도구보다 중요</td>
+</tr>
+<tr>
+<td>Boolean flag 패턴</td>
+<td>사용률 0% → 87%</td>
+<td>비즈니스 규칙을 SQL로 고정</td>
+</tr>
+<tr>
+<td>해석 컬럼 (Interpretation Column)</td>
+<td>sql_answer 환각 해결</td>
+<td>LLM이 숫자를 직접 해석하지 않게</td>
+</tr>
+<tr>
+<td>LLM 모델 비교 (7개)</td>
+<td>GPT-4.1-mini 선정</td>
+<td>속도·품질·비용 균형</td>
+</tr>
+<tr>
+<td>SQL Pairs 70개 + Instructions 4개</td>
+<td>A등급 100%</td>
+<td>Few-shot이 가장 효과적 튜닝 수단</td>
+</tr>
+<tr>
+<td>4-Layer 보안</td>
+<td>구문→allowlist→DB role→curated</td>
+<td>단일 방어선 부족</td>
+</tr>
+<tr>
+<td>OM 메타데이터 동기화</td>
+<td>39 테이블, 77 용어</td>
+<td>메타 허브 단일화 가능성</td>
+</tr>
+</tbody>
+</table>
+<p><strong>핵심 교훈:</strong> "도구 50%, 데이터 정비 50%"가 아니라 <strong>"데이터 정비 80% / 도구 20%"</strong> 다. 도구 교체 시에도 Phase 0–1의 산출물은 그대로 재사용 가능.</p>
+<h3 id="1-2-사내-환경-제약">1-2. 사내 환경 제약</h3>
+<table>
+<thead>
+<tr>
+<th>제약</th>
+<th>영향</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><strong>Oracle 19c</strong></td>
+<td>WrenAI ibis-server는 Oracle 23ai 전용 (<code>get_db_version</code> 등 19c와 호환 안 됨)</td>
+</tr>
+<tr>
+<td><strong>외부 LLM API 제한 가능성</strong></td>
+<td>OpenAI 직접 호출 불가, 사내 LLM(Azure OpenAI 사내 테넌트, 사내 LLaMA 등) 또는 LiteLLM 어댑터 필요</td>
+</tr>
+<tr>
+<td><strong>읽기 전용 정책</strong></td>
+<td>운영 DB에 대한 INSERT/UPDATE는 절대 금지, NL2SQL 전용 read-only role 필수</td>
+</tr>
+<tr>
+<td><strong>감사 요구사항</strong></td>
+<td>모든 LLM 호출 + 생성 SQL + 실행 결과를 감사 로그에 기록</td>
+</tr>
+<tr>
+<td><strong>민감 테이블</strong></td>
+<td>인사·재무·개인정보 테이블은 LLM 접근 자체 차단 (DB role 레벨)</td>
+</tr>
+</tbody>
+</table>
+<h3 id="1-3-후보-도구-검토-결과">1-3. 후보 도구 검토 결과</h3>
+<div class="mermaid">
+flowchart TB
+    Q["사내 NL2SQL 도구 선정"]
+    Q --> O1["옵션 A: WrenAI"]
+    Q --> O2["옵션 B: Cube + LangGraph"]
+    Q --> O3["옵션 C: LangGraph 직접 구현"]
+
+    O1 --> R1["❌ 탈락\nOracle 19c 미지원\n(ibis-server 제약)"]
+    O2 --> R2["❌ 탈락\n팩트-팩트 JOIN 제약\n(Cube 검증으로 발견)"]
+    O3 --> R3["✅ 선정\nQuerySpec 중간 표현 +\n규칙 기반 SQL 변환"]
+
+    style R1 fill:#fee,color:#1a1a2e
+    style R2 fill:#fee,color:#1a1a2e
+    style R3 fill:#e8f5e9,color:#1a1a2e
+</div>
+
+<p><strong>옵션 A — WrenAI 직결</strong>
+- 장점: BIP에서 100% A등급 달성한 검증된 엔진
+- 단점: Oracle 19c 미지원 (ibis-server가 23ai 전용 메타 조회). PostgreSQL 복제 추가 시 인프라 부담
+- 결과: <strong>탈락</strong> (Oracle 19c가 사내 표준)</p>
+<p><strong>옵션 B — OpenMetadata + Cube + LangGraph (이전 v2)</strong>
+- 장점: Cube가 Oracle 19c 지원 (node-oracledb 6.x), 시맨틱 레이어 분리 명확
+- 단점: BIP에서 Cube 검증 결과 <strong>팩트-팩트 JOIN 불가</strong>. "저평가 + 외국인 순매수" 같은 핵심 사용 케이스 실패 (자세한 결과는 §13)
+- 결과: <strong>탈락</strong> (Cube로는 해결 못 하는 질문이 너무 많음)</p>
+<p><strong>옵션 C — LangGraph + QuerySpec 직접 구현 (현재 선정)</strong>
+- 장점: 시맨틱 레이어를 <strong>DB View(Gold + Curated)</strong> 로 두고, NL2SQL 변환 레이어를 자체 구현 → Oracle 19c 즉시 동작, 도구 락인 없음
+- 단점: 자체 구현이라 초기 개발 부담. SQL Converter/Validator 품질이 곧 시스템 품질
+- 결과: <strong>선정</strong> (Codex 검토에서도 "장기 도달점" 으로 동의, DAQUV/Function Calling 논문이 같은 방향)</p>
+<h3 id="1-4-핵심-아이디어--queryspec-중간-표현">1-4. 핵심 아이디어 — QuerySpec 중간 표현</h3>
+<p><strong>일반적인 NL2SQL:</strong> LLM이 질문을 받아 SQL을 직접 생성 → 문법 오류, 컬럼 환각, 보안 검증 실패가 빈번.</p>
+<p><strong>v3 접근:</strong> LLM은 SQL을 만들지 않는다. <strong>구조화된 쿼리 명세(QuerySpec)</strong> 만 만든다. SQL 생성은 규칙 기반 변환기가 담당.</p>
+<div class="mermaid">
+flowchart LR
+    Q["사용자 질문"] --> LLM["LLM\nQuerySpec 생성\n(JSON, SQL 아님)"]
+    LLM --> CONV["SQL Converter\n규칙 기반 변환"]
+    CONV --> VAL["Validator\nsqlglot + dry-run"]
+    VAL -->|실패| LLM
+    VAL -->|통과| EXEC["DB 실행"]
+    EXEC --> SYNTH["Result Synthesizer"]
+    SYNTH --> A["자연어 답변"]
+
+    style LLM fill:#3b82f6,color:#fff
+    style CONV fill:#fbbf24,color:#1a1a2e
+    style VAL fill:#22c55e,color:#fff
+</div>
+
+<p><strong>왜 안정적인가:</strong></p>
+<table>
+<thead>
+<tr>
+<th>책임</th>
+<th>누가</th>
+<th>왜</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>질문 의도 파악</td>
+<td>LLM</td>
+<td>자연어 처리는 LLM의 강점</td>
+</tr>
+<tr>
+<td>QuerySpec 생성 (JSON)</td>
+<td>LLM</td>
+<td>구조화된 출력 → Function Calling으로 안정성 보장</td>
+</tr>
+<tr>
+<td>SQL 문법 생성</td>
+<td><strong>규칙 기반 코드</strong></td>
+<td>결정론적 — 환각 불가</td>
+</tr>
+<tr>
+<td>컬럼/테이블 검증</td>
+<td><strong>코드 + Validator</strong></td>
+<td>스키마는 코드가 안다</td>
+</tr>
+<tr>
+<td>보안 검사</td>
+<td><strong>Validator + DB role</strong></td>
+<td>이중 방어</td>
+</tr>
+<tr>
+<td>결과 → 자연어</td>
+<td>LLM</td>
+<td>자연어 생성은 LLM의 강점</td>
+</tr>
+</tbody>
+</table>
+<blockquote>
+<p>💡 <strong>핵심 통찰:</strong> LLM이 결정하는 영역을 최소화하면 환각이 줄고, 결정론적 영역을 최대화하면 정확도가 올라간다. 영감 출처: DAQUV의 SMQ 개념, "Querying Databases with Function Calling" (arXiv 2502.00032).</p>
+</blockquote>
+<hr />
+<h2 id="2-전체-로드맵">2. 전체 로드맵</h2>
+<div class="mermaid">
+gantt
+    title NL2SQL 사내 적용 (LangGraph + QuerySpec) 로드맵
+    dateFormat YYYY-MM-DD
+    axisFormat %m/%d
+
+    section Phase 0 현황
+    데이터 인벤토리 + 질문 수집      :p0, 2026-05-12, 5d
+
+    section Phase 1 데이터 정비
+    Oracle Gold View 설계/생성       :p1a, after p0, 5d
+    Curated View Boolean/해석 컬럼   :p1b, after p1a, 3d
+    Description + DB COMMENT         :p1c, after p1a, 5d
+    NL2SQL 전용 Role + JOIN YAML     :p1d, after p1b, 2d
+
+    section Phase 2 엔진 구축
+    Schema Registry + QuerySpec      :p2a, after p1d, 3d
+    SQL Converter Oracle 방언        :p2b, after p2a, 4d
+    Validator sqlglot + dry-run      :p2c, after p2b, 2d
+    Schema RAG pgvector              :p2d, after p2c, 3d
+    LangGraph Agent + 보정 루프      :p2e, after p2d, 4d
+
+    section Phase 3 튜닝
+    평가셋 50개 구성                 :p3a, after p2e, 3d
+    테스트-개선 사이클 3-5회         :p3b, after p3a, 10d
+
+    section Phase 4 운영
+    FastAPI 서빙 + 감사 로그         :p4a, after p3b, 3d
+    Oracle 19c 적용 (사내)            :p4b, after p4a, 5d
+    RAG/MCP 확장                     :p4c, after p4b, 14d
+</div>
+
+<table>
+<thead>
+<tr>
+<th style="text-align: center;">Phase</th>
+<th style="text-align: center;">기간</th>
+<th>핵심 산출물</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td style="text-align: center;">0</td>
+<td style="text-align: center;">1주</td>
+<td>대상 테이블 목록, 질문 50개, 보안 요구사항</td>
+</tr>
+<tr>
+<td style="text-align: center;">1</td>
+<td style="text-align: center;">2-3주</td>
+<td>Gold View · Curated View · Description · NL2SQL Role · joins.yaml</td>
+</tr>
+<tr>
+<td style="text-align: center;">2</td>
+<td style="text-align: center;">2-3주</td>
+<td>Schema Registry · QuerySpec · SQL Converter · Validator · Schema RAG · LangGraph Agent</td>
+</tr>
+<tr>
+<td style="text-align: center;">3</td>
+<td style="text-align: center;">2-3주</td>
+<td>평가셋 50개, 정확도 80%+, 실패 패턴 분석 리포트</td>
+</tr>
+<tr>
+<td style="text-align: center;">4</td>
+<td style="text-align: center;">지속</td>
+<td>FastAPI 서빙, 감사 로그, 사내 LLM 연동, RAG/MCP 확장</td>
+</tr>
+</tbody>
+</table>
+<blockquote>
+<p><strong>가장 중요한 Phase는 1 (데이터 정비).</strong> 도구를 v3로 바꿔도 Phase 0–1 산출물은 그대로 재사용. 반대로 Phase 1을 대충하면 Phase 2 엔진이 아무리 좋아도 정확도가 안 나옴.</p>
+</blockquote>
+<hr />
+<h2 id="3-사전-지식--데이터질문-유형-분류">3. 사전 지식 — 데이터/질문 유형 분류</h2>
+<p>Phase 0 진입 전, <strong>어떤 질문을 NL2SQL로 처리할지</strong> 판단 기준을 먼저 이해해야 한다. 이 분류를 잘못하면 NL2SQL로 풀 수 없는 것을 NL2SQL에 넣거나, 단순 SQL을 RAG로 처리하는 비효율이 발생한다.</p>
+<h3 id="3-1-4가지-처리-방식">3-1. 4가지 처리 방식</h3>
+<div class="mermaid">
+flowchart TB
+    subgraph Methods["처리 방식"]
+        M1["NL2SQL\n정형 데이터 → SQL 변환"]
+        M2["RAG\n비정형 텍스트 의미 검색"]
+        M3["Graph DB\n엔티티 관계 탐색"]
+        M4["Tool Call\n외부 시스템 API 호출"]
+    end
+
+    subgraph Data["데이터 형태"]
+        D1["정형 테이블\n매출 KPI 인사"]
+        D2["비정형 텍스트\n문서 보고서 회의록"]
+        D3["관계 데이터\n조직도 공급망 개념"]
+        D4["외부 시스템\nJira Slack API"]
+    end
+
+    D1 --> M1
+    D2 --> M2
+    D3 --> M3
+    D4 --> M4
+
+    style M1 fill:#e8f5e9,color:#1a1a2e
+    style M2 fill:#e3f2fd,color:#1a1a2e
+    style M3 fill:#fff3e0,color:#1a1a2e
+    style M4 fill:#fce4ec,color:#1a1a2e
+    style Methods fill:#4f8fea33,stroke:#4f8fea,stroke-width:2px
+    style Data fill:#6c5ce733,stroke:#6c5ce7,stroke-width:2px
+</div>
+
+<h3 id="3-2-판단-결정-트리">3-2. 판단 결정 트리</h3>
+<div class="mermaid">
+flowchart TB
+    Q["질문 유형 판단"] --> Q1{"정확한 숫자/집계가 필요한가?"}
+    Q1 -->|Yes| Q1a{"데이터가 DB에 있는가?"}
+    Q1a -->|Yes| NL["✅ NL2SQL"]
+    Q1a -->|No| TOOL["✅ Tool Call\n외부 API"]
+
+    Q1 -->|No| Q2{"문서 내용을 찾아야 하는가?"}
+    Q2 -->|Yes| RAG["✅ RAG"]
+
+    Q2 -->|No| Q3{"엔티티 간 관계 탐색?"}
+    Q3 -->|Yes| GRAPH["✅ Graph DB"]
+
+    Q3 -->|No| Q4{"여러 소스 조합 필요?"}
+    Q4 -->|Yes| AGENT["✅ Agent\n복합 조합"]
+    Q4 -->|No| LLM["✅ LLM 직접\n일반 지식"]
+
+    style NL fill:#e8f5e9,color:#1a1a2e
+    style RAG fill:#e3f2fd,color:#1a1a2e
+    style GRAPH fill:#fff3e0,color:#1a1a2e
+    style TOOL fill:#fce4ec,color:#1a1a2e
+    style AGENT fill:#f3e5f5,color:#1a1a2e
+</div>
+
+<h3 id="3-3-핵심-판단-원칙">3-3. 핵심 판단 원칙</h3>
+<p><strong>1. 정확한 숫자 → 반드시 NL2SQL</strong></p>
+<blockquote>
+<p>LLM 직접 계산은 틀린다. RAG로 "매출 3억" 문서를 찾아도 최신값 보장 못 한다. <strong>DB가 SSOT</strong>.</p>
+</blockquote>
+<p><strong>2. "찾아줘" → RAG, "알려줘" → NL2SQL</strong></p>
+<blockquote>
+<p>"품질 보고서 찾아줘" → RAG (문서 검색)
+"불량률 알려줘" → NL2SQL (숫자 조회)</p>
+</blockquote>
+<p><strong>3. "관련된"이 나오면 Graph DB 의심</strong></p>
+<blockquote>
+<p>"관련 부서", "경쟁사", "상위 조직" — SQL JOIN으로 표현하기 어려움.</p>
+</blockquote>
+<p><strong>4. "지금/현재" → Tool Call</strong></p>
+<blockquote>
+<p>DB에 없는 실시간 데이터는 외부 API 호출 필요.</p>
+</blockquote>
+<p><strong>5. 복합 질문 → Agent가 분배</strong></p>
+<blockquote>
+<p>하나의 방식으로 안 풀리면 LangGraph Agent가 질문을 분해해 적합한 Tool을 순차/병렬 호출.</p>
+</blockquote>
+<h3 id="3-4-사내-질문-분류-예시">3-4. 사내 질문 분류 예시</h3>
+<table>
+<thead>
+<tr>
+<th>질문</th>
+<th style="text-align: center;">방식</th>
+<th>이유</th>
+<th style="text-align: center;">Phase</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>"이번 분기 매출 얼마야?"</td>
+<td style="text-align: center;">NL2SQL</td>
+<td>정확한 숫자, DB</td>
+<td style="text-align: center;">1</td>
+</tr>
+<tr>
+<td>"매출 상위 5개 팀"</td>
+<td style="text-align: center;">NL2SQL</td>
+<td>집계 + 정렬</td>
+<td style="text-align: center;">1</td>
+</tr>
+<tr>
+<td>"VIP 고객 중 이탈 위험자"</td>
+<td style="text-align: center;">NL2SQL</td>
+<td>boolean flag 활용</td>
+<td style="text-align: center;">1</td>
+</tr>
+<tr>
+<td>"ISO 인증 절차 알려줘"</td>
+<td style="text-align: center;">RAG</td>
+<td>사내 규정 문서</td>
+<td style="text-align: center;">4</td>
+</tr>
+<tr>
+<td>"지난 회의에서 결정된 사항"</td>
+<td style="text-align: center;">RAG</td>
+<td>회의록 검색</td>
+<td style="text-align: center;">4</td>
+</tr>
+<tr>
+<td>"김철수 팀장 결재선"</td>
+<td style="text-align: center;">Graph DB</td>
+<td>조직도 관계</td>
+<td style="text-align: center;">5+</td>
+</tr>
+<tr>
+<td>"Jira 미해결 티켓 몇 개?"</td>
+<td style="text-align: center;">Tool Call</td>
+<td>외부 시스템</td>
+<td style="text-align: center;">4</td>
+</tr>
+<tr>
+<td>"매출 하락 팀의 클레임 요약"</td>
+<td style="text-align: center;"><strong>Agent</strong></td>
+<td>NL2SQL + RAG</td>
+<td style="text-align: center;">4</td>
+</tr>
+</tbody>
+</table>
+<blockquote>
+<p><strong>Phase 1–3은 NL2SQL 대상에만 집중.</strong> RAG/Graph/Tool은 Phase 4 이후에 LangGraph Agent의 추가 노드로 점진 확장.</p>
+</blockquote>
+<hr />
+<h2 id="4-phase-0--현황-파악-1주">4. Phase 0 — 현황 파악 (1주)</h2>
+<h3 id="4-1-대상-데이터-인벤토리">4-1. 대상 데이터 인벤토리</h3>
+<p><strong>목표:</strong> NL2SQL로 질의할 대상 테이블/뷰를 식별한다.</p>
+<p><strong>BIP 경험:</strong> 처음에 39개 테이블 전체를 등록하려 했으나, 실제로 NL2SQL에 필요한 건 <strong>Gold 테이블 3개 + Curated View 4개 = 7개</strong>뿐이었다. 나머지 Raw/Derived 테이블은 LLM이 직접 접근하면 오히려 혼란을 일으켰다.</p>
+<p><strong>체크리스트:</strong>
+- [ ] 전체 테이블/뷰 목록 작성
+- [ ] 각 테이블의 용도 분류 (Raw / Derived / Reporting / 민감)
+- [ ] 사용자가 실제로 물어볼 질문 유형 30-50개 수집
+- [ ] 해당 질문에 답하려면 어떤 테이블이 필요한지 매핑</p>
+<p><strong>산출물 예시:</strong></p>
+<table>
+<thead>
+<tr>
+<th>테이블</th>
+<th>용도</th>
+<th style="text-align: center;">NL2SQL 대상</th>
+<th>이유</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>ORDERS</td>
+<td>Raw</td>
+<td style="text-align: center;">❌</td>
+<td>정규화된 원본, JOIN 필요</td>
+</tr>
+<tr>
+<td>ORDER_ITEMS</td>
+<td>Raw</td>
+<td style="text-align: center;">❌</td>
+<td>단독으로 의미 없음</td>
+</tr>
+<tr>
+<td>V_DAILY_SALES_SUMMARY</td>
+<td>Reporting</td>
+<td style="text-align: center;">✅</td>
+<td>미리 집계된 와이드 뷰</td>
+</tr>
+<tr>
+<td>V_CUSTOMER_360</td>
+<td>Derived</td>
+<td style="text-align: center;">✅</td>
+<td>비즈니스 분류 포함</td>
+</tr>
+<tr>
+<td>HR_EMPLOYEES</td>
+<td>민감</td>
+<td style="text-align: center;">❌</td>
+<td>인사 정보, LLM 차단</td>
+</tr>
+<tr>
+<td>FINANCE_SALARY</td>
+<td>민감</td>
+<td style="text-align: center;">❌</td>
+<td>급여, LLM 차단</td>
+</tr>
+</tbody>
+</table>
+<h3 id="4-2-질문-유형-수집">4-2. 질문 유형 수집</h3>
+<p><strong>목표:</strong> 실제 사용자(현업)가 할 만한 질문을 수집한다.</p>
+<p><strong>BIP 경험:</strong> 개발자가 상상한 질문과 실제 사용자 질문이 달랐다. "삼성전자 PER"은 잘 되지만, 사용자는 "현차 PER"(약칭), "저평가주 찾아줘"(추상 개념)처럼 물었다.</p>
+<p><strong>방법:</strong>
+1. 현업 담당자 인터뷰 (5–10명)
+2. 기존 데이터 요청 이력 (Jira, Slack, 이메일) 분석
+3. 기존 대시보드에서 자주 보는 지표 목록화</p>
+<p><strong>산출물 예시:</strong></p>
+<table>
+<thead>
+<tr>
+<th style="text-align: center;">#</th>
+<th>질문 예시</th>
+<th style="text-align: center;">난이도</th>
+<th>필요 테이블</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td style="text-align: center;">1</td>
+<td>이번 달 매출 얼마야?</td>
+<td style="text-align: center;">쉬움</td>
+<td>V_DAILY_SALES_SUMMARY</td>
+</tr>
+<tr>
+<td style="text-align: center;">2</td>
+<td>매출 상위 5개 제품</td>
+<td style="text-align: center;">쉬움</td>
+<td>V_DAILY_SALES_SUMMARY</td>
+</tr>
+<tr>
+<td style="text-align: center;">3</td>
+<td>지난 분기 대비 매출 증감</td>
+<td style="text-align: center;">중간</td>
+<td>V_DAILY_SALES_SUMMARY (시계열)</td>
+</tr>
+<tr>
+<td style="text-align: center;">4</td>
+<td>VIP 고객 중 이탈 위험자</td>
+<td style="text-align: center;">어려움</td>
+<td>V_CUSTOMER_360 + V_CUSTOMER_SIGNALS</td>
+</tr>
+<tr>
+<td style="text-align: center;">5</td>
+<td>마케팅 캠페인별 ROI</td>
+<td style="text-align: center;">어려움</td>
+<td>V_CAMPAIGN_PERFORMANCE (복합 JOIN)</td>
+</tr>
+</tbody>
+</table>
+<blockquote>
+<p>💡 <strong>실무 팁:</strong> 50개 정도 모이면 평가셋(Phase 3) 그대로 활용 가능. 추후 정확도 측정의 기준이 되므로 <strong>실제 표현 그대로</strong> 수집하는 것이 중요.</p>
+</blockquote>
+<h3 id="4-3-보안-요구사항-정리">4-3. 보안 요구사항 정리</h3>
+<p><strong>목표:</strong> LLM/NL2SQL이 접근해서는 안 되는 데이터를 식별한다.</p>
+<p><strong>BIP 경험:</strong> <code>portfolio</code>, <code>users</code>, <code>holding</code> 등 개인 재무 데이터를 민감 테이블로 분류하고 전용 DB role(<code>nl2sql_exec</code>)로 접근을 차단했다. 이 작업을 Phase 2 이후에 했다가 보안 감사에서 지적받을 뻔했다.</p>
+<p><strong>체크리스트:</strong>
+- [ ] 민감 테이블 목록 (개인정보, 급여, 인사, 재무 등)
+- [ ] 민감 컬럼 목록 (주민번호, 연봉, 비밀번호 등)
+- [ ] NL2SQL 전용 Oracle role 생성 계획
+- [ ] 감사 로그 요구사항 (어디에, 무엇을, 얼마 보관)
+- [ ] LLM 외부 호출 가능 여부 (Azure OpenAI 사내 테넌트? 사내 LLM?)</p>
+<hr />
+<h2 id="5-phase-1--데이터-정비-2-3주">5. Phase 1 — 데이터 정비 (2-3주)</h2>
+<blockquote>
+<p><strong>이 단계가 전체 품질의 80%를 결정한다. 도구를 바꿔도 이 산출물은 재사용된다.</strong></p>
+</blockquote>
+<h3 id="5-1-oracle-gold-view-설계">5-1. Oracle Gold View 설계</h3>
+<p><strong>목표:</strong> Raw 테이블을 pre-join하여 NL2SQL 친화적인 와이드 View를 만든다.</p>
+<p><strong>왜 필요한가 (BIP 경험):</strong>
+- Raw 테이블은 정규화되어 있어 LLM이 3–4개 테이블을 JOIN해야 하는데, <strong>LLM의 JOIN 정확도가 매우 낮다</strong>
+- 조건 필터 + JOIN이 동시에 있으면 실패율 급증
+- Gold View에 미리 JOIN + 계산을 해두면 LLM은 <strong>단일 SELECT만</strong> 하면 됨</p>
+<p><strong>설계 원칙:</strong></p>
+<div class="mermaid">
+flowchart TB
+    subgraph Raw["Raw (정규화 원본)"]
+        R1["ORDERS"]
+        R2["ORDER_ITEMS"]
+        R3["PRODUCTS"]
+        R4["CUSTOMERS"]
+    end
+
+    subgraph Gold["Gold View (NL2SQL용 와이드)"]
+        G1["V_DAILY_SALES_SUMMARY\n날짜·제품별 집계"]
+        G2["V_CUSTOMER_360\n고객별 구매이력·LTV"]
+    end
+
+    R1 --> G1
+    R2 --> G1
+    R3 --> G1
+    R1 --> G2
+    R2 --> G2
+    R4 --> G2
+
+    style Raw fill:#fff3e0,color:#1a1a2e
+    style Gold fill:#e8f5e9,color:#1a1a2e
+    style Raw fill:#4f8fea33,stroke:#4f8fea,stroke-width:2px
+    style Gold fill:#6c5ce733,stroke:#6c5ce7,stroke-width:2px
+</div>
+
+<p><strong>핵심 규칙:</strong></p>
+<ol>
+<li><strong>Grain(입도)을 명확히 정의</strong> — "이 행은 무엇인가?" (날짜 1행? 고객 1행? 날짜+제품 1행?)</li>
+<li><strong>단위 통일</strong> — 금액은 모두 원, 비율은 모두 % (BIP에서 시총이 "억원"과 "원"이 섞여 PER이 0으로 나왔던 사례)</li>
+<li><strong>미리 계산할 수 있는 건 컬럼으로</strong> — 증감률, 비율, 누적합 등을 SQL에서 미리</li>
+<li><strong>이름을 직관적으로</strong> — <code>col_a</code>가 아니라 <code>revenue</code>, <code>customer_count</code> (LLM은 컬럼명으로 의미 추론)</li>
+</ol>
+<p><strong>Oracle Gold View 예시:</strong></p>
+<div class="codehilite"><pre><span></span><code><span class="c1">-- 매출 요약 Gold View (BIP의 analytics_stock_daily에 대응)</span>
+<span class="k">CREATE</span><span class="w"> </span><span class="k">OR</span><span class="w"> </span><span class="k">REPLACE</span><span class="w"> </span><span class="k">VIEW</span><span class="w"> </span><span class="n">V_DAILY_SALES_SUMMARY</span><span class="w"> </span><span class="k">AS</span>
+<span class="k">SELECT</span>
+<span class="w">    </span><span class="n">s</span><span class="p">.</span><span class="n">SALE_DATE</span><span class="p">,</span>
+<span class="w">    </span><span class="n">d</span><span class="p">.</span><span class="n">DEPT_NAME</span><span class="p">,</span>
+<span class="w">    </span><span class="n">p</span><span class="p">.</span><span class="n">PRODUCT_NAME</span><span class="p">,</span>
+<span class="w">    </span><span class="n">p</span><span class="p">.</span><span class="n">CATEGORY</span><span class="p">,</span>
+<span class="w">    </span><span class="k">SUM</span><span class="p">(</span><span class="n">s</span><span class="p">.</span><span class="n">AMOUNT</span><span class="p">)</span><span class="w"> </span><span class="k">AS</span><span class="w"> </span><span class="n">TOTAL_AMOUNT</span><span class="p">,</span>
+<span class="w">    </span><span class="k">COUNT</span><span class="p">(</span><span class="k">DISTINCT</span><span class="w"> </span><span class="n">s</span><span class="p">.</span><span class="n">ORDER_ID</span><span class="p">)</span><span class="w"> </span><span class="k">AS</span><span class="w"> </span><span class="n">ORDER_COUNT</span><span class="p">,</span>
+<span class="w">    </span><span class="k">COUNT</span><span class="p">(</span><span class="k">DISTINCT</span><span class="w"> </span><span class="n">s</span><span class="p">.</span><span class="n">CUSTOMER_ID</span><span class="p">)</span><span class="w"> </span><span class="k">AS</span><span class="w"> </span><span class="n">CUSTOMER_COUNT</span><span class="p">,</span>
+<span class="w">    </span><span class="k">AVG</span><span class="p">(</span><span class="n">s</span><span class="p">.</span><span class="n">AMOUNT</span><span class="p">)</span><span class="w"> </span><span class="k">AS</span><span class="w"> </span><span class="n">AVG_DEAL_SIZE</span><span class="p">,</span>
+<span class="w">    </span><span class="c1">-- 단위 통일: 모든 금액 원 단위</span>
+<span class="w">    </span><span class="k">SUM</span><span class="p">(</span><span class="n">s</span><span class="p">.</span><span class="n">AMOUNT</span><span class="w"> </span><span class="o">-</span><span class="w"> </span><span class="n">s</span><span class="p">.</span><span class="n">COST</span><span class="p">)</span><span class="w"> </span><span class="k">AS</span><span class="w"> </span><span class="n">PROFIT</span><span class="p">,</span>
+<span class="w">    </span><span class="c1">-- 비율은 % (소수점 2자리)</span>
+<span class="w">    </span><span class="n">ROUND</span><span class="p">(</span><span class="k">SUM</span><span class="p">(</span><span class="n">s</span><span class="p">.</span><span class="n">AMOUNT</span><span class="w"> </span><span class="o">-</span><span class="w"> </span><span class="n">s</span><span class="p">.</span><span class="n">COST</span><span class="p">)</span><span class="w"> </span><span class="o">/</span><span class="w"> </span><span class="k">NULLIF</span><span class="p">(</span><span class="k">SUM</span><span class="p">(</span><span class="n">s</span><span class="p">.</span><span class="n">AMOUNT</span><span class="p">),</span><span class="w"> </span><span class="mi">0</span><span class="p">)</span><span class="w"> </span><span class="o">*</span><span class="w"> </span><span class="mi">100</span><span class="p">,</span><span class="w"> </span><span class="mi">2</span><span class="p">)</span><span class="w"> </span><span class="k">AS</span><span class="w"> </span><span class="n">PROFIT_MARGIN_PCT</span>
+<span class="k">FROM</span><span class="w"> </span><span class="n">SALES</span><span class="w"> </span><span class="n">s</span>
+<span class="k">JOIN</span><span class="w"> </span><span class="n">DEPARTMENTS</span><span class="w"> </span><span class="n">d</span><span class="w"> </span><span class="k">ON</span><span class="w"> </span><span class="n">s</span><span class="p">.</span><span class="n">DEPT_ID</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">d</span><span class="p">.</span><span class="n">DEPT_ID</span>
+<span class="k">JOIN</span><span class="w"> </span><span class="n">PRODUCTS</span><span class="w"> </span><span class="n">p</span><span class="w"> </span><span class="k">ON</span><span class="w"> </span><span class="n">s</span><span class="p">.</span><span class="n">PRODUCT_ID</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">p</span><span class="p">.</span><span class="n">PRODUCT_ID</span>
+<span class="k">WHERE</span><span class="w"> </span><span class="n">s</span><span class="p">.</span><span class="n">STATUS</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s1">&#39;COMPLETED&#39;</span>
+<span class="k">GROUP</span><span class="w"> </span><span class="k">BY</span><span class="w"> </span><span class="n">s</span><span class="p">.</span><span class="n">SALE_DATE</span><span class="p">,</span><span class="w"> </span><span class="n">d</span><span class="p">.</span><span class="n">DEPT_NAME</span><span class="p">,</span><span class="w"> </span><span class="n">p</span><span class="p">.</span><span class="n">PRODUCT_NAME</span><span class="p">,</span><span class="w"> </span><span class="n">p</span><span class="p">.</span><span class="n">CATEGORY</span><span class="p">;</span>
+
+<span class="k">COMMENT</span><span class="w"> </span><span class="k">ON</span><span class="w"> </span><span class="k">TABLE</span><span class="w"> </span><span class="n">V_DAILY_SALES_SUMMARY</span><span class="w"> </span><span class="k">IS</span>
+<span class="w">  </span><span class="s1">&#39;일별·부서·제품별 매출 요약. Grain: 날짜×부서×제품. STATUS=COMPLETED만 집계.&#39;</span><span class="p">;</span>
+<span class="k">COMMENT</span><span class="w"> </span><span class="k">ON</span><span class="w"> </span><span class="k">COLUMN</span><span class="w"> </span><span class="n">V_DAILY_SALES_SUMMARY</span><span class="p">.</span><span class="n">TOTAL_AMOUNT</span><span class="w"> </span><span class="k">IS</span>
+<span class="w">  </span><span class="s1">&#39;총 매출 금액 (원 단위). 환불·취소 제외.&#39;</span><span class="p">;</span>
+<span class="k">COMMENT</span><span class="w"> </span><span class="k">ON</span><span class="w"> </span><span class="k">COLUMN</span><span class="w"> </span><span class="n">V_DAILY_SALES_SUMMARY</span><span class="p">.</span><span class="n">PROFIT_MARGIN_PCT</span><span class="w"> </span><span class="k">IS</span>
+<span class="w">  </span><span class="s1">&#39;순이익률 (%). PROFIT / TOTAL_AMOUNT × 100.&#39;</span><span class="p">;</span>
+</code></pre></div>
+
+<blockquote>
+<p><strong>이 View가 하는 일:</strong> 4개 테이블을 미리 JOIN + 집계 + 단위 통일. LLM은 <code>SELECT * FROM V_DAILY_SALES_SUMMARY WHERE ...</code>만 하면 됨.</p>
+</blockquote>
+<h3 id="5-2-curated-view--boolean-flag">5-2. Curated View — Boolean Flag</h3>
+<p><strong>목표:</strong> Gold View 위에 <strong>boolean 플래그</strong>를 추가한 View를 만든다.</p>
+<p><strong>왜 필요한가 (BIP 경험):</strong>
+- "저평가주 찾아줘"라고 물으면 LLM은 <code>WHERE PER &lt; 10 AND PBR &lt; 1</code>을 스스로 만들어야 하는데, <strong>기준이 맞는지 보장 못 함</strong>
+- <code>IS_VALUE_STOCK = 'Y'</code> boolean이 있으면 LLM은 <strong>단순 필터링만</strong> 하면 됨
+- Boolean flag 사용률이 0% → 87%로 올라간 것이 BIP Phase 1 최대 성과</p>
+<p><strong>설계 패턴:</strong></p>
+<div class="codehilite"><pre><span></span><code><span class="c1">-- 비즈니스 규칙을 boolean 컬럼으로 고정</span>
+<span class="k">CREATE</span><span class="w"> </span><span class="k">OR</span><span class="w"> </span><span class="k">REPLACE</span><span class="w"> </span><span class="k">VIEW</span><span class="w"> </span><span class="n">V_CUSTOMER_SIGNALS</span><span class="w"> </span><span class="k">AS</span>
+<span class="k">SELECT</span>
+<span class="w">    </span><span class="k">c</span><span class="p">.</span><span class="n">CUSTOMER_ID</span><span class="p">,</span>
+<span class="w">    </span><span class="k">c</span><span class="p">.</span><span class="n">NAME</span><span class="p">,</span>
+<span class="w">    </span><span class="k">c</span><span class="p">.</span><span class="n">TIER</span><span class="p">,</span>
+<span class="w">    </span><span class="k">c</span><span class="p">.</span><span class="n">TOTAL_PURCHASES</span><span class="p">,</span>
+<span class="w">    </span><span class="k">c</span><span class="p">.</span><span class="n">AVG_ORDER_VALUE</span><span class="p">,</span>
+<span class="w">    </span><span class="k">c</span><span class="p">.</span><span class="n">LAST_PURCHASE_DATE</span><span class="p">,</span>
+<span class="w">    </span><span class="k">c</span><span class="p">.</span><span class="n">RETURN_RATE</span><span class="p">,</span>
+<span class="w">    </span><span class="c1">-- 비즈니스 정의를 SQL로 고정</span>
+<span class="w">    </span><span class="k">CASE</span><span class="w"> </span><span class="k">WHEN</span><span class="w"> </span><span class="k">c</span><span class="p">.</span><span class="n">TOTAL_PURCHASES</span><span class="w"> </span><span class="o">&gt;=</span><span class="w"> </span><span class="mi">10</span><span class="w"> </span><span class="k">AND</span><span class="w"> </span><span class="k">c</span><span class="p">.</span><span class="n">AVG_ORDER_VALUE</span><span class="w"> </span><span class="o">&gt;=</span><span class="w"> </span><span class="mi">50000</span>
+<span class="w">         </span><span class="k">THEN</span><span class="w"> </span><span class="s1">&#39;Y&#39;</span><span class="w"> </span><span class="k">ELSE</span><span class="w"> </span><span class="s1">&#39;N&#39;</span><span class="w"> </span><span class="k">END</span><span class="w"> </span><span class="k">AS</span><span class="w"> </span><span class="n">IS_VIP</span><span class="p">,</span>
+<span class="w">    </span><span class="k">CASE</span><span class="w"> </span><span class="k">WHEN</span><span class="w"> </span><span class="k">c</span><span class="p">.</span><span class="n">LAST_PURCHASE_DATE</span><span class="w"> </span><span class="o">&lt;</span><span class="w"> </span><span class="n">SYSDATE</span><span class="w"> </span><span class="o">-</span><span class="w"> </span><span class="mi">90</span>
+<span class="w">         </span><span class="k">THEN</span><span class="w"> </span><span class="s1">&#39;Y&#39;</span><span class="w"> </span><span class="k">ELSE</span><span class="w"> </span><span class="s1">&#39;N&#39;</span><span class="w"> </span><span class="k">END</span><span class="w"> </span><span class="k">AS</span><span class="w"> </span><span class="n">IS_CHURNING</span><span class="p">,</span>
+<span class="w">    </span><span class="k">CASE</span><span class="w"> </span><span class="k">WHEN</span><span class="w"> </span><span class="k">c</span><span class="p">.</span><span class="n">TOTAL_PURCHASES</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="mi">1</span><span class="w"> </span><span class="k">AND</span><span class="w"> </span><span class="k">c</span><span class="p">.</span><span class="n">SIGNUP_DATE</span><span class="w"> </span><span class="o">&gt;</span><span class="w"> </span><span class="n">SYSDATE</span><span class="w"> </span><span class="o">-</span><span class="w"> </span><span class="mi">30</span>
+<span class="w">         </span><span class="k">THEN</span><span class="w"> </span><span class="s1">&#39;Y&#39;</span><span class="w"> </span><span class="k">ELSE</span><span class="w"> </span><span class="s1">&#39;N&#39;</span><span class="w"> </span><span class="k">END</span><span class="w"> </span><span class="k">AS</span><span class="w"> </span><span class="n">IS_NEW</span><span class="p">,</span>
+<span class="w">    </span><span class="k">CASE</span><span class="w"> </span><span class="k">WHEN</span><span class="w"> </span><span class="k">c</span><span class="p">.</span><span class="n">RETURN_RATE</span><span class="w"> </span><span class="o">&gt;</span><span class="w"> </span><span class="mi">0</span><span class="p">.</span><span class="mi">3</span>
+<span class="w">         </span><span class="k">THEN</span><span class="w"> </span><span class="s1">&#39;Y&#39;</span><span class="w"> </span><span class="k">ELSE</span><span class="w"> </span><span class="s1">&#39;N&#39;</span><span class="w"> </span><span class="k">END</span><span class="w"> </span><span class="k">AS</span><span class="w"> </span><span class="n">IS_HIGH_RETURN</span>
+<span class="k">FROM</span><span class="w"> </span><span class="n">V_CUSTOMER_360</span><span class="w"> </span><span class="k">c</span><span class="p">;</span>
+
+<span class="k">COMMENT</span><span class="w"> </span><span class="k">ON</span><span class="w"> </span><span class="k">COLUMN</span><span class="w"> </span><span class="n">V_CUSTOMER_SIGNALS</span><span class="p">.</span><span class="n">IS_VIP</span><span class="w"> </span><span class="k">IS</span>
+<span class="w">  </span><span class="s1">&#39;VIP 고객 여부. 누적 구매 10회 이상이면서 평균 객단가 5만원 이상.&#39;</span><span class="p">;</span>
+<span class="k">COMMENT</span><span class="w"> </span><span class="k">ON</span><span class="w"> </span><span class="k">COLUMN</span><span class="w"> </span><span class="n">V_CUSTOMER_SIGNALS</span><span class="p">.</span><span class="n">IS_CHURNING</span><span class="w"> </span><span class="k">IS</span>
+<span class="w">  </span><span class="s1">&#39;이탈 위험 여부. 마지막 구매일이 90일 전 이전.&#39;</span><span class="p">;</span>
+</code></pre></div>
+
+<p><strong>사내 적용 예시 (Boolean 후보):</strong></p>
+<table>
+<thead>
+<tr>
+<th>도메인</th>
+<th>View</th>
+<th>플래그</th>
+<th>비즈니스 정의</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>영업</td>
+<td>V_SALES_SIGNALS</td>
+<td>IS_LARGE_DEAL</td>
+<td>거래액 1억 이상</td>
+</tr>
+<tr>
+<td>영업</td>
+<td>V_SALES_SIGNALS</td>
+<td>IS_LOW_MARGIN</td>
+<td>마진율 5% 미만</td>
+</tr>
+<tr>
+<td>고객</td>
+<td>V_CUSTOMER_SIGNALS</td>
+<td>IS_VIP</td>
+<td>누적 구매 10회 + 객단가 5만원</td>
+</tr>
+<tr>
+<td>고객</td>
+<td>V_CUSTOMER_SIGNALS</td>
+<td>IS_CHURNING</td>
+<td>마지막 구매 90일 전</td>
+</tr>
+<tr>
+<td>운영</td>
+<td>V_OPS_SIGNALS</td>
+<td>IS_DELAYED</td>
+<td>납기 지연 7일 초과</td>
+</tr>
+<tr>
+<td>운영</td>
+<td>V_OPS_SIGNALS</td>
+<td>IS_LOW_STOCK</td>
+<td>재고 안전재고 미만</td>
+</tr>
+</tbody>
+</table>
+<h3 id="5-3-해석-컬럼-interpretation-column">5-3. 해석 컬럼 (Interpretation Column)</h3>
+<p><strong>목표:</strong> 숫자 컬럼의 의미를 LLM이 오해할 수 있는 경우 <strong>텍스트 해석 컬럼</strong>을 View에 추가한다.</p>
+<p><strong>왜 필요한가 (BIP 경험):</strong></p>
+<p>WrenAI의 답변 생성(sql_answer)은 SQL 실행 결과만 LLM에 넘기고 <strong>컬럼 description은 전달하지 않는다.</strong> 결과 LLM은 데이터만 보고 해석한다. v3에서도 Result Synthesizer가 같은 한계를 가질 수 있어, <strong>데이터 자체에 텍스트 해석을 박아넣는</strong> 것이 안전하다.</p>
+<div class="codehilite"><pre><span></span><code>문제 상황:
+  컬럼: NET_AMOUNT = -500,000
+  Description: &quot;음수=환불, 양수=결제. 음수는 정상값&quot; (Synthesizer는 못 봄)
+  LLM 답변: &quot;음수값 -500,000은 이상치일 수 있습니다&quot; ❌
+
+해결:
+  컬럼 추가: AMOUNT_DIRECTION = &#39;환불&#39;
+  LLM 답변: &quot;환불 거래입니다 (-500,000원)&quot; ✅
+</code></pre></div>
+
+<p><strong>이 패턴이 필요한 경우:</strong>
+- 양수/음수가 방향성 (순매수/순매도, 유입/유출)
+- NULL이 특별한 의미 ("데이터 없음" vs "0")
+- 숫자 범위에 따라 해석이 달라지는 경우 (RSI 30 미만 = 과매도)</p>
+<p><strong>설계 패턴 (Oracle):</strong></p>
+<div class="codehilite"><pre><span></span><code><span class="k">CREATE</span><span class="w"> </span><span class="k">OR</span><span class="w"> </span><span class="k">REPLACE</span><span class="w"> </span><span class="k">VIEW</span><span class="w"> </span><span class="n">V_FLOW_SIGNALS</span><span class="w"> </span><span class="k">AS</span>
+<span class="k">SELECT</span>
+<span class="w">    </span><span class="o">*</span><span class="p">,</span>
+<span class="w">    </span><span class="c1">-- 해석 컬럼 1: 방향성</span>
+<span class="w">    </span><span class="k">CASE</span>
+<span class="w">        </span><span class="k">WHEN</span><span class="w"> </span><span class="n">FOREIGN_BUY_VOLUME</span><span class="w"> </span><span class="k">IS</span><span class="w"> </span><span class="k">NULL</span><span class="w"> </span><span class="k">THEN</span><span class="w"> </span><span class="s1">&#39;데이터없음&#39;</span>
+<span class="w">        </span><span class="k">WHEN</span><span class="w"> </span><span class="n">FOREIGN_BUY_VOLUME</span><span class="w"> </span><span class="o">&gt;</span><span class="w"> </span><span class="mi">0</span><span class="w"> </span><span class="k">THEN</span><span class="w"> </span><span class="s1">&#39;순매수&#39;</span>
+<span class="w">        </span><span class="k">WHEN</span><span class="w"> </span><span class="n">FOREIGN_BUY_VOLUME</span><span class="w"> </span><span class="o">&lt;</span><span class="w"> </span><span class="mi">0</span><span class="w"> </span><span class="k">THEN</span><span class="w"> </span><span class="s1">&#39;순매도&#39;</span>
+<span class="w">        </span><span class="k">ELSE</span><span class="w"> </span><span class="s1">&#39;보합&#39;</span>
+<span class="w">    </span><span class="k">END</span><span class="w"> </span><span class="k">AS</span><span class="w"> </span><span class="n">FOREIGN_DIRECTION</span><span class="p">,</span>
+<span class="w">    </span><span class="c1">-- 해석 컬럼 2: 등급</span>
+<span class="w">    </span><span class="k">CASE</span>
+<span class="w">        </span><span class="k">WHEN</span><span class="w"> </span><span class="n">RSI_14</span><span class="w"> </span><span class="o">&lt;</span><span class="w"> </span><span class="mi">30</span><span class="w"> </span><span class="k">THEN</span><span class="w"> </span><span class="s1">&#39;과매도&#39;</span>
+<span class="w">        </span><span class="k">WHEN</span><span class="w"> </span><span class="n">RSI_14</span><span class="w"> </span><span class="k">BETWEEN</span><span class="w"> </span><span class="mi">30</span><span class="w"> </span><span class="k">AND</span><span class="w"> </span><span class="mi">70</span><span class="w"> </span><span class="k">THEN</span><span class="w"> </span><span class="s1">&#39;중립&#39;</span>
+<span class="w">        </span><span class="k">WHEN</span><span class="w"> </span><span class="n">RSI_14</span><span class="w"> </span><span class="o">&gt;</span><span class="w"> </span><span class="mi">70</span><span class="w"> </span><span class="k">THEN</span><span class="w"> </span><span class="s1">&#39;과매수&#39;</span>
+<span class="w">        </span><span class="k">ELSE</span><span class="w"> </span><span class="s1">&#39;데이터없음&#39;</span>
+<span class="w">    </span><span class="k">END</span><span class="w"> </span><span class="k">AS</span><span class="w"> </span><span class="n">RSI_LABEL</span>
+<span class="k">FROM</span><span class="w"> </span><span class="n">V_DAILY_FLOW</span><span class="p">;</span>
+</code></pre></div>
+
+<p><strong>핵심:</strong> Boolean flag는 "어떤 행이 해당되는지" 필터링용, 해석 컬럼은 "이 숫자가 무엇을 의미하는지" 답변 품질용. <strong>둘 다 필요하고 역할이 다르다.</strong></p>
+<div class="mermaid">
+flowchart LR
+    subgraph View["Curated View 컬럼 유형"]
+        A["원본 숫자\nFOREIGN_BUY_VOLUME = -20778"]
+        B["Boolean Flag\nIS_FOREIGN_NET_BUY = N"]
+        C["해석 컬럼\nFOREIGN_DIRECTION = 순매도"]
+    end
+
+    A -->|SQL 필터링| Q1["WHERE VOLUME > 1000"]
+    B -->|의미 필터링| Q2["WHERE IS_FOREIGN_NET_BUY = Y"]
+    C -->|답변 품질| Q3["답변: 외국인 순매도 상태"]
+
+    style A fill:#fff3e0,color:#1a1a2e
+    style B fill:#e8f5e9,color:#1a1a2e
+    style C fill:#e3f2fd,color:#1a1a2e
+    style View fill:#4f8fea33,stroke:#4f8fea,stroke-width:2px
+</div>
+
+<h3 id="5-4-컬럼-description--db-comment">5-4. 컬럼 Description + DB COMMENT</h3>
+<p><strong>목표:</strong> 모든 대상 테이블/뷰의 컬럼에 비즈니스 설명을 작성하고 Oracle COMMENT로 박아넣는다.</p>
+<p><strong>왜 필요한가:</strong>
+- 컬럼명만으로 LLM이 정확한 의미를 알 수 없다 (<code>OP_PROFIT_GROWTH</code> → 분기? 연간? %?)
+- description이 없으면 LLM이 잘못된 컬럼을 선택하거나 무시한다
+- BIP에서 description 추가 전후 SQL 정확도가 체감상 크게 달라졌다</p>
+<p><strong>작성 규칙:</strong></p>
+<ol>
+<li><strong>비즈니스 용어</strong>로 작성 (기술 용어 X)</li>
+<li><strong>단위</strong> 명시 (원, %, 건, 명)</li>
+<li><strong>계산식</strong> 포함 (어떻게 계산된 컬럼인지)</li>
+<li><strong>가능한 값</strong> 예시 (enum, boolean)</li>
+</ol>
+<p><strong>좋은 예 vs 나쁜 예:</strong></p>
+<table>
+<thead>
+<tr>
+<th>컬럼</th>
+<th>❌ 나쁜 description</th>
+<th>✅ 좋은 description</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>REVENUE</td>
+<td>매출</td>
+<td>연간 매출액 (원 단위). FINANCIAL_STATEMENTS에서 추출한 확정 실적</td>
+</tr>
+<tr>
+<td>IS_VALUE_STOCK</td>
+<td>저평가 여부</td>
+<td>PER 10 이하이면서 PBR 1 이하인 저평가 종목 여부 (Y/N)</td>
+</tr>
+<tr>
+<td>CHANGE_PCT</td>
+<td>변동률</td>
+<td>전일 대비 종가 변동률 (%). 양수=상승, 음수=하락</td>
+</tr>
+<tr>
+<td>DATA_TYPE</td>
+<td>데이터 유형</td>
+<td>actual=확정 실적(연간), estimate=컨센서스 추정치, preliminary=잠정 실적(분기)</td>
+</tr>
+</tbody>
+</table>
+<p><strong>Oracle COMMENT 적용:</strong></p>
+<div class="codehilite"><pre><span></span><code><span class="k">COMMENT</span><span class="w"> </span><span class="k">ON</span><span class="w"> </span><span class="k">TABLE</span><span class="w"> </span><span class="n">V_DAILY_SALES_SUMMARY</span><span class="w"> </span><span class="k">IS</span>
+<span class="w">  </span><span class="s1">&#39;일별 매출 요약. Grain: 날짜×부서×제품. STATUS=COMPLETED만 집계. 매일 02:00 KST 갱신.&#39;</span><span class="p">;</span>
+<span class="k">COMMENT</span><span class="w"> </span><span class="k">ON</span><span class="w"> </span><span class="k">COLUMN</span><span class="w"> </span><span class="n">V_DAILY_SALES_SUMMARY</span><span class="p">.</span><span class="n">TOTAL_AMOUNT</span><span class="w"> </span><span class="k">IS</span>
+<span class="w">  </span><span class="s1">&#39;총 매출 금액 (원 단위). 환불·취소 제외.&#39;</span><span class="p">;</span>
+<span class="k">COMMENT</span><span class="w"> </span><span class="k">ON</span><span class="w"> </span><span class="k">COLUMN</span><span class="w"> </span><span class="n">V_DAILY_SALES_SUMMARY</span><span class="p">.</span><span class="n">PROFIT_MARGIN_PCT</span><span class="w"> </span><span class="k">IS</span>
+<span class="w">  </span><span class="s1">&#39;순이익률 (%). PROFIT / TOTAL_AMOUNT × 100. 소수점 2자리.&#39;</span><span class="p">;</span>
+</code></pre></div>
+
+<h3 id="5-5-nl2sql-전용-oracle-role">5-5. NL2SQL 전용 Oracle Role</h3>
+<p><strong>목표:</strong> NL2SQL이 사용할 최소 권한 Oracle 계정을 만든다.</p>
+<p><strong>BIP 경험:</strong> 처음에 관리자 계정으로 테스트하다 보안 리뷰에서 지적받았다. 전용 role을 만들면 민감 테이블 접근이 <strong>DB 레벨에서 차단</strong>된다.</p>
+<div class="codehilite"><pre><span></span><code><span class="c1">-- 1. 전용 사용자 생성</span>
+<span class="k">CREATE</span><span class="w"> </span><span class="k">USER</span><span class="w"> </span><span class="n">NL2SQL_READER</span><span class="w"> </span><span class="n">IDENTIFIED</span><span class="w"> </span><span class="k">BY</span><span class="w"> </span><span class="o">&lt;</span><span class="n">password</span><span class="o">&gt;</span>
+<span class="w">  </span><span class="k">DEFAULT</span><span class="w"> </span><span class="n">TABLESPACE</span><span class="w"> </span><span class="n">USERS</span>
+<span class="w">  </span><span class="k">TEMPORARY</span><span class="w"> </span><span class="n">TABLESPACE</span><span class="w"> </span><span class="n">TEMP</span>
+<span class="w">  </span><span class="n">PROFILE</span><span class="w"> </span><span class="k">DEFAULT</span><span class="p">;</span>
+
+<span class="k">GRANT</span><span class="w"> </span><span class="k">CREATE</span><span class="w"> </span><span class="k">SESSION</span><span class="w"> </span><span class="k">TO</span><span class="w"> </span><span class="n">NL2SQL_READER</span><span class="p">;</span>
+<span class="k">GRANT</span><span class="w"> </span><span class="n">SELECT_CATALOG_ROLE</span><span class="w"> </span><span class="k">TO</span><span class="w"> </span><span class="n">NL2SQL_READER</span><span class="p">;</span><span class="w">  </span><span class="c1">-- 메타 조회용 (선택)</span>
+
+<span class="c1">-- 2. NL2SQL 대상 View만 GRANT</span>
+<span class="k">GRANT</span><span class="w"> </span><span class="k">SELECT</span><span class="w"> </span><span class="k">ON</span><span class="w"> </span><span class="n">BIP</span><span class="p">.</span><span class="n">V_DAILY_SALES_SUMMARY</span><span class="w"> </span><span class="k">TO</span><span class="w"> </span><span class="n">NL2SQL_READER</span><span class="p">;</span>
+<span class="k">GRANT</span><span class="w"> </span><span class="k">SELECT</span><span class="w"> </span><span class="k">ON</span><span class="w"> </span><span class="n">BIP</span><span class="p">.</span><span class="n">V_CUSTOMER_360</span><span class="w"> </span><span class="k">TO</span><span class="w"> </span><span class="n">NL2SQL_READER</span><span class="p">;</span>
+<span class="k">GRANT</span><span class="w"> </span><span class="k">SELECT</span><span class="w"> </span><span class="k">ON</span><span class="w"> </span><span class="n">BIP</span><span class="p">.</span><span class="n">V_CUSTOMER_SIGNALS</span><span class="w"> </span><span class="k">TO</span><span class="w"> </span><span class="n">NL2SQL_READER</span><span class="p">;</span>
+<span class="k">GRANT</span><span class="w"> </span><span class="k">SELECT</span><span class="w"> </span><span class="k">ON</span><span class="w"> </span><span class="n">BIP</span><span class="p">.</span><span class="n">V_FLOW_SIGNALS</span><span class="w"> </span><span class="k">TO</span><span class="w"> </span><span class="n">NL2SQL_READER</span><span class="p">;</span>
+<span class="k">GRANT</span><span class="w"> </span><span class="k">SELECT</span><span class="w"> </span><span class="k">ON</span><span class="w"> </span><span class="n">BIP</span><span class="p">.</span><span class="n">V_OPS_SIGNALS</span><span class="w"> </span><span class="k">TO</span><span class="w"> </span><span class="n">NL2SQL_READER</span><span class="p">;</span>
+
+<span class="c1">-- 3. 민감 테이블은 GRANT 안 함 → 접근 자체 불가</span>
+<span class="c1">-- BIP.HR_EMPLOYEES, BIP.FINANCE_SALARY 등은 GRANT 없음</span>
+
+<span class="c1">-- 4. (선택) 리소스 제한</span>
+<span class="k">ALTER</span><span class="w"> </span><span class="n">PROFILE</span><span class="w"> </span><span class="k">DEFAULT</span><span class="w"> </span><span class="k">LIMIT</span>
+<span class="w">  </span><span class="n">CPU_PER_CALL</span><span class="w"> </span><span class="mi">30000</span><span class="w">     </span><span class="c1">-- 개별 쿼리 최대 5분</span>
+<span class="w">  </span><span class="n">LOGICAL_READS_PER_CALL</span><span class="w"> </span><span class="mi">100000</span><span class="p">;</span>
+</code></pre></div>
+
+<blockquote>
+<p><strong>이 Role이 보장하는 것:</strong> LLM이 SQL 인젝션을 시도하거나 환각으로 잘못된 테이블을 호출해도, <strong>DB가 권한 없음(ORA-00942)으로 거부</strong>한다. Validator의 allowlist는 1차 방어, DB role이 최종 방어선.</p>
+</blockquote>
+<h3 id="5-6-join-관계-yaml">5-6. JOIN 관계 YAML</h3>
+<p><strong>목표:</strong> 테이블 간 JOIN 키를 코드에서 참조 가능한 YAML로 명시화한다.</p>
+<p><strong>왜 필요한가:</strong>
+- OM Lineage는 데이터 흐름을 표현하지만 JOIN 키는 표현 못 함
+- Schema Registry가 LLM 프롬프트에 JOIN 정보를 주입해야 SQL Converter가 자동으로 JOIN 절을 생성 가능</p>
+<p><strong>파일 위치:</strong> <code>langgraph/nl2sql/joins.yaml</code></p>
+<div class="codehilite"><pre><span></span><code><span class="nt">joins</span><span class="p">:</span>
+<span class="w">  </span><span class="c1"># 마스터 ↔ 트랜잭션</span>
+<span class="w">  </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="nt">tables</span><span class="p">:</span><span class="w"> </span><span class="p p-Indicator">[</span><span class="s">&quot;V_CUSTOMER_360&quot;</span><span class="p p-Indicator">,</span><span class="w"> </span><span class="s">&quot;V_CUSTOMER_SIGNALS&quot;</span><span class="p p-Indicator">]</span>
+<span class="w">    </span><span class="nt">on</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;CUSTOMER_ID&quot;</span>
+<span class="w">    </span><span class="nt">type</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;one_to_one&quot;</span>
+
+<span class="w">  </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="nt">tables</span><span class="p">:</span><span class="w"> </span><span class="p p-Indicator">[</span><span class="s">&quot;V_DAILY_SALES_SUMMARY&quot;</span><span class="p p-Indicator">,</span><span class="w"> </span><span class="s">&quot;V_CUSTOMER_360&quot;</span><span class="p p-Indicator">]</span>
+<span class="w">    </span><span class="nt">on</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;CUSTOMER_ID&quot;</span>
+<span class="w">    </span><span class="nt">type</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;many_to_one&quot;</span>
+<span class="w">    </span><span class="nt">note</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;주문→고객</span><span class="nv"> </span><span class="s">비정규</span><span class="nv"> </span><span class="s">(sales는</span><span class="nv"> </span><span class="s">customer</span><span class="nv"> </span><span class="s">중복</span><span class="nv"> </span><span class="s">등장)&quot;</span>
+
+<span class="w">  </span><span class="c1"># 같은 grain끼리 직접 JOIN 가능</span>
+<span class="w">  </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="nt">tables</span><span class="p">:</span><span class="w"> </span><span class="p p-Indicator">[</span><span class="s">&quot;V_OPS_SIGNALS&quot;</span><span class="p p-Indicator">,</span><span class="w"> </span><span class="s">&quot;V_INVENTORY_SIGNALS&quot;</span><span class="p p-Indicator">]</span>
+<span class="w">    </span><span class="nt">on</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;PRODUCT_ID,</span><span class="nv"> </span><span class="s">OPS_DATE&quot;</span>
+<span class="w">    </span><span class="nt">type</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;one_to_one&quot;</span>
+
+<span class="w">  </span><span class="c1"># 다른 grain — 단일 키, 최신 행 필터 권장</span>
+<span class="w">  </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="nt">tables</span><span class="p">:</span><span class="w"> </span><span class="p p-Indicator">[</span><span class="s">&quot;V_CUSTOMER_360&quot;</span><span class="p p-Indicator">,</span><span class="w"> </span><span class="s">&quot;V_CUSTOMER_LIFETIME_VALUE&quot;</span><span class="p p-Indicator">]</span>
+<span class="w">    </span><span class="nt">on</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;CUSTOMER_ID&quot;</span>
+<span class="w">    </span><span class="nt">type</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;many_to_many&quot;</span>
+<span class="w">    </span><span class="nt">note</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;grain</span><span class="nv"> </span><span class="s">불일치</span><span class="nv"> </span><span class="s">(전체</span><span class="nv"> </span><span class="s">vs</span><span class="nv"> </span><span class="s">분기)</span><span class="nv"> </span><span class="s">—</span><span class="nv"> </span><span class="s">최신</span><span class="nv"> </span><span class="s">분기</span><span class="nv"> </span><span class="s">필터</span><span class="nv"> </span><span class="s">권장&quot;</span>
+</code></pre></div>
+
+<blockquote>
+<p>💡 <strong>실무 팁:</strong> JOIN 후보가 10–20개를 넘어가면 그래프 형태로 시각화 (Schema Registry가 자동 생성). 사용자가 보면서 누락된 관계를 채울 수 있다.</p>
+</blockquote>
+<hr />
+<h2 id="6-phase-2--nl2sql-엔진-구축-2-3주">6. Phase 2 — NL2SQL 엔진 구축 (2-3주)</h2>
+<blockquote>
+<p><strong>Phase 1 산출물(Gold View, Curated View, JOIN YAML, NL2SQL Role)을 입력으로 받아 LangGraph + QuerySpec 엔진을 구축한다.</strong></p>
+</blockquote>
+<h3 id="6-1-모듈-구조">6-1. 모듈 구조</h3>
+<div class="mermaid">
+flowchart TB
+    subgraph Engine["NL2SQL 엔진 (langgraph/nl2sql/)"]
+        SR["schema_registry.py\nDB 스키마 + JOIN YAML"]
+        QS["query_spec.py\nQuerySpec Pydantic"]
+        SC["sql_converter.py\nQuerySpec → SQL"]
+        VL["validator.py\nsqlglot + dry-run + allowlist"]
+        AG["agent.py\nLangGraph 그래프"]
+    end
+
+    subgraph External["외부"]
+        DB["(#quot;Oracle 19c\nNL2SQL_READER#quot;)"]
+        LLM["LLM\nQuerySpec 생성"]
+        VEC["(#quot;pgvector\nSchema RAG#quot;)"]
+        OM["(#quot;OpenMetadata\n메타 허브#quot;)"]
+    end
+
+    SR -.스키마.-> AG
+    QS -.모델.-> AG
+    SC -.변환.-> AG
+    VL -.검증.-> AG
+    AG --> LLM
+    AG --> VEC
+    AG --> DB
+    OM -.동기화.-> SR
+
+    style AG fill:#fbbf24,color:#1a1a2e
+    style QS fill:#3b82f6,color:#fff
+    style SC fill:#22c55e,color:#fff
+    style Engine fill:#4f8fea33,stroke:#4f8fea,stroke-width:2px
+    style External fill:#6c5ce733,stroke:#6c5ce7,stroke-width:2px
+</div>
+
+<table>
+<thead>
+<tr>
+<th>모듈</th>
+<th>책임</th>
+<th>핵심 기술</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>schema_registry</td>
+<td>테이블/컬럼/JOIN 메타 자동 로드</td>
+<td>asyncpg/cx_Oracle + YAML</td>
+</tr>
+<tr>
+<td>query_spec</td>
+<td>LLM 출력 구조 정의</td>
+<td>Pydantic</td>
+</tr>
+<tr>
+<td>sql_converter</td>
+<td>QuerySpec → SQL (방언 처리)</td>
+<td>자체 구현</td>
+</tr>
+<tr>
+<td>validator</td>
+<td>보안·구문·스키마 검증</td>
+<td>sqlglot + DB EXPLAIN</td>
+</tr>
+<tr>
+<td>agent</td>
+<td>그래프 오케스트레이션</td>
+<td>LangGraph</td>
+</tr>
+</tbody>
+</table>
+<h3 id="6-2-schema-registry--db-comment--yaml-자동-로드">6-2. Schema Registry — DB COMMENT + YAML 자동 로드</h3>
+<p><strong>목표:</strong> Phase 1에서 박아둔 DB COMMENT와 joins.yaml을 LLM 프롬프트용 스키마 요약으로 변환한다.</p>
+<p><strong>핵심 로직:</strong></p>
+<div class="codehilite"><pre><span></span><code><span class="c1"># langgraph/nl2sql/schema_registry.py</span>
+
+<span class="kn">from</span><span class="w"> </span><span class="nn">dataclasses</span><span class="w"> </span><span class="kn">import</span> <span class="n">dataclass</span><span class="p">,</span> <span class="n">field</span>
+<span class="kn">import</span><span class="w"> </span><span class="nn">yaml</span>
+<span class="kn">import</span><span class="w"> </span><span class="nn">asyncpg</span>  <span class="c1"># PostgreSQL</span>
+<span class="c1"># import oracledb  # Oracle 19c</span>
+
+<span class="nd">@dataclass</span>
+<span class="k">class</span><span class="w"> </span><span class="nc">ColumnInfo</span><span class="p">:</span>
+    <span class="n">name</span><span class="p">:</span> <span class="nb">str</span>
+    <span class="n">data_type</span><span class="p">:</span> <span class="nb">str</span>
+    <span class="n">description</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="s2">&quot;&quot;</span>
+
+<span class="nd">@dataclass</span>
+<span class="k">class</span><span class="w"> </span><span class="nc">TableInfo</span><span class="p">:</span>
+    <span class="n">name</span><span class="p">:</span> <span class="nb">str</span>
+    <span class="n">description</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="s2">&quot;&quot;</span>
+    <span class="n">columns</span><span class="p">:</span> <span class="nb">list</span><span class="p">[</span><span class="n">ColumnInfo</span><span class="p">]</span> <span class="o">=</span> <span class="n">field</span><span class="p">(</span><span class="n">default_factory</span><span class="o">=</span><span class="nb">list</span><span class="p">)</span>
+
+<span class="nd">@dataclass</span>
+<span class="k">class</span><span class="w"> </span><span class="nc">JoinInfo</span><span class="p">:</span>
+    <span class="n">table_a</span><span class="p">:</span> <span class="nb">str</span>
+    <span class="n">table_b</span><span class="p">:</span> <span class="nb">str</span>
+    <span class="n">on</span><span class="p">:</span> <span class="nb">str</span>  <span class="c1"># &quot;CUSTOMER_ID&quot; 또는 &quot;PRODUCT_ID, OPS_DATE&quot;</span>
+    <span class="n">join_type</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="s2">&quot;one_to_many&quot;</span>
+    <span class="n">note</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="s2">&quot;&quot;</span>
+
+<span class="k">class</span><span class="w"> </span><span class="nc">SchemaRegistry</span><span class="p">:</span>
+    <span class="k">def</span><span class="w"> </span><span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">tables</span><span class="p">:</span> <span class="nb">dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">TableInfo</span><span class="p">]</span> <span class="o">=</span> <span class="p">{}</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">joins</span><span class="p">:</span> <span class="nb">list</span><span class="p">[</span><span class="n">JoinInfo</span><span class="p">]</span> <span class="o">=</span> <span class="p">[]</span>
+
+    <span class="k">async</span> <span class="k">def</span><span class="w"> </span><span class="nf">load_from_oracle</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">dsn</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="n">target_tables</span><span class="p">:</span> <span class="nb">list</span><span class="p">[</span><span class="nb">str</span><span class="p">]):</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Oracle COMMENTS에서 테이블/컬럼/설명 자동 추출&quot;&quot;&quot;</span>
+        <span class="c1"># 테이블 + 설명</span>
+        <span class="n">rows</span> <span class="o">=</span> <span class="k">await</span> <span class="n">fetch_oracle</span><span class="p">(</span><span class="s2">&quot;&quot;&quot;</span>
+<span class="s2">            SELECT t.TABLE_NAME, c.COMMENTS</span>
+<span class="s2">            FROM USER_TABLES t</span>
+<span class="s2">            LEFT JOIN USER_TAB_COMMENTS c ON t.TABLE_NAME = c.TABLE_NAME</span>
+<span class="s2">            WHERE t.TABLE_NAME IN :targets</span>
+<span class="s2">        &quot;&quot;&quot;</span><span class="p">,</span> <span class="n">targets</span><span class="o">=</span><span class="n">target_tables</span><span class="p">)</span>
+
+        <span class="k">for</span> <span class="n">r</span> <span class="ow">in</span> <span class="n">rows</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">tables</span><span class="p">[</span><span class="n">r</span><span class="p">[</span><span class="s2">&quot;TABLE_NAME&quot;</span><span class="p">]]</span> <span class="o">=</span> <span class="n">TableInfo</span><span class="p">(</span>
+                <span class="n">name</span><span class="o">=</span><span class="n">r</span><span class="p">[</span><span class="s2">&quot;TABLE_NAME&quot;</span><span class="p">],</span>
+                <span class="n">description</span><span class="o">=</span><span class="n">r</span><span class="p">[</span><span class="s2">&quot;COMMENTS&quot;</span><span class="p">]</span> <span class="ow">or</span> <span class="s2">&quot;&quot;</span><span class="p">,</span>
+            <span class="p">)</span>
+
+        <span class="c1"># 컬럼 + 설명</span>
+        <span class="n">cols</span> <span class="o">=</span> <span class="k">await</span> <span class="n">fetch_oracle</span><span class="p">(</span><span class="s2">&quot;&quot;&quot;</span>
+<span class="s2">            SELECT c.TABLE_NAME, c.COLUMN_NAME, c.DATA_TYPE,</span>
+<span class="s2">                   cc.COMMENTS</span>
+<span class="s2">            FROM USER_TAB_COLUMNS c</span>
+<span class="s2">            LEFT JOIN USER_COL_COMMENTS cc</span>
+<span class="s2">              ON c.TABLE_NAME = cc.TABLE_NAME AND c.COLUMN_NAME = cc.COLUMN_NAME</span>
+<span class="s2">            WHERE c.TABLE_NAME IN :targets</span>
+<span class="s2">            ORDER BY c.TABLE_NAME, c.COLUMN_ID</span>
+<span class="s2">        &quot;&quot;&quot;</span><span class="p">,</span> <span class="n">targets</span><span class="o">=</span><span class="n">target_tables</span><span class="p">)</span>
+
+        <span class="k">for</span> <span class="n">r</span> <span class="ow">in</span> <span class="n">cols</span><span class="p">:</span>
+            <span class="n">tbl</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">tables</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="n">r</span><span class="p">[</span><span class="s2">&quot;TABLE_NAME&quot;</span><span class="p">])</span>
+            <span class="k">if</span> <span class="n">tbl</span><span class="p">:</span>
+                <span class="n">tbl</span><span class="o">.</span><span class="n">columns</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">ColumnInfo</span><span class="p">(</span>
+                    <span class="n">name</span><span class="o">=</span><span class="n">r</span><span class="p">[</span><span class="s2">&quot;COLUMN_NAME&quot;</span><span class="p">],</span>
+                    <span class="n">data_type</span><span class="o">=</span><span class="n">r</span><span class="p">[</span><span class="s2">&quot;DATA_TYPE&quot;</span><span class="p">],</span>
+                    <span class="n">description</span><span class="o">=</span><span class="n">r</span><span class="p">[</span><span class="s2">&quot;COMMENTS&quot;</span><span class="p">]</span> <span class="ow">or</span> <span class="s2">&quot;&quot;</span><span class="p">,</span>
+                <span class="p">))</span>
+
+    <span class="k">def</span><span class="w"> </span><span class="nf">load_joins_yaml</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">yaml_path</span><span class="p">:</span> <span class="nb">str</span><span class="p">):</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;joins.yaml 로드&quot;&quot;&quot;</span>
+        <span class="k">with</span> <span class="nb">open</span><span class="p">(</span><span class="n">yaml_path</span><span class="p">)</span> <span class="k">as</span> <span class="n">f</span><span class="p">:</span>
+            <span class="n">data</span> <span class="o">=</span> <span class="n">yaml</span><span class="o">.</span><span class="n">safe_load</span><span class="p">(</span><span class="n">f</span><span class="p">)</span>
+        <span class="k">for</span> <span class="n">j</span> <span class="ow">in</span> <span class="n">data</span><span class="p">[</span><span class="s2">&quot;joins&quot;</span><span class="p">]:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">joins</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">JoinInfo</span><span class="p">(</span>
+                <span class="n">table_a</span><span class="o">=</span><span class="n">j</span><span class="p">[</span><span class="s2">&quot;tables&quot;</span><span class="p">][</span><span class="mi">0</span><span class="p">],</span>
+                <span class="n">table_b</span><span class="o">=</span><span class="n">j</span><span class="p">[</span><span class="s2">&quot;tables&quot;</span><span class="p">][</span><span class="mi">1</span><span class="p">],</span>
+                <span class="n">on</span><span class="o">=</span><span class="n">j</span><span class="p">[</span><span class="s2">&quot;on&quot;</span><span class="p">],</span>
+                <span class="n">join_type</span><span class="o">=</span><span class="n">j</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;type&quot;</span><span class="p">,</span> <span class="s2">&quot;one_to_many&quot;</span><span class="p">),</span>
+                <span class="n">note</span><span class="o">=</span><span class="n">j</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;note&quot;</span><span class="p">,</span> <span class="s2">&quot;&quot;</span><span class="p">),</span>
+            <span class="p">))</span>
+
+    <span class="k">def</span><span class="w"> </span><span class="nf">to_llm_prompt</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">str</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;LLM에 주입할 스키마 요약 생성&quot;&quot;&quot;</span>
+        <span class="n">lines</span> <span class="o">=</span> <span class="p">[]</span>
+        <span class="k">for</span> <span class="n">tname</span><span class="p">,</span> <span class="n">tbl</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">tables</span><span class="o">.</span><span class="n">items</span><span class="p">():</span>
+            <span class="n">lines</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;</span><span class="se">\n</span><span class="s2">## </span><span class="si">{</span><span class="n">tname</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
+            <span class="k">if</span> <span class="n">tbl</span><span class="o">.</span><span class="n">description</span><span class="p">:</span>
+                <span class="n">lines</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;  설명: </span><span class="si">{</span><span class="n">tbl</span><span class="o">.</span><span class="n">description</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
+            <span class="n">lines</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="s2">&quot;  컬럼:&quot;</span><span class="p">)</span>
+            <span class="k">for</span> <span class="n">c</span> <span class="ow">in</span> <span class="n">tbl</span><span class="o">.</span><span class="n">columns</span><span class="p">:</span>
+                <span class="n">desc</span> <span class="o">=</span> <span class="sa">f</span><span class="s2">&quot; — </span><span class="si">{</span><span class="n">c</span><span class="o">.</span><span class="n">description</span><span class="si">}</span><span class="s2">&quot;</span> <span class="k">if</span> <span class="n">c</span><span class="o">.</span><span class="n">description</span> <span class="k">else</span> <span class="s2">&quot;&quot;</span>
+                <span class="n">lines</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;    - </span><span class="si">{</span><span class="n">c</span><span class="o">.</span><span class="n">name</span><span class="si">}</span><span class="s2"> (</span><span class="si">{</span><span class="n">c</span><span class="o">.</span><span class="n">data_type</span><span class="si">}</span><span class="s2">)</span><span class="si">{</span><span class="n">desc</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
+
+        <span class="n">lines</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="s2">&quot;</span><span class="se">\n</span><span class="s2">## JOIN 관계&quot;</span><span class="p">)</span>
+        <span class="k">for</span> <span class="n">j</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">joins</span><span class="p">:</span>
+            <span class="n">lines</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;  - </span><span class="si">{</span><span class="n">j</span><span class="o">.</span><span class="n">table_a</span><span class="si">}</span><span class="s2"> ↔ </span><span class="si">{</span><span class="n">j</span><span class="o">.</span><span class="n">table_b</span><span class="si">}</span><span class="s2"> ON </span><span class="si">{</span><span class="n">j</span><span class="o">.</span><span class="n">on</span><span class="si">}</span><span class="s2"> (</span><span class="si">{</span><span class="n">j</span><span class="o">.</span><span class="n">join_type</span><span class="si">}</span><span class="s2">)&quot;</span><span class="p">)</span>
+
+        <span class="k">return</span> <span class="s2">&quot;</span><span class="se">\n</span><span class="s2">&quot;</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="n">lines</span><span class="p">)</span>
+
+    <span class="k">def</span><span class="w"> </span><span class="nf">find_join_path</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">tables</span><span class="p">:</span> <span class="nb">list</span><span class="p">[</span><span class="nb">str</span><span class="p">])</span> <span class="o">-&gt;</span> <span class="nb">list</span><span class="p">[</span><span class="n">JoinInfo</span><span class="p">]:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;N개 테이블 간 JOIN 경로 BFS 탐색&quot;&quot;&quot;</span>
+        <span class="c1"># ... (생략, 실제 구현은 BIP-Agents/langgraph/nl2sql/schema_registry.py 참고)</span>
+</code></pre></div>
+
+<blockquote>
+<p><strong>이 모듈이 하는 일:</strong> DB COMMENT가 곧 LLM 프롬프트의 일부가 됨. Phase 1의 description 작성이 여기서 빛을 발한다. <code>to_llm_prompt()</code> 출력이 LLM에게 주는 "스키마 설명서".</p>
+</blockquote>
+<h3 id="6-3-queryspec--llm-출력-구조">6-3. QuerySpec — LLM 출력 구조</h3>
+<p><strong>목표:</strong> LLM이 SQL을 직접 만들지 않고, <strong>구조화된 쿼리 명세</strong>만 만들도록 강제한다.</p>
+<p><strong>전체 모델 (Pydantic):</strong></p>
+<div class="codehilite"><pre><span></span><code><span class="c1"># langgraph/nl2sql/query_spec.py</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">enum</span><span class="w"> </span><span class="kn">import</span> <span class="n">Enum</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">typing</span><span class="w"> </span><span class="kn">import</span> <span class="n">Optional</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">pydantic</span><span class="w"> </span><span class="kn">import</span> <span class="n">BaseModel</span><span class="p">,</span> <span class="n">Field</span>
+
+<span class="k">class</span><span class="w"> </span><span class="nc">FilterOp</span><span class="p">(</span><span class="nb">str</span><span class="p">,</span> <span class="n">Enum</span><span class="p">):</span>
+    <span class="n">EQ</span> <span class="o">=</span> <span class="s2">&quot;=&quot;</span><span class="p">;</span> <span class="n">NEQ</span> <span class="o">=</span> <span class="s2">&quot;!=&quot;</span>
+    <span class="n">GT</span> <span class="o">=</span> <span class="s2">&quot;&gt;&quot;</span><span class="p">;</span> <span class="n">GTE</span> <span class="o">=</span> <span class="s2">&quot;&gt;=&quot;</span><span class="p">;</span> <span class="n">LT</span> <span class="o">=</span> <span class="s2">&quot;&lt;&quot;</span><span class="p">;</span> <span class="n">LTE</span> <span class="o">=</span> <span class="s2">&quot;&lt;=&quot;</span>
+    <span class="n">LIKE</span> <span class="o">=</span> <span class="s2">&quot;LIKE&quot;</span>
+    <span class="n">IN</span> <span class="o">=</span> <span class="s2">&quot;IN&quot;</span><span class="p">;</span> <span class="n">NOT_IN</span> <span class="o">=</span> <span class="s2">&quot;NOT IN&quot;</span>
+    <span class="n">IS_NULL</span> <span class="o">=</span> <span class="s2">&quot;IS NULL&quot;</span><span class="p">;</span> <span class="n">IS_NOT_NULL</span> <span class="o">=</span> <span class="s2">&quot;IS NOT NULL&quot;</span>
+    <span class="n">BETWEEN</span> <span class="o">=</span> <span class="s2">&quot;BETWEEN&quot;</span>
+
+<span class="k">class</span><span class="w"> </span><span class="nc">OrderDirection</span><span class="p">(</span><span class="nb">str</span><span class="p">,</span> <span class="n">Enum</span><span class="p">):</span>
+    <span class="n">ASC</span> <span class="o">=</span> <span class="s2">&quot;asc&quot;</span><span class="p">;</span> <span class="n">DESC</span> <span class="o">=</span> <span class="s2">&quot;desc&quot;</span>
+
+<span class="k">class</span><span class="w"> </span><span class="nc">AggFunc</span><span class="p">(</span><span class="nb">str</span><span class="p">,</span> <span class="n">Enum</span><span class="p">):</span>
+    <span class="n">SUM</span> <span class="o">=</span> <span class="s2">&quot;SUM&quot;</span><span class="p">;</span> <span class="n">AVG</span> <span class="o">=</span> <span class="s2">&quot;AVG&quot;</span><span class="p">;</span> <span class="n">COUNT</span> <span class="o">=</span> <span class="s2">&quot;COUNT&quot;</span>
+    <span class="n">COUNT_DISTINCT</span> <span class="o">=</span> <span class="s2">&quot;COUNT_DISTINCT&quot;</span>
+    <span class="n">MIN</span> <span class="o">=</span> <span class="s2">&quot;MIN&quot;</span><span class="p">;</span> <span class="n">MAX</span> <span class="o">=</span> <span class="s2">&quot;MAX&quot;</span>
+
+<span class="k">class</span><span class="w"> </span><span class="nc">Filter</span><span class="p">(</span><span class="n">BaseModel</span><span class="p">):</span>
+    <span class="n">column</span><span class="p">:</span> <span class="nb">str</span>
+    <span class="n">op</span><span class="p">:</span> <span class="n">FilterOp</span>
+    <span class="n">value</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">str</span> <span class="o">|</span> <span class="nb">int</span> <span class="o">|</span> <span class="nb">float</span> <span class="o">|</span> <span class="nb">bool</span> <span class="o">|</span> <span class="nb">list</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span>
+
+<span class="k">class</span><span class="w"> </span><span class="nc">OrderBy</span><span class="p">(</span><span class="n">BaseModel</span><span class="p">):</span>
+    <span class="n">column</span><span class="p">:</span> <span class="nb">str</span>
+    <span class="n">direction</span><span class="p">:</span> <span class="n">OrderDirection</span> <span class="o">=</span> <span class="n">OrderDirection</span><span class="o">.</span><span class="n">DESC</span>
+
+<span class="k">class</span><span class="w"> </span><span class="nc">Aggregation</span><span class="p">(</span><span class="n">BaseModel</span><span class="p">):</span>
+    <span class="n">column</span><span class="p">:</span> <span class="nb">str</span>
+    <span class="n">func</span><span class="p">:</span> <span class="n">AggFunc</span>
+    <span class="n">alias</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">str</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span>
+
+<span class="k">class</span><span class="w"> </span><span class="nc">TimeScope</span><span class="p">(</span><span class="n">BaseModel</span><span class="p">):</span>
+    <span class="n">column</span><span class="p">:</span> <span class="nb">str</span>
+    <span class="n">scope</span><span class="p">:</span> <span class="nb">str</span>  <span class="c1"># latest, last_7d, last_30d, this_quarter, this_year, YYYY-MM-DD~YYYY-MM-DD</span>
+
+<span class="k">class</span><span class="w"> </span><span class="nc">QuerySpec</span><span class="p">(</span><span class="n">BaseModel</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;LLM이 생성하는 구조화된 쿼리 명세&quot;&quot;&quot;</span>
+    <span class="n">tables</span><span class="p">:</span> <span class="nb">list</span><span class="p">[</span><span class="nb">str</span><span class="p">]</span>                                    <span class="c1"># 어떤 테이블</span>
+    <span class="n">select</span><span class="p">:</span> <span class="nb">list</span><span class="p">[</span><span class="nb">str</span><span class="p">]</span>                                    <span class="c1"># 어떤 컬럼</span>
+    <span class="n">filters</span><span class="p">:</span> <span class="nb">list</span><span class="p">[</span><span class="n">Filter</span><span class="p">]</span> <span class="o">=</span> <span class="p">[]</span>                           <span class="c1"># 어떤 조건</span>
+    <span class="n">aggregations</span><span class="p">:</span> <span class="nb">list</span><span class="p">[</span><span class="n">Aggregation</span><span class="p">]</span> <span class="o">=</span> <span class="p">[]</span>                 <span class="c1"># 집계</span>
+    <span class="n">group_by</span><span class="p">:</span> <span class="nb">list</span><span class="p">[</span><span class="nb">str</span><span class="p">]</span> <span class="o">=</span> <span class="p">[]</span>                             <span class="c1"># 그룹핑</span>
+    <span class="n">order_by</span><span class="p">:</span> <span class="nb">list</span><span class="p">[</span><span class="n">OrderBy</span><span class="p">]</span> <span class="o">=</span> <span class="p">[]</span>                         <span class="c1"># 정렬</span>
+    <span class="n">limit</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="mi">20</span>                                      <span class="c1"># 몇 개</span>
+    <span class="n">time_scope</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">TimeScope</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span>               <span class="c1"># 시간 범위</span>
+    <span class="n">original_question</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">str</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span>              <span class="c1"># 디버깅용</span>
+</code></pre></div>
+
+<p><strong>LLM 출력 예시:</strong></p>
+<div class="codehilite"><pre><span></span><code>질문: &quot;VIP 고객 중 이탈 위험자 매출 상위 10명&quot;
+
+QuerySpec:
+{
+  &quot;tables&quot;: [&quot;V_CUSTOMER_360&quot;, &quot;V_CUSTOMER_SIGNALS&quot;],
+  &quot;select&quot;: [&quot;NAME&quot;, &quot;TIER&quot;, &quot;TOTAL_PURCHASES&quot;, &quot;LAST_PURCHASE_DATE&quot;],
+  &quot;filters&quot;: [
+    {&quot;column&quot;: &quot;IS_VIP&quot;, &quot;op&quot;: &quot;=&quot;, &quot;value&quot;: &quot;Y&quot;},
+    {&quot;column&quot;: &quot;IS_CHURNING&quot;, &quot;op&quot;: &quot;=&quot;, &quot;value&quot;: &quot;Y&quot;}
+  ],
+  &quot;order_by&quot;: [{&quot;column&quot;: &quot;TOTAL_PURCHASES&quot;, &quot;direction&quot;: &quot;desc&quot;}],
+  &quot;limit&quot;: 10
+}
+</code></pre></div>
+
+<blockquote>
+<p><strong>왜 안정적인가:</strong> LLM이 Pydantic 스키마에 맞춰 JSON을 생성해야 하므로 (Function Calling 또는 structured output), <strong>문법 오류가 원천 차단</strong>된다. 컬럼명/테이블명을 환각해도 다음 단계 Validator에서 거른다.</p>
+</blockquote>
+<h3 id="6-4-sql-converter--oracle-방언-처리">6-4. SQL Converter — Oracle 방언 처리</h3>
+<p><strong>목표:</strong> QuerySpec을 Oracle 19c용 SQL로 결정론적 변환.</p>
+<p><strong>핵심 로직 (PostgreSQL/Oracle 방언 분기):</strong></p>
+<div class="codehilite"><pre><span></span><code><span class="c1"># langgraph/nl2sql/sql_converter.py</span>
+
+<span class="k">class</span><span class="w"> </span><span class="nc">SQLConverter</span><span class="p">:</span>
+    <span class="k">def</span><span class="w"> </span><span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">registry</span><span class="p">:</span> <span class="n">SchemaRegistry</span><span class="p">,</span> <span class="n">dialect</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="s2">&quot;oracle&quot;</span><span class="p">):</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">registry</span> <span class="o">=</span> <span class="n">registry</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">dialect</span> <span class="o">=</span> <span class="n">dialect</span>
+
+    <span class="k">def</span><span class="w"> </span><span class="nf">convert</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">spec</span><span class="p">:</span> <span class="n">QuerySpec</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">str</span><span class="p">:</span>
+        <span class="n">sql</span> <span class="o">=</span> <span class="sa">f</span><span class="s2">&quot;SELECT </span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">_build_select</span><span class="p">(</span><span class="n">spec</span><span class="p">)</span><span class="si">}</span><span class="se">\n</span><span class="s2">FROM </span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">_build_from</span><span class="p">(</span><span class="n">spec</span><span class="p">)</span><span class="si">}</span><span class="s2">&quot;</span>
+        <span class="k">if</span> <span class="n">w</span> <span class="o">:=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_build_where</span><span class="p">(</span><span class="n">spec</span><span class="p">):</span>    <span class="n">sql</span> <span class="o">+=</span> <span class="sa">f</span><span class="s2">&quot;</span><span class="se">\n</span><span class="s2">WHERE </span><span class="si">{</span><span class="n">w</span><span class="si">}</span><span class="s2">&quot;</span>
+        <span class="k">if</span> <span class="n">g</span> <span class="o">:=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_build_group_by</span><span class="p">(</span><span class="n">spec</span><span class="p">):</span> <span class="n">sql</span> <span class="o">+=</span> <span class="sa">f</span><span class="s2">&quot;</span><span class="se">\n</span><span class="s2">GROUP BY </span><span class="si">{</span><span class="n">g</span><span class="si">}</span><span class="s2">&quot;</span>
+        <span class="k">if</span> <span class="n">o</span> <span class="o">:=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_build_order_by</span><span class="p">(</span><span class="n">spec</span><span class="p">):</span> <span class="n">sql</span> <span class="o">+=</span> <span class="sa">f</span><span class="s2">&quot;</span><span class="se">\n</span><span class="s2">ORDER BY </span><span class="si">{</span><span class="n">o</span><span class="si">}</span><span class="s2">&quot;</span>
+        <span class="n">sql</span> <span class="o">+=</span> <span class="sa">f</span><span class="s2">&quot;</span><span class="se">\n</span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">_build_limit</span><span class="p">(</span><span class="n">spec</span><span class="p">)</span><span class="si">}</span><span class="s2">&quot;</span>
+        <span class="k">return</span> <span class="n">sql</span>
+
+    <span class="k">def</span><span class="w"> </span><span class="nf">_build_from</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">spec</span><span class="p">:</span> <span class="n">QuerySpec</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">str</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;FROM + JOIN 자동 생성&quot;&quot;&quot;</span>
+        <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">spec</span><span class="o">.</span><span class="n">tables</span><span class="p">)</span> <span class="o">==</span> <span class="mi">1</span><span class="p">:</span>
+            <span class="k">return</span> <span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="n">spec</span><span class="o">.</span><span class="n">tables</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="si">}</span><span class="s2"> </span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">_alias</span><span class="p">(</span><span class="n">spec</span><span class="o">.</span><span class="n">tables</span><span class="p">[</span><span class="mi">0</span><span class="p">])</span><span class="si">}</span><span class="s2">&quot;</span>
+
+        <span class="c1"># JOIN 경로 탐색 (Schema Registry)</span>
+        <span class="n">joins</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">registry</span><span class="o">.</span><span class="n">find_join_path</span><span class="p">(</span><span class="n">spec</span><span class="o">.</span><span class="n">tables</span><span class="p">)</span>
+        <span class="n">first</span> <span class="o">=</span> <span class="n">spec</span><span class="o">.</span><span class="n">tables</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span>
+        <span class="n">result</span> <span class="o">=</span> <span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="n">first</span><span class="si">}</span><span class="s2"> </span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">_alias</span><span class="p">(</span><span class="n">first</span><span class="p">)</span><span class="si">}</span><span class="s2">&quot;</span>
+        <span class="n">joined</span> <span class="o">=</span> <span class="p">{</span><span class="n">first</span><span class="p">}</span>
+
+        <span class="k">for</span> <span class="n">j</span> <span class="ow">in</span> <span class="n">joins</span><span class="p">:</span>
+            <span class="n">new_t</span> <span class="o">=</span> <span class="n">j</span><span class="o">.</span><span class="n">table_b</span> <span class="k">if</span> <span class="n">j</span><span class="o">.</span><span class="n">table_a</span> <span class="ow">in</span> <span class="n">joined</span> <span class="k">else</span> <span class="n">j</span><span class="o">.</span><span class="n">table_a</span>
+            <span class="n">existing</span> <span class="o">=</span> <span class="n">j</span><span class="o">.</span><span class="n">table_a</span> <span class="k">if</span> <span class="n">j</span><span class="o">.</span><span class="n">table_a</span> <span class="ow">in</span> <span class="n">joined</span> <span class="k">else</span> <span class="n">j</span><span class="o">.</span><span class="n">table_b</span>
+            <span class="n">on_clause</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_build_on</span><span class="p">(</span><span class="n">j</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">_alias</span><span class="p">(</span><span class="n">existing</span><span class="p">),</span> <span class="bp">self</span><span class="o">.</span><span class="n">_alias</span><span class="p">(</span><span class="n">new_t</span><span class="p">))</span>
+            <span class="n">result</span> <span class="o">+=</span> <span class="sa">f</span><span class="s2">&quot;</span><span class="se">\n</span><span class="s2">JOIN </span><span class="si">{</span><span class="n">new_t</span><span class="si">}</span><span class="s2"> </span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">_alias</span><span class="p">(</span><span class="n">new_t</span><span class="p">)</span><span class="si">}</span><span class="s2"> ON </span><span class="si">{</span><span class="n">on_clause</span><span class="si">}</span><span class="s2">&quot;</span>
+            <span class="n">joined</span><span class="o">.</span><span class="n">add</span><span class="p">(</span><span class="n">new_t</span><span class="p">)</span>
+        <span class="k">return</span> <span class="n">result</span>
+
+    <span class="k">def</span><span class="w"> </span><span class="nf">_build_limit</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">spec</span><span class="p">:</span> <span class="n">QuerySpec</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">str</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;방언 분기: PostgreSQL은 LIMIT, Oracle은 FETCH FIRST&quot;&quot;&quot;</span>
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">dialect</span> <span class="o">==</span> <span class="s2">&quot;postgresql&quot;</span><span class="p">:</span>
+            <span class="k">return</span> <span class="sa">f</span><span class="s2">&quot;LIMIT </span><span class="si">{</span><span class="n">spec</span><span class="o">.</span><span class="n">limit</span><span class="si">}</span><span class="s2">&quot;</span>
+        <span class="k">else</span><span class="p">:</span>  <span class="c1"># oracle</span>
+            <span class="k">return</span> <span class="sa">f</span><span class="s2">&quot;FETCH FIRST </span><span class="si">{</span><span class="n">spec</span><span class="o">.</span><span class="n">limit</span><span class="si">}</span><span class="s2"> ROWS ONLY&quot;</span>
+
+    <span class="k">def</span><span class="w"> </span><span class="nf">_time_scope_to_sql</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">ts</span><span class="p">:</span> <span class="n">TimeScope</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">str</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;시간 범위 방언 분기&quot;&quot;&quot;</span>
+        <span class="n">col</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_qualify</span><span class="p">(</span><span class="n">ts</span><span class="o">.</span><span class="n">column</span><span class="p">)</span>
+        <span class="k">if</span> <span class="n">ts</span><span class="o">.</span><span class="n">scope</span><span class="o">.</span><span class="n">startswith</span><span class="p">(</span><span class="s2">&quot;last_&quot;</span><span class="p">):</span>
+            <span class="n">days</span> <span class="o">=</span> <span class="n">ts</span><span class="o">.</span><span class="n">scope</span><span class="o">.</span><span class="n">replace</span><span class="p">(</span><span class="s2">&quot;last_&quot;</span><span class="p">,</span> <span class="s2">&quot;&quot;</span><span class="p">)</span><span class="o">.</span><span class="n">replace</span><span class="p">(</span><span class="s2">&quot;d&quot;</span><span class="p">,</span> <span class="s2">&quot;&quot;</span><span class="p">)</span>
+            <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">dialect</span> <span class="o">==</span> <span class="s2">&quot;postgresql&quot;</span><span class="p">:</span>
+                <span class="k">return</span> <span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="n">col</span><span class="si">}</span><span class="s2"> &gt;= CURRENT_DATE - INTERVAL &#39;</span><span class="si">{</span><span class="n">days</span><span class="si">}</span><span class="s2"> days&#39;&quot;</span>
+            <span class="k">else</span><span class="p">:</span>  <span class="c1"># oracle</span>
+                <span class="k">return</span> <span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="n">col</span><span class="si">}</span><span class="s2"> &gt;= SYSDATE - </span><span class="si">{</span><span class="n">days</span><span class="si">}</span><span class="s2">&quot;</span>
+        <span class="k">elif</span> <span class="n">ts</span><span class="o">.</span><span class="n">scope</span> <span class="o">==</span> <span class="s2">&quot;this_quarter&quot;</span><span class="p">:</span>
+            <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">dialect</span> <span class="o">==</span> <span class="s2">&quot;postgresql&quot;</span><span class="p">:</span>
+                <span class="k">return</span> <span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="n">col</span><span class="si">}</span><span class="s2"> &gt;= DATE_TRUNC(&#39;quarter&#39;, CURRENT_DATE)&quot;</span>
+            <span class="k">else</span><span class="p">:</span>
+                <span class="k">return</span> <span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="n">col</span><span class="si">}</span><span class="s2"> &gt;= TRUNC(SYSDATE, &#39;Q&#39;)&quot;</span>
+        <span class="c1"># ... (this_year, latest, YYYY-MM-DD~YYYY-MM-DD 등)</span>
+
+    <span class="nd">@staticmethod</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">_quote_value</span><span class="p">(</span><span class="n">value</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">str</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;SQL 인젝션 방지 — 모든 문자열은 쿼팅 + 이스케이프&quot;&quot;&quot;</span>
+        <span class="k">if</span> <span class="n">value</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span> <span class="k">return</span> <span class="s2">&quot;NULL&quot;</span>
+        <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">value</span><span class="p">,</span> <span class="nb">bool</span><span class="p">):</span> <span class="k">return</span> <span class="s2">&quot;&#39;Y&#39;&quot;</span> <span class="k">if</span> <span class="n">value</span> <span class="k">else</span> <span class="s2">&quot;&#39;N&#39;&quot;</span>  <span class="c1"># Oracle은 boolean 없음</span>
+        <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">value</span><span class="p">,</span> <span class="p">(</span><span class="nb">int</span><span class="p">,</span> <span class="nb">float</span><span class="p">)):</span> <span class="k">return</span> <span class="nb">str</span><span class="p">(</span><span class="n">value</span><span class="p">)</span>
+        <span class="k">return</span> <span class="sa">f</span><span class="s2">&quot;&#39;</span><span class="si">{</span><span class="nb">str</span><span class="p">(</span><span class="n">value</span><span class="p">)</span><span class="o">.</span><span class="n">replace</span><span class="p">(</span><span class="err">\</span><span class="s2">&quot;&#39;</span><span class="se">\&quot;</span><span class="s2">, </span><span class="se">\&quot;</span><span class="s2">&#39;&#39;</span><span class="se">\&quot;</span><span class="s2">)}&#39;&quot;</span>
+</code></pre></div>
+
+<p><strong>변환 예시:</strong></p>
+<div class="codehilite"><pre><span></span><code><span class="n">QuerySpec</span><span class="o">:</span>
+<span class="w">  </span><span class="n">tables</span><span class="o">:</span><span class="w"> </span><span class="o">[</span><span class="s2">&quot;V_DAILY_SALES_SUMMARY&quot;</span><span class="o">]</span>
+<span class="w">  </span><span class="n">select</span><span class="o">:</span><span class="w"> </span><span class="o">[</span><span class="s2">&quot;DEPT_NAME&quot;</span><span class="o">,</span><span class="w"> </span><span class="s2">&quot;TOTAL_AMOUNT&quot;</span><span class="o">]</span>
+<span class="w">  </span><span class="n">filters</span><span class="o">:</span><span class="w"> </span><span class="o">[{</span><span class="n">column</span><span class="o">:</span><span class="w"> </span><span class="s2">&quot;PROFIT_MARGIN_PCT&quot;</span><span class="o">,</span><span class="w"> </span><span class="n">op</span><span class="o">:</span><span class="w"> </span><span class="s2">&quot;&gt;&quot;</span><span class="o">,</span><span class="w"> </span><span class="n">value</span><span class="o">:</span><span class="w"> </span><span class="mi">10</span><span class="o">}]</span>
+<span class="w">  </span><span class="n">time_scope</span><span class="o">:</span><span class="w"> </span><span class="o">{</span><span class="n">column</span><span class="o">:</span><span class="w"> </span><span class="s2">&quot;SALE_DATE&quot;</span><span class="o">,</span><span class="w"> </span><span class="n">scope</span><span class="o">:</span><span class="w"> </span><span class="s2">&quot;this_quarter&quot;</span><span class="o">}</span>
+<span class="w">  </span><span class="n">order_by</span><span class="o">:</span><span class="w"> </span><span class="o">[{</span><span class="n">column</span><span class="o">:</span><span class="w"> </span><span class="s2">&quot;TOTAL_AMOUNT&quot;</span><span class="o">,</span><span class="w"> </span><span class="n">direction</span><span class="o">:</span><span class="w"> </span><span class="s2">&quot;desc&quot;</span><span class="o">}]</span>
+<span class="w">  </span><span class="n">limit</span><span class="o">:</span><span class="w"> </span><span class="mi">5</span>
+
+<span class="err">→</span><span class="w"> </span><span class="n">Oracle</span><span class="w"> </span><span class="n">SQL</span><span class="o">:</span>
+<span class="w">  </span><span class="n">SELECT</span><span class="w"> </span><span class="n">vds</span><span class="o">.</span><span class="na">DEPT_NAME</span><span class="o">,</span><span class="w"> </span><span class="n">vds</span><span class="o">.</span><span class="na">TOTAL_AMOUNT</span>
+<span class="w">  </span><span class="n">FROM</span><span class="w"> </span><span class="n">V_DAILY_SALES_SUMMARY</span><span class="w"> </span><span class="n">vds</span>
+<span class="w">  </span><span class="n">WHERE</span><span class="w"> </span><span class="n">vds</span><span class="o">.</span><span class="na">PROFIT_MARGIN_PCT</span><span class="w"> </span><span class="o">&gt;</span><span class="w"> </span><span class="mi">10</span>
+<span class="w">    </span><span class="n">AND</span><span class="w"> </span><span class="n">vds</span><span class="o">.</span><span class="na">SALE_DATE</span><span class="w"> </span><span class="o">&gt;=</span><span class="w"> </span><span class="n">TRUNC</span><span class="o">(</span><span class="n">SYSDATE</span><span class="o">,</span><span class="w"> </span><span class="s1">&#39;Q&#39;</span><span class="o">)</span>
+<span class="w">  </span><span class="n">ORDER</span><span class="w"> </span><span class="n">BY</span><span class="w"> </span><span class="n">vds</span><span class="o">.</span><span class="na">TOTAL_AMOUNT</span><span class="w"> </span><span class="n">DESC</span>
+<span class="w">  </span><span class="n">FETCH</span><span class="w"> </span><span class="n">FIRST</span><span class="w"> </span><span class="mi">5</span><span class="w"> </span><span class="n">ROWS</span><span class="w"> </span><span class="n">ONLY</span>
+</code></pre></div>
+
+<blockquote>
+<p><strong>이 변환기의 책임:</strong> SQL의 문법 정확성 + 방언 호환성. <strong>LLM이 환각해도 여기서 망가진 SQL이 나올 수 없다.</strong></p>
+</blockquote>
+<h3 id="6-5-validator--4-layer-검증">6-5. Validator — 4-Layer 검증</h3>
+<p><strong>목표:</strong> Converter가 생성한 SQL을 실행 전에 4단계로 검증.</p>
+<div class="codehilite"><pre><span></span><code><span class="c1"># langgraph/nl2sql/validator.py</span>
+
+<span class="n">ALLOWED_TABLES</span> <span class="o">=</span> <span class="p">{</span>
+    <span class="s2">&quot;V_DAILY_SALES_SUMMARY&quot;</span><span class="p">,</span>
+    <span class="s2">&quot;V_CUSTOMER_360&quot;</span><span class="p">,</span>
+    <span class="s2">&quot;V_CUSTOMER_SIGNALS&quot;</span><span class="p">,</span>
+    <span class="s2">&quot;V_FLOW_SIGNALS&quot;</span><span class="p">,</span>
+    <span class="s2">&quot;V_OPS_SIGNALS&quot;</span><span class="p">,</span>
+<span class="p">}</span>
+
+<span class="n">BLOCKED_KEYWORDS</span> <span class="o">=</span> <span class="p">{</span>
+    <span class="s2">&quot;INSERT&quot;</span><span class="p">,</span> <span class="s2">&quot;UPDATE&quot;</span><span class="p">,</span> <span class="s2">&quot;DELETE&quot;</span><span class="p">,</span> <span class="s2">&quot;DROP&quot;</span><span class="p">,</span> <span class="s2">&quot;ALTER&quot;</span><span class="p">,</span> <span class="s2">&quot;CREATE&quot;</span><span class="p">,</span>
+    <span class="s2">&quot;TRUNCATE&quot;</span><span class="p">,</span> <span class="s2">&quot;GRANT&quot;</span><span class="p">,</span> <span class="s2">&quot;REVOKE&quot;</span><span class="p">,</span> <span class="s2">&quot;EXEC&quot;</span><span class="p">,</span> <span class="s2">&quot;EXECUTE&quot;</span><span class="p">,</span>
+<span class="p">}</span>
+
+<span class="nd">@dataclass</span>
+<span class="k">class</span><span class="w"> </span><span class="nc">ValidationResult</span><span class="p">:</span>
+    <span class="n">is_valid</span><span class="p">:</span> <span class="nb">bool</span>
+    <span class="n">error</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="s2">&quot;&quot;</span>
+    <span class="n">error_type</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="s2">&quot;&quot;</span>  <span class="c1"># syntax / security / schema / dry_run</span>
+
+<span class="k">class</span><span class="w"> </span><span class="nc">SQLValidator</span><span class="p">:</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">validate</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">sql</span><span class="p">:</span> <span class="nb">str</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">ValidationResult</span><span class="p">:</span>
+        <span class="c1"># Layer 1: 구문 + SELECT only</span>
+        <span class="k">if</span> <span class="n">r</span> <span class="o">:=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_validate_syntax</span><span class="p">(</span><span class="n">sql</span><span class="p">):</span>
+            <span class="k">return</span> <span class="n">r</span>
+        <span class="c1"># Layer 2: allowlist (Validator 레벨)</span>
+        <span class="k">if</span> <span class="n">r</span> <span class="o">:=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_validate_allowlist</span><span class="p">(</span><span class="n">sql</span><span class="p">):</span>
+            <span class="k">return</span> <span class="n">r</span>
+        <span class="c1"># Layer 3: sqlglot 파싱 (테이블/컬럼 추출 검증)</span>
+        <span class="k">if</span> <span class="n">r</span> <span class="o">:=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_validate_sqlglot</span><span class="p">(</span><span class="n">sql</span><span class="p">):</span>
+            <span class="k">return</span> <span class="n">r</span>
+        <span class="c1"># Layer 4: DB dry-run (EXPLAIN PLAN)</span>
+        <span class="k">if</span> <span class="n">r</span> <span class="o">:=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_validate_dry_run</span><span class="p">(</span><span class="n">sql</span><span class="p">):</span>
+            <span class="k">return</span> <span class="n">r</span>
+        <span class="k">return</span> <span class="n">ValidationResult</span><span class="p">(</span><span class="n">is_valid</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+
+    <span class="k">def</span><span class="w"> </span><span class="nf">_validate_syntax</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">sql</span><span class="p">:</span> <span class="nb">str</span><span class="p">):</span>
+        <span class="n">sql_upper</span> <span class="o">=</span> <span class="n">sql</span><span class="o">.</span><span class="n">upper</span><span class="p">()</span><span class="o">.</span><span class="n">strip</span><span class="p">()</span>
+        <span class="k">if</span> <span class="ow">not</span> <span class="n">sql_upper</span><span class="o">.</span><span class="n">startswith</span><span class="p">(</span><span class="s2">&quot;SELECT&quot;</span><span class="p">):</span>
+            <span class="k">return</span> <span class="n">ValidationResult</span><span class="p">(</span><span class="kc">False</span><span class="p">,</span> <span class="s2">&quot;SELECT 문만 허용&quot;</span><span class="p">,</span> <span class="s2">&quot;security&quot;</span><span class="p">)</span>
+        <span class="k">for</span> <span class="n">kw</span> <span class="ow">in</span> <span class="n">BLOCKED_KEYWORDS</span><span class="p">:</span>
+            <span class="k">if</span> <span class="n">kw</span> <span class="ow">in</span> <span class="n">sql_upper</span><span class="o">.</span><span class="n">split</span><span class="p">():</span>
+                <span class="k">return</span> <span class="n">ValidationResult</span><span class="p">(</span><span class="kc">False</span><span class="p">,</span> <span class="sa">f</span><span class="s2">&quot;금지 키워드: </span><span class="si">{</span><span class="n">kw</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">,</span> <span class="s2">&quot;security&quot;</span><span class="p">)</span>
+
+    <span class="k">def</span><span class="w"> </span><span class="nf">_validate_allowlist</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">sql</span><span class="p">:</span> <span class="nb">str</span><span class="p">):</span>
+        <span class="kn">import</span><span class="w"> </span><span class="nn">sqlglot</span>
+        <span class="n">parsed</span> <span class="o">=</span> <span class="n">sqlglot</span><span class="o">.</span><span class="n">parse_one</span><span class="p">(</span><span class="n">sql</span><span class="p">,</span> <span class="n">dialect</span><span class="o">=</span><span class="s2">&quot;oracle&quot;</span><span class="p">)</span>
+        <span class="k">for</span> <span class="n">tbl</span> <span class="ow">in</span> <span class="n">parsed</span><span class="o">.</span><span class="n">find_all</span><span class="p">(</span><span class="n">sqlglot</span><span class="o">.</span><span class="n">exp</span><span class="o">.</span><span class="n">Table</span><span class="p">):</span>
+            <span class="k">if</span> <span class="n">tbl</span><span class="o">.</span><span class="n">name</span><span class="o">.</span><span class="n">upper</span><span class="p">()</span> <span class="ow">not</span> <span class="ow">in</span> <span class="n">ALLOWED_TABLES</span><span class="p">:</span>
+                <span class="k">return</span> <span class="n">ValidationResult</span><span class="p">(</span>
+                    <span class="kc">False</span><span class="p">,</span> <span class="sa">f</span><span class="s2">&quot;허용되지 않은 테이블: </span><span class="si">{</span><span class="n">tbl</span><span class="o">.</span><span class="n">name</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">,</span> <span class="s2">&quot;security&quot;</span>
+                <span class="p">)</span>
+
+    <span class="k">async</span> <span class="k">def</span><span class="w"> </span><span class="nf">_validate_dry_run</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">sql</span><span class="p">:</span> <span class="nb">str</span><span class="p">):</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;DB EXPLAIN으로 실제 실행 가능성 확인&quot;&quot;&quot;</span>
+        <span class="k">try</span><span class="p">:</span>
+            <span class="k">await</span> <span class="n">execute_oracle</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;EXPLAIN PLAN FOR </span><span class="si">{</span><span class="n">sql</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
+            <span class="k">return</span> <span class="kc">None</span>  <span class="c1"># 통과</span>
+        <span class="k">except</span> <span class="ne">Exception</span> <span class="k">as</span> <span class="n">e</span><span class="p">:</span>
+            <span class="k">return</span> <span class="n">ValidationResult</span><span class="p">(</span><span class="kc">False</span><span class="p">,</span> <span class="nb">str</span><span class="p">(</span><span class="n">e</span><span class="p">),</span> <span class="s2">&quot;dry_run&quot;</span><span class="p">)</span>
+</code></pre></div>
+
+<p><strong>4-Layer 방어 전체:</strong></p>
+<div class="mermaid">
+flowchart LR
+    SQL[생성 SQL] --> L1["Layer 1\nSELECT only +\n키워드 차단"]
+    L1 --> L2["Layer 2\n테이블 allowlist\n(코드)"]
+    L2 --> L3["Layer 3\nsqlglot 파싱\n(구문)"]
+    L3 --> L4["Layer 4\nDB EXPLAIN\n(스키마)"]
+    L4 --> L5["Layer 5\nOracle Role\n(DB 레벨)"]
+    L5 --> EXEC[실행]
+
+    style L5 fill:#22c55e,color:#fff
+</div>
+
+<blockquote>
+<p>💡 <strong>5번째 방어선이 가장 강력:</strong> Validator를 모두 통과해도 NL2SQL_READER role이 GRANT 안 받은 테이블은 DB가 거부. <strong>코드 버그가 있어도 데이터 유출 불가.</strong></p>
+</blockquote>
+<h3 id="6-6-schema-rag--few-shot-예시-검색">6-6. Schema RAG — Few-shot 예시 검색</h3>
+<p><strong>목표:</strong> 사용자 질문과 유사한 과거 SQL Pair를 벡터 검색해 LLM에 Few-shot으로 주입.</p>
+<p><strong>왜 필요한가:</strong>
+- BIP에서 SQL Pairs 29개→70개로 늘리며 A등급 58%→100% 달성. <strong>가장 ROI 높은 튜닝 수단.</strong>
+- 도메인 표현(약칭, 부서별 용어)은 description만으론 안 잡힘 → 실제 예시로 가르치는 것이 효과적.</p>
+<p><strong>구조:</strong></p>
+<div class="mermaid">
+flowchart LR
+    Q["사용자 질문"] --> EMB["임베딩 모델"]
+    EMB --> VEC["(#quot;pgvector\nSQL Pair 임베딩#quot;)"]
+    VEC --> TOPK["Top-K 유사 Pair\n(K=5)"]
+    TOPK --> LLM["LLM 프롬프트\n+ Few-shot 5개"]
+    LLM --> QS["QuerySpec 생성"]
+
+    SP["SQL Pairs 풀\n(question, query_spec)"] -.색인.-> VEC
+
+    style VEC fill:#a78bfa,color:#fff
+</div>
+
+<p><strong>SQL Pair 형식:</strong></p>
+<div class="codehilite"><pre><span></span><code><span class="c1"># tests/sql_pairs.yaml</span>
+<span class="nt">pairs</span><span class="p">:</span>
+<span class="w">  </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="nt">question</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;이번</span><span class="nv"> </span><span class="s">달</span><span class="nv"> </span><span class="s">매출&quot;</span>
+<span class="w">    </span><span class="nt">query_spec</span><span class="p">:</span>
+<span class="w">      </span><span class="nt">tables</span><span class="p">:</span><span class="w"> </span><span class="p p-Indicator">[</span><span class="s">&quot;V_DAILY_SALES_SUMMARY&quot;</span><span class="p p-Indicator">]</span>
+<span class="w">      </span><span class="nt">select</span><span class="p">:</span><span class="w"> </span><span class="p p-Indicator">[]</span>
+<span class="w">      </span><span class="nt">aggregations</span><span class="p">:</span><span class="w"> </span><span class="p p-Indicator">[{</span><span class="nt">column</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;TOTAL_AMOUNT&quot;</span><span class="p p-Indicator">,</span><span class="nt"> func</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;SUM&quot;</span><span class="p p-Indicator">}]</span>
+<span class="w">      </span><span class="nt">time_scope</span><span class="p">:</span><span class="w"> </span><span class="p p-Indicator">{</span><span class="nt">column</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;SALE_DATE&quot;</span><span class="p p-Indicator">,</span><span class="nt"> scope</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;this_month&quot;</span><span class="p p-Indicator">}</span>
+
+<span class="w">  </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="nt">question</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;VIP</span><span class="nv"> </span><span class="s">고객</span><span class="nv"> </span><span class="s">이탈</span><span class="nv"> </span><span class="s">위험자</span><span class="nv"> </span><span class="s">명단&quot;</span>
+<span class="w">    </span><span class="nt">query_spec</span><span class="p">:</span>
+<span class="w">      </span><span class="nt">tables</span><span class="p">:</span><span class="w"> </span><span class="p p-Indicator">[</span><span class="s">&quot;V_CUSTOMER_360&quot;</span><span class="p p-Indicator">,</span><span class="w"> </span><span class="s">&quot;V_CUSTOMER_SIGNALS&quot;</span><span class="p p-Indicator">]</span>
+<span class="w">      </span><span class="nt">select</span><span class="p">:</span><span class="w"> </span><span class="p p-Indicator">[</span><span class="s">&quot;NAME&quot;</span><span class="p p-Indicator">,</span><span class="w"> </span><span class="s">&quot;LAST_PURCHASE_DATE&quot;</span><span class="p p-Indicator">]</span>
+<span class="w">      </span><span class="nt">filters</span><span class="p">:</span>
+<span class="w">        </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="p p-Indicator">{</span><span class="nt">column</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;IS_VIP&quot;</span><span class="p p-Indicator">,</span><span class="nt"> op</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;=&quot;</span><span class="p p-Indicator">,</span><span class="nt"> value</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;Y&quot;</span><span class="p p-Indicator">}</span>
+<span class="w">        </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="p p-Indicator">{</span><span class="nt">column</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;IS_CHURNING&quot;</span><span class="p p-Indicator">,</span><span class="nt"> op</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;=&quot;</span><span class="p p-Indicator">,</span><span class="nt"> value</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;Y&quot;</span><span class="p p-Indicator">}</span>
+<span class="w">      </span><span class="nt">order_by</span><span class="p">:</span><span class="w"> </span><span class="p p-Indicator">[{</span><span class="nt">column</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;TOTAL_PURCHASES&quot;</span><span class="p p-Indicator">,</span><span class="nt"> direction</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;desc&quot;</span><span class="p p-Indicator">}]</span>
+<span class="w">      </span><span class="nt">limit</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">50</span>
+</code></pre></div>
+
+<p><strong>임베딩 적재 (pgvector 또는 사내 벡터 DB):</strong></p>
+<div class="codehilite"><pre><span></span><code><span class="k">async</span> <span class="k">def</span><span class="w"> </span><span class="nf">index_sql_pairs</span><span class="p">(</span><span class="n">pairs</span><span class="p">:</span> <span class="nb">list</span><span class="p">[</span><span class="nb">dict</span><span class="p">]):</span>
+    <span class="k">for</span> <span class="n">p</span> <span class="ow">in</span> <span class="n">pairs</span><span class="p">:</span>
+        <span class="n">emb</span> <span class="o">=</span> <span class="n">embed</span><span class="p">(</span><span class="n">p</span><span class="p">[</span><span class="s2">&quot;question&quot;</span><span class="p">])</span>  <span class="c1"># 사내 임베딩 모델</span>
+        <span class="k">await</span> <span class="n">db</span><span class="o">.</span><span class="n">execute</span><span class="p">(</span>
+            <span class="s2">&quot;INSERT INTO sql_pairs (question, query_spec, embedding) VALUES ($1, $2, $3)&quot;</span><span class="p">,</span>
+            <span class="n">p</span><span class="p">[</span><span class="s2">&quot;question&quot;</span><span class="p">],</span> <span class="n">json</span><span class="o">.</span><span class="n">dumps</span><span class="p">(</span><span class="n">p</span><span class="p">[</span><span class="s2">&quot;query_spec&quot;</span><span class="p">]),</span> <span class="n">emb</span><span class="p">,</span>
+        <span class="p">)</span>
+
+<span class="k">async</span> <span class="k">def</span><span class="w"> </span><span class="nf">retrieve_pairs</span><span class="p">(</span><span class="n">question</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="n">k</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="mi">5</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">list</span><span class="p">[</span><span class="nb">dict</span><span class="p">]:</span>
+    <span class="n">emb</span> <span class="o">=</span> <span class="n">embed</span><span class="p">(</span><span class="n">question</span><span class="p">)</span>
+    <span class="n">rows</span> <span class="o">=</span> <span class="k">await</span> <span class="n">db</span><span class="o">.</span><span class="n">fetch</span><span class="p">(</span>
+        <span class="s2">&quot;SELECT question, query_spec FROM sql_pairs ORDER BY embedding &lt;=&gt; $1 LIMIT $2&quot;</span><span class="p">,</span>
+        <span class="n">emb</span><span class="p">,</span> <span class="n">k</span><span class="p">,</span>
+    <span class="p">)</span>
+    <span class="k">return</span> <span class="p">[</span><span class="nb">dict</span><span class="p">(</span><span class="n">r</span><span class="p">)</span> <span class="k">for</span> <span class="n">r</span> <span class="ow">in</span> <span class="n">rows</span><span class="p">]</span>
+</code></pre></div>
+
+<blockquote>
+<p>💡 <strong>Phase 3 튜닝 사이클의 핵심:</strong> 실패한 질문 → 사람이 정답 QuerySpec 작성 → SQL Pair로 등록 → 다음번부터 자동으로 Few-shot 검색됨. <strong>Pair가 늘수록 시스템이 똑똑해진다.</strong></p>
+</blockquote>
+<h3 id="6-7-langgraph-agent--노드-구성">6-7. LangGraph Agent — 노드 구성</h3>
+<p><strong>목표:</strong> 위 모듈을 LangGraph 그래프로 묶어 멀티스텝 + 자동 보정 흐름을 구현.</p>
+<div class="mermaid">
+flowchart TD
+    START([질문 입력]) --> N1["1. retrieve_schema\n스키마 + Few-shot 검색"]
+    N1 --> N2["2. generate_spec\nLLM이 QuerySpec 생성"]
+    N2 --> N3["3. convert_sql\nQuerySpec → SQL"]
+    N3 --> N4["4. validate\n4-Layer 검증"]
+    N4 --> D{"검증 통과?"}
+    D -->|실패 + 재시도 N회 미만| N2
+    D -->|실패 + N회 초과| E1["에러 응답\n모르겠습니다"]
+    D -->|통과| N5["5. execute\nDB 실행"]
+    N5 --> N6["6. synthesize\n결과 → 자연어"]
+    N6 --> N7["7. audit_log\n감사 로그 기록"]
+    N7 --> END([답변 반환])
+
+    style N2 fill:#3b82f6,color:#fff
+    style N3 fill:#fbbf24,color:#1a1a2e
+    style N4 fill:#22c55e,color:#fff
+    style N7 fill:#fce4ec,color:#1a1a2e
+</div>
+
+<p><strong>노드 정의:</strong></p>
+<div class="codehilite"><pre><span></span><code><span class="c1"># langgraph/nl2sql/agent.py</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">langgraph.graph</span><span class="w"> </span><span class="kn">import</span> <span class="n">StateGraph</span><span class="p">,</span> <span class="n">END</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">typing</span><span class="w"> </span><span class="kn">import</span> <span class="n">TypedDict</span>
+
+<span class="k">class</span><span class="w"> </span><span class="nc">AgentState</span><span class="p">(</span><span class="n">TypedDict</span><span class="p">):</span>
+    <span class="n">question</span><span class="p">:</span> <span class="nb">str</span>
+    <span class="n">schema_context</span><span class="p">:</span> <span class="nb">str</span>
+    <span class="n">few_shot</span><span class="p">:</span> <span class="nb">list</span><span class="p">[</span><span class="nb">dict</span><span class="p">]</span>
+    <span class="n">spec</span><span class="p">:</span> <span class="n">QuerySpec</span>
+    <span class="n">sql</span><span class="p">:</span> <span class="nb">str</span>
+    <span class="n">validation</span><span class="p">:</span> <span class="n">ValidationResult</span>
+    <span class="n">rows</span><span class="p">:</span> <span class="nb">list</span>
+    <span class="n">answer</span><span class="p">:</span> <span class="nb">str</span>
+    <span class="n">retry_count</span><span class="p">:</span> <span class="nb">int</span>
+
+<span class="k">async</span> <span class="k">def</span><span class="w"> </span><span class="nf">retrieve_schema</span><span class="p">(</span><span class="n">state</span><span class="p">:</span> <span class="n">AgentState</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">AgentState</span><span class="p">:</span>
+    <span class="n">state</span><span class="p">[</span><span class="s2">&quot;schema_context&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="n">registry</span><span class="o">.</span><span class="n">to_llm_prompt</span><span class="p">()</span>
+    <span class="n">state</span><span class="p">[</span><span class="s2">&quot;few_shot&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="k">await</span> <span class="n">retrieve_pairs</span><span class="p">(</span><span class="n">state</span><span class="p">[</span><span class="s2">&quot;question&quot;</span><span class="p">],</span> <span class="n">k</span><span class="o">=</span><span class="mi">5</span><span class="p">)</span>
+    <span class="k">return</span> <span class="n">state</span>
+
+<span class="k">async</span> <span class="k">def</span><span class="w"> </span><span class="nf">generate_spec</span><span class="p">(</span><span class="n">state</span><span class="p">:</span> <span class="n">AgentState</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">AgentState</span><span class="p">:</span>
+    <span class="n">prompt</span> <span class="o">=</span> <span class="n">build_prompt</span><span class="p">(</span><span class="n">state</span><span class="p">[</span><span class="s2">&quot;question&quot;</span><span class="p">],</span> <span class="n">state</span><span class="p">[</span><span class="s2">&quot;schema_context&quot;</span><span class="p">],</span> <span class="n">state</span><span class="p">[</span><span class="s2">&quot;few_shot&quot;</span><span class="p">])</span>
+    <span class="n">state</span><span class="p">[</span><span class="s2">&quot;spec&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="k">await</span> <span class="n">llm</span><span class="o">.</span><span class="n">create</span><span class="p">(</span><span class="n">QuerySpec</span><span class="p">,</span> <span class="n">prompt</span><span class="p">)</span>  <span class="c1"># Function Calling</span>
+    <span class="k">return</span> <span class="n">state</span>
+
+<span class="k">def</span><span class="w"> </span><span class="nf">convert_sql</span><span class="p">(</span><span class="n">state</span><span class="p">:</span> <span class="n">AgentState</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">AgentState</span><span class="p">:</span>
+    <span class="n">state</span><span class="p">[</span><span class="s2">&quot;sql&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="n">converter</span><span class="o">.</span><span class="n">convert</span><span class="p">(</span><span class="n">state</span><span class="p">[</span><span class="s2">&quot;spec&quot;</span><span class="p">])</span>
+    <span class="k">return</span> <span class="n">state</span>
+
+<span class="k">async</span> <span class="k">def</span><span class="w"> </span><span class="nf">validate</span><span class="p">(</span><span class="n">state</span><span class="p">:</span> <span class="n">AgentState</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">AgentState</span><span class="p">:</span>
+    <span class="n">state</span><span class="p">[</span><span class="s2">&quot;validation&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="k">await</span> <span class="n">validator</span><span class="o">.</span><span class="n">validate</span><span class="p">(</span><span class="n">state</span><span class="p">[</span><span class="s2">&quot;sql&quot;</span><span class="p">])</span>
+    <span class="k">return</span> <span class="n">state</span>
+
+<span class="k">def</span><span class="w"> </span><span class="nf">should_retry</span><span class="p">(</span><span class="n">state</span><span class="p">:</span> <span class="n">AgentState</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">str</span><span class="p">:</span>
+    <span class="k">if</span> <span class="n">state</span><span class="p">[</span><span class="s2">&quot;validation&quot;</span><span class="p">]</span><span class="o">.</span><span class="n">is_valid</span><span class="p">:</span>
+        <span class="k">return</span> <span class="s2">&quot;execute&quot;</span>
+    <span class="k">if</span> <span class="n">state</span><span class="p">[</span><span class="s2">&quot;retry_count&quot;</span><span class="p">]</span> <span class="o">&gt;=</span> <span class="mi">3</span><span class="p">:</span>
+        <span class="k">return</span> <span class="s2">&quot;error&quot;</span>
+    <span class="n">state</span><span class="p">[</span><span class="s2">&quot;retry_count&quot;</span><span class="p">]</span> <span class="o">+=</span> <span class="mi">1</span>
+    <span class="k">return</span> <span class="s2">&quot;regenerate&quot;</span>
+
+<span class="k">async</span> <span class="k">def</span><span class="w"> </span><span class="nf">execute</span><span class="p">(</span><span class="n">state</span><span class="p">:</span> <span class="n">AgentState</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">AgentState</span><span class="p">:</span>
+    <span class="n">state</span><span class="p">[</span><span class="s2">&quot;rows&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="k">await</span> <span class="n">execute_oracle</span><span class="p">(</span><span class="n">state</span><span class="p">[</span><span class="s2">&quot;sql&quot;</span><span class="p">])</span>
+    <span class="k">return</span> <span class="n">state</span>
+
+<span class="k">async</span> <span class="k">def</span><span class="w"> </span><span class="nf">synthesize</span><span class="p">(</span><span class="n">state</span><span class="p">:</span> <span class="n">AgentState</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">AgentState</span><span class="p">:</span>
+    <span class="n">state</span><span class="p">[</span><span class="s2">&quot;answer&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="k">await</span> <span class="n">llm</span><span class="o">.</span><span class="n">synthesize</span><span class="p">(</span><span class="n">state</span><span class="p">[</span><span class="s2">&quot;question&quot;</span><span class="p">],</span> <span class="n">state</span><span class="p">[</span><span class="s2">&quot;rows&quot;</span><span class="p">])</span>
+    <span class="k">return</span> <span class="n">state</span>
+
+<span class="k">async</span> <span class="k">def</span><span class="w"> </span><span class="nf">audit_log</span><span class="p">(</span><span class="n">state</span><span class="p">:</span> <span class="n">AgentState</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">AgentState</span><span class="p">:</span>
+    <span class="k">await</span> <span class="n">record_agent_audit</span><span class="p">(</span>
+        <span class="n">question</span><span class="o">=</span><span class="n">state</span><span class="p">[</span><span class="s2">&quot;question&quot;</span><span class="p">],</span>
+        <span class="n">spec</span><span class="o">=</span><span class="n">state</span><span class="p">[</span><span class="s2">&quot;spec&quot;</span><span class="p">]</span><span class="o">.</span><span class="n">model_dump</span><span class="p">(),</span>
+        <span class="n">sql</span><span class="o">=</span><span class="n">state</span><span class="p">[</span><span class="s2">&quot;sql&quot;</span><span class="p">],</span>
+        <span class="n">validation</span><span class="o">=</span><span class="n">state</span><span class="p">[</span><span class="s2">&quot;validation&quot;</span><span class="p">],</span>
+        <span class="n">result_count</span><span class="o">=</span><span class="nb">len</span><span class="p">(</span><span class="n">state</span><span class="p">[</span><span class="s2">&quot;rows&quot;</span><span class="p">]),</span>
+    <span class="p">)</span>
+    <span class="k">return</span> <span class="n">state</span>
+
+<span class="c1"># 그래프 구축</span>
+<span class="n">g</span> <span class="o">=</span> <span class="n">StateGraph</span><span class="p">(</span><span class="n">AgentState</span><span class="p">)</span>
+<span class="n">g</span><span class="o">.</span><span class="n">add_node</span><span class="p">(</span><span class="s2">&quot;retrieve_schema&quot;</span><span class="p">,</span> <span class="n">retrieve_schema</span><span class="p">)</span>
+<span class="n">g</span><span class="o">.</span><span class="n">add_node</span><span class="p">(</span><span class="s2">&quot;generate_spec&quot;</span><span class="p">,</span> <span class="n">generate_spec</span><span class="p">)</span>
+<span class="n">g</span><span class="o">.</span><span class="n">add_node</span><span class="p">(</span><span class="s2">&quot;convert_sql&quot;</span><span class="p">,</span> <span class="n">convert_sql</span><span class="p">)</span>
+<span class="n">g</span><span class="o">.</span><span class="n">add_node</span><span class="p">(</span><span class="s2">&quot;validate&quot;</span><span class="p">,</span> <span class="n">validate</span><span class="p">)</span>
+<span class="n">g</span><span class="o">.</span><span class="n">add_node</span><span class="p">(</span><span class="s2">&quot;execute&quot;</span><span class="p">,</span> <span class="n">execute</span><span class="p">)</span>
+<span class="n">g</span><span class="o">.</span><span class="n">add_node</span><span class="p">(</span><span class="s2">&quot;synthesize&quot;</span><span class="p">,</span> <span class="n">synthesize</span><span class="p">)</span>
+<span class="n">g</span><span class="o">.</span><span class="n">add_node</span><span class="p">(</span><span class="s2">&quot;audit_log&quot;</span><span class="p">,</span> <span class="n">audit_log</span><span class="p">)</span>
+
+<span class="n">g</span><span class="o">.</span><span class="n">set_entry_point</span><span class="p">(</span><span class="s2">&quot;retrieve_schema&quot;</span><span class="p">)</span>
+<span class="n">g</span><span class="o">.</span><span class="n">add_edge</span><span class="p">(</span><span class="s2">&quot;retrieve_schema&quot;</span><span class="p">,</span> <span class="s2">&quot;generate_spec&quot;</span><span class="p">)</span>
+<span class="n">g</span><span class="o">.</span><span class="n">add_edge</span><span class="p">(</span><span class="s2">&quot;generate_spec&quot;</span><span class="p">,</span> <span class="s2">&quot;convert_sql&quot;</span><span class="p">)</span>
+<span class="n">g</span><span class="o">.</span><span class="n">add_edge</span><span class="p">(</span><span class="s2">&quot;convert_sql&quot;</span><span class="p">,</span> <span class="s2">&quot;validate&quot;</span><span class="p">)</span>
+<span class="n">g</span><span class="o">.</span><span class="n">add_conditional_edges</span><span class="p">(</span><span class="s2">&quot;validate&quot;</span><span class="p">,</span> <span class="n">should_retry</span><span class="p">,</span> <span class="p">{</span>
+    <span class="s2">&quot;execute&quot;</span><span class="p">:</span> <span class="s2">&quot;execute&quot;</span><span class="p">,</span>
+    <span class="s2">&quot;regenerate&quot;</span><span class="p">:</span> <span class="s2">&quot;generate_spec&quot;</span><span class="p">,</span>
+    <span class="s2">&quot;error&quot;</span><span class="p">:</span> <span class="n">END</span><span class="p">,</span>
+<span class="p">})</span>
+<span class="n">g</span><span class="o">.</span><span class="n">add_edge</span><span class="p">(</span><span class="s2">&quot;execute&quot;</span><span class="p">,</span> <span class="s2">&quot;synthesize&quot;</span><span class="p">)</span>
+<span class="n">g</span><span class="o">.</span><span class="n">add_edge</span><span class="p">(</span><span class="s2">&quot;synthesize&quot;</span><span class="p">,</span> <span class="s2">&quot;audit_log&quot;</span><span class="p">)</span>
+<span class="n">g</span><span class="o">.</span><span class="n">add_edge</span><span class="p">(</span><span class="s2">&quot;audit_log&quot;</span><span class="p">,</span> <span class="n">END</span><span class="p">)</span>
+
+<span class="n">agent</span> <span class="o">=</span> <span class="n">g</span><span class="o">.</span><span class="n">compile</span><span class="p">()</span>
+</code></pre></div>
+
+<blockquote>
+<p><strong>자동 보정 루프의 의미:</strong> Validator가 "컬럼 X가 V_FOO에 없음" 에러를 반환하면, LLM에게 그 에러 메시지를 컨텍스트로 다시 주고 재생성. <strong>3회까지 재시도하고도 실패하면 "모르겠습니다" 응답.</strong></p>
+</blockquote>
+<h3 id="6-8-감사-로그">6-8. 감사 로그</h3>
+<p><strong>목표:</strong> 모든 LLM 호출 + 생성 SQL + 실행 결과를 감사 가능한 형태로 보관.</p>
+<p><strong>테이블 (BIP <code>agent_audit_log</code> 패턴 그대로):</strong></p>
+<div class="codehilite"><pre><span></span><code><span class="k">CREATE</span><span class="w"> </span><span class="k">TABLE</span><span class="w"> </span><span class="n">NL2SQL_AUDIT_LOG</span><span class="w"> </span><span class="p">(</span>
+<span class="w">    </span><span class="n">AUDIT_ID</span><span class="w"> </span><span class="nb">NUMBER</span><span class="w"> </span><span class="k">GENERATED</span><span class="w"> </span><span class="n">ALWAYS</span><span class="w"> </span><span class="k">AS</span><span class="w"> </span><span class="k">IDENTITY</span><span class="w"> </span><span class="k">PRIMARY</span><span class="w"> </span><span class="k">KEY</span><span class="p">,</span>
+<span class="w">    </span><span class="n">REQUEST_ID</span><span class="w"> </span><span class="n">VARCHAR2</span><span class="p">(</span><span class="mi">64</span><span class="p">)</span><span class="w"> </span><span class="k">NOT</span><span class="w"> </span><span class="k">NULL</span><span class="p">,</span>
+<span class="w">    </span><span class="n">REQUEST_TS</span><span class="w"> </span><span class="k">TIMESTAMP</span><span class="w"> </span><span class="k">DEFAULT</span><span class="w"> </span><span class="n">SYSTIMESTAMP</span><span class="p">,</span>
+<span class="w">    </span><span class="n">USER_ID</span><span class="w"> </span><span class="n">VARCHAR2</span><span class="p">(</span><span class="mi">64</span><span class="p">),</span>
+<span class="w">    </span><span class="n">QUESTION</span><span class="w"> </span><span class="k">CLOB</span><span class="w"> </span><span class="k">NOT</span><span class="w"> </span><span class="k">NULL</span><span class="p">,</span>
+<span class="w">    </span><span class="n">GENERATED_SPEC</span><span class="w"> </span><span class="k">CLOB</span><span class="p">,</span><span class="w">         </span><span class="c1">-- QuerySpec JSON</span>
+<span class="w">    </span><span class="n">GENERATED_SQL</span><span class="w"> </span><span class="k">CLOB</span><span class="p">,</span>
+<span class="w">    </span><span class="n">VALIDATION_PASSED</span><span class="w"> </span><span class="nb">CHAR</span><span class="p">(</span><span class="mi">1</span><span class="p">),</span><span class="w">   </span><span class="c1">-- Y/N</span>
+<span class="w">    </span><span class="n">VALIDATION_ERROR</span><span class="w"> </span><span class="n">VARCHAR2</span><span class="p">(</span><span class="mi">500</span><span class="p">),</span>
+<span class="w">    </span><span class="n">RETRY_COUNT</span><span class="w"> </span><span class="nb">NUMBER</span><span class="p">,</span>
+<span class="w">    </span><span class="n">EXECUTED_AT</span><span class="w"> </span><span class="k">TIMESTAMP</span><span class="p">,</span>
+<span class="w">    </span><span class="k">ROW_COUNT</span><span class="w"> </span><span class="nb">NUMBER</span><span class="p">,</span>
+<span class="w">    </span><span class="n">ANSWER</span><span class="w"> </span><span class="k">CLOB</span><span class="p">,</span>
+<span class="w">    </span><span class="n">LATENCY_MS</span><span class="w"> </span><span class="nb">NUMBER</span><span class="p">,</span>
+<span class="w">    </span><span class="n">LLM_MODEL</span><span class="w"> </span><span class="n">VARCHAR2</span><span class="p">(</span><span class="mi">64</span><span class="p">),</span>
+<span class="w">    </span><span class="n">LLM_TOKENS_INPUT</span><span class="w"> </span><span class="nb">NUMBER</span><span class="p">,</span>
+<span class="w">    </span><span class="n">LLM_TOKENS_OUTPUT</span><span class="w"> </span><span class="nb">NUMBER</span>
+<span class="p">);</span>
+
+<span class="k">CREATE</span><span class="w"> </span><span class="k">INDEX</span><span class="w"> </span><span class="n">IDX_NL2SQL_AUDIT_TS</span><span class="w"> </span><span class="k">ON</span><span class="w"> </span><span class="n">NL2SQL_AUDIT_LOG</span><span class="w"> </span><span class="p">(</span><span class="n">REQUEST_TS</span><span class="p">);</span>
+<span class="k">CREATE</span><span class="w"> </span><span class="k">INDEX</span><span class="w"> </span><span class="n">IDX_NL2SQL_AUDIT_USER</span><span class="w"> </span><span class="k">ON</span><span class="w"> </span><span class="n">NL2SQL_AUDIT_LOG</span><span class="w"> </span><span class="p">(</span><span class="n">USER_ID</span><span class="p">);</span>
+</code></pre></div>
+
+<blockquote>
+<p><strong>감사 요구사항이 강하면 90일/180일/1년 등 보관 정책 명시. CLOB로 저장하면 부피가 크므로 별도 tablespace 권장.</strong></p>
+</blockquote>
+<hr />
+<h2 id="7-phase-3--튜닝--검증-2-3주">7. Phase 3 — 튜닝 &amp; 검증 (2-3주)</h2>
+<h3 id="7-1-평가셋-구성">7-1. 평가셋 구성</h3>
+<p><strong>목표:</strong> Phase 0에서 수집한 50개 질문을 자동 평가 가능한 형태로 정리.</p>
+<p><strong>파일 위치:</strong> <code>langgraph/nl2sql/tests/evaluation_set.yaml</code> (BIP 23개 패턴 그대로)</p>
+<div class="codehilite"><pre><span></span><code><span class="c1"># 카테고리별 분포</span>
+<span class="nt">basic</span><span class="p">:</span><span class="w">                 </span><span class="c1"># 단순 조회 (10-15개)</span>
+<span class="w">  </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="nt">question</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;이번</span><span class="nv"> </span><span class="s">달</span><span class="nv"> </span><span class="s">매출&quot;</span>
+<span class="w">    </span><span class="nt">expected_tables</span><span class="p">:</span><span class="w"> </span><span class="p p-Indicator">[</span><span class="s">&quot;V_DAILY_SALES_SUMMARY&quot;</span><span class="p p-Indicator">]</span>
+<span class="w">    </span><span class="nt">min_rows</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">1</span>
+
+<span class="w">  </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="nt">question</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;매출</span><span class="nv"> </span><span class="s">상위</span><span class="nv"> </span><span class="s">5개</span><span class="nv"> </span><span class="s">부서&quot;</span>
+<span class="w">    </span><span class="nt">expected_tables</span><span class="p">:</span><span class="w"> </span><span class="p p-Indicator">[</span><span class="s">&quot;V_DAILY_SALES_SUMMARY&quot;</span><span class="p p-Indicator">]</span>
+<span class="w">    </span><span class="nt">expected_rows</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">5</span>
+
+<span class="nt">boolean_flags</span><span class="p">:</span><span class="w">         </span><span class="c1"># Boolean 활용 (10개)</span>
+<span class="w">  </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="nt">question</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;VIP</span><span class="nv"> </span><span class="s">고객</span><span class="nv"> </span><span class="s">명단&quot;</span>
+<span class="w">    </span><span class="nt">expected_tables</span><span class="p">:</span><span class="w"> </span><span class="p p-Indicator">[</span><span class="s">&quot;V_CUSTOMER_SIGNALS&quot;</span><span class="p p-Indicator">]</span>
+<span class="w">    </span><span class="nt">expected_filters</span><span class="p">:</span><span class="w"> </span><span class="p p-Indicator">[</span><span class="s">&quot;IS_VIP&quot;</span><span class="p p-Indicator">]</span>
+<span class="w">    </span><span class="nt">min_rows</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">1</span>
+
+<span class="w">  </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="nt">question</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;이탈</span><span class="nv"> </span><span class="s">위험</span><span class="nv"> </span><span class="s">고객&quot;</span>
+<span class="w">    </span><span class="nt">expected_tables</span><span class="p">:</span><span class="w"> </span><span class="p p-Indicator">[</span><span class="s">&quot;V_CUSTOMER_SIGNALS&quot;</span><span class="p p-Indicator">]</span>
+<span class="w">    </span><span class="nt">expected_filters</span><span class="p">:</span><span class="w"> </span><span class="p p-Indicator">[</span><span class="s">&quot;IS_CHURNING&quot;</span><span class="p p-Indicator">]</span>
+
+<span class="nt">time_series</span><span class="p">:</span><span class="w">           </span><span class="c1"># 시계열 (10개)</span>
+<span class="w">  </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="nt">question</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;최근</span><span class="nv"> </span><span class="s">3개월</span><span class="nv"> </span><span class="s">매출</span><span class="nv"> </span><span class="s">추이&quot;</span>
+<span class="w">    </span><span class="nt">expected_tables</span><span class="p">:</span><span class="w"> </span><span class="p p-Indicator">[</span><span class="s">&quot;V_DAILY_SALES_SUMMARY&quot;</span><span class="p p-Indicator">]</span>
+<span class="w">    </span><span class="nt">expected_aggregations</span><span class="p">:</span><span class="w"> </span><span class="p p-Indicator">[</span><span class="s">&quot;SUM&quot;</span><span class="p p-Indicator">]</span>
+<span class="w">    </span><span class="nt">min_rows</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">3</span>
+
+<span class="nt">comparison</span><span class="p">:</span><span class="w">            </span><span class="c1"># 비교 (10개)</span>
+<span class="w">  </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="nt">question</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;영업1팀</span><span class="nv"> </span><span class="s">vs</span><span class="nv"> </span><span class="s">영업2팀</span><span class="nv"> </span><span class="s">실적&quot;</span>
+<span class="w">    </span><span class="nt">expected_tables</span><span class="p">:</span><span class="w"> </span><span class="p p-Indicator">[</span><span class="s">&quot;V_DAILY_SALES_SUMMARY&quot;</span><span class="p p-Indicator">]</span>
+<span class="w">    </span><span class="nt">expected_rows</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">2</span>
+
+<span class="nt">complex</span><span class="p">:</span><span class="w">               </span><span class="c1"># 복합 (10개)</span>
+<span class="w">  </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="nt">question</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;VIP</span><span class="nv"> </span><span class="s">중</span><span class="nv"> </span><span class="s">이탈</span><span class="nv"> </span><span class="s">위험자</span><span class="nv"> </span><span class="s">매출</span><span class="nv"> </span><span class="s">상위</span><span class="nv"> </span><span class="s">10명&quot;</span>
+<span class="w">    </span><span class="nt">expected_tables</span><span class="p">:</span><span class="w"> </span><span class="p p-Indicator">[</span><span class="s">&quot;V_CUSTOMER_360&quot;</span><span class="p p-Indicator">,</span><span class="w"> </span><span class="s">&quot;V_CUSTOMER_SIGNALS&quot;</span><span class="p p-Indicator">]</span>
+<span class="w">    </span><span class="nt">expected_filters</span><span class="p">:</span><span class="w"> </span><span class="p p-Indicator">[</span><span class="s">&quot;IS_VIP&quot;</span><span class="p p-Indicator">,</span><span class="w"> </span><span class="s">&quot;IS_CHURNING&quot;</span><span class="p p-Indicator">]</span>
+<span class="w">    </span><span class="nt">expected_rows</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">10</span>
+</code></pre></div>
+
+<h3 id="7-2-평가-자동화-스크립트">7-2. 평가 자동화 스크립트</h3>
+<div class="codehilite"><pre><span></span><code><span class="c1"># scripts/run_evaluation.py</span>
+<span class="kn">import</span><span class="w"> </span><span class="nn">asyncio</span><span class="o">,</span><span class="w"> </span><span class="nn">yaml</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">langgraph.nl2sql.agent</span><span class="w"> </span><span class="kn">import</span> <span class="n">agent</span>
+
+<span class="k">async</span> <span class="k">def</span><span class="w"> </span><span class="nf">evaluate</span><span class="p">(</span><span class="n">eval_set_path</span><span class="p">:</span> <span class="nb">str</span><span class="p">):</span>
+    <span class="k">with</span> <span class="nb">open</span><span class="p">(</span><span class="n">eval_set_path</span><span class="p">)</span> <span class="k">as</span> <span class="n">f</span><span class="p">:</span>
+        <span class="n">cases</span> <span class="o">=</span> <span class="n">yaml</span><span class="o">.</span><span class="n">safe_load</span><span class="p">(</span><span class="n">f</span><span class="p">)</span>
+
+    <span class="n">results</span> <span class="o">=</span> <span class="p">[]</span>
+    <span class="k">for</span> <span class="n">category</span><span class="p">,</span> <span class="n">items</span> <span class="ow">in</span> <span class="n">cases</span><span class="o">.</span><span class="n">items</span><span class="p">():</span>
+        <span class="k">for</span> <span class="n">case</span> <span class="ow">in</span> <span class="n">items</span><span class="p">:</span>
+            <span class="k">try</span><span class="p">:</span>
+                <span class="n">result</span> <span class="o">=</span> <span class="k">await</span> <span class="n">agent</span><span class="o">.</span><span class="n">ainvoke</span><span class="p">({</span><span class="s2">&quot;question&quot;</span><span class="p">:</span> <span class="n">case</span><span class="p">[</span><span class="s2">&quot;question&quot;</span><span class="p">]})</span>
+                <span class="n">grade</span> <span class="o">=</span> <span class="n">grade_result</span><span class="p">(</span><span class="n">result</span><span class="p">,</span> <span class="n">case</span><span class="p">)</span>
+                <span class="n">results</span><span class="o">.</span><span class="n">append</span><span class="p">({</span>
+                    <span class="s2">&quot;category&quot;</span><span class="p">:</span> <span class="n">category</span><span class="p">,</span>
+                    <span class="s2">&quot;question&quot;</span><span class="p">:</span> <span class="n">case</span><span class="p">[</span><span class="s2">&quot;question&quot;</span><span class="p">],</span>
+                    <span class="s2">&quot;grade&quot;</span><span class="p">:</span> <span class="n">grade</span><span class="p">,</span>                <span class="c1"># A/B/F</span>
+                    <span class="s2">&quot;spec&quot;</span><span class="p">:</span> <span class="n">result</span><span class="p">[</span><span class="s2">&quot;spec&quot;</span><span class="p">]</span><span class="o">.</span><span class="n">model_dump</span><span class="p">(),</span>
+                    <span class="s2">&quot;sql&quot;</span><span class="p">:</span> <span class="n">result</span><span class="p">[</span><span class="s2">&quot;sql&quot;</span><span class="p">],</span>
+                    <span class="s2">&quot;row_count&quot;</span><span class="p">:</span> <span class="nb">len</span><span class="p">(</span><span class="n">result</span><span class="p">[</span><span class="s2">&quot;rows&quot;</span><span class="p">]),</span>
+                <span class="p">})</span>
+            <span class="k">except</span> <span class="ne">Exception</span> <span class="k">as</span> <span class="n">e</span><span class="p">:</span>
+                <span class="n">results</span><span class="o">.</span><span class="n">append</span><span class="p">({</span><span class="s2">&quot;category&quot;</span><span class="p">:</span> <span class="n">category</span><span class="p">,</span> <span class="s2">&quot;question&quot;</span><span class="p">:</span> <span class="n">case</span><span class="p">[</span><span class="s2">&quot;question&quot;</span><span class="p">],</span>
+                                <span class="s2">&quot;grade&quot;</span><span class="p">:</span> <span class="s2">&quot;F&quot;</span><span class="p">,</span> <span class="s2">&quot;error&quot;</span><span class="p">:</span> <span class="nb">str</span><span class="p">(</span><span class="n">e</span><span class="p">)})</span>
+
+    <span class="c1"># 등급 분포 + 카테고리별 정확도 리포트</span>
+    <span class="n">print_report</span><span class="p">(</span><span class="n">results</span><span class="p">)</span>
+    <span class="n">save_json</span><span class="p">(</span><span class="s2">&quot;reports/eval_results.json&quot;</span><span class="p">,</span> <span class="n">results</span><span class="p">)</span>
+
+<span class="k">def</span><span class="w"> </span><span class="nf">grade_result</span><span class="p">(</span><span class="n">result</span><span class="p">,</span> <span class="n">expected</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">str</span><span class="p">:</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;5차원 평가 (BIP 패턴):</span>
+<span class="sd">    - 실행: SQL이 에러 없이 실행됐는가?</span>
+<span class="sd">    - 의미: 예상 테이블/필터를 사용했는가?</span>
+<span class="sd">    - 결과: 행 수가 예상 범위인가?</span>
+<span class="sd">    - 효율: SQL이 불필요한 JOIN/스캔 없이 깔끔한가?</span>
+<span class="sd">    - 의도: 답변이 질문에 직접 답하는가?</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="c1"># ... 채점 로직</span>
+    <span class="k">return</span> <span class="s2">&quot;A&quot;</span>  <span class="c1"># 모두 만족</span>
+</code></pre></div>
+
+<h3 id="7-3-테스트-개선-사이클">7-3. 테스트-개선 사이클</h3>
+<p><strong>BIP 검증된 사이클:</strong></p>
+<div class="mermaid">
+flowchart LR
+    T1["1차 테스트\nbaseline"] --> A1{"A등급 비율"}
+    A1 -->|< 70%| F1["실패 분석"]
+    F1 --> S1["SQL Pair 추가\n또는 규칙 보강"]
+    S1 --> T2["2차 테스트"]
+    T2 --> A2{"개선?"}
+    A2 -->|Yes| T3["3차 테스트"]
+    A2 -->|No| F2["근본 원인 분석\n(Phase 1 보강 필요?)"]
+
+    style F1 fill:#fee,color:#1a1a2e
+    style S1 fill:#e8f5e9,color:#1a1a2e
+</div>
+
+<p><strong>BIP 실제 결과 (참고):</strong></p>
+<table>
+<thead>
+<tr>
+<th style="text-align: center;">차수</th>
+<th>변경</th>
+<th style="text-align: center;">A등급</th>
+<th>인사이트</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td style="text-align: center;">1차</td>
+<td>baseline</td>
+<td style="text-align: center;">75%</td>
+<td>LLM이 시간 표현("최근")을 자주 누락</td>
+</tr>
+<tr>
+<td style="text-align: center;">2차</td>
+<td>SQL Pair 추가 (시계열 10개)</td>
+<td style="text-align: center;">85%</td>
+<td>Boolean flag 0% 발견 — Curated View 등록 누락</td>
+</tr>
+<tr>
+<td style="text-align: center;">3차</td>
+<td>LLM 변경 (gpt-4o-mini → 4.1-mini)</td>
+<td style="text-align: center;">100% SQL</td>
+<td>답변 품질에서 sql_answer 환각 발견</td>
+</tr>
+<tr>
+<td style="text-align: center;">4차</td>
+<td>컬럼 재등록 + 해석 컬럼 도입</td>
+<td style="text-align: center;">100% SQL + 87% boolean</td>
+<td>종합 A등급 100%</td>
+</tr>
+</tbody>
+</table>
+<h3 id="7-4-흔한-실패-패턴--대응">7-4. 흔한 실패 패턴 + 대응</h3>
+<table>
+<thead>
+<tr>
+<th>실패</th>
+<th>증상</th>
+<th>원인</th>
+<th>해결</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>약칭 매핑</td>
+<td>"현차" → 0행</td>
+<td>LIKE 매칭 실패</td>
+<td>SQL Pair에 약칭→정식명 예시</td>
+</tr>
+<tr>
+<td>영문 번역</td>
+<td>"셀트리온" → <code>'Celltrion'</code></td>
+<td>LLM 자동 번역</td>
+<td>System prompt에 "한글 필수"</td>
+</tr>
+<tr>
+<td>잘못된 컬럼</td>
+<td><code>WHERE PROFIT_RATE</code> (실제는 <code>PROFIT_MARGIN_PCT</code>)</td>
+<td>Description 부족</td>
+<td>DB COMMENT 보강</td>
+</tr>
+<tr>
+<td>시간 범위 누락</td>
+<td>"최근 매출" → WHERE 없음</td>
+<td>LLM이 모호 표현 무시</td>
+<td>TimeScope 강제 + Few-shot</td>
+</tr>
+<tr>
+<td>답변 환각</td>
+<td>SQL 결과 있는데 "없다"고 답변</td>
+<td>Synthesizer LLM 문제</td>
+<td>해석 컬럼 추가 + 프롬프트 강화</td>
+</tr>
+<tr>
+<td>JOIN 환각</td>
+<td>존재하지 않는 키로 JOIN</td>
+<td>joins.yaml 미반영</td>
+<td>Schema Registry 재로드</td>
+</tr>
+</tbody>
+</table>
+<h3 id="7-5-wrenai-결과-비교-bip-환경-벤치마크">7-5. WrenAI 결과 비교 (BIP 환경 벤치마크)</h3>
+<p><strong>목적:</strong> v3 LangGraph 구현이 WrenAI(BIP에서 100% 달성한 엔진) 대비 어느 수준인지 객관 비교.</p>
+<p><strong>방법:</strong>
+1. 동일한 평가셋 23개를 WrenAI(BIP) + LangGraph(v3) 양쪽에 실행
+2. 5차원 채점 (실행/의미/결과/효율/의도)
+3. 실패 패턴이 다른 부분을 분석 → v3 어느 모듈이 약한지 식별</p>
+<p><strong>비교 매트릭스 예시:</strong></p>
+<table>
+<thead>
+<tr>
+<th>차원</th>
+<th style="text-align: center;">WrenAI</th>
+<th style="text-align: center;">v3</th>
+<th>차이 분석</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>실행</td>
+<td style="text-align: center;">100%</td>
+<td style="text-align: center;">?</td>
+<td>sqlglot 검증이 ibis-engine 대비 강함/약함</td>
+</tr>
+<tr>
+<td>의미</td>
+<td style="text-align: center;">100%</td>
+<td style="text-align: center;">?</td>
+<td>Function Calling이 MDL+RAG 대비</td>
+</tr>
+<tr>
+<td>결과</td>
+<td style="text-align: center;">100%</td>
+<td style="text-align: center;">?</td>
+<td>JOIN 자동 처리가 Wren Relationship 대비</td>
+</tr>
+<tr>
+<td>효율</td>
+<td style="text-align: center;">A</td>
+<td style="text-align: center;">?</td>
+<td>불필요 컬럼/JOIN 발생 여부</td>
+</tr>
+<tr>
+<td>의도</td>
+<td style="text-align: center;">87%</td>
+<td style="text-align: center;">?</td>
+<td>Synthesizer가 sql_answer 대비</td>
+</tr>
+</tbody>
+</table>
+<blockquote>
+<p><strong>이 비교가 끝나면 사내 적용 의사결정 자료로 활용.</strong> "v3가 WrenAI 대비 X% 정확도, Oracle 19c는 v3로만 가능 → 채택" 형태로 보고.</p>
+</blockquote>
+<hr />
+<h2 id="8-phase-4--운영--확장-지속">8. Phase 4 — 운영 &amp; 확장 (지속)</h2>
+<h3 id="8-1-fastapi-서빙">8-1. FastAPI 서빙</h3>
+<div class="codehilite"><pre><span></span><code><span class="c1"># bip_agents/api/nl2sql.py</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">fastapi</span><span class="w"> </span><span class="kn">import</span> <span class="n">APIRouter</span><span class="p">,</span> <span class="n">HTTPException</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">langgraph.nl2sql.agent</span><span class="w"> </span><span class="kn">import</span> <span class="n">agent</span>
+
+<span class="n">router</span> <span class="o">=</span> <span class="n">APIRouter</span><span class="p">(</span><span class="n">prefix</span><span class="o">=</span><span class="s2">&quot;/nl2sql&quot;</span><span class="p">)</span>
+
+<span class="nd">@router</span><span class="o">.</span><span class="n">post</span><span class="p">(</span><span class="s2">&quot;/query&quot;</span><span class="p">)</span>
+<span class="k">async</span> <span class="k">def</span><span class="w"> </span><span class="nf">query</span><span class="p">(</span><span class="n">req</span><span class="p">:</span> <span class="n">QueryRequest</span><span class="p">):</span>
+    <span class="k">try</span><span class="p">:</span>
+        <span class="n">result</span> <span class="o">=</span> <span class="k">await</span> <span class="n">agent</span><span class="o">.</span><span class="n">ainvoke</span><span class="p">({</span>
+            <span class="s2">&quot;question&quot;</span><span class="p">:</span> <span class="n">req</span><span class="o">.</span><span class="n">question</span><span class="p">,</span>
+            <span class="s2">&quot;user_id&quot;</span><span class="p">:</span> <span class="n">req</span><span class="o">.</span><span class="n">user_id</span><span class="p">,</span>
+        <span class="p">})</span>
+        <span class="k">return</span> <span class="p">{</span>
+            <span class="s2">&quot;answer&quot;</span><span class="p">:</span> <span class="n">result</span><span class="p">[</span><span class="s2">&quot;answer&quot;</span><span class="p">],</span>
+            <span class="s2">&quot;sql&quot;</span><span class="p">:</span> <span class="n">result</span><span class="p">[</span><span class="s2">&quot;sql&quot;</span><span class="p">],</span>
+            <span class="s2">&quot;rows&quot;</span><span class="p">:</span> <span class="n">result</span><span class="p">[</span><span class="s2">&quot;rows&quot;</span><span class="p">],</span>
+            <span class="s2">&quot;request_id&quot;</span><span class="p">:</span> <span class="n">result</span><span class="p">[</span><span class="s2">&quot;request_id&quot;</span><span class="p">],</span>
+        <span class="p">}</span>
+    <span class="k">except</span> <span class="ne">Exception</span> <span class="k">as</span> <span class="n">e</span><span class="p">:</span>
+        <span class="k">raise</span> <span class="n">HTTPException</span><span class="p">(</span><span class="mi">500</span><span class="p">,</span> <span class="nb">str</span><span class="p">(</span><span class="n">e</span><span class="p">))</span>
+</code></pre></div>
+
+<h3 id="8-2-일상-운영">8-2. 일상 운영</h3>
+<table>
+<thead>
+<tr>
+<th>작업</th>
+<th>주기</th>
+<th>방법</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Description 동기화</td>
+<td>매일</td>
+<td>OM → DB COMMENT → Schema Registry reload</td>
+</tr>
+<tr>
+<td>SQL Pair 추가</td>
+<td>주 1-2회</td>
+<td>실패 케이스 → 사람이 정답 작성 → 임베딩 재색인</td>
+</tr>
+<tr>
+<td>평가셋 정확도 측정</td>
+<td>주 1회</td>
+<td><code>scripts/run_evaluation.py</code> 자동 실행</td>
+</tr>
+<tr>
+<td>감사 로그 리뷰</td>
+<td>월 1회</td>
+<td>비정상 패턴(이상치 SQL, 과도 재시도) 점검</td>
+</tr>
+</tbody>
+</table>
+<h3 id="8-3-확장-시-고려사항">8-3. 확장 시 고려사항</h3>
+<p><strong>새 테이블/View 추가:</strong>
+1. Phase 1 단계대로 Gold/Curated View 생성
+2. DB COMMENT 작성
+3. <code>joins.yaml</code>에 관계 추가
+4. NL2SQL_READER에 GRANT
+5. SQL Pair 5–10개 추가
+6. Schema Registry 재로드 → 평가셋 실행</p>
+<p><strong>비정형 RAG 추가 (문서/회의록):</strong>
+- LangGraph Agent에 <code>rag_search</code> 노드 추가
+- Intent Classifier로 라우팅 ("찾아줘"는 RAG, "알려줘"는 NL2SQL)</p>
+<p><strong>MCP Tools 연동 (Jira/Slack):</strong>
+- LangGraph Agent에 <code>mcp_call</code> 노드 추가
+- "지금/현재" 키워드 → MCP 라우팅</p>
+<p><strong>사내 LLM 전환:</strong>
+- LiteLLM 어댑터로 모델 교체 (Function Calling 지원 모델 필수)
+- 평가셋 재실행 → A등급 비율 비교</p>
+<hr />
+<h2 id="9-보안-아키텍처">9. 보안 아키텍처</h2>
+<h3 id="9-1-5-layer-방어-bip-4-layer-확장">9-1. 5-Layer 방어 (BIP 4-Layer 확장)</h3>
+<div class="mermaid">
+flowchart LR
+    Q[질문] --> L1["Layer 1\nSELECT only\n+ 키워드"]
+    L1 --> L2["Layer 2\nallowlist\n(코드)"]
+    L2 --> L3["Layer 3\nsqlglot\n(파싱)"]
+    L3 --> L4["Layer 4\nEXPLAIN PLAN\n(스키마)"]
+    L4 --> L5["Layer 5\nOracle Role\n(DB)"]
+    L5 --> EXEC[실행]
+    EXEC --> AUDIT[감사 로그]
+
+    style L5 fill:#22c55e,color:#fff
+    style AUDIT fill:#fce4ec,color:#1a1a2e
+</div>
+
+<table>
+<thead>
+<tr>
+<th style="text-align: center;">Layer</th>
+<th>역할</th>
+<th>차단 가능한 공격</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td style="text-align: center;">1</td>
+<td>SELECT only + 키워드</td>
+<td>INSERT/DROP 시도</td>
+</tr>
+<tr>
+<td style="text-align: center;">2</td>
+<td>테이블 allowlist</td>
+<td>민감 테이블 SELECT 시도</td>
+</tr>
+<tr>
+<td style="text-align: center;">3</td>
+<td>sqlglot 파싱</td>
+<td>문법 우회 시도</td>
+</tr>
+<tr>
+<td style="text-align: center;">4</td>
+<td>EXPLAIN PLAN</td>
+<td>존재하지 않는 컬럼 환각</td>
+</tr>
+<tr>
+<td style="text-align: center;">5</td>
+<td>Oracle Role</td>
+<td>코드 버그/우회 시도</td>
+</tr>
+</tbody>
+</table>
+<h3 id="9-2-감사--모니터링">9-2. 감사 + 모니터링</h3>
+<table>
+<thead>
+<tr>
+<th>항목</th>
+<th style="text-align: center;">보관 기간</th>
+<th>알람 조건</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>모든 질문 + SQL + 결과</td>
+<td style="text-align: center;">90일 (또는 사내 정책)</td>
+<td>-</td>
+</tr>
+<tr>
+<td>Validator 차단 이벤트</td>
+<td style="text-align: center;">1년</td>
+<td>일 10건 이상</td>
+</tr>
+<tr>
+<td>재시도 3회 초과 (실패)</td>
+<td style="text-align: center;">1년</td>
+<td>일 5건 이상</td>
+</tr>
+<tr>
+<td>응답 시간 &gt; 30s</td>
+<td style="text-align: center;">90일</td>
+<td>평균 &gt; 15s 시</td>
+</tr>
+</tbody>
+</table>
+<hr />
+<h2 id="10-wrenai-경험--v3-해결-매핑">10. WrenAI 경험 → v3 해결 매핑</h2>
+<p>BIP에서 발견한 한계가 v3에서 어떻게 해결되는지 정리.</p>
+<table>
+<thead>
+<tr>
+<th>BIP 문제 (WrenAI)</th>
+<th>원인</th>
+<th>v3 해결</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>sql_answer 환각 ("데이터 없다")</td>
+<td>sql_answer가 description 미참조</td>
+<td>Synthesizer를 LangGraph 노드로 직접 제어 + 해석 컬럼으로 데이터 자체에 텍스트</td>
+</tr>
+<tr>
+<td>1질문=1SQL 제약</td>
+<td>WrenAI 구조</td>
+<td>Agent 멀티스텝 (retrieve → spec → sql → execute → 다음 질문 분기)</td>
+</tr>
+<tr>
+<td>프롬프트 커스터마이징 불가</td>
+<td>OSS 소스 수정 부담</td>
+<td>LangGraph 프롬프트 완전 제어</td>
+</tr>
+<tr>
+<td>OpenAI json_schema 편향</td>
+<td>WrenAI 내부 구현</td>
+<td>LiteLLM 어댑터로 어떤 LLM이든</td>
+</tr>
+<tr>
+<td>Boolean flag 미사용 (0%)</td>
+<td>Curated View 컬럼 미등록</td>
+<td>Schema Registry가 DB COMMENT 자동 로드 → 누락 불가</td>
+</tr>
+<tr>
+<td>약칭 매핑 실패 (현차→현대차)</td>
+<td>Entity Resolution 없음</td>
+<td>Schema RAG가 Few-shot으로 학습</td>
+</tr>
+<tr>
+<td>종목명 영문 번역</td>
+<td>Instructions 간헐적 미준수</td>
+<td>System prompt + Function Calling 강제</td>
+</tr>
+<tr>
+<td>1질문에 RAG/MCP 통합 불가</td>
+<td>WrenAI 단일 도구</td>
+<td>LangGraph Tool 라우팅 노드</td>
+</tr>
+</tbody>
+</table>
+<hr />
+<h2 id="11-리스크-및-대응">11. 리스크 및 대응</h2>
+<table>
+<thead>
+<tr>
+<th>리스크</th>
+<th>영향</th>
+<th>대응</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>자체 구현 → 초기 개발 부담</td>
+<td>일정 지연</td>
+<td>모듈 뼈대 이미 구축 (<code>BIP-Agents/langgraph/nl2sql/</code>). 단위 테스트로 점진적 강화</td>
+</tr>
+<tr>
+<td>SQL Converter 버그</td>
+<td>잘못된 SQL 실행</td>
+<td>Validator 4-Layer + 감사 로그. 단위 테스트 커버리지 90%+ 목표</td>
+</tr>
+<tr>
+<td>사내 LLM Function Calling 미지원</td>
+<td>QuerySpec 안정성 저하</td>
+<td>사전 검증 필수. 미지원 시 JSON Schema 기반 prompt + 파싱 fallback</td>
+</tr>
+<tr>
+<td>Oracle 운영 DB 부하</td>
+<td>NL2SQL이 운영 영향</td>
+<td>읽기 전용 replica 사용 또는 Materialized View로 캐싱</td>
+</tr>
+<tr>
+<td>Agent 환각</td>
+<td>잘못된 답변</td>
+<td>결정론 우선(Validator 통과 안 하면 답변 거부) + Synthesizer 검증</td>
+</tr>
+<tr>
+<td>LLM 비용</td>
+<td>운영 비용 증가</td>
+<td>Schema Context 최소화, Few-shot 5개로 제한, 자주 묻는 질문 캐시</td>
+</tr>
+<tr>
+<td>사내 보안 정책</td>
+<td>외부 LLM 불가 시</td>
+<td>사내 Azure OpenAI 또는 사내 LLaMA. 평가셋으로 모델별 비교 후 결정</td>
+</tr>
+</tbody>
+</table>
+<hr />
+<h2 id="12-성공-기준">12. 성공 기준</h2>
+<table>
+<thead>
+<tr>
+<th>지표</th>
+<th style="text-align: center;">목표</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Phase 1 완료 (Gold View + Curated View 등록)</td>
+<td style="text-align: center;">5종 이상</td>
+</tr>
+<tr>
+<td>Schema Registry 자동 로드</td>
+<td style="text-align: center;">성공</td>
+</tr>
+<tr>
+<td>QuerySpec 단위 테스트</td>
+<td style="text-align: center;">90%+ 커버리지</td>
+</tr>
+<tr>
+<td>Oracle 19c 연결 + dry-run 검증</td>
+<td style="text-align: center;">성공</td>
+</tr>
+<tr>
+<td>평가셋 50개 정확도 (A등급)</td>
+<td style="text-align: center;">80%+</td>
+</tr>
+<tr>
+<td>WrenAI(BIP) 대비 정확도 격차</td>
+<td style="text-align: center;">10% 이내</td>
+</tr>
+<tr>
+<td>평균 응답 시간</td>
+<td style="text-align: center;">&lt; 15s</td>
+</tr>
+<tr>
+<td>감사 로그 누락</td>
+<td style="text-align: center;">0건</td>
+</tr>
+<tr>
+<td>보안 감사 통과</td>
+<td style="text-align: center;">Pass</td>
+</tr>
+</tbody>
+</table>
+<hr />
+<h2 id="13-의사결정-이력-2026-04--2026-05">13. 의사결정 이력 (2026-04 ~ 2026-05)</h2>
+<h3 id="13-1-wrenai-oracle-19c-검증-2026-04-15">13-1. WrenAI Oracle 19c 검증 (2026-04-15)</h3>
+<div class="codehilite"><pre><span></span><code>docker compose 기반 WrenAI 띄우고 Oracle 19c 연결 시도
+→ DB 연결 자체는 성공
+→ ibis-server 내부 get_db_version 단계에서 ORA-00942
+→ WrenAI OSS 문서: Oracle 23ai 이상만 공식 지원
+→ 결론: WrenAI 직결 불가
+</code></pre></div>
+
+<h3 id="13-2-cube-검증-2026-04-18--2026-04-25">13-2. Cube 검증 (2026-04-18 ~ 2026-04-25)</h3>
+<p>BIP PostgreSQL에 Cube를 연결하여 7개 시맨틱 모델을 구축하고 테스트한 결과, <strong>복합 JOIN에서 치명적 제약</strong>.</p>
+<table>
+<thead>
+<tr>
+<th>테스트</th>
+<th style="text-align: center;">결과</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>단순 조회 (<code>StockInfo.count</code>)</td>
+<td style="text-align: center;">✅ 11,382</td>
+</tr>
+<tr>
+<td>단일 Cube 쿼리 (<code>삼성전자 종가</code>)</td>
+<td style="text-align: center;">✅ 224,500원</td>
+</tr>
+<tr>
+<td>Boolean flag (<code>저평가주 수</code>)</td>
+<td style="text-align: center;">✅ 1,676개</td>
+</tr>
+<tr>
+<td>2-Cube JOIN (StockInfo 경유)</td>
+<td style="text-align: center;">✅</td>
+</tr>
+<tr>
+<td><strong>팩트-팩트 JOIN</strong> (ValuationSignals + FlowSignals)</td>
+<td style="text-align: center;">❌ <code>Can't find join path</code></td>
+</tr>
+<tr>
+<td><strong>3-Cube JOIN</strong></td>
+<td style="text-align: center;">❌</td>
+</tr>
+<tr>
+<td><strong>저평가 + 외국인 순매수 종목</strong></td>
+<td style="text-align: center;">❌</td>
+</tr>
+<tr>
+<td><strong>과매도이면서 저평가 종목</strong></td>
+<td style="text-align: center;">❌</td>
+</tr>
+</tbody>
+</table>
+<p><strong>원인:</strong> 모든 Cube가 <code>StockInfo</code>로만 연결되어 있어 팩트-팩트 결합 불가. Cube의 JOIN 모델은 1:N 관계를 자동 구성하지만 N:N(팩트끼리) 결합은 별도 설계가 필요.</p>
+<p><strong>결론:</strong> WrenAI에서는 단일 SQL로 동작했던 핵심 사용 케이스가 Cube에서는 모두 실패. Cube 탈락.</p>
+<h3 id="13-3-langgraph--queryspec-선정-2026-04-26">13-3. LangGraph + QuerySpec 선정 (2026-04-26)</h3>
+<p><strong>Codex 검토 결과:</strong> 옵션 A (WrenAI + 복제) → C (LangGraph) → B (WrenAI 포크) 순서 권장. 단기 안전성은 A, 장기 확장성은 C. 사내 Oracle 직결 + 비정형 RAG/MCP 확장을 고려하면 <strong>C가 결국 도달점</strong>.</p>
+<p><strong>추가 조사:</strong></p>
+<ul>
+<li><strong>DAQUV (https://docs.daquv.com)</strong></li>
+<li>NL → <strong>SMQ(중간 표현)</strong> → SQL 변환 (규칙 기반)</li>
+<li>LLM은 SQL을 직접 만들지 않고 <strong>메트릭/필터/그룹</strong>만 구조화</li>
+<li>
+<p>SafeGuard: SQL 실행 실패 시 자동 수정·재시도</p>
+</li>
+<li>
+<p><strong>논문: "Querying Databases with Function Calling" (arXiv 2502.00032)</strong></p>
+</li>
+<li>Function Calling이 SQL 직접 생성보다 안정적</li>
+<li>Claude 3.5 Sonnet 74.3%, GPT-4o-mini 73.7% 정확도</li>
+<li>구조화된 도구 호출 → SQL 문법 에러 원천 차단</li>
+</ul>
+<p><strong>시사점:</strong> LLM에게 SQL을 직접 쓰게 하지 말고 <strong>구조화된 쿼리 명세(QuerySpec)</strong> 를 만들게 하는 것이 정확도/안정성에서 유리. → 그대로 v3 아키텍처 채택.</p>
+<h3 id="13-4-v2--v3-변경점-정리">13-4. v2 → v3 변경점 정리</h3>
+<table>
+<thead>
+<tr>
+<th>항목</th>
+<th style="text-align: center;">v2 (Cube 기반)</th>
+<th style="text-align: center;">v3 (LangGraph 직접)</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>시맨틱 레이어</td>
+<td style="text-align: center;">Cube 모델</td>
+<td style="text-align: center;"><strong>DB View (Gold + Curated)</strong></td>
+</tr>
+<tr>
+<td>SQL 생성</td>
+<td style="text-align: center;">Cube API → Cube 내부</td>
+<td style="text-align: center;"><strong>LLM → QuerySpec → 변환기</strong></td>
+</tr>
+<tr>
+<td>복합 JOIN</td>
+<td style="text-align: center;">❌ 제약 있음</td>
+<td style="text-align: center;"><strong>✅ 자유</strong></td>
+</tr>
+<tr>
+<td>시맨틱 정의</td>
+<td style="text-align: center;">Cube model/*.js</td>
+<td style="text-align: center;"><strong>DB COMMENT + joins.yaml</strong></td>
+</tr>
+<tr>
+<td>메타 허브</td>
+<td style="text-align: center;">OM + Cube 이중화</td>
+<td style="text-align: center;"><strong>OM 단일</strong></td>
+</tr>
+<tr>
+<td>인프라</td>
+<td style="text-align: center;">Cube 컨테이너 추가</td>
+<td style="text-align: center;"><strong>추가 컨테이너 없음</strong></td>
+</tr>
+<tr>
+<td>Oracle 19c</td>
+<td style="text-align: center;">Cube → node-oracledb</td>
+<td style="text-align: center;"><strong>직접 cx_Oracle / oracledb</strong></td>
+</tr>
+</tbody>
+</table>
+<hr />
+<h2 id="14-진행-현황-2026-05-11-기준">14. 진행 현황 (2026-05-11 기준)</h2>
+<p><strong>완료:</strong>
+- 아키텍처 결정 + 의사결정 이력 정리
+- Cube 7개 모델 구축 + 한계 검증
+- 평가셋 23개 정의 (<code>tests/evaluation_set.yaml</code>)
+- JOIN 관계 YAML (<code>joins.yaml</code>, 11개)
+- QuerySpec Pydantic 모델 (<code>query_spec.py</code>)
+- SQL Converter 뼈대 (<code>sql_converter.py</code>, PostgreSQL/Oracle 방언 분기)
+- Schema Registry 뼈대 (<code>schema_registry.py</code>)
+- Validator 뼈대 (<code>validator.py</code>, 4-Layer)</p>
+<p><strong>위치:</strong> <code>BIP-Agents/langgraph/nl2sql/</code></p>
+<p><strong>진행 중:</strong>
+- SQL Converter 단위 테스트 (실데이터 검증)</p>
+<p><strong>남은 작업:</strong>
+- LangGraph Agent 노드 구성 (<code>agent.py</code>)
+- Schema RAG (pgvector + 임베딩 적재)
+- 자동 보정 루프
+- 평가셋 23개 실행 → WrenAI 결과와 비교
+- FastAPI 서빙
+- Oracle 19c 적용 (사내 환경)</p>
+<hr />
+<h2 id="15-체크리스트-전체">15. 체크리스트 (전체)</h2>
+<h3 id="phase-0-완료-조건">Phase 0 완료 조건</h3>
+<ul>
+<li>[ ] 대상 테이블 인벤토리 작성 (Raw / Derived / Reporting / 민감 분류)</li>
+<li>[ ] 질문 유형 30-50개 수집</li>
+<li>[ ] 민감 테이블 목록 확정</li>
+<li>[ ] NL2SQL 전용 Oracle Role 계획</li>
+<li>[ ] LLM 외부 호출 가능성 확인 (사내 정책)</li>
+</ul>
+<h3 id="phase-1-완료-조건">Phase 1 완료 조건</h3>
+<ul>
+<li>[ ] Oracle Gold View 5종 이상 생성</li>
+<li>[ ] Curated View (Boolean Flag) 생성</li>
+<li>[ ] 해석 컬럼 추가</li>
+<li>[ ] 모든 대상 컬럼에 description 작성</li>
+<li>[ ] DB COMMENT 반영</li>
+<li>[ ] NL2SQL_READER 생성 + GRANT</li>
+<li>[ ] joins.yaml 작성</li>
+</ul>
+<h3 id="phase-2-완료-조건">Phase 2 완료 조건</h3>
+<ul>
+<li>[ ] Schema Registry — Oracle COMMENT 자동 로드</li>
+<li>[ ] QuerySpec 단위 테스트 90%+</li>
+<li>[ ] SQL Converter — Oracle 방언 단위 테스트</li>
+<li>[ ] Validator — 4-Layer 모두 통과</li>
+<li>[ ] Schema RAG — pgvector 또는 사내 벡터 DB 적재</li>
+<li>[ ] LangGraph Agent — 평가셋 1개 통과</li>
+<li>[ ] 자동 보정 루프 동작 확인</li>
+<li>[ ] 감사 로그 테이블 생성</li>
+</ul>
+<h3 id="phase-3-완료-조건">Phase 3 완료 조건</h3>
+<ul>
+<li>[ ] 평가셋 50개 작성</li>
+<li>[ ] 자동 평가 스크립트 작성</li>
+<li>[ ] A등급 80%+ 달성</li>
+<li>[ ] 실패 패턴 분석 리포트 작성</li>
+<li>[ ] WrenAI(BIP) 대비 비교 완료</li>
+</ul>
+<h3 id="phase-4-완료-조건">Phase 4 완료 조건</h3>
+<ul>
+<li>[ ] FastAPI 서빙</li>
+<li>[ ] 감사 로그 운영 모니터링</li>
+<li>[ ] 사내 LLM 연동 (해당 시)</li>
+<li>[ ] Oracle 19c 적용 + 보안 감사 통과</li>
+</ul>
+<hr />
+<h2 id="16-참고-문서">16. 참고 문서</h2>
+<table>
+<thead>
+<tr>
+<th>문서</th>
+<th>내용</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>docs/nl2sql_enterprise_playbook.md</code></td>
+<td>데이터 정비 일반 가이드 (Phase 0–1 동일)</td>
+</tr>
+<tr>
+<td><code>docs/nl2sql_agent_design.md</code></td>
+<td>LangGraph Agent + QuerySpec 상세 설계</td>
+</tr>
+<tr>
+<td><code>docs/nl2sql_design.md</code></td>
+<td>BIP-Pipeline NL2SQL 아키텍처 (WrenAI 기반)</td>
+</tr>
+<tr>
+<td><code>docs/nl2sql_concepts.md</code></td>
+<td>NL2SQL/시맨틱 레이어/KG 개념 레퍼런스</td>
+</tr>
+<tr>
+<td><code>docs/seminar_semantic_layer.md</code></td>
+<td>시맨틱 레이어 세미나 (개념·도구 비교)</td>
+</tr>
+<tr>
+<td><code>docs/guide_cubejs.md</code></td>
+<td>Cube.js 기능 가이드</td>
+</tr>
+<tr>
+<td><code>docs/guide_dbt.md</code></td>
+<td>dbt Core 기능 가이드</td>
+</tr>
+<tr>
+<td><code>docs/guide_openmetadata.md</code></td>
+<td>OpenMetadata 기능 가이드</td>
+</tr>
+<tr>
+<td><code>docs/guide_wrenai.md</code></td>
+<td>WrenAI 기능 가이드 (BIP 레퍼런스)</td>
+</tr>
+<tr>
+<td><code>docs/wrenai_test_report.md</code></td>
+<td>BIP WrenAI 4차 테스트 이력</td>
+</tr>
+<tr>
+<td><code>docs/data_modeling_guide.md</code></td>
+<td>Gold/View/Grain 설계 원칙</td>
+</tr>
+</tbody>
+</table>
+<p><strong>외부 자료:</strong>
+- DAQUV docs: https://docs.daquv.com
+- Function Calling 논문: https://arxiv.org/abs/2502.00032
+- 토스 PANDA: https://toss.tech/article/da-assistant-panda
+- LangGraph: https://langchain-ai.github.io/langgraph/</p>
+<hr />
+<h2 id="변경-이력">변경 이력</h2>
+<table>
+<thead>
+<tr>
+<th>날짜</th>
+<th>내용</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>2026-04-18</td>
+<td>초안 작성 (OM + Cube + Agent 아키텍처)</td>
+</tr>
+<tr>
+<td>2026-04-22</td>
+<td>문서 헤더 정리</td>
+</tr>
+<tr>
+<td>2026-04-26</td>
+<td>v3 방향 전환 추가 (Cube 탈락 + LangGraph 직접 구현). DAQUV/논문 분석 반영</td>
+</tr>
+<tr>
+<td>2026-05-11</td>
+<td><strong>enterprise_playbook 스타일로 전면 재작성</strong>. Phase 0–4 단계별 구체화, QuerySpec/Converter/Validator 실제 코드 통합, Oracle 19c 방언 명시, 5-Layer 보안, 의사결정 이력 단일 위치 통합</td>
+</tr>
+</tbody>
+</table>
+</main>
+
+<script>
+  // 테마 전환
+  function setTheme(theme) {
+    document.documentElement.setAttribute('data-theme', theme);
+    localStorage.setItem('doc-theme', theme);
+    document.getElementById('btn-dark').classList.toggle('active', theme === 'dark');
+    document.getElementById('btn-light').classList.toggle('active', theme === 'light');
+    // Mermaid 재렌더링
+    if (typeof mermaid !== 'undefined') {
+      mermaid.initialize({ startOnLoad: false, theme: 'base', securityLevel: 'loose', themeVariables: getMermaidTheme(theme) });
+      document.querySelectorAll('.mermaid').forEach(el => {
+        // 원본 코드 보존 (최초 1회만 저장)
+        if (!el.dataset.source) {
+          el.dataset.source = el.textContent;
+        }
+        el.removeAttribute('data-processed');
+        el.innerHTML = el.dataset.source;
+      });
+      mermaid.run();
+    }
+  }
+
+  // 저장된 테마 로드
+  const savedTheme = localStorage.getItem('doc-theme') || 'dark';
+  setTheme(savedTheme);
+
+  // Mermaid 초기화
+  function getMermaidTheme(theme) {
+    const dark = {
+      primaryColor: '#3d7be0',
+      primaryTextColor: '#ffffff',
+      primaryBorderColor: '#5a9cf0',
+      secondaryColor: '#7c5cbf',
+      secondaryTextColor: '#ffffff',
+      secondaryBorderColor: '#a29bfe',
+      tertiaryColor: '#00997a',
+      tertiaryTextColor: '#ffffff',
+      tertiaryBorderColor: '#55efc4',
+      noteTextColor: '#f0f0f0',
+      noteBkgColor: '#2d3436',
+      noteBorderColor: '#636e72',
+      lineColor: '#8b949e',
+      textColor: '#e6edf3',
+      mainBkg: '#1e3050',
+      nodeBorder: '#5a9cf0',
+      clusterBkg: '#1a1e2e',
+      clusterBorder: '#4a5568',
+      titleColor: '#79c0ff',
+      edgeLabelBackground: '#21262d',
+      actorBkg: '#3d7be0',
+      actorTextColor: '#ffffff',
+      actorBorder: '#5a9cf0',
+      signalColor: '#8b949e',
+      labelBoxBkgColor: '#21262d',
+      labelBoxBorderColor: '#4a5568',
+      labelTextColor: '#e6edf3',
+      loopTextColor: '#e6edf3',
+      activationBorderColor: '#5a9cf0',
+      activationBkgColor: '#1e3050',
+      sequenceNumberColor: '#ffffff',
+      pie1: '#4f8fea', pie2: '#6c5ce7', pie3: '#00b894', pie4: '#e17055',
+      pie5: '#fdcb6e', pie6: '#00cec9', pie7: '#e84393', pie8: '#0984e3'
+    };
+    const light = {
+      primaryColor: '#4f8fea',
+      primaryTextColor: '#1a1a2e',
+      primaryBorderColor: '#3a7bd5',
+      secondaryColor: '#a29bfe',
+      secondaryTextColor: '#1a1a2e',
+      secondaryBorderColor: '#6c5ce7',
+      tertiaryColor: '#55efc4',
+      tertiaryTextColor: '#1a1a2e',
+      tertiaryBorderColor: '#00b894',
+      noteTextColor: '#2d3436',
+      noteBkgColor: '#ffeaa7',
+      noteBorderColor: '#fdcb6e',
+      lineColor: '#636e72',
+      textColor: '#2d3436',
+      mainBkg: '#dfe6e9',
+      nodeBorder: '#3a7bd5',
+      clusterBkg: '#f0f3f5',
+      clusterBorder: '#b2bec3',
+      titleColor: '#2d3436',
+      edgeLabelBackground: '#ffffff',
+      actorBkg: '#4f8fea',
+      actorTextColor: '#ffffff',
+      actorBorder: '#3a7bd5',
+      signalColor: '#636e72',
+      labelBoxBkgColor: '#ffffff',
+      labelBoxBorderColor: '#b2bec3',
+      labelTextColor: '#2d3436',
+      loopTextColor: '#2d3436',
+      activationBorderColor: '#3a7bd5',
+      activationBkgColor: '#dfe6e9',
+      sequenceNumberColor: '#ffffff',
+      pie1: '#4f8fea', pie2: '#6c5ce7', pie3: '#00b894', pie4: '#e17055',
+      pie5: '#fdcb6e', pie6: '#00cec9', pie7: '#e84393', pie8: '#0984e3'
+    };
+    return theme === 'dark' ? dark : light;
+  }
+
+  // 초기 렌더링 전에 원본 코드 저장
+  document.querySelectorAll('.mermaid').forEach(el => {
+    el.dataset.source = el.textContent;
+  });
+  mermaid.initialize({ startOnLoad: true, theme: 'base', securityLevel: 'loose', themeVariables: getMermaidTheme(savedTheme) });
+
+  // TOC 현재 위치 하이라이트
+  const tocLinks = document.querySelectorAll('.toc a');
+  const headings = [];
+  tocLinks.forEach(link => {
+    const id = link.getAttribute('href').slice(1);
+    const el = document.getElementById(id);
+    if (el) headings.push({ el, link });
+  });
+
+  function updateActiveToc() {
+    let current = null;
+    for (const h of headings) {
+      if (h.el.getBoundingClientRect().top <= 100) current = h;
+    }
+    tocLinks.forEach(l => l.classList.remove('active'));
+    if (current) current.link.classList.add('active');
+  }
+
+  window.addEventListener('scroll', updateActiveToc, { passive: true });
+  updateActiveToc();
+
+  // 모바일: 링크 클릭 시 사이드바 닫기
+  tocLinks.forEach(link => {
+    link.addEventListener('click', () => {
+      if (window.innerWidth <= 900) {
+        document.querySelector('.sidebar').classList.remove('open');
+      }
+    });
+  });
+</script>
+
+</body>
+</html>
