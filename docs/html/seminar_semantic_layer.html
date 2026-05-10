@@ -1,0 +1,2394 @@
+<!DOCTYPE html>
+<html lang="ko" data-theme="dark">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>세미나: 시맨틱 레이어의 기술 이해와 실습</title>
+<script src="https://cdn.jsdelivr.net/npm/mermaid@11/dist/mermaid.min.js"></script>
+<style>
+  /* ── 테마 변수 ── */
+  :root[data-theme="dark"] {
+    --bg: #0d1117;
+    --bg-sidebar: #161b22;
+    --fg: #e6edf3;
+    --fg-muted: #8b949e;
+    --border: #30363d;
+    --accent: #58a6ff;
+    --accent-hover: #79c0ff;
+    --code-bg: #1e293b;
+    --code-fg: #e2e8f0;
+    --table-header: #161b22;
+    --table-even: #0d1117;
+    --table-odd: #161b22;
+    --blockquote-bg: #161b22;
+    --blockquote-border: #3b82f6;
+    --link: #58a6ff;
+    --strong: #79c0ff;
+    --card-bg: #21262d;
+  }
+  :root[data-theme="light"] {
+    --bg: #ffffff;
+    --bg-sidebar: #f6f8fa;
+    --fg: #1f2937;
+    --fg-muted: #6b7280;
+    --border: #e5e7eb;
+    --accent: #2563eb;
+    --accent-hover: #1d4ed8;
+    --code-bg: #f3f4f6;
+    --code-fg: #1e293b;
+    --table-header: #f8fafc;
+    --table-even: #ffffff;
+    --table-odd: #f9fafb;
+    --blockquote-bg: #eff6ff;
+    --blockquote-border: #3b82f6;
+    --link: #2563eb;
+    --strong: #1e40af;
+    --card-bg: #f3f4f6;
+  }
+
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+
+  body {
+    font-family: 'Pretendard', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+    background: var(--bg);
+    color: var(--fg);
+    line-height: 1.75;
+    display: flex;
+    min-height: 100vh;
+  }
+
+  /* ── 사이드바 ── */
+  .sidebar {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 280px;
+    height: 100vh;
+    background: var(--bg-sidebar);
+    border-right: 1px solid var(--border);
+    overflow-y: auto;
+    padding: 20px 0;
+    z-index: 100;
+    transition: transform 0.3s ease;
+  }
+
+  .sidebar-header {
+    padding: 0 20px 16px;
+    border-bottom: 1px solid var(--border);
+    margin-bottom: 12px;
+  }
+
+  .sidebar-title {
+    font-size: 0.95rem;
+    font-weight: 700;
+    color: var(--fg);
+    line-height: 1.3;
+  }
+
+  .sidebar-controls {
+    display: flex;
+    gap: 8px;
+    margin-top: 12px;
+  }
+
+  .theme-btn {
+    background: var(--card-bg);
+    border: 1px solid var(--border);
+    color: var(--fg-muted);
+    padding: 4px 10px;
+    border-radius: 6px;
+    font-size: 0.7rem;
+    cursor: pointer;
+    transition: all 0.2s;
+  }
+  .theme-btn:hover {
+    border-color: var(--accent);
+    color: var(--accent);
+  }
+  .theme-btn.active {
+    background: var(--accent);
+    color: #fff;
+    border-color: var(--accent);
+  }
+
+  .back-link {
+    display: block;
+    margin-top: 10px;
+    font-size: 0.75rem;
+    color: var(--fg-muted);
+    text-decoration: none;
+  }
+  .back-link:hover {
+    color: var(--accent);
+  }
+
+  /* ── TOC ── */
+  .toc {
+    padding: 0 12px;
+  }
+  .toc ul {
+    list-style: none;
+    padding: 0;
+  }
+  .toc li {
+    margin: 0;
+  }
+  .toc a {
+    display: block;
+    padding: 4px 8px;
+    color: var(--fg-muted);
+    text-decoration: none;
+    font-size: 0.78rem;
+    border-radius: 4px;
+    border-left: 2px solid transparent;
+    transition: all 0.15s;
+    line-height: 1.4;
+  }
+  .toc a:hover {
+    color: var(--accent);
+    background: var(--card-bg);
+    border-left-color: var(--accent);
+  }
+  .toc a.active {
+    color: var(--accent);
+    border-left-color: var(--accent);
+    font-weight: 600;
+  }
+  .toc-h3 a { padding-left: 20px; font-size: 0.75rem; }
+  .toc-h4 a { padding-left: 32px; font-size: 0.72rem; }
+
+  /* ── 본문 ── */
+  .content {
+    margin-left: 280px;
+    flex: 1;
+    max-width: 860px;
+    padding: 40px 48px 80px;
+  }
+
+  /* ── 모바일 ── */
+  .menu-toggle {
+    display: none;
+    position: fixed;
+    top: 12px;
+    left: 12px;
+    z-index: 200;
+    background: var(--bg-sidebar);
+    border: 1px solid var(--border);
+    color: var(--fg);
+    padding: 8px 12px;
+    border-radius: 6px;
+    cursor: pointer;
+    font-size: 1.1rem;
+  }
+
+  @media (max-width: 900px) {
+    .sidebar {
+      transform: translateX(-100%);
+    }
+    .sidebar.open {
+      transform: translateX(0);
+    }
+    .content {
+      margin-left: 0;
+      padding: 60px 20px 60px;
+    }
+    .menu-toggle {
+      display: block;
+    }
+  }
+
+  /* ── 타이포그래피 ── */
+  h1 { font-size: 1.9rem; margin: 2rem 0 1rem; padding-bottom: 0.5rem; border-bottom: 2px solid var(--accent); }
+  h2 { font-size: 1.45rem; margin: 2.5rem 0 0.8rem; padding-bottom: 0.3rem; border-bottom: 1px solid var(--border); color: var(--accent); }
+  h3 { font-size: 1.15rem; margin: 1.8rem 0 0.5rem; }
+  h4 { font-size: 1rem; margin: 1.3rem 0 0.4rem; color: var(--fg-muted); }
+  p { margin: 0.6rem 0; }
+  hr { border: none; border-top: 1px solid var(--border); margin: 2rem 0; }
+  strong { color: var(--strong); }
+  a { color: var(--link); text-decoration: none; }
+  a:hover { text-decoration: underline; }
+  ul, ol { margin: 0.5rem 0 0.5rem 1.5rem; }
+  li { margin: 0.25rem 0; }
+
+  /* ── 테이블 ── */
+  table { width: 100%; border-collapse: collapse; margin: 1rem 0; font-size: 0.85rem; }
+  th, td { border: 1px solid var(--border); padding: 0.5rem 0.75rem; text-align: left; }
+  th { background: var(--table-header); font-weight: 600; }
+  tr:nth-child(even) { background: var(--table-even); }
+  tr:nth-child(odd) { background: var(--table-odd); }
+
+  /* ── 코드 ── */
+  code {
+    background: var(--code-bg);
+    color: var(--code-fg);
+    padding: 0.15rem 0.4rem;
+    border-radius: 4px;
+    font-size: 0.82em;
+    font-family: 'JetBrains Mono', 'Fira Code', 'Cascadia Code', monospace;
+  }
+  pre {
+    background: var(--code-bg);
+    color: var(--code-fg);
+    padding: 1rem 1.2rem;
+    border-radius: 8px;
+    overflow-x: auto;
+    margin: 1rem 0;
+    border: 1px solid var(--border);
+  }
+  pre code {
+    background: none;
+    padding: 0;
+    font-size: 0.82rem;
+    line-height: 1.5;
+  }
+
+  /* ── 인용 ── */
+  blockquote {
+    border-left: 4px solid var(--blockquote-border);
+    padding: 0.6rem 1rem;
+    margin: 1rem 0;
+    background: var(--blockquote-bg);
+    border-radius: 0 6px 6px 0;
+  }
+  blockquote p { margin: 0.3rem 0; }
+
+  /* ── Mermaid ── */
+  .mermaid {
+    margin: 1.5rem 0;
+    text-align: center;
+    background: var(--card-bg);
+    padding: 1rem;
+    border-radius: 8px;
+    border: 1px solid var(--border);
+  }
+  .mermaid svg { max-width: 100%; }
+
+  /* ── Footer ── */
+  footer {
+    margin-top: 3rem;
+    padding-top: 1rem;
+    border-top: 1px solid var(--border);
+    color: var(--fg-muted);
+    font-size: 0.8rem;
+  }
+</style>
+</head>
+<body>
+
+<button class="menu-toggle" onclick="document.querySelector('.sidebar').classList.toggle('open')">☰</button>
+
+<aside class="sidebar">
+  <div class="sidebar-header">
+    <div class="sidebar-title">세미나: 시맨틱 레이어의 기술 이해와 실습</div>
+    <div class="sidebar-controls">
+      <button class="theme-btn" onclick="setTheme('dark')" id="btn-dark">🌙 Dark</button>
+      <button class="theme-btn" onclick="setTheme('light')" id="btn-light">☀️ Light</button>
+    </div>
+    <a class="back-link" href="index.html">← 문서 목록으로</a>
+  </div>
+  <nav class="toc">
+<ul>
+<li class="toc-h2"><a href="#진행-안내">진행 안내</a></li>
+<li class="toc-h2"><a href="#1-1-회의실에서-흔한-풍경">1-1. 회의실에서 흔한 풍경</a></li>
+<li class="toc-h2"><a href="#1-2-시맨틱-레이어의-정의">1-2. 시맨틱 레이어의 정의</a></li>
+  <li class="toc-h3"><a href="#gartner-공식-정의">Gartner 공식 정의</a></li>
+  <li class="toc-h3"><a href="#한-줄-비유">한 줄 비유</a></li>
+<li class="toc-h2"><a href="#1-3-시맨틱-레이어의-4가지-구성-요소">1-3. 시맨틱 레이어의 4가지 구성 요소</a></li>
+  <li class="toc-h3"><a href="#metrics-측정값지표">Metrics (측정값/지표)</a></li>
+  <li class="toc-h3"><a href="#dimensions-분석-축">Dimensions (분석 축)</a></li>
+  <li class="toc-h3"><a href="#entities-비즈니스-객체">Entities (비즈니스 객체)</a></li>
+  <li class="toc-h3"><a href="#relationships-관계">Relationships (관계)</a></li>
+<li class="toc-h2"><a href="#1-4-시맨틱-레이어가-없으면-생기는-문제--4가지-시나리오">1-4. 시맨틱 레이어가 없으면 생기는 문제 — 4가지 시나리오</a></li>
+  <li class="toc-h3"><a href="#시나리오-1-정의-불일치-metric-drift">시나리오 1: 정의 불일치 (Metric Drift)</a></li>
+  <li class="toc-h3"><a href="#시나리오-2-join-지옥">시나리오 2: JOIN 지옥</a></li>
+  <li class="toc-h3"><a href="#시나리오-3-bi-도구마다-다른-sql">시나리오 3: BI 도구마다 다른 SQL</a></li>
+  <li class="toc-h3"><a href="#시나리오-4-nl2sql의-핵심-문제">시나리오 4: NL2SQL의 핵심 문제</a></li>
+<li class="toc-h2"><a href="#1-5-시맨틱-레이어로-해결되는-모습">1-5. 시맨틱 레이어로 해결되는 모습</a></li>
+<li class="toc-h2"><a href="#1-6-시맨틱-레이어-vs-다른-비슷한-개념들">1-6. 시맨틱 레이어 vs 다른 비슷한 개념들</a></li>
+  <li class="toc-h3"><a href="#semantic-layer-vs-knowledge-graph-vs-ontology">Semantic Layer vs Knowledge Graph vs Ontology</a></li>
+  <li class="toc-h3"><a href="#semantic-layer-vs-data-catalog">Semantic Layer vs Data Catalog</a></li>
+<li class="toc-h2"><a href="#2-1-bi-대시보드">2-1. BI 대시보드</a></li>
+<li class="toc-h2"><a href="#2-2-임베디드-분석-api">2-2. 임베디드 분석 API</a></li>
+<li class="toc-h2"><a href="#2-3-데이터-익스포트-정기-리포트">2-3. 데이터 익스포트 (정기 리포트)</a></li>
+<li class="toc-h2"><a href="#2-4-ml-피처-스토어">2-4. ML 피처 스토어</a></li>
+<li class="toc-h2"><a href="#2-5-nl2sql--ai-에이전트">2-5. NL2SQL / AI 에이전트</a></li>
+<li class="toc-h2"><a href="#3-1-dbt--analytics-as-code-8분">3-1. dbt — Analytics as Code (8분)</a></li>
+  <li class="toc-h3"><a href="#한-줄-비유_1">한 줄 비유</a></li>
+  <li class="toc-h3"><a href="#왜-필요한가">왜 필요한가</a></li>
+  <li class="toc-h3"><a href="#dbt가-해결하는-4가지">dbt가 해결하는 4가지</a></li>
+  <li class="toc-h3"><a href="#핵심-개념">핵심 개념</a></li>
+    <li class="toc-h4"><a href="#model-모델">Model (모델)</a></li>
+    <li class="toc-h4"><a href="#materialization-실체화-방식">Materialization (실체화 방식)</a></li>
+    <li class="toc-h4"><a href="#tests-자동-검증">Tests (자동 검증)</a></li>
+  <li class="toc-h3"><a href="#dbt-semantic-layer-metricflow">dbt Semantic Layer (MetricFlow)</a></li>
+  <li class="toc-h3"><a href="#dbt-실무-평가">dbt 실무 평가</a></li>
+<li class="toc-h2"><a href="#3-2-cube--headless-bi-10분">3-2. Cube — Headless BI (10분)</a></li>
+  <li class="toc-h3"><a href="#한-줄-비유_2">한 줄 비유</a></li>
+  <li class="toc-h3"><a href="#왜-필요한가_1">왜 필요한가</a></li>
+  <li class="toc-h3"><a href="#핵심-개념_1">핵심 개념</a></li>
+    <li class="toc-h4"><a href="#cube-큐브">Cube (큐브)</a></li>
+    <li class="toc-h4"><a href="#joins-조인">Joins (조인)</a></li>
+    <li class="toc-h4"><a href="#pre-aggregation-사전-집계">Pre-aggregation (사전 집계)</a></li>
+  <li class="toc-h3"><a href="#api-3가지-가장-큰-강점">API 3가지 (가장 큰 강점)</a></li>
+  <li class="toc-h3"><a href="#cube-실무-평가">Cube 실무 평가</a></li>
+<li class="toc-h2"><a href="#3-3-wrenai--nl2sql-응용-특화-7분">3-3. WrenAI — NL2SQL 응용 특화 (7분)</a></li>
+  <li class="toc-h3"><a href="#한-줄-비유_3">한 줄 비유</a></li>
+  <li class="toc-h3"><a href="#왜-필요한가--chatgpt에-sql-시키지-않고-wrenai를-거치는-이유">왜 필요한가 — ChatGPT에 SQL 시키지 않고 WrenAI를 거치는 이유</a></li>
+  <li class="toc-h3"><a href="#핵심-개념_2">핵심 개념</a></li>
+    <li class="toc-h4"><a href="#mdl-modeling-definition-language">MDL (Modeling Definition Language)</a></li>
+    <li class="toc-h4"><a href="#sql-pairs-few-shot-학습">SQL Pairs (Few-shot 학습)</a></li>
+    <li class="toc-h4"><a href="#instructions-도메인-규칙">Instructions (도메인 규칙)</a></li>
+  <li class="toc-h3"><a href="#wrenai-처리-파이프라인-5단계">WrenAI 처리 파이프라인 (5단계)</a></li>
+  <li class="toc-h3"><a href="#wrenai-실무-평가">WrenAI 실무 평가</a></li>
+<li class="toc-h2"><a href="#3-4-세-도구-비교-정리">3-4. 세 도구 비교 정리</a></li>
+  <li class="toc-h3"><a href="#어떤-상황에-어느-쪽">어떤 상황에 어느 쪽?</a></li>
+<li class="toc-h2"><a href="#4-1-도구만으로-부족한-이유">4-1. 도구만으로 부족한 이유</a></li>
+  <li class="toc-h3"><a href="#시나리오-복합-질문">시나리오: 복합 질문</a></li>
+<li class="toc-h2"><a href="#4-2-멀티-에이전트가-하는-일">4-2. 멀티 에이전트가 하는 일</a></li>
+<li class="toc-h2"><a href="#4-3-langgraph란">4-3. LangGraph란</a></li>
+<li class="toc-h2"><a href="#4-4-핵심-통찰--langgraph는-도구의-대체재가-아니라-상위-레이어">4-4. 핵심 통찰 — LangGraph는 도구의 "대체재"가 아니라 "상위 레이어"</a></li>
+<li class="toc-h2"><a href="#5-1-실습-시나리오">5-1. 실습 시나리오</a></li>
+  <li class="toc-h3"><a href="#사용할-데이터셋">사용할 데이터셋</a></li>
+  <li class="toc-h3"><a href="#실습-목표">실습 목표</a></li>
+<li class="toc-h2"><a href="#5-2-환경-준비-docker-기반">5-2. 환경 준비 (Docker 기반)</a></li>
+  <li class="toc-h3"><a href="#디렉토리-구조">디렉토리 구조</a></li>
+  <li class="toc-h3"><a href="#docker-composeyml-전체-환경">docker-compose.yml (전체 환경)</a></li>
+<li class="toc-h2"><a href="#5-3-실습-1--dbt로-변환-모델-만들기-5분">5-3. 실습 1 — dbt로 변환 모델 만들기 (5분)</a></li>
+  <li class="toc-h3"><a href="#step-1-원본-데이터-등록-sources">Step 1: 원본 데이터 등록 (Sources)</a></li>
+  <li class="toc-h3"><a href="#step-2-staging-모델-정제">Step 2: Staging 모델 (정제)</a></li>
+  <li class="toc-h3"><a href="#step-3-marts-모델-gold-table">Step 3: Marts 모델 (Gold Table)</a></li>
+  <li class="toc-h3"><a href="#step-4-자동-검증-tests">Step 4: 자동 검증 (Tests)</a></li>
+  <li class="toc-h3"><a href="#step-5-실행">Step 5: 실행</a></li>
+  <li class="toc-h3"><a href="#실습-1-결과-확인">실습 1 결과 확인</a></li>
+<li class="toc-h2"><a href="#5-4-실습-2--cube로-시맨틱-모델-정의-5분">5-4. 실습 2 — Cube로 시맨틱 모델 정의 (5분)</a></li>
+  <li class="toc-h3"><a href="#step-1-큐브-정의">Step 1: 큐브 정의</a></li>
+  <li class="toc-h3"><a href="#step-2-playground에서-시각적으로-쿼리">Step 2: Playground에서 시각적으로 쿼리</a></li>
+  <li class="toc-h3"><a href="#step-3-rest-api로-호출">Step 3: REST API로 호출</a></li>
+  <li class="toc-h3"><a href="#실습-2-핵심-통찰">실습 2 핵심 통찰</a></li>
+<li class="toc-h2"><a href="#5-5-실습-3--wrenai로-자연어-질의-5분">5-5. 실습 3 — WrenAI로 자연어 질의 (5분)</a></li>
+  <li class="toc-h3"><a href="#step-1-wrenai-설치-별도-docker-compose">Step 1: WrenAI 설치 (별도 docker-compose)</a></li>
+  <li class="toc-h3"><a href="#step-2-데이터-소스-연결--모델-등록">Step 2: 데이터 소스 연결 + 모델 등록</a></li>
+  <li class="toc-h3"><a href="#step-3-sql-pairs-등록-선택-정확도-향상">Step 3: SQL Pairs 등록 (선택, 정확도 향상)</a></li>
+  <li class="toc-h3"><a href="#step-4-자연어-질의">Step 4: 자연어 질의</a></li>
+  <li class="toc-h3"><a href="#실습-3-핵심-통찰">실습 3 핵심 통찰</a></li>
+<li class="toc-h2"><a href="#5-6-세-도구-통합-흐름-전체-그림">5-6. 세 도구 통합 흐름 (전체 그림)</a></li>
+<li class="toc-h2"><a href="#6-1-어떤-도구를-언제-쓸까-결정-트리">6-1. "어떤 도구를 언제 쓸까?" 결정 트리</a></li>
+<li class="toc-h2"><a href="#6-2-의사결정-체크리스트">6-2. 의사결정 체크리스트</a></li>
+<li class="toc-h2"><a href="#6-3-단계적-도입-로드맵">6-3. 단계적 도입 로드맵</a></li>
+<li class="toc-h2"><a href="#7-1-토스-panda--참고-사례">7-1. 토스 PANDA — 참고 사례</a></li>
+  <li class="toc-h3"><a href="#핵심-통찰">핵심 통찰</a></li>
+  <li class="toc-h3"><a href="#토스에서-배울-추가-인사이트--계층-가중치-스코어링">토스에서 배울 추가 인사이트 — 계층 가중치 스코어링</a></li>
+<li class="toc-h2"><a href="#7-2-향후-방향--환경에-맞는-도구가-없을-때">7-2. 향후 방향 — 환경에 맞는 도구가 없을 때</a></li>
+  <li class="toc-h3"><a href="#옵션-a-도구-조합">옵션 A: 도구 조합</a></li>
+  <li class="toc-h3"><a href="#옵션-b-시맨틱-레이어를-직접-구현">옵션 B: 시맨틱 레이어를 직접 구현</a></li>
+    <li class="toc-h4"><a href="#핵심-아이디어--queryspec-중간-표현">핵심 아이디어 — QuerySpec (중간 표현)</a></li>
+<li class="toc-h2"><a href="#7-3-결론--세미나-핵심-메시지">7-3. 결론 — 세미나 핵심 메시지</a></li>
+<li class="toc-h2"><a href="#부록-a-실습-사전-준비">부록 A. 실습 사전 준비</a></li>
+  <li class="toc-h3"><a href="#사내-환경-가정-시-필요한-것">사내 환경 가정 시 필요한 것</a></li>
+  <li class="toc-h3"><a href="#실습-데이터셋-제공">실습 데이터셋 (제공)</a></li>
+<li class="toc-h2"><a href="#부록-b-참고-자료">부록 B. 참고 자료</a></li>
+  <li class="toc-h3"><a href="#우리-사내-가이드-문서">우리 사내 가이드 문서</a></li>
+<li class="toc-h2"><a href="#부록-c-qa-예상-질문">부록 C. Q&amp;A 예상 질문</a></li>
+<li class="toc-h2"><a href="#변경-이력">변경 이력</a></li>
+</ul>
+</nav>
+</aside>
+
+<main class="content">
+<h1 id="세미나-시맨틱-레이어의-기술-이해와-실습">세미나: 시맨틱 레이어의 기술 이해와 실습</h1>
+<blockquote>
+<p><strong>주제:</strong> 시맨틱 레이어란 무엇이고, 왜 필요한가, 그리고 어떻게 만드는가
+<strong>대상:</strong> 데이터 분석가, 개발자, 기획자 (학습조직)
+<strong>시간:</strong> 1시간 30분 + Q&amp;A
+<strong>분량 구성:</strong> 개념 이해 50% + 도구 비교 25% + 실습 20% + 의사결정 가이드 5%</p>
+</blockquote>
+<hr />
+<h2 id="진행-안내">진행 안내</h2>
+<table>
+<thead>
+<tr>
+<th style="text-align: center;">시간</th>
+<th>내용</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td style="text-align: center;">0~15</td>
+<td>Part 1. 시맨틱 레이어란 무엇인가 (개념·정의·필요성)</td>
+</tr>
+<tr>
+<td style="text-align: center;">15~25</td>
+<td>Part 2. 시맨틱 레이어의 5가지 응용 영역</td>
+</tr>
+<tr>
+<td style="text-align: center;">25~50</td>
+<td>Part 3. 3가지 도구 — dbt / Cube / WrenAI</td>
+</tr>
+<tr>
+<td style="text-align: center;">50~60</td>
+<td>Part 4. 멀티 에이전트의 필요성 — LangGraph</td>
+</tr>
+<tr>
+<td style="text-align: center;">60~80</td>
+<td>Part 5. 실습 — 사내 환경에서 시맨틱 레이어 만들기</td>
+</tr>
+<tr>
+<td style="text-align: center;">80~85</td>
+<td>Part 6. 의사결정 가이드 — 어떤 도구를 언제?</td>
+</tr>
+<tr>
+<td style="text-align: center;">85~90</td>
+<td>Part 7. 산업 사례 (토스 PANDA) + 향후 방향</td>
+</tr>
+</tbody>
+</table>
+<hr />
+<h1 id="part-1-시맨틱-레이어란-무엇인가-15분">Part 1. 시맨틱 레이어란 무엇인가 (15분)</h1>
+<h2 id="1-1-회의실에서-흔한-풍경">1-1. 회의실에서 흔한 풍경</h2>
+<blockquote>
+<p>임원: "지난달 매출 얼마야?"
+영업팀: "12억입니다."
+재무팀: "11.4억인데요."
+마케팅팀: "13.2억으로 보고 받았는데..."
+임원: "...누가 맞는 거야?"</p>
+</blockquote>
+<p>세 명 다 거짓말은 안 합니다. 단지 <strong>"매출"의 정의가 통일되지 않았을</strong> 뿐입니다.</p>
+<table>
+<thead>
+<tr>
+<th>부서</th>
+<th>"매출" 정의</th>
+<th>SQL</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>영업</td>
+<td>주문 금액 합계</td>
+<td><code>SUM(amount)</code></td>
+</tr>
+<tr>
+<td>재무</td>
+<td>결제 완료된 금액만</td>
+<td><code>SUM(amount) WHERE status='paid'</code></td>
+</tr>
+<tr>
+<td>마케팅</td>
+<td>환불 차감 전 총 매출</td>
+<td><code>SUM(amount) - SUM(refund)</code> 안 함</td>
+</tr>
+</tbody>
+</table>
+<p>이 문제는 <strong>Tableau, Metabase, Power BI 같은 BI 도구를 도입해도 그대로 남습니다.</strong> 각 도구의 SQL을 누가 짜느냐에 따라 정의가 또 달라지기 때문입니다.</p>
+<p>이 문제를 푸는 것이 <strong>시맨틱 레이어(Semantic Layer)</strong> 입니다.</p>
+<h2 id="1-2-시맨틱-레이어의-정의">1-2. 시맨틱 레이어의 정의</h2>
+<h3 id="gartner-공식-정의">Gartner 공식 정의</h3>
+<blockquote>
+<p>"A business representation of corporate data that helps end users access data autonomously using common business terms."
+— 일반 사용자가 비즈니스 용어로 데이터에 자율적으로 접근하도록 돕는, 회사 데이터의 비즈니스 표현 계층.</p>
+</blockquote>
+<p>쉽게 풀어쓰면:</p>
+<blockquote>
+<p><strong>"원본 DB 위에 비즈니스 용어를 입혀서, 누가 보든 같은 정의로 데이터를 쓰게 하는 추상화 층"</strong></p>
+</blockquote>
+<h3 id="한-줄-비유">한 줄 비유</h3>
+<table>
+<thead>
+<tr>
+<th>비유</th>
+<th>의미</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><strong>"회사 매출 사전"</strong></td>
+<td>매출의 정의를 한 곳에 적어두고 모두가 참조</td>
+</tr>
+<tr>
+<td><strong>"표준어 사전"</strong></td>
+<td>부서마다 쓰는 사투리(SQL) 대신 표준어(메트릭)로</td>
+</tr>
+<tr>
+<td><strong>"엑셀 시트의 정의서"</strong></td>
+<td>한 시트 = 한 비즈니스 객체 (Customer, Order...)</td>
+</tr>
+</tbody>
+</table>
+<h2 id="1-3-시맨틱-레이어의-4가지-구성-요소">1-3. 시맨틱 레이어의 4가지 구성 요소</h2>
+<div class="mermaid">
+flowchart TD
+    SL[Semantic Layer]
+    SL --> M["Metrics\n측정값/지표"]
+    SL --> D[Dimensions\n분석 축]
+    SL --> E[Entities\n비즈니스 객체]
+    SL --> R[Relationships\n객체 간 관계]
+
+    M --> M1["예: 월매출 = SUM(amount) WHERE status='paid'"]
+    D --> D1["예: 지역, 월, 고객등급"]
+    E --> E1["예: Customer, Order, Product"]
+    R --> R1["예: Customer 1:N Order"]
+</div>
+
+<h3 id="metrics-측정값지표">Metrics (측정값/지표)</h3>
+<blockquote>
+<p><strong>계산되는 숫자</strong>. 합계, 평균, 카운트 등 집계되는 값.</p>
+</blockquote>
+<div class="codehilite"><pre><span></span><code><span class="nt">revenue</span><span class="p">:</span>
+<span class="w">  </span><span class="nt">type</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">sum</span>
+<span class="w">  </span><span class="nt">expression</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">amount</span>
+<span class="w">  </span><span class="nt">filter</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">status = &#39;paid&#39;</span>
+</code></pre></div>
+
+<blockquote>
+<p><strong>이 정의가 하는 일:</strong> "매출"이라는 한 단어로 정의된 SQL 표현. 어떤 도구가 호출하든 같은 SQL이 실행된다.</p>
+</blockquote>
+<h3 id="dimensions-분석-축">Dimensions (분석 축)</h3>
+<blockquote>
+<p><strong>데이터를 자르는 기준</strong>. 피벗 테이블의 행/열에 들어가는 것.</p>
+</blockquote>
+<div class="codehilite"><pre><span></span><code><span class="nt">sale_date</span><span class="p">:</span>
+<span class="w">  </span><span class="nt">type</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">time</span><span class="w">   </span><span class="c1"># 시간 축은 자동으로 일/주/월/년 그룹핑 가능</span>
+
+<span class="nt">region</span><span class="p">:</span>
+<span class="w">  </span><span class="nt">type</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">string</span>
+
+<span class="nt">customer_tier</span><span class="p">:</span>
+<span class="w">  </span><span class="nt">type</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">string</span><span class="w">  </span><span class="c1"># VIP, Regular, New 등</span>
+</code></pre></div>
+
+<h3 id="entities-비즈니스-객체">Entities (비즈니스 객체)</h3>
+<blockquote>
+<p><strong>현실 세계의 개체</strong>를 데이터 모델로 표현한 것. Customer, Order, Product 같은.</p>
+</blockquote>
+<div class="codehilite"><pre><span></span><code><span class="nt">customer</span><span class="p">:</span>
+<span class="w">  </span><span class="nt">primary_key</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">customer_id</span>
+<span class="w">  </span><span class="nt">attributes</span><span class="p">:</span><span class="w"> </span><span class="p p-Indicator">[</span><span class="nv">name</span><span class="p p-Indicator">,</span><span class="w"> </span><span class="nv">email</span><span class="p p-Indicator">,</span><span class="w"> </span><span class="nv">tier</span><span class="p p-Indicator">]</span>
+
+<span class="nt">order</span><span class="p">:</span>
+<span class="w">  </span><span class="nt">primary_key</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">order_id</span>
+<span class="w">  </span><span class="nt">attributes</span><span class="p">:</span><span class="w"> </span><span class="p p-Indicator">[</span><span class="nv">customer_id</span><span class="p p-Indicator">,</span><span class="w"> </span><span class="nv">amount</span><span class="p p-Indicator">,</span><span class="w"> </span><span class="nv">status</span><span class="p p-Indicator">]</span>
+</code></pre></div>
+
+<h3 id="relationships-관계">Relationships (관계)</h3>
+<blockquote>
+<p>엔티티 간 연결. SQL JOIN의 기반이지만 <strong>한 번 정의하면 매번 JOIN을 직접 쓸 필요 없음</strong>.</p>
+</blockquote>
+<div class="codehilite"><pre><span></span><code><span class="nt">order</span><span class="p">:</span>
+<span class="w">  </span><span class="nt">joins</span><span class="p">:</span>
+<span class="w">    </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="nt">to</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">customer</span>
+<span class="w">      </span><span class="nt">type</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">belongsTo</span>
+<span class="w">      </span><span class="nt">on</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">order.customer_id = customer.id</span>
+</code></pre></div>
+
+<h2 id="1-4-시맨틱-레이어가-없으면-생기는-문제--4가지-시나리오">1-4. 시맨틱 레이어가 없으면 생기는 문제 — 4가지 시나리오</h2>
+<h3 id="시나리오-1-정의-불일치-metric-drift">시나리오 1: 정의 불일치 (Metric Drift)</h3>
+<div class="codehilite"><pre><span></span><code><span class="err">영업</span><span class="o">:</span><span class="w"> </span><span class="n">SUM</span><span class="o">(</span><span class="n">amount</span><span class="o">)</span>
+<span class="err">재무</span><span class="o">:</span><span class="w"> </span><span class="n">SUM</span><span class="o">(</span><span class="n">amount</span><span class="o">)</span><span class="w"> </span><span class="n">WHERE</span><span class="w"> </span><span class="n">status</span><span class="o">=</span><span class="s1">&#39;paid&#39;</span>
+<span class="err">경영지원</span><span class="o">:</span><span class="w"> </span><span class="n">SUM</span><span class="o">(</span><span class="n">amount</span><span class="w"> </span><span class="o">*</span><span class="w"> </span><span class="mf">0.9</span><span class="o">)</span><span class="w">  </span><span class="o">--</span><span class="w"> </span><span class="err">마진</span><span class="w"> </span><span class="err">차감</span>
+</code></pre></div>
+
+<p>→ <strong>임원 회의에서 같은 "매출"인데 세 가지 숫자</strong></p>
+<h3 id="시나리오-2-join-지옥">시나리오 2: JOIN 지옥</h3>
+<div class="codehilite"><pre><span></span><code><span class="c1">-- &quot;고객별 평균 주문 금액&quot; — 분석가가 매번 직접 짜야 함</span>
+<span class="k">SELECT</span>
+<span class="w">  </span><span class="k">c</span><span class="p">.</span><span class="n">name</span><span class="p">,</span>
+<span class="w">  </span><span class="k">AVG</span><span class="p">(</span><span class="n">oi</span><span class="p">.</span><span class="n">price</span><span class="w"> </span><span class="o">*</span><span class="w"> </span><span class="n">oi</span><span class="p">.</span><span class="n">quantity</span><span class="p">)</span>
+<span class="k">FROM</span><span class="w"> </span><span class="n">customers</span><span class="w"> </span><span class="k">c</span>
+<span class="k">JOIN</span><span class="w"> </span><span class="n">orders</span><span class="w"> </span><span class="n">o</span><span class="w"> </span><span class="k">ON</span><span class="w"> </span><span class="k">c</span><span class="p">.</span><span class="n">id</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">o</span><span class="p">.</span><span class="n">customer_id</span>
+<span class="k">JOIN</span><span class="w"> </span><span class="n">order_items</span><span class="w"> </span><span class="n">oi</span><span class="w"> </span><span class="k">ON</span><span class="w"> </span><span class="n">o</span><span class="p">.</span><span class="n">id</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">oi</span><span class="p">.</span><span class="n">order_id</span>
+<span class="k">WHERE</span><span class="w"> </span><span class="n">o</span><span class="p">.</span><span class="n">status</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s1">&#39;completed&#39;</span><span class="w"> </span><span class="k">AND</span><span class="w"> </span><span class="n">o</span><span class="p">.</span><span class="n">deleted_at</span><span class="w"> </span><span class="k">IS</span><span class="w"> </span><span class="k">NULL</span>
+<span class="k">GROUP</span><span class="w"> </span><span class="k">BY</span><span class="w"> </span><span class="k">c</span><span class="p">.</span><span class="n">name</span><span class="p">;</span>
+</code></pre></div>
+
+<p>→ 분석가 5명이 각자 다른 JOIN 패턴 → 결과도 미세하게 달라짐</p>
+<h3 id="시나리오-3-bi-도구마다-다른-sql">시나리오 3: BI 도구마다 다른 SQL</h3>
+<div class="codehilite"><pre><span></span><code>Tableau 대시보드 → SQL_A
+Power BI         → SQL_B (살짝 다름)
+Slack 일일 리포트 → SQL_C (또 다름)
+</code></pre></div>
+
+<p>→ 같은 KPI인데 보고서마다 숫자가 다름</p>
+<h3 id="시나리오-4-nl2sql의-핵심-문제">시나리오 4: NL2SQL의 핵심 문제</h3>
+<div class="codehilite"><pre><span></span><code>사용자: &quot;이번 달 매출 알려줘&quot;
+LLM:    &quot;어떤 매출요? 주문? 결제? 환불 차감?&quot;
+        (LLM이 정의를 모름 → 추측 → 환각)
+</code></pre></div>
+
+<p>→ <strong>시맨틱 레이어 없이는 NL2SQL이 절대 안정적으로 동작하지 않음</strong></p>
+<h2 id="1-5-시맨틱-레이어로-해결되는-모습">1-5. 시맨틱 레이어로 해결되는 모습</h2>
+<div class="codehilite"><pre><span></span><code>시맨틱 레이어에 한 번 정의:
+  revenue = SUM(amount) WHERE status=&#39;paid&#39;
+
+모든 도구가 같은 정의 사용:
+  Tableau    → revenue = 12억
+  Power BI   → revenue = 12억
+  Slack 봇   → revenue = 12억
+  ChatGPT    → revenue = 12억
+  NL2SQL Bot → revenue = 12억
+</code></pre></div>
+
+<blockquote>
+<p><strong>핵심 원칙: Single Source of Truth (SSOT)</strong>
+메트릭 정의가 한 곳에만 존재한다. 모두 그것을 참조한다.</p>
+</blockquote>
+<h2 id="1-6-시맨틱-레이어-vs-다른-비슷한-개념들">1-6. 시맨틱 레이어 vs 다른 비슷한 개념들</h2>
+<p>청중이 자주 헷갈려하는 부분 — 정확히 구분합시다.</p>
+<h3 id="semantic-layer-vs-knowledge-graph-vs-ontology">Semantic Layer vs Knowledge Graph vs Ontology</h3>
+<table>
+<thead>
+<tr>
+<th></th>
+<th>Semantic Layer</th>
+<th>Knowledge Graph</th>
+<th>Ontology</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><strong>주 대상</strong></td>
+<td>정형 DB</td>
+<td>정형+비정형+관계</td>
+<td>개념 정의 (스키마)</td>
+</tr>
+<tr>
+<td><strong>데이터 포함</strong></td>
+<td>❌ 정의만</td>
+<td>✅ 인스턴스 포함</td>
+<td>❌ 스키마만</td>
+</tr>
+<tr>
+<td><strong>추론 기능</strong></td>
+<td>❌</td>
+<td>✅ 제한적</td>
+<td>✅ 형식적</td>
+</tr>
+<tr>
+<td><strong>표준</strong></td>
+<td>없음 (벤더마다)</td>
+<td>W3C RDF</td>
+<td>W3C OWL</td>
+</tr>
+<tr>
+<td><strong>대표 도구</strong></td>
+<td>dbt, Cube</td>
+<td>Neo4j, Wikidata</td>
+<td>Protégé</td>
+</tr>
+<tr>
+<td><strong>전형적 질문</strong></td>
+<td>"월 매출 얼마?"</td>
+<td>"삼성 경쟁사는?"</td>
+<td>"Company란?"</td>
+</tr>
+</tbody>
+</table>
+<blockquote>
+<p><strong>이 세미나의 범위:</strong> Semantic Layer (정형 DB의 비즈니스 메트릭 추상화).
+Knowledge Graph/Ontology는 별도 주제.</p>
+</blockquote>
+<h3 id="semantic-layer-vs-data-catalog">Semantic Layer vs Data Catalog</h3>
+<table>
+<thead>
+<tr>
+<th></th>
+<th>Semantic Layer</th>
+<th>Data Catalog</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>무엇을 관리?</td>
+<td>메트릭/차원 (계산식 포함)</td>
+<td>메타데이터 (이름, 설명, 출처, 관계)</td>
+</tr>
+<tr>
+<td>누가 사용?</td>
+<td>BI 도구, API</td>
+<td>검색, 발견, 거버넌스</td>
+</tr>
+<tr>
+<td>도구 예</td>
+<td>dbt, Cube</td>
+<td>OpenMetadata, Atlas</td>
+</tr>
+</tbody>
+</table>
+<blockquote>
+<p><strong>둘은 보완 관계</strong>. Data Catalog는 "어떤 데이터가 어디 있는지", Semantic Layer는 "그 데이터를 어떻게 계산할지".</p>
+</blockquote>
+<hr />
+<h1 id="part-2-시맨틱-레이어의-5가지-응용-영역-10분">Part 2. 시맨틱 레이어의 5가지 응용 영역 (10분)</h1>
+<p>시맨틱 레이어를 한 번 만들면 다양한 곳에서 활용됩니다.</p>
+<div class="mermaid">
+flowchart TB
+    SL["시맨틱 레이어\n(중앙 메트릭 정의)"]
+    SL --> A1["① BI 대시보드\nTableau, Metabase, Power BI"]
+    SL --> A2["② 임베디드 분석 API\n웹/앱 통계 화면"]
+    SL --> A3["③ 데이터 익스포트\nCSV, Slack 알림"]
+    SL --> A4["④ ML 피처 스토어\n일관된 학습 데이터"]
+    SL --> A5["⑤ NL2SQL / AI 에이전트\nWrenAI, ChatGPT, 자체 봇"]
+
+    style SL fill:#3b82f6,color:#fff
+    style A5 fill:#22c55e,color:#fff
+</div>
+
+<h2 id="2-1-bi-대시보드">2-1. BI 대시보드</h2>
+<p><strong>시나리오:</strong> 영업팀 Tableau, 재무팀 Power BI, 임원 PPT — 모두 다른 도구지만 같은 메트릭.</p>
+<p>시맨틱 레이어가 없으면: 각 도구마다 SQL을 따로 작성 → 정의 표류
+시맨틱 레이어가 있으면: 모든 도구가 API로 같은 메트릭을 호출 → 일관성</p>
+<h2 id="2-2-임베디드-분석-api">2-2. 임베디드 분석 API</h2>
+<p><strong>시나리오:</strong> 사내 React 앱에 "이 달 매출" 위젯을 박는다.</p>
+<div class="codehilite"><pre><span></span><code><span class="c1">// 시맨틱 레이어가 없으면: 프론트엔드에서 SQL 직접 호출 (보안/일관성 위험)</span>
+<span class="nx">fetch</span><span class="p">(</span><span class="s1">&#39;/api/raw-sql&#39;</span><span class="p">,</span><span class="w"> </span><span class="p">{</span><span class="w"> </span><span class="nx">sql</span><span class="o">:</span><span class="w"> </span><span class="s1">&#39;SELECT SUM(amount)...&#39;</span><span class="w"> </span><span class="p">})</span>
+
+<span class="c1">// 시맨틱 레이어가 있으면: 메트릭 이름으로 호출</span>
+<span class="nx">fetch</span><span class="p">(</span><span class="s1">&#39;/api/cube/load?measure=revenue&amp;period=month&#39;</span><span class="p">)</span>
+</code></pre></div>
+
+<blockquote>
+<p><strong>이 코드가 하는 일:</strong> 프론트가 SQL을 모르고도 "revenue" 메트릭을 요청. 시맨틱 레이어가 정의된 SQL을 실행하고 결과 반환.</p>
+</blockquote>
+<h2 id="2-3-데이터-익스포트-정기-리포트">2-3. 데이터 익스포트 (정기 리포트)</h2>
+<p><strong>시나리오:</strong> 매주 월요일 9시 Slack으로 "지난주 매출 요약" 발송.</p>
+<p>스크립트가 시맨틱 레이어 API를 호출 → 같은 정의로 매주 일관된 숫자.</p>
+<h2 id="2-4-ml-피처-스토어">2-4. ML 피처 스토어</h2>
+<p><strong>시나리오:</strong> 고객 이탈 예측 모델 학습.</p>
+<p>훈련 데이터의 "최근 3개월 구매 금액"과 추론 시점의 "최근 3개월 구매 금액"이 <strong>같은 정의</strong>로 계산되어야 모델이 잘 작동. 시맨틱 레이어가 그 일관성을 보장.</p>
+<h2 id="2-5-nl2sql--ai-에이전트">2-5. NL2SQL / AI 에이전트</h2>
+<p><strong>시나리오:</strong> "이번 달 매출 알려줘"라고 자연어로 질문.</p>
+<div class="mermaid">
+sequenceDiagram
+    participant U as 사용자
+    participant L as LLM
+    participant S as 시맨틱 레이어
+    participant DB as DB
+
+    U->>L: "이번 달 매출"
+    L->>L: 시맨틱 레이어에 'revenue' 메트릭 있음을 인식
+    L->>S: revenue 메트릭 호출 + 시간 필터
+    S->>DB: SUM(amount) WHERE status='paid' AND month=current
+    DB-->>S: 12억
+    S-->>L: 12억
+    L-->>U: "이번 달 매출은 12억입니다"
+</div>
+
+<p><strong>시맨틱 레이어가 없으면</strong>: LLM이 SQL을 직접 짜야 함 → 매번 다른 SQL → 환각/오답
+<strong>시맨틱 레이어가 있으면</strong>: LLM은 "어떤 메트릭을 호출할지"만 결정 → 안정성 ↑</p>
+<blockquote>
+<p>💡 <strong>핵심 인사이트:</strong> 시맨틱 레이어를 한 번 잘 만들면 BI/API/ML/NL2SQL 모두 잘 됩니다. <strong>NL2SQL을 위해서만 만드는 게 아닙니다.</strong></p>
+</blockquote>
+<hr />
+<h1 id="part-3-3가지-도구--dbt--cube--wrenai-25분">Part 3. 3가지 도구 — dbt / Cube / WrenAI (25분)</h1>
+<p>세 도구는 <strong>시맨틱 레이어를 만드는 서로 다른 방식</strong>입니다.</p>
+<div class="mermaid">
+flowchart TB
+    Q["시맨틱 레이어\n도구 선택"]
+    Q --> D["1. dbt\n변환 + 메트릭 (배치, Git 기반)"]
+    Q --> C["2. Cube\n시맨틱 + API 서빙 (실시간)"]
+    Q --> W["3. WrenAI\nNL2SQL 응용 특화 (시맨틱 + 자연어)"]
+
+    style D fill:#fbbf24,color:#1a1a2e
+    style C fill:#3b82f6,color:#fff
+    style W fill:#22c55e,color:#fff
+</div>
+
+<h2 id="3-1-dbt--analytics-as-code-8분">3-1. dbt — Analytics as Code (8분)</h2>
+<h3 id="한-줄-비유_1">한 줄 비유</h3>
+<blockquote>
+<p><strong>"dbt는 ETL의 T(Transform)를 SQL과 Git으로 관리하는 도구다."</strong>
+데이터 변환 로직을 코드처럼 다룬다. 분석가가 짜는 SQL을 소프트웨어 엔지니어가 코드 다루듯 PR 리뷰, 테스트, 문서화한다.</p>
+</blockquote>
+<h3 id="왜-필요한가">왜 필요한가</h3>
+<p>dbt 없는 회사의 모습:</p>
+<blockquote>
+<p>분석가 A가 "월간 매출" SQL을 짜서 자기 노트북에 보관 → 분석가 B가 같은 지표를 봐야 하는데 A의 SQL을 모름 → 다시 짬 → 미세하게 다름 → 회의에서 "내 매출 12억인데 너는 11억이네?" → 누가 언제 SQL을 바꿨는지 아무도 모름</p>
+</blockquote>
+<h3 id="dbt가-해결하는-4가지">dbt가 해결하는 4가지</h3>
+<table>
+<thead>
+<tr>
+<th>메커니즘</th>
+<th>효과</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Git 기반 SQL 관리</td>
+<td>변경 이력 추적, PR 리뷰</td>
+</tr>
+<tr>
+<td><code>ref()</code> 함수로 의존성 자동 추적</td>
+<td>"어떤 모델을 먼저 돌릴지" 자동 결정</td>
+</tr>
+<tr>
+<td>Schema test 자동 검증</td>
+<td>매일 빌드 후 데이터 품질 자동 점검</td>
+</tr>
+<tr>
+<td>YAML description = 문서</td>
+<td>SQL이 곧 문서, 어긋나지 않음</td>
+</tr>
+</tbody>
+</table>
+<h3 id="핵심-개념">핵심 개념</h3>
+<h4 id="model-모델">Model (모델)</h4>
+<blockquote>
+<p><strong>하나의 SQL 파일 = 하나의 모델 = 하나의 테이블/뷰</strong></p>
+</blockquote>
+<div class="codehilite"><pre><span></span><code><span class="c1">-- models/marts/fct_orders.sql</span>
+<span class="k">SELECT</span>
+<span class="w">    </span><span class="n">o</span><span class="p">.</span><span class="n">id</span><span class="w"> </span><span class="k">AS</span><span class="w"> </span><span class="n">order_id</span><span class="p">,</span>
+<span class="w">    </span><span class="n">o</span><span class="p">.</span><span class="n">customer_id</span><span class="p">,</span>
+<span class="w">    </span><span class="n">o</span><span class="p">.</span><span class="n">amount</span><span class="p">,</span>
+<span class="w">    </span><span class="n">o</span><span class="p">.</span><span class="n">created_at</span>
+<span class="k">FROM</span><span class="w"> </span><span class="err">{{</span><span class="w"> </span><span class="k">ref</span><span class="p">(</span><span class="s1">&#39;stg_orders&#39;</span><span class="p">)</span><span class="w"> </span><span class="err">}}</span><span class="w"> </span><span class="n">o</span>
+<span class="k">WHERE</span><span class="w"> </span><span class="n">o</span><span class="p">.</span><span class="n">status</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s1">&#39;completed&#39;</span>
+</code></pre></div>
+
+<blockquote>
+<p><strong>이 코드가 하는 일:</strong> stg_orders 모델을 입력으로 받아서 완료된 주문만 필터링한 fct_orders 테이블을 생성한다.
+<code>{{ ref('stg_orders') }}</code> 가 핵심: 의존성을 dbt가 자동 추적.</p>
+</blockquote>
+<h4 id="materialization-실체화-방식">Materialization (실체화 방식)</h4>
+<table>
+<thead>
+<tr>
+<th>종류</th>
+<th>설명</th>
+<th>언제 사용?</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>view</code></td>
+<td>가벼운 뷰 (매번 재계산)</td>
+<td>데이터 작거나 자주 변경</td>
+</tr>
+<tr>
+<td><code>table</code></td>
+<td>실제 테이블 (스냅샷)</td>
+<td>데이터 크고 자주 안 변경</td>
+</tr>
+<tr>
+<td><code>incremental</code></td>
+<td>증분 적재 (변경분만)</td>
+<td>매일 새 데이터 추가</td>
+</tr>
+<tr>
+<td><code>ephemeral</code></td>
+<td>임시 CTE (메모리만)</td>
+<td>중간 변환용</td>
+</tr>
+</tbody>
+</table>
+<h4 id="tests-자동-검증">Tests (자동 검증)</h4>
+<div class="codehilite"><pre><span></span><code><span class="c1"># schema.yml</span>
+<span class="nt">models</span><span class="p">:</span>
+<span class="w">  </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="nt">name</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">fct_orders</span>
+<span class="w">    </span><span class="nt">columns</span><span class="p">:</span>
+<span class="w">      </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="nt">name</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">order_id</span>
+<span class="w">        </span><span class="nt">tests</span><span class="p">:</span>
+<span class="w">          </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">unique</span><span class="w">         </span><span class="c1"># 중복 없음</span>
+<span class="w">          </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">not_null</span><span class="w">       </span><span class="c1"># NULL 없음</span>
+<span class="w">      </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="nt">name</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">customer_id</span>
+<span class="w">        </span><span class="nt">tests</span><span class="p">:</span>
+<span class="w">          </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="nt">relationships</span><span class="p">:</span><span class="w">  </span><span class="c1"># FK 무결성</span>
+<span class="w">              </span><span class="nt">to</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">ref(&#39;dim_customers&#39;)</span>
+<span class="w">              </span><span class="nt">field</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">id</span>
+</code></pre></div>
+
+<blockquote>
+<p><strong>이 코드가 하는 일:</strong> 매일 dbt가 fct_orders 테이블의 order_id가 unique한지, customer_id가 dim_customers에 있는지 자동 검증.</p>
+</blockquote>
+<h3 id="dbt-semantic-layer-metricflow">dbt Semantic Layer (MetricFlow)</h3>
+<p>dbt 자체는 변환 도구지만, <strong>MetricFlow</strong>라는 메트릭 정의 기능이 추가되었습니다.</p>
+<div class="codehilite"><pre><span></span><code><span class="c1"># semantic_models/orders.yml</span>
+<span class="nt">semantic_models</span><span class="p">:</span>
+<span class="w">  </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="nt">name</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">orders</span>
+<span class="w">    </span><span class="nt">model</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">ref(&#39;fct_orders&#39;)</span>
+<span class="w">    </span><span class="nt">measures</span><span class="p">:</span>
+<span class="w">      </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="nt">name</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">revenue</span>
+<span class="w">        </span><span class="nt">expr</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">amount</span>
+<span class="w">        </span><span class="nt">agg</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">sum</span>
+<span class="w">    </span><span class="nt">dimensions</span><span class="p">:</span>
+<span class="w">      </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="nt">name</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">order_date</span>
+<span class="w">        </span><span class="nt">type</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">time</span>
+
+<span class="nt">metrics</span><span class="p">:</span>
+<span class="w">  </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="nt">name</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">total_revenue</span>
+<span class="w">    </span><span class="nt">type</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">simple</span>
+<span class="w">    </span><span class="nt">type_params</span><span class="p">:</span>
+<span class="w">      </span><span class="nt">measure</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">revenue</span>
+</code></pre></div>
+
+<blockquote>
+<p><strong>이 코드가 하는 일:</strong> "total_revenue"라는 메트릭을 정의. fct_orders의 amount를 합산한 것. 시간 차원으로 자를 수 있음.</p>
+<p>⚠️ <strong>함정 — dbt Semantic Layer API는 dbt Cloud (유료) 전용</strong>
+dbt Core(오픈소스)에서는 MetricFlow CLI는 쓸 수 있지만, API 서빙은 Cloud만 가능. NL2SQL 도구가 호출하려면 Cloud가 필요.</p>
+</blockquote>
+<h3 id="dbt-실무-평가">dbt 실무 평가</h3>
+<table>
+<thead>
+<tr>
+<th>항목</th>
+<th style="text-align: center;">평가</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>변환 자동화</td>
+<td style="text-align: center;">⭐⭐⭐⭐⭐</td>
+</tr>
+<tr>
+<td>메트릭 정의</td>
+<td style="text-align: center;">⭐⭐⭐ (Cloud는 더 강력)</td>
+</tr>
+<tr>
+<td>API 서빙</td>
+<td style="text-align: center;">⭐ (Core는 안 됨)</td>
+</tr>
+<tr>
+<td>NL2SQL 직접 지원</td>
+<td style="text-align: center;">❌ (다른 도구 필요)</td>
+</tr>
+<tr>
+<td>학습 곡선</td>
+<td style="text-align: center;">⭐⭐ (SQL 알면 쉬움)</td>
+</tr>
+</tbody>
+</table>
+<p><strong>적합:</strong> 변환 파이프라인 자동화 + Git 기반 거버넌스
+<strong>부적합:</strong> 단독으로 NL2SQL/실시간 API 서빙</p>
+<hr />
+<h2 id="3-2-cube--headless-bi-10분">3-2. Cube — Headless BI (10분)</h2>
+<h3 id="한-줄-비유_2">한 줄 비유</h3>
+<blockquote>
+<p><strong>"Cube는 BI 도구를 위한 메트릭 표준화 레이어이자 API 서버다."</strong>
+dbt가 메트릭 정의 + 배치 변환이라면, Cube는 메트릭 정의 + 실시간 API 서빙이다.</p>
+</blockquote>
+<p>"Headless BI"라는 표현이 자주 등장하는데, <strong>시각화 도구(머리)와 메트릭 정의(몸통)를 분리</strong>한다는 의미.</p>
+<h3 id="왜-필요한가_1">왜 필요한가</h3>
+<p>Cube가 없는 회사의 모습:</p>
+<div class="codehilite"><pre><span></span><code>Tableau ─→ SQL_A (월매출)
+Power BI ─→ SQL_B (월매출, 살짝 다름)
+React 앱 ─→ SQL_C (또 다름)
+모바일 앱 ─→ SQL_D
+</code></pre></div>
+
+<p>→ 정의가 4번 흩어짐.</p>
+<p>Cube가 있는 회사:</p>
+<div class="codehilite"><pre><span></span><code>                ┌─→ Tableau
+Cube ─→ API ──┼─→ Power BI
+                ├─→ React 앱
+                └─→ 모바일 앱
+</code></pre></div>
+
+<p>→ 정의는 한 곳, 모든 도구가 API로 호출.</p>
+<h3 id="핵심-개념_1">핵심 개념</h3>
+<h4 id="cube-큐브">Cube (큐브)</h4>
+<blockquote>
+<p><strong>하나의 비즈니스 객체에 대한 메트릭/차원 정의 단위.</strong></p>
+</blockquote>
+<div class="codehilite"><pre><span></span><code><span class="c1">// model/orders.js</span>
+<span class="nx">cube</span><span class="p">(</span><span class="s1">&#39;Orders&#39;</span><span class="p">,</span><span class="w"> </span><span class="p">{</span>
+<span class="w">  </span><span class="nx">sql</span><span class="o">:</span><span class="w"> </span><span class="sb">`SELECT * FROM public.orders`</span><span class="p">,</span>
+
+<span class="w">  </span><span class="nx">measures</span><span class="o">:</span><span class="w"> </span><span class="p">{</span>
+<span class="w">    </span><span class="nx">revenue</span><span class="o">:</span><span class="w"> </span><span class="p">{</span>
+<span class="w">      </span><span class="nx">sql</span><span class="o">:</span><span class="w"> </span><span class="sb">`amount`</span><span class="p">,</span>
+<span class="w">      </span><span class="nx">type</span><span class="o">:</span><span class="w"> </span><span class="sb">`sum`</span><span class="p">,</span>
+<span class="w">      </span><span class="nx">filters</span><span class="o">:</span><span class="w"> </span><span class="p">[{</span><span class="w"> </span><span class="nx">sql</span><span class="o">:</span><span class="w"> </span><span class="sb">`</span><span class="si">${</span><span class="nx">CUBE</span><span class="si">}</span><span class="sb">.status = &#39;paid&#39;`</span><span class="w"> </span><span class="p">}]</span>
+<span class="w">    </span><span class="p">},</span>
+<span class="w">    </span><span class="nx">count</span><span class="o">:</span><span class="w"> </span><span class="p">{</span>
+<span class="w">      </span><span class="nx">type</span><span class="o">:</span><span class="w"> </span><span class="sb">`count`</span>
+<span class="w">    </span><span class="p">}</span>
+<span class="w">  </span><span class="p">},</span>
+
+<span class="w">  </span><span class="nx">dimensions</span><span class="o">:</span><span class="w"> </span><span class="p">{</span>
+<span class="w">    </span><span class="nx">orderDate</span><span class="o">:</span><span class="w"> </span><span class="p">{</span>
+<span class="w">      </span><span class="nx">sql</span><span class="o">:</span><span class="w"> </span><span class="sb">`created_at`</span><span class="p">,</span>
+<span class="w">      </span><span class="nx">type</span><span class="o">:</span><span class="w"> </span><span class="sb">`time`</span>
+<span class="w">    </span><span class="p">},</span>
+<span class="w">    </span><span class="nx">region</span><span class="o">:</span><span class="w"> </span><span class="p">{</span>
+<span class="w">      </span><span class="nx">sql</span><span class="o">:</span><span class="w"> </span><span class="sb">`region`</span><span class="p">,</span>
+<span class="w">      </span><span class="nx">type</span><span class="o">:</span><span class="w"> </span><span class="sb">`string`</span>
+<span class="w">    </span><span class="p">}</span>
+<span class="w">  </span><span class="p">}</span>
+<span class="p">});</span>
+</code></pre></div>
+
+<blockquote>
+<p><strong>이 코드가 하는 일:</strong> Orders라는 큐브 정의. 매출(revenue)은 amount 합계 중 paid 상태만. 시간/지역 차원으로 자를 수 있음.</p>
+</blockquote>
+<h4 id="joins-조인">Joins (조인)</h4>
+<blockquote>
+<p><strong>큐브 간 관계 정의. 한 번 정의하면 매번 JOIN 안 써도 자동 연결.</strong></p>
+</blockquote>
+<div class="codehilite"><pre><span></span><code><span class="nx">cube</span><span class="p">(</span><span class="s1">&#39;Orders&#39;</span><span class="p">,</span><span class="w"> </span><span class="p">{</span>
+<span class="w">  </span><span class="nx">joins</span><span class="o">:</span><span class="w"> </span><span class="p">{</span>
+<span class="w">    </span><span class="nx">Customers</span><span class="o">:</span><span class="w"> </span><span class="p">{</span>
+<span class="w">      </span><span class="nx">relationship</span><span class="o">:</span><span class="w"> </span><span class="sb">`belongsTo`</span><span class="p">,</span>
+<span class="w">      </span><span class="nx">sql</span><span class="o">:</span><span class="w"> </span><span class="sb">`</span><span class="si">${</span><span class="nx">CUBE</span><span class="si">}</span><span class="sb">.customer_id = </span><span class="si">${</span><span class="nx">Customers</span><span class="si">}</span><span class="sb">.id`</span>
+<span class="w">    </span><span class="p">}</span>
+<span class="w">  </span><span class="p">}</span>
+<span class="p">});</span>
+</code></pre></div>
+
+<h4 id="pre-aggregation-사전-집계">Pre-aggregation (사전 집계)</h4>
+<blockquote>
+<p><strong>자주 쓰는 쿼리 결과를 미리 계산해서 캐시.</strong> 100GB 테이블도 서브초 응답.</p>
+</blockquote>
+<div class="codehilite"><pre><span></span><code><span class="nx">preAggregations</span><span class="o">:</span><span class="w"> </span><span class="p">{</span>
+<span class="w">  </span><span class="nx">monthlyRevenue</span><span class="o">:</span><span class="w"> </span><span class="p">{</span>
+<span class="w">    </span><span class="nx">measures</span><span class="o">:</span><span class="w"> </span><span class="p">[</span><span class="nx">revenue</span><span class="p">],</span>
+<span class="w">    </span><span class="nx">dimensions</span><span class="o">:</span><span class="w"> </span><span class="p">[</span><span class="nx">region</span><span class="p">],</span>
+<span class="w">    </span><span class="nx">timeDimension</span><span class="o">:</span><span class="w"> </span><span class="nx">orderDate</span><span class="p">,</span>
+<span class="w">    </span><span class="nx">granularity</span><span class="o">:</span><span class="w"> </span><span class="sb">`month`</span><span class="p">,</span>
+<span class="w">    </span><span class="nx">refreshKey</span><span class="o">:</span><span class="w"> </span><span class="p">{</span><span class="w"> </span><span class="nx">every</span><span class="o">:</span><span class="w"> </span><span class="sb">`1 hour`</span><span class="w"> </span><span class="p">}</span>
+<span class="w">  </span><span class="p">}</span>
+<span class="p">}</span>
+</code></pre></div>
+
+<blockquote>
+<p><strong>이 코드가 하는 일:</strong> 월별/지역별 매출을 미리 집계해 Cube Store에 저장. 1시간마다 갱신. BI 도구가 호출하면 캐시에서 즉시 반환.</p>
+</blockquote>
+<h3 id="api-3가지-가장-큰-강점">API 3가지 (가장 큰 강점)</h3>
+<div class="mermaid">
+flowchart LR
+    M["메트릭 정의\n한 번"]
+    M --> R["REST API\n("웹/앱 통계")"]
+    M --> G["GraphQL API\n(유연한 쿼리)"]
+    M --> S["SQL API\n(BI 도구 직접 연결)"]
+</div>
+
+<div class="codehilite"><pre><span></span><code><span class="c1"># REST API 예시</span>
+curl<span class="w"> </span>-X<span class="w"> </span>POST<span class="w"> </span>http://cube:4000/cubejs-api/v1/load<span class="w"> </span><span class="se">\</span>
+<span class="w">  </span>-H<span class="w"> </span><span class="s2">&quot;Authorization: ...&quot;</span><span class="w"> </span><span class="se">\</span>
+<span class="w">  </span>-d<span class="w"> </span><span class="s1">&#39;{&quot;query&quot;: {&quot;measures&quot;: [&quot;Orders.revenue&quot;], &quot;timeDimensions&quot;: [{&quot;dimension&quot;: &quot;Orders.orderDate&quot;, &quot;granularity&quot;: &quot;month&quot;}]}}&#39;</span>
+</code></pre></div>
+
+<blockquote>
+<p><strong>이 코드가 하는 일:</strong> "월별 매출"을 JSON으로 요청. Cube가 SQL 생성 → DB 실행 → JSON 반환.</p>
+</blockquote>
+<h3 id="cube-실무-평가">Cube 실무 평가</h3>
+<table>
+<thead>
+<tr>
+<th>항목</th>
+<th style="text-align: center;">평가</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>메트릭 정의</td>
+<td style="text-align: center;">⭐⭐⭐⭐⭐</td>
+</tr>
+<tr>
+<td>API 서빙</td>
+<td style="text-align: center;">⭐⭐⭐⭐⭐</td>
+</tr>
+<tr>
+<td>캐싱/성능</td>
+<td style="text-align: center;">⭐⭐⭐⭐</td>
+</tr>
+<tr>
+<td>NL2SQL 직접 지원</td>
+<td style="text-align: center;">❌ (도구 자체에 자연어 X)</td>
+</tr>
+<tr>
+<td>Oracle 호환</td>
+<td style="text-align: center;">⭐⭐⭐ (community-supported)</td>
+</tr>
+</tbody>
+</table>
+<blockquote>
+<p>⚠️ <strong>함정 — 팩트-팩트 JOIN 제약</strong>
+Cube의 JOIN은 1:N 관계 자동 처리는 잘하지만, <strong>두 팩트 테이블을 직접 JOIN하기 어렵다.</strong> BIP에서 "저평가주(Valuation 팩트) + 외국인 매수(Flow 팩트)" 같은 복합 조건을 시도했을 때 발견한 한계.</p>
+<p>💡 <strong>실무 팁:</strong> Cube는 BI 통합 + API 서빙이 본업. NL2SQL은 별도 레이어로 처리.</p>
+</blockquote>
+<p><strong>적합:</strong> BI 통합, 임베디드 분석, 멀티 클라이언트 일관성
+<strong>부적합:</strong> 단독 NL2SQL, 팩트-팩트 직접 결합</p>
+<hr />
+<h2 id="3-3-wrenai--nl2sql-응용-특화-7분">3-3. WrenAI — NL2SQL 응용 특화 (7분)</h2>
+<h3 id="한-줄-비유_3">한 줄 비유</h3>
+<blockquote>
+<p><strong>"WrenAI는 Cube + GPT를 합친 것이다."</strong>
+Cube처럼 메트릭/관계를 정의하면, GPT가 그 정의를 읽어 자연어 질문을 SQL로 번역해준다.</p>
+</blockquote>
+<h3 id="왜-필요한가--chatgpt에-sql-시키지-않고-wrenai를-거치는-이유">왜 필요한가 — ChatGPT에 SQL 시키지 않고 WrenAI를 거치는 이유</h3>
+<p>ChatGPT 직접 호출:</p>
+<div class="codehilite"><pre><span></span><code>사용자: &quot;이번 달 매출 알려줘&quot;
+ChatGPT: SELECT SUM(amount) FROM orders WHERE month = 1
+DB: 13.2억 (status 필터 없어 환불 포함)
+사용자: &quot;왜 13.2억이야?&quot;
+</code></pre></div>
+
+<p><strong>문제 4가지:</strong>
+- 매번 다른 SQL 생성
+- DB 스키마를 모름 → 환각
+- 비즈니스 정의를 모름 → 잘못된 해석
+- 검증 없이 그냥 실행 → 결과 오류</p>
+<p>WrenAI 호출:</p>
+<div class="codehilite"><pre><span></span><code>사용자: &quot;이번 달 매출 알려줘&quot;
+WrenAI:
+  1. MDL에서 &#39;revenue&#39; 메트릭 정의 확인
+  2. RAG로 관련 테이블/컬럼 검색
+  3. SQL 생성: SELECT SUM(amount) FROM orders WHERE status=&#39;paid&#39; AND month=1
+  4. Wren Engine이 SQL 검증 (스키마 일치, dry-run)
+  5. 실패 시 재생성 (최대 3회)
+  6. DB 실행 → 12억
+  7. 자연어로 답변
+</code></pre></div>
+
+<h3 id="핵심-개념_2">핵심 개념</h3>
+<h4 id="mdl-modeling-definition-language">MDL (Modeling Definition Language)</h4>
+<blockquote>
+<p><strong>WrenAI의 시맨틱 모델 정의 언어. Cube와 비슷한 역할.</strong></p>
+</blockquote>
+<div class="codehilite"><pre><span></span><code><span class="p">{</span>
+<span class="w">  </span><span class="nt">&quot;models&quot;</span><span class="p">:</span><span class="w"> </span><span class="p">[{</span>
+<span class="w">    </span><span class="nt">&quot;name&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;orders&quot;</span><span class="p">,</span>
+<span class="w">    </span><span class="nt">&quot;tableReference&quot;</span><span class="p">:</span><span class="w"> </span><span class="p">{</span><span class="w"> </span><span class="nt">&quot;table&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;public.orders&quot;</span><span class="w"> </span><span class="p">},</span>
+<span class="w">    </span><span class="nt">&quot;columns&quot;</span><span class="p">:</span><span class="w"> </span><span class="p">[</span>
+<span class="w">      </span><span class="p">{</span>
+<span class="w">        </span><span class="nt">&quot;name&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;amount&quot;</span><span class="p">,</span>
+<span class="w">        </span><span class="nt">&quot;type&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;DECIMAL&quot;</span><span class="p">,</span>
+<span class="w">        </span><span class="nt">&quot;description&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;주문 금액 (원). status=&#39;paid&#39;만 매출로 인정.&quot;</span>
+<span class="w">      </span><span class="p">},</span>
+<span class="w">      </span><span class="p">{</span>
+<span class="w">        </span><span class="nt">&quot;name&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;status&quot;</span><span class="p">,</span>
+<span class="w">        </span><span class="nt">&quot;type&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;VARCHAR&quot;</span><span class="p">,</span>
+<span class="w">        </span><span class="nt">&quot;description&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;주문 상태 (paid/cancelled/refunded)&quot;</span>
+<span class="w">      </span><span class="p">}</span>
+<span class="w">    </span><span class="p">]</span>
+<span class="w">  </span><span class="p">}]</span>
+<span class="p">}</span>
+</code></pre></div>
+
+<blockquote>
+<p><strong>이 코드가 하는 일:</strong> orders 테이블 모델 등록. description은 LLM이 컨텍스트로 읽음. "매출 알려줘" 질문 시 amount 컬럼에 자동 매핑.</p>
+</blockquote>
+<h4 id="sql-pairs-few-shot-학습">SQL Pairs (Few-shot 학습)</h4>
+<blockquote>
+<p><strong>"이런 질문에는 이런 SQL이 정답"이라는 예시를 등록해서 LLM이 참고하게 함.</strong></p>
+</blockquote>
+<div class="codehilite"><pre><span></span><code>Q: &quot;월별 매출 보여줘&quot;
+A: SELECT DATE_TRUNC(&#39;month&#39;, created_at) AS month,
+          SUM(amount) AS revenue
+   FROM orders
+   WHERE status=&#39;paid&#39;
+   GROUP BY 1 ORDER BY 1
+</code></pre></div>
+
+<blockquote>
+<p>💡 <strong>실무 팁 — SQL Pairs는 가장 효과적인 튜닝 수단</strong>
+BIP 검증 결과: SQL Pairs 70개 등록 시 A등급 정확도 58% → 100%로 향상.</p>
+</blockquote>
+<h4 id="instructions-도메인-규칙">Instructions (도메인 규칙)</h4>
+<blockquote>
+<p><strong>LLM에게 항상 지키도록 강제하는 규칙.</strong></p>
+</blockquote>
+<div class="codehilite"><pre><span></span><code><span class="mf">1.</span><span class="w"> </span><span class="n">종목명은</span><span class="w"> </span><span class="n">한글로</span><span class="w"> </span><span class="n">검색</span><span class="w"> </span><span class="p">(</span><span class="n">영문</span><span class="w"> </span><span class="n">번역</span><span class="w"> </span><span class="n">금지</span><span class="p">)</span>
+<span class="mf">2.</span><span class="w"> </span><span class="n">ETF는</span><span class="w"> </span><span class="n">검색에서</span><span class="w"> </span><span class="n">제외</span><span class="w"> </span><span class="p">(</span><span class="n">KODEX</span><span class="p">,</span><span class="w"> </span><span class="n">TIGER</span><span class="w"> </span><span class="n">등</span><span class="p">)</span>
+<span class="mf">3.</span><span class="w"> </span><span class="n">결과에</span><span class="w"> </span><span class="n">반드시</span><span class="w"> </span><span class="n">stock_name</span><span class="w"> </span><span class="n">포함</span>
+<span class="mf">4.</span><span class="w"> </span><span class="kd">data</span><span class="n">_type</span><span class="p">:</span><span class="w"> </span><span class="n">actual</span><span class="o">=</span><span class="n">확정</span><span class="p">,</span><span class="w"> </span><span class="n">estimate</span><span class="o">=</span><span class="n">추정</span>
+</code></pre></div>
+
+<h3 id="wrenai-처리-파이프라인-5단계">WrenAI 처리 파이프라인 (5단계)</h3>
+<div class="mermaid">
+flowchart TD
+    Q["사용자 질문"] --> S1["1. Intent 분류\n(SQL 생성? 일반 질문?)"]
+    S1 --> S2["2. RAG 검색\n("관련 테이블/컬럼/SQL Pair")"]
+    S2 --> S3["3. SQL 생성\n(LLM)"]
+    S3 --> S4["4. SQL 검증\n(Engine dry-run)"]
+    S4 -->|실패 (3회)| S3
+    S4 -->|성공| S5["5. 실행 + 답변 생성"]
+    S5 --> A["사용자 답변"]
+</div>
+
+<h3 id="wrenai-실무-평가">WrenAI 실무 평가</h3>
+<table>
+<thead>
+<tr>
+<th>항목</th>
+<th style="text-align: center;">평가</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>NL2SQL 정확도</td>
+<td style="text-align: center;">⭐⭐⭐⭐⭐ (BIP에서 100% 달성)</td>
+</tr>
+<tr>
+<td>시맨틱 레이어</td>
+<td style="text-align: center;">⭐⭐⭐ (lightweight)</td>
+</tr>
+<tr>
+<td>API 다양성</td>
+<td style="text-align: center;">⭐⭐ (REST만, BI 통합 약함)</td>
+</tr>
+<tr>
+<td>Oracle 19c 지원</td>
+<td style="text-align: center;">❌ (23ai만 지원)</td>
+</tr>
+<tr>
+<td>BI 도구 연동</td>
+<td style="text-align: center;">⭐ (전용 UI 위주)</td>
+</tr>
+</tbody>
+</table>
+<blockquote>
+<p>⚠️ <strong>함정 1 — Oracle 19c 미지원</strong>
+WrenAI 내부 ibis-server가 Oracle 23ai만 지원. 19c는 동작 안 함.</p>
+<p>⚠️ <strong>함정 2 — sql_answer 환각</strong>
+SQL은 정확해도 답변 생성에서 LLM이 일부 데이터를 누락하는 경우 있음. BIP에서 발견한 함정.</p>
+<p>⚠️ <strong>함정 3 — 1질문 = 1SQL 제약</strong>
+"매출과 관련 뉴스 같이 봐줘" 같은 멀티스텝 질문 처리 어려움.</p>
+</blockquote>
+<p><strong>적합:</strong> 단독 NL2SQL 챗봇, PostgreSQL/Oracle 23ai 환경
+<strong>부적합:</strong> Oracle 19c 환경, 멀티스텝 분석, BI 통합 중심</p>
+<hr />
+<h2 id="3-4-세-도구-비교-정리">3-4. 세 도구 비교 정리</h2>
+<table>
+<thead>
+<tr>
+<th>항목</th>
+<th style="text-align: center;">dbt</th>
+<th style="text-align: center;">Cube</th>
+<th style="text-align: center;">WrenAI</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><strong>본업</strong></td>
+<td style="text-align: center;">변환 + 메트릭</td>
+<td style="text-align: center;">시맨틱 + API</td>
+<td style="text-align: center;">시맨틱 + NL2SQL</td>
+</tr>
+<tr>
+<td><strong>실행 방식</strong></td>
+<td style="text-align: center;">배치</td>
+<td style="text-align: center;">실시간 API</td>
+<td style="text-align: center;">실시간 (LLM 호출)</td>
+</tr>
+<tr>
+<td><strong>산출물</strong></td>
+<td style="text-align: center;">테이블/뷰</td>
+<td style="text-align: center;">API 응답</td>
+<td style="text-align: center;">SQL + 자연어 답변</td>
+</tr>
+<tr>
+<td><strong>API</strong></td>
+<td style="text-align: center;">❌ (Cloud만)</td>
+<td style="text-align: center;">✅ REST/GraphQL/SQL</td>
+<td style="text-align: center;">✅ REST</td>
+</tr>
+<tr>
+<td><strong>자연어 직접</strong></td>
+<td style="text-align: center;">❌</td>
+<td style="text-align: center;">❌</td>
+<td style="text-align: center;">✅</td>
+</tr>
+<tr>
+<td><strong>캐싱</strong></td>
+<td style="text-align: center;">❌</td>
+<td style="text-align: center;">✅ Pre-agg</td>
+<td style="text-align: center;">부분</td>
+</tr>
+<tr>
+<td><strong>Oracle 19c</strong></td>
+<td style="text-align: center;">⭕ (어댑터)</td>
+<td style="text-align: center;">⭕ (community)</td>
+<td style="text-align: center;">❌</td>
+</tr>
+<tr>
+<td><strong>NL2SQL 적합</strong></td>
+<td style="text-align: center;">△ (다른 도구 필요)</td>
+<td style="text-align: center;">△ (어댑터 필요)</td>
+<td style="text-align: center;">✅</td>
+</tr>
+<tr>
+<td><strong>BI 적합</strong></td>
+<td style="text-align: center;">❌ (변환만)</td>
+<td style="text-align: center;">✅</td>
+<td style="text-align: center;">❌</td>
+</tr>
+</tbody>
+</table>
+<h3 id="어떤-상황에-어느-쪽">어떤 상황에 어느 쪽?</h3>
+<div class="mermaid">
+flowchart TD
+    Q["시맨틱 레이어 도입 결정"] --> Q1{주된 목적?}
+
+    Q1 -->|변환 자동화 + Git 거버넌스| D[dbt]
+    Q1 -->|BI/대시보드/임베디드 API| C[Cube]
+    Q1 -->|자연어 챗봇 (NL2SQL)| W[WrenAI]
+    Q1 -->|복합| H[하이브리드]
+
+    H --> H1["dbt(변환) + Cube(API 서빙) + WrenAI(NL2SQL)"]
+
+    style D fill:#fbbf24,color:#1a1a2e
+    style C fill:#3b82f6,color:#fff
+    style W fill:#22c55e,color:#fff
+    style H1 fill:#a78bfa,color:#fff
+</div>
+
+<blockquote>
+<p>💡 <strong>실무 팁:</strong> 처음 시작할 때는 한 도구로 충분. 필요해지면 하나씩 추가.
+예: dbt만 → 나중에 Cube 추가 → 나중에 WrenAI 추가</p>
+</blockquote>
+<hr />
+<h1 id="part-4-멀티-에이전트의-필요성--langgraph-10분">Part 4. 멀티 에이전트의 필요성 — LangGraph (10분)</h1>
+<h2 id="4-1-도구만으로-부족한-이유">4-1. 도구만으로 부족한 이유</h2>
+<p>세 도구는 강력하지만, <strong>혼자서는 못 하는 일이 있습니다.</strong></p>
+<h3 id="시나리오-복합-질문">시나리오: 복합 질문</h3>
+<blockquote>
+<p>사용자: "저평가주 중에 외국인이 사고 있는 종목 찾아주고, 최근 뉴스도 같이 봐줘"</p>
+</blockquote>
+<p>이걸 단일 도구로 처리하면:</p>
+<table>
+<thead>
+<tr>
+<th>도구</th>
+<th>결과</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>WrenAI 단독</td>
+<td>❌ 정형 데이터(저평가/외국인)만. 뉴스 못 봄.</td>
+</tr>
+<tr>
+<td>Cube 단독</td>
+<td>❌ 자연어 입력 안 됨. API 호출만.</td>
+</tr>
+<tr>
+<td>dbt 단독</td>
+<td>❌ 실시간 안 됨. 배치 도구.</td>
+</tr>
+</tbody>
+</table>
+<p>→ <strong>세 도구 다 단독으로는 못 합니다.</strong></p>
+<h2 id="4-2-멀티-에이전트가-하는-일">4-2. 멀티 에이전트가 하는 일</h2>
+<div class="mermaid">
+flowchart TD
+    Q["사용자 질문\n'저평가주 + 외국인 매수 +\n관련 뉴스'"]
+
+    Q --> Agent["멀티 에이전트\n(오케스트레이터)"]
+
+    Agent --> P1["1. 질문 분해\n'정형 + 비정형 + 맥락'"]
+    P1 --> R["2. Tool 선택"]
+
+    R --> T1["NL2SQL Tool\nWrenAI/Cube/직접"]
+    R --> T2["RAG Tool\n뉴스 검색"]
+    R --> T3["메타 Tool\nOpenMetadata"]
+
+    T1 & T2 & T3 --> S["3. 결과 합성\n+ 자연어 답변"]
+    S --> Q
+
+    style Agent fill:#fbbf24,color:#1a1a2e
+    style S fill:#22c55e,color:#fff
+</div>
+
+<p>멀티 에이전트가 하는 일:</p>
+<table>
+<thead>
+<tr>
+<th>역할</th>
+<th>설명</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><strong>질문 분해</strong></td>
+<td>"정형(저평가) + 정형(외국인) + 비정형(뉴스)" 구분</td>
+</tr>
+<tr>
+<td><strong>Tool 선택</strong></td>
+<td>정형은 NL2SQL Tool, 비정형은 RAG Tool</td>
+</tr>
+<tr>
+<td><strong>순차/병렬 호출</strong></td>
+<td>의존성 있으면 순차, 없으면 병렬</td>
+</tr>
+<tr>
+<td><strong>결과 합성</strong></td>
+<td>여러 Tool 결과를 자연어로 통합</td>
+</tr>
+<tr>
+<td><strong>재시도</strong></td>
+<td>실패 시 다른 방법 시도</td>
+</tr>
+<tr>
+<td><strong>세션 관리</strong></td>
+<td>사용자 컨텍스트 유지</td>
+</tr>
+</tbody>
+</table>
+<h2 id="4-3-langgraph란">4-3. LangGraph란</h2>
+<blockquote>
+<p><strong>"LangGraph는 LLM 에이전트를 그래프(상태 머신)로 정의하는 프레임워크다."</strong>
+노드(작업) + 엣지(흐름) + 상태(메모리)로 구성. LangChain의 후속.</p>
+</blockquote>
+<div class="codehilite"><pre><span></span><code><span class="kn">from</span><span class="w"> </span><span class="nn">langgraph.graph</span><span class="w"> </span><span class="kn">import</span> <span class="n">StateGraph</span>
+
+<span class="c1"># 노드 정의</span>
+<span class="k">def</span><span class="w"> </span><span class="nf">classify_intent</span><span class="p">(</span><span class="n">state</span><span class="p">):</span>
+    <span class="c1"># 질문이 정형인지 비정형인지 분류</span>
+    <span class="k">return</span> <span class="p">{</span><span class="s2">&quot;intent&quot;</span><span class="p">:</span> <span class="s2">&quot;structured&quot;</span><span class="p">}</span>
+
+<span class="k">def</span><span class="w"> </span><span class="nf">call_nl2sql</span><span class="p">(</span><span class="n">state</span><span class="p">):</span>
+    <span class="c1"># WrenAI/Cube 호출</span>
+    <span class="k">return</span> <span class="p">{</span><span class="s2">&quot;sql_result&quot;</span><span class="p">:</span> <span class="o">...</span><span class="p">}</span>
+
+<span class="k">def</span><span class="w"> </span><span class="nf">call_rag</span><span class="p">(</span><span class="n">state</span><span class="p">):</span>
+    <span class="c1"># 뉴스 RAG 호출</span>
+    <span class="k">return</span> <span class="p">{</span><span class="s2">&quot;news_result&quot;</span><span class="p">:</span> <span class="o">...</span><span class="p">}</span>
+
+<span class="k">def</span><span class="w"> </span><span class="nf">synthesize</span><span class="p">(</span><span class="n">state</span><span class="p">):</span>
+    <span class="c1"># 결과 합성</span>
+    <span class="k">return</span> <span class="p">{</span><span class="s2">&quot;answer&quot;</span><span class="p">:</span> <span class="o">...</span><span class="p">}</span>
+
+<span class="c1"># 그래프 구축</span>
+<span class="n">graph</span> <span class="o">=</span> <span class="n">StateGraph</span><span class="p">(</span><span class="n">AgentState</span><span class="p">)</span>
+<span class="n">graph</span><span class="o">.</span><span class="n">add_node</span><span class="p">(</span><span class="s2">&quot;classify&quot;</span><span class="p">,</span> <span class="n">classify_intent</span><span class="p">)</span>
+<span class="n">graph</span><span class="o">.</span><span class="n">add_node</span><span class="p">(</span><span class="s2">&quot;nl2sql&quot;</span><span class="p">,</span> <span class="n">call_nl2sql</span><span class="p">)</span>
+<span class="n">graph</span><span class="o">.</span><span class="n">add_node</span><span class="p">(</span><span class="s2">&quot;rag&quot;</span><span class="p">,</span> <span class="n">call_rag</span><span class="p">)</span>
+<span class="n">graph</span><span class="o">.</span><span class="n">add_node</span><span class="p">(</span><span class="s2">&quot;synthesize&quot;</span><span class="p">,</span> <span class="n">synthesize</span><span class="p">)</span>
+
+<span class="n">graph</span><span class="o">.</span><span class="n">add_edge</span><span class="p">(</span><span class="s2">&quot;classify&quot;</span><span class="p">,</span> <span class="s2">&quot;nl2sql&quot;</span><span class="p">)</span>
+<span class="n">graph</span><span class="o">.</span><span class="n">add_edge</span><span class="p">(</span><span class="s2">&quot;classify&quot;</span><span class="p">,</span> <span class="s2">&quot;rag&quot;</span><span class="p">)</span>
+<span class="n">graph</span><span class="o">.</span><span class="n">add_edge</span><span class="p">(</span><span class="s2">&quot;nl2sql&quot;</span><span class="p">,</span> <span class="s2">&quot;synthesize&quot;</span><span class="p">)</span>
+<span class="n">graph</span><span class="o">.</span><span class="n">add_edge</span><span class="p">(</span><span class="s2">&quot;rag&quot;</span><span class="p">,</span> <span class="s2">&quot;synthesize&quot;</span><span class="p">)</span>
+</code></pre></div>
+
+<blockquote>
+<p><strong>이 코드가 하는 일:</strong> 질문이 들어오면 분류 → 정형/비정형 도구 병렬 호출 → 결과 합성. 각 노드는 독립적으로 테스트 가능.</p>
+</blockquote>
+<h2 id="4-4-핵심-통찰--langgraph는-도구의-대체재가-아니라-상위-레이어">4-4. 핵심 통찰 — LangGraph는 도구의 "대체재"가 아니라 "상위 레이어"</h2>
+<div class="codehilite"><pre><span></span><code>잘못된 그림 (LangGraph를 4번째 도구로 봄):
+┌──────────────────────────────────┐
+│  dbt | Cube | WrenAI | LangGraph │
+└──────────────────────────────────┘
+
+정확한 그림 (LangGraph는 상위 레이어):
+┌──────────────────────────────────┐
+│   Multi-Agent Service Layer       │  ← LangGraph (어떤 도구 쓰든 필요)
+│   (질문 분배, Tool 조합, 답변)     │
+└──────────────┬────────────────────┘
+               ↓
+┌──────────────────────────────────┐
+│  NL2SQL Engine (도구 선택)         │  ← dbt/Cube/WrenAI 중 하나
+└──────────────┬────────────────────┘
+               ↓
+┌──────────────────────────────────┐
+│  Semantic Layer (DB 직접)          │  ← Gold Table + View
+└──────────────────────────────────┘
+</code></pre></div>
+
+<p><strong>메시지:</strong></p>
+<blockquote>
+<p>도구를 잘 고르는 것만으로는 부족하다.
+<strong>어떤 도구를 쓰든 최상단에는 멀티 에이전트가 필요하다.</strong></p>
+<p>💡 <strong>실무 팁:</strong> WrenAI 자체에도 간단한 에이전트 기능이 있음. 하지만 세션 관리, 비정형 통합, 멀티스텝 등 고급 기능은 LangGraph 같은 별도 프레임워크가 필요.</p>
+</blockquote>
+<hr />
+<h1 id="part-5-실습--사내-환경에서-시맨틱-레이어-만들기-20분">Part 5. 실습 — 사내 환경에서 시맨틱 레이어 만들기 (20분)</h1>
+<h2 id="5-1-실습-시나리오">5-1. 실습 시나리오</h2>
+<p><strong>가상의 사내 매출 데이터</strong>로 시맨틱 레이어를 만들어보고, 자연어 질의까지 동작시킵니다.</p>
+<h3 id="사용할-데이터셋">사용할 데이터셋</h3>
+<div class="codehilite"><pre><span></span><code><span class="c1">-- orders (주문)</span>
+<span class="n">order_id</span><span class="p">,</span><span class="w"> </span><span class="n">customer_id</span><span class="p">,</span><span class="w"> </span><span class="n">amount</span><span class="p">,</span><span class="w"> </span><span class="n">status</span><span class="p">,</span><span class="w"> </span><span class="n">created_at</span><span class="p">,</span><span class="w"> </span><span class="n">region</span>
+
+<span class="c1">-- customers (고객)</span>
+<span class="n">customer_id</span><span class="p">,</span><span class="w"> </span><span class="n">name</span><span class="p">,</span><span class="w"> </span><span class="n">tier</span><span class="p">,</span><span class="w"> </span><span class="n">signup_date</span>
+
+<span class="c1">-- products (제품)</span>
+<span class="n">product_id</span><span class="p">,</span><span class="w"> </span><span class="n">name</span><span class="p">,</span><span class="w"> </span><span class="n">category</span><span class="p">,</span><span class="w"> </span><span class="n">price</span>
+</code></pre></div>
+
+<h3 id="실습-목표">실습 목표</h3>
+<ol>
+<li><strong>dbt로 변환 모델 생성</strong> — 원본 → Gold Table</li>
+<li><strong>Cube로 시맨틱 모델 정의</strong> — 메트릭/차원</li>
+<li><strong>WrenAI로 자연어 질의</strong> — "이번 달 매출 알려줘"</li>
+<li><strong>세 도구의 결과 비교</strong></li>
+</ol>
+<h2 id="5-2-환경-준비-docker-기반">5-2. 환경 준비 (Docker 기반)</h2>
+<h3 id="디렉토리-구조">디렉토리 구조</h3>
+<div class="codehilite"><pre><span></span><code>seminar-semantic-layer/
+├── docker-compose.yml          # 모든 서비스 한번에
+├── postgres/
+│   └── init.sql                # 샘플 데이터
+├── dbt/
+│   ├── dbt_project.yml
+│   ├── profiles.yml
+│   └── models/
+│       ├── staging/
+│       │   ├── stg_orders.sql
+│       │   └── stg_customers.sql
+│       └── marts/
+│           └── fct_sales.sql
+├── cube/
+│   ├── cube.js
+│   └── model/
+│       ├── orders.js
+│       └── customers.js
+└── wrenai/
+    └── (Wren AI Docker compose)
+</code></pre></div>
+
+<h3 id="docker-composeyml-전체-환경">docker-compose.yml (전체 환경)</h3>
+<blockquote>
+<p><strong>이 파일이 하는 일:</strong> PostgreSQL + dbt + Cube + WrenAI + 샘플 데이터를 한 번에 띄운다.</p>
+</blockquote>
+<div class="codehilite"><pre><span></span><code><span class="nt">version</span><span class="p">:</span><span class="w"> </span><span class="s">&#39;3.8&#39;</span>
+
+<span class="nt">services</span><span class="p">:</span>
+<span class="w">  </span><span class="nt">postgres</span><span class="p">:</span>
+<span class="w">    </span><span class="nt">image</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">postgres:15</span>
+<span class="w">    </span><span class="nt">container_name</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">seminar-postgres</span>
+<span class="w">    </span><span class="nt">environment</span><span class="p">:</span>
+<span class="w">      </span><span class="nt">POSTGRES_USER</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">admin</span>
+<span class="w">      </span><span class="nt">POSTGRES_PASSWORD</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">admin</span>
+<span class="w">      </span><span class="nt">POSTGRES_DB</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">sales</span>
+<span class="w">    </span><span class="nt">ports</span><span class="p">:</span>
+<span class="w">      </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="s">&quot;5432:5432&quot;</span>
+<span class="w">    </span><span class="nt">volumes</span><span class="p">:</span>
+<span class="w">      </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">./postgres/init.sql:/docker-entrypoint-initdb.d/init.sql</span>
+
+<span class="w">  </span><span class="nt">dbt</span><span class="p">:</span>
+<span class="w">    </span><span class="nt">image</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">ghcr.io/dbt-labs/dbt-postgres:1.7.0</span>
+<span class="w">    </span><span class="nt">container_name</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">seminar-dbt</span>
+<span class="w">    </span><span class="nt">volumes</span><span class="p">:</span>
+<span class="w">      </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">./dbt:/usr/app/dbt</span>
+<span class="w">    </span><span class="nt">working_dir</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">/usr/app/dbt</span>
+<span class="w">    </span><span class="nt">depends_on</span><span class="p">:</span>
+<span class="w">      </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">postgres</span>
+
+<span class="w">  </span><span class="nt">cube</span><span class="p">:</span>
+<span class="w">    </span><span class="nt">image</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">cubejs/cube:latest</span>
+<span class="w">    </span><span class="nt">container_name</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">seminar-cube</span>
+<span class="w">    </span><span class="nt">environment</span><span class="p">:</span>
+<span class="w">      </span><span class="nt">CUBEJS_DB_TYPE</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">postgres</span>
+<span class="w">      </span><span class="nt">CUBEJS_DB_HOST</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">postgres</span>
+<span class="w">      </span><span class="nt">CUBEJS_DB_PORT</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">5432</span>
+<span class="w">      </span><span class="nt">CUBEJS_DB_NAME</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">sales</span>
+<span class="w">      </span><span class="nt">CUBEJS_DB_USER</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">admin</span>
+<span class="w">      </span><span class="nt">CUBEJS_DB_PASS</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">admin</span>
+<span class="w">      </span><span class="nt">CUBEJS_DEV_MODE</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;true&quot;</span>
+<span class="w">      </span><span class="nt">CUBEJS_API_SECRET</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">seminar-secret</span>
+<span class="w">    </span><span class="nt">ports</span><span class="p">:</span>
+<span class="w">      </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="s">&quot;4000:4000&quot;</span>
+<span class="w">    </span><span class="nt">volumes</span><span class="p">:</span>
+<span class="w">      </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">./cube/model:/cube/conf/model</span>
+<span class="w">    </span><span class="nt">depends_on</span><span class="p">:</span>
+<span class="w">      </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">postgres</span>
+
+<span class="w">  </span><span class="c1"># WrenAI는 별도 docker-compose 사용 (5개 컨테이너)</span>
+<span class="w">  </span><span class="c1"># 자세한 설정은 https://docs.getwren.ai/oss/installation</span>
+</code></pre></div>
+
+<blockquote>
+<p>💡 <strong>실무 팁 — 사내 적용 시 변경 사항:</strong>
+- <code>postgres</code> → 사내 Oracle 19c 또는 PostgreSQL로 변경
+- 환경변수에 사내 인증 정보 (LDAP, JWT) 추가
+- 네트워크는 사내 VPC 내부로 격리</p>
+</blockquote>
+<h2 id="5-3-실습-1--dbt로-변환-모델-만들기-5분">5-3. 실습 1 — dbt로 변환 모델 만들기 (5분)</h2>
+<h3 id="step-1-원본-데이터-등록-sources">Step 1: 원본 데이터 등록 (Sources)</h3>
+<blockquote>
+<p><strong>이 파일이 하는 일:</strong> PostgreSQL의 raw 테이블을 dbt가 인식하도록 등록.</p>
+</blockquote>
+<div class="codehilite"><pre><span></span><code><span class="c1"># dbt/models/staging/sources.yml</span>
+<span class="nt">version</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">2</span>
+
+<span class="nt">sources</span><span class="p">:</span>
+<span class="w">  </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="nt">name</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">raw</span>
+<span class="w">    </span><span class="nt">schema</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">public</span>
+<span class="w">    </span><span class="nt">tables</span><span class="p">:</span>
+<span class="w">      </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="nt">name</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">orders</span>
+<span class="w">        </span><span class="nt">description</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;주문</span><span class="nv"> </span><span class="s">원본&quot;</span>
+<span class="w">      </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="nt">name</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">customers</span>
+<span class="w">        </span><span class="nt">description</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;고객</span><span class="nv"> </span><span class="s">원본&quot;</span>
+</code></pre></div>
+
+<h3 id="step-2-staging-모델-정제">Step 2: Staging 모델 (정제)</h3>
+<blockquote>
+<p><strong>이 파일이 하는 일:</strong> raw 데이터에서 deleted_at이 NULL인 것만 가져옴 + 컬럼명 정리.</p>
+</blockquote>
+<div class="codehilite"><pre><span></span><code><span class="c1">-- dbt/models/staging/stg_orders.sql</span>
+<span class="err">{{</span><span class="w"> </span><span class="n">config</span><span class="p">(</span><span class="n">materialized</span><span class="o">=</span><span class="s1">&#39;view&#39;</span><span class="p">)</span><span class="w"> </span><span class="err">}}</span>
+
+<span class="k">SELECT</span>
+<span class="w">    </span><span class="n">order_id</span><span class="p">,</span>
+<span class="w">    </span><span class="n">customer_id</span><span class="p">,</span>
+<span class="w">    </span><span class="n">amount</span><span class="p">,</span>
+<span class="w">    </span><span class="n">status</span><span class="p">,</span>
+<span class="w">    </span><span class="n">region</span><span class="p">,</span>
+<span class="w">    </span><span class="n">created_at</span><span class="w"> </span><span class="k">AS</span><span class="w"> </span><span class="n">order_date</span>
+<span class="k">FROM</span><span class="w"> </span><span class="err">{{</span><span class="w"> </span><span class="k">source</span><span class="p">(</span><span class="s1">&#39;raw&#39;</span><span class="p">,</span><span class="w"> </span><span class="s1">&#39;orders&#39;</span><span class="p">)</span><span class="w"> </span><span class="err">}}</span>
+<span class="k">WHERE</span><span class="w"> </span><span class="n">deleted_at</span><span class="w"> </span><span class="k">IS</span><span class="w"> </span><span class="k">NULL</span>
+</code></pre></div>
+
+<h3 id="step-3-marts-모델-gold-table">Step 3: Marts 모델 (Gold Table)</h3>
+<blockquote>
+<p><strong>이 파일이 하는 일:</strong> 완료된 주문만 골라서 매출 분석용 fact 테이블 생성.</p>
+</blockquote>
+<div class="codehilite"><pre><span></span><code><span class="c1">-- dbt/models/marts/fct_sales.sql</span>
+<span class="err">{{</span><span class="w"> </span><span class="n">config</span><span class="p">(</span><span class="n">materialized</span><span class="o">=</span><span class="s1">&#39;table&#39;</span><span class="p">)</span><span class="w"> </span><span class="err">}}</span>
+
+<span class="k">SELECT</span>
+<span class="w">    </span><span class="n">o</span><span class="p">.</span><span class="n">order_id</span><span class="p">,</span>
+<span class="w">    </span><span class="n">o</span><span class="p">.</span><span class="n">customer_id</span><span class="p">,</span>
+<span class="w">    </span><span class="k">c</span><span class="p">.</span><span class="n">tier</span><span class="w"> </span><span class="k">AS</span><span class="w"> </span><span class="n">customer_tier</span><span class="p">,</span>
+<span class="w">    </span><span class="n">o</span><span class="p">.</span><span class="n">amount</span><span class="p">,</span>
+<span class="w">    </span><span class="n">o</span><span class="p">.</span><span class="n">region</span><span class="p">,</span>
+<span class="w">    </span><span class="n">o</span><span class="p">.</span><span class="n">order_date</span><span class="p">,</span>
+<span class="w">    </span><span class="n">DATE_TRUNC</span><span class="p">(</span><span class="s1">&#39;month&#39;</span><span class="p">,</span><span class="w"> </span><span class="n">o</span><span class="p">.</span><span class="n">order_date</span><span class="p">)</span><span class="w"> </span><span class="k">AS</span><span class="w"> </span><span class="n">sale_month</span>
+<span class="k">FROM</span><span class="w"> </span><span class="err">{{</span><span class="w"> </span><span class="k">ref</span><span class="p">(</span><span class="s1">&#39;stg_orders&#39;</span><span class="p">)</span><span class="w"> </span><span class="err">}}</span><span class="w"> </span><span class="n">o</span>
+<span class="k">LEFT</span><span class="w"> </span><span class="k">JOIN</span><span class="w"> </span><span class="err">{{</span><span class="w"> </span><span class="k">ref</span><span class="p">(</span><span class="s1">&#39;stg_customers&#39;</span><span class="p">)</span><span class="w"> </span><span class="err">}}</span><span class="w"> </span><span class="k">c</span><span class="w"> </span><span class="k">ON</span><span class="w"> </span><span class="n">o</span><span class="p">.</span><span class="n">customer_id</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="k">c</span><span class="p">.</span><span class="n">customer_id</span>
+<span class="k">WHERE</span><span class="w"> </span><span class="n">o</span><span class="p">.</span><span class="n">status</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s1">&#39;completed&#39;</span>
+</code></pre></div>
+
+<h3 id="step-4-자동-검증-tests">Step 4: 자동 검증 (Tests)</h3>
+<div class="codehilite"><pre><span></span><code><span class="c1"># dbt/models/marts/schema.yml</span>
+<span class="nt">version</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">2</span>
+
+<span class="nt">models</span><span class="p">:</span>
+<span class="w">  </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="nt">name</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">fct_sales</span>
+<span class="w">    </span><span class="nt">description</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;매출</span><span class="nv"> </span><span class="s">팩트</span><span class="nv"> </span><span class="s">테이블&quot;</span>
+<span class="w">    </span><span class="nt">columns</span><span class="p">:</span>
+<span class="w">      </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="nt">name</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">order_id</span>
+<span class="w">        </span><span class="nt">tests</span><span class="p">:</span>
+<span class="w">          </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">unique</span>
+<span class="w">          </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">not_null</span>
+<span class="w">      </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="nt">name</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">customer_id</span>
+<span class="w">        </span><span class="nt">tests</span><span class="p">:</span>
+<span class="w">          </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="nt">relationships</span><span class="p">:</span>
+<span class="w">              </span><span class="nt">to</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">ref(&#39;stg_customers&#39;)</span>
+<span class="w">              </span><span class="nt">field</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">customer_id</span>
+</code></pre></div>
+
+<h3 id="step-5-실행">Step 5: 실행</h3>
+<div class="codehilite"><pre><span></span><code><span class="c1"># 컨테이너 진입</span>
+docker<span class="w"> </span>compose<span class="w"> </span><span class="nb">exec</span><span class="w"> </span>dbt<span class="w"> </span>bash
+
+<span class="c1"># 실행</span>
+dbt<span class="w"> </span>deps<span class="w">        </span><span class="c1"># 패키지 설치</span>
+dbt<span class="w"> </span>run<span class="w">         </span><span class="c1"># 모델 빌드 (의존성 자동 처리)</span>
+dbt<span class="w"> </span><span class="nb">test</span><span class="w">        </span><span class="c1"># 자동 검증</span>
+dbt<span class="w"> </span>docs<span class="w"> </span>generate<span class="w"> </span><span class="o">&amp;&amp;</span><span class="w"> </span>dbt<span class="w"> </span>docs<span class="w"> </span>serve<span class="w">  </span><span class="c1"># 문서 자동 생성</span>
+</code></pre></div>
+
+<blockquote>
+<p><strong>이 명령어가 하는 일:</strong>
+1. <code>dbt run</code>: stg_orders → stg_customers → fct_sales 순서로 자동 빌드
+2. <code>dbt test</code>: order_id가 unique한지, customer_id가 stg_customers에 있는지 검증
+3. <code>dbt docs serve</code>: 데이터 카탈로그 웹 UI 열기 (http://localhost:8080)</p>
+</blockquote>
+<h3 id="실습-1-결과-확인">실습 1 결과 확인</h3>
+<div class="codehilite"><pre><span></span><code><span class="c1">-- DB에서 직접 확인</span>
+<span class="k">SELECT</span><span class="w"> </span><span class="n">sale_month</span><span class="p">,</span><span class="w"> </span><span class="n">region</span><span class="p">,</span><span class="w"> </span><span class="k">SUM</span><span class="p">(</span><span class="n">amount</span><span class="p">)</span><span class="w"> </span><span class="k">AS</span><span class="w"> </span><span class="n">revenue</span>
+<span class="k">FROM</span><span class="w"> </span><span class="n">fct_sales</span>
+<span class="k">GROUP</span><span class="w"> </span><span class="k">BY</span><span class="w"> </span><span class="mi">1</span><span class="p">,</span><span class="w"> </span><span class="mi">2</span>
+<span class="k">ORDER</span><span class="w"> </span><span class="k">BY</span><span class="w"> </span><span class="mi">1</span><span class="p">,</span><span class="w"> </span><span class="mi">2</span><span class="p">;</span>
+</code></pre></div>
+
+<h2 id="5-4-실습-2--cube로-시맨틱-모델-정의-5분">5-4. 실습 2 — Cube로 시맨틱 모델 정의 (5분)</h2>
+<h3 id="step-1-큐브-정의">Step 1: 큐브 정의</h3>
+<blockquote>
+<p><strong>이 파일이 하는 일:</strong> fct_sales 위에 Sales 큐브 정의. revenue 메트릭 + 시간/지역 차원.</p>
+</blockquote>
+<div class="codehilite"><pre><span></span><code><span class="c1">// cube/model/sales.js</span>
+<span class="nx">cube</span><span class="p">(</span><span class="s1">&#39;Sales&#39;</span><span class="p">,</span><span class="w"> </span><span class="p">{</span>
+<span class="w">  </span><span class="nx">sql</span><span class="o">:</span><span class="w"> </span><span class="sb">`SELECT * FROM public.fct_sales`</span><span class="p">,</span>
+
+<span class="w">  </span><span class="nx">measures</span><span class="o">:</span><span class="w"> </span><span class="p">{</span>
+<span class="w">    </span><span class="nx">revenue</span><span class="o">:</span><span class="w"> </span><span class="p">{</span>
+<span class="w">      </span><span class="nx">sql</span><span class="o">:</span><span class="w"> </span><span class="sb">`amount`</span><span class="p">,</span>
+<span class="w">      </span><span class="nx">type</span><span class="o">:</span><span class="w"> </span><span class="sb">`sum`</span><span class="p">,</span>
+<span class="w">      </span><span class="nx">title</span><span class="o">:</span><span class="w"> </span><span class="s1">&#39;매출액&#39;</span><span class="p">,</span>
+<span class="w">      </span><span class="nx">description</span><span class="o">:</span><span class="w"> </span><span class="s1">&#39;완료된 주문의 amount 합계&#39;</span>
+<span class="w">    </span><span class="p">},</span>
+<span class="w">    </span><span class="nx">orderCount</span><span class="o">:</span><span class="w"> </span><span class="p">{</span>
+<span class="w">      </span><span class="nx">type</span><span class="o">:</span><span class="w"> </span><span class="sb">`count`</span><span class="p">,</span>
+<span class="w">      </span><span class="nx">title</span><span class="o">:</span><span class="w"> </span><span class="s1">&#39;주문 수&#39;</span>
+<span class="w">    </span><span class="p">},</span>
+<span class="w">    </span><span class="nx">avgOrderValue</span><span class="o">:</span><span class="w"> </span><span class="p">{</span>
+<span class="w">      </span><span class="nx">sql</span><span class="o">:</span><span class="w"> </span><span class="sb">`amount`</span><span class="p">,</span>
+<span class="w">      </span><span class="nx">type</span><span class="o">:</span><span class="w"> </span><span class="sb">`avg`</span><span class="p">,</span>
+<span class="w">      </span><span class="nx">title</span><span class="o">:</span><span class="w"> </span><span class="s1">&#39;평균 주문 금액&#39;</span>
+<span class="w">    </span><span class="p">}</span>
+<span class="w">  </span><span class="p">},</span>
+
+<span class="w">  </span><span class="nx">dimensions</span><span class="o">:</span><span class="w"> </span><span class="p">{</span>
+<span class="w">    </span><span class="nx">saleMonth</span><span class="o">:</span><span class="w"> </span><span class="p">{</span>
+<span class="w">      </span><span class="nx">sql</span><span class="o">:</span><span class="w"> </span><span class="sb">`sale_month`</span><span class="p">,</span>
+<span class="w">      </span><span class="nx">type</span><span class="o">:</span><span class="w"> </span><span class="sb">`time`</span><span class="p">,</span>
+<span class="w">      </span><span class="nx">title</span><span class="o">:</span><span class="w"> </span><span class="s1">&#39;월&#39;</span>
+<span class="w">    </span><span class="p">},</span>
+<span class="w">    </span><span class="nx">region</span><span class="o">:</span><span class="w"> </span><span class="p">{</span>
+<span class="w">      </span><span class="nx">sql</span><span class="o">:</span><span class="w"> </span><span class="sb">`region`</span><span class="p">,</span>
+<span class="w">      </span><span class="nx">type</span><span class="o">:</span><span class="w"> </span><span class="sb">`string`</span><span class="p">,</span>
+<span class="w">      </span><span class="nx">title</span><span class="o">:</span><span class="w"> </span><span class="s1">&#39;지역&#39;</span>
+<span class="w">    </span><span class="p">},</span>
+<span class="w">    </span><span class="nx">customerTier</span><span class="o">:</span><span class="w"> </span><span class="p">{</span>
+<span class="w">      </span><span class="nx">sql</span><span class="o">:</span><span class="w"> </span><span class="sb">`customer_tier`</span><span class="p">,</span>
+<span class="w">      </span><span class="nx">type</span><span class="o">:</span><span class="w"> </span><span class="sb">`string`</span><span class="p">,</span>
+<span class="w">      </span><span class="nx">title</span><span class="o">:</span><span class="w"> </span><span class="s1">&#39;고객 등급&#39;</span>
+<span class="w">    </span><span class="p">}</span>
+<span class="w">  </span><span class="p">}</span>
+<span class="p">});</span>
+</code></pre></div>
+
+<h3 id="step-2-playground에서-시각적으로-쿼리">Step 2: Playground에서 시각적으로 쿼리</h3>
+<div class="codehilite"><pre><span></span><code><span class="err">브라우저</span><span class="o">:</span><span class="w"> </span><span class="n">http</span><span class="o">://</span><span class="n">localhost</span><span class="o">:</span><span class="mi">4000</span>
+<span class="mi">1</span><span class="o">.</span><span class="w"> </span><span class="n">Build</span><span class="w"> </span><span class="err">탭</span><span class="w"> </span><span class="err">클릭</span>
+<span class="mi">2</span><span class="o">.</span><span class="w"> </span><span class="n">Measures</span><span class="o">:</span><span class="w"> </span><span class="n">Sales</span><span class="o">.</span><span class="na">revenue</span><span class="w"> </span><span class="err">선택</span>
+<span class="mi">3</span><span class="o">.</span><span class="w"> </span><span class="n">Dimensions</span><span class="o">:</span><span class="w"> </span><span class="n">Sales</span><span class="o">.</span><span class="na">saleMonth</span><span class="w"> </span><span class="o">(</span><span class="err">월별</span><span class="o">)</span>
+<span class="mi">4</span><span class="o">.</span><span class="w"> </span><span class="n">Dimensions</span><span class="o">:</span><span class="w"> </span><span class="n">Sales</span><span class="o">.</span><span class="na">region</span><span class="w"> </span><span class="o">(</span><span class="err">지역별</span><span class="o">)</span>
+<span class="mi">5</span><span class="o">.</span><span class="w"> </span><span class="n">Run</span><span class="w"> </span><span class="err">→</span><span class="w"> </span><span class="err">차트</span><span class="w"> </span><span class="err">자동</span><span class="w"> </span><span class="err">생성</span>
+</code></pre></div>
+
+<h3 id="step-3-rest-api로-호출">Step 3: REST API로 호출</h3>
+<blockquote>
+<p><strong>이 명령어가 하는 일:</strong> "월별/지역별 매출"을 JSON으로 요청.</p>
+</blockquote>
+<div class="codehilite"><pre><span></span><code>curl<span class="w"> </span>-X<span class="w"> </span>POST<span class="w"> </span>http://localhost:4000/cubejs-api/v1/load<span class="w"> </span><span class="se">\</span>
+<span class="w">  </span>-H<span class="w"> </span><span class="s2">&quot;Authorization: seminar-secret&quot;</span><span class="w"> </span><span class="se">\</span>
+<span class="w">  </span>-H<span class="w"> </span><span class="s2">&quot;Content-Type: application/json&quot;</span><span class="w"> </span><span class="se">\</span>
+<span class="w">  </span>-d<span class="w"> </span><span class="s1">&#39;{</span>
+<span class="s1">    &quot;query&quot;: {</span>
+<span class="s1">      &quot;measures&quot;: [&quot;Sales.revenue&quot;],</span>
+<span class="s1">      &quot;dimensions&quot;: [&quot;Sales.region&quot;],</span>
+<span class="s1">      &quot;timeDimensions&quot;: [{</span>
+<span class="s1">        &quot;dimension&quot;: &quot;Sales.saleMonth&quot;,</span>
+<span class="s1">        &quot;granularity&quot;: &quot;month&quot;</span>
+<span class="s1">      }]</span>
+<span class="s1">    }</span>
+<span class="s1">  }&#39;</span>
+</code></pre></div>
+
+<p>응답:</p>
+<div class="codehilite"><pre><span></span><code><span class="p">{</span>
+<span class="w">  </span><span class="nt">&quot;data&quot;</span><span class="p">:</span><span class="w"> </span><span class="p">[</span>
+<span class="w">    </span><span class="p">{</span><span class="nt">&quot;Sales.region&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;서울&quot;</span><span class="p">,</span><span class="w"> </span><span class="nt">&quot;Sales.saleMonth&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;2026-04-01&quot;</span><span class="p">,</span><span class="w"> </span><span class="nt">&quot;Sales.revenue&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;120000000&quot;</span><span class="p">},</span>
+<span class="w">    </span><span class="p">{</span><span class="nt">&quot;Sales.region&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;부산&quot;</span><span class="p">,</span><span class="w"> </span><span class="nt">&quot;Sales.saleMonth&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;2026-04-01&quot;</span><span class="p">,</span><span class="w"> </span><span class="nt">&quot;Sales.revenue&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;45000000&quot;</span><span class="p">}</span>
+<span class="w">  </span><span class="p">]</span>
+<span class="p">}</span>
+</code></pre></div>
+
+<h3 id="실습-2-핵심-통찰">실습 2 핵심 통찰</h3>
+<p>같은 데이터(fct_sales)를:
+- DB에서 직접 SQL → 매번 다른 SQL
+- Cube로 → 항상 같은 메트릭 정의</p>
+<p>→ 일관성이 보장됩니다.</p>
+<h2 id="5-5-실습-3--wrenai로-자연어-질의-5분">5-5. 실습 3 — WrenAI로 자연어 질의 (5분)</h2>
+<h3 id="step-1-wrenai-설치-별도-docker-compose">Step 1: WrenAI 설치 (별도 docker-compose)</h3>
+<div class="codehilite"><pre><span></span><code><span class="c1"># WrenAI 공식 docker-compose (5개 컨테이너)</span>
+docker<span class="w"> </span>compose<span class="w"> </span>-f<span class="w"> </span>docker-compose.wrenai.yml<span class="w"> </span>up<span class="w"> </span>-d
+
+<span class="c1"># 접속</span>
+브라우저:<span class="w"> </span>http://localhost:3000
+</code></pre></div>
+
+<h3 id="step-2-데이터-소스-연결--모델-등록">Step 2: 데이터 소스 연결 + 모델 등록</h3>
+<p>UI에서:
+1. PostgreSQL 연결 (<code>postgres:5432/sales</code>)
+2. fct_sales 테이블 임포트
+3. 컬럼 description 작성:
+   - amount: "주문 금액 (원)"
+   - sale_month: "매출 발생 월"
+   - region: "고객 지역"
+4. Deploy 클릭 → Qdrant에 임베딩</p>
+<h3 id="step-3-sql-pairs-등록-선택-정확도-향상">Step 3: SQL Pairs 등록 (선택, 정확도 향상)</h3>
+<div class="codehilite"><pre><span></span><code><span class="nl">Q:</span><span class="w"> </span><span class="s">&quot;이번 달 매출&quot;</span>
+<span class="nl">A:</span><span class="w"> </span><span class="n">SELECT</span><span class="w"> </span><span class="n">SUM</span><span class="p">(</span><span class="n">amount</span><span class="p">)</span><span class="w"> </span><span class="n">FROM</span><span class="w"> </span><span class="n">fct_sales</span>
+<span class="w">   </span><span class="n">WHERE</span><span class="w"> </span><span class="n">DATE_TRUNC</span><span class="p">(&#39;</span><span class="n">month</span><span class="p">&#39;,</span><span class="w"> </span><span class="n">sale_month</span><span class="p">)</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">DATE_TRUNC</span><span class="p">(&#39;</span><span class="n">month</span><span class="p">&#39;,</span><span class="w"> </span><span class="n">CURRENT_DATE</span><span class="p">)</span>
+
+<span class="nl">Q:</span><span class="w"> </span><span class="s">&quot;지역별 매출 상위 5개&quot;</span>
+<span class="nl">A:</span><span class="w"> </span><span class="n">SELECT</span><span class="w"> </span><span class="n">region</span><span class="p">,</span><span class="w"> </span><span class="n">SUM</span><span class="p">(</span><span class="n">amount</span><span class="p">)</span><span class="w"> </span><span class="n">AS</span><span class="w"> </span><span class="n">revenue</span>
+<span class="w">   </span><span class="n">FROM</span><span class="w"> </span><span class="n">fct_sales</span>
+<span class="w">   </span><span class="n">GROUP</span><span class="w"> </span><span class="n">BY</span><span class="w"> </span><span class="n">region</span>
+<span class="w">   </span><span class="n">ORDER</span><span class="w"> </span><span class="n">BY</span><span class="w"> </span><span class="n">revenue</span><span class="w"> </span><span class="n">DESC</span>
+<span class="w">   </span><span class="n">LIMIT</span><span class="w"> </span><span class="mh">5</span>
+</code></pre></div>
+
+<h3 id="step-4-자연어-질의">Step 4: 자연어 질의</h3>
+<p>WrenAI UI에서:</p>
+<div class="codehilite"><pre><span></span><code><span class="err">질문</span><span class="o">:</span><span class="w"> </span><span class="s">&quot;지난달 서울 지역 매출 알려줘&quot;</span>
+
+<span class="n">WrenAI</span><span class="w"> </span><span class="err">응답</span><span class="o">:</span>
+<span class="o">-</span><span class="w"> </span><span class="nl">SQL:</span>
+<span class="w">  </span><span class="n">SELECT</span><span class="w"> </span><span class="n">SUM</span><span class="p">(</span><span class="n">amount</span><span class="p">)</span><span class="w"> </span><span class="n">AS</span><span class="w"> </span><span class="n">revenue</span>
+<span class="w">  </span><span class="n">FROM</span><span class="w"> </span><span class="n">fct_sales</span>
+<span class="w">  </span><span class="n">WHERE</span><span class="w"> </span><span class="n">region</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="p">&#39;</span><span class="err">서울</span><span class="p">&#39;</span>
+<span class="w">    </span><span class="n">AND</span><span class="w"> </span><span class="n">DATE_TRUNC</span><span class="p">(&#39;</span><span class="n">month</span><span class="p">&#39;,</span><span class="w"> </span><span class="n">sale_month</span><span class="p">)</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">DATE_TRUNC</span><span class="p">(&#39;</span><span class="n">month</span><span class="p">&#39;,</span><span class="w"> </span><span class="n">CURRENT_DATE</span><span class="w"> </span><span class="o">-</span><span class="w"> </span><span class="n">INTERVAL</span><span class="w"> </span><span class="m">&#39;1</span><span class="w"> </span><span class="n">month</span><span class="p">&#39;)</span>
+
+<span class="o">-</span><span class="w"> </span><span class="err">답변</span><span class="o">:</span><span class="w"> </span><span class="s">&quot;지난달 서울 지역 매출은 1억 2천만원입니다.&quot;</span>
+<span class="o">-</span><span class="w"> </span><span class="err">차트</span><span class="o">:</span><span class="w"> </span><span class="err">자동</span><span class="w"> </span><span class="err">생성</span>
+</code></pre></div>
+
+<h3 id="실습-3-핵심-통찰">실습 3 핵심 통찰</h3>
+<div class="codehilite"><pre><span></span><code><span class="err">사용자</span><span class="o">:</span><span class="w"> </span><span class="s">&quot;지난달 서울 매출&quot;</span>
+<span class="w">        </span><span class="err">↓</span>
+<span class="nl">WrenAI:</span>
+<span class="w">  </span><span class="mf">1.</span><span class="w"> </span><span class="n">RAG로</span><span class="w"> </span><span class="err">관련</span><span class="w"> </span><span class="err">컬럼</span><span class="w"> </span><span class="err">검색</span><span class="w"> </span><span class="p">(</span><span class="n">region</span><span class="p">,</span><span class="w"> </span><span class="n">sale_month</span><span class="p">,</span><span class="w"> </span><span class="n">amount</span><span class="p">)</span>
+<span class="w">  </span><span class="mf">2.</span><span class="w"> </span><span class="n">SQL</span><span class="w"> </span><span class="n">Pair</span><span class="w"> </span><span class="err">참고</span><span class="w"> </span><span class="p">(</span><span class="err">월별</span><span class="w"> </span><span class="err">매출</span><span class="w"> </span><span class="err">패턴</span><span class="p">)</span>
+<span class="w">  </span><span class="mf">3.</span><span class="w"> </span><span class="n">SQL</span><span class="w"> </span><span class="err">생성</span><span class="w"> </span><span class="o">+</span><span class="w"> </span><span class="err">검증</span>
+<span class="w">  </span><span class="mf">4.</span><span class="w"> </span><span class="err">실행</span><span class="w"> </span><span class="o">+</span><span class="w"> </span><span class="err">자연어</span><span class="w"> </span><span class="err">답변</span>
+<span class="w">        </span><span class="err">↓</span>
+<span class="err">결과</span><span class="o">:</span><span class="w"> </span><span class="mf">1.2</span><span class="err">억</span>
+</code></pre></div>
+
+<p>같은 질문을 다음에 또 하면 같은 SQL이 생성됩니다 (재현성).</p>
+<h2 id="5-6-세-도구-통합-흐름-전체-그림">5-6. 세 도구 통합 흐름 (전체 그림)</h2>
+<div class="mermaid">
+flowchart LR
+    R["원본 데이터\n(orders, customers)"]
+
+    R --> dbt["dbt\n변환 + Gold Table"]
+    dbt --> G["fct_sales\n(Gold Table)"]
+
+    G --> Cube["Cube\n시맨틱 모델"]
+    G --> Wren["WrenAI\nNL2SQL 모델"]
+
+    Cube --> BI["BI 도구\nTableau, Metabase"]
+    Cube --> API["임베디드 API\n웹/앱"]
+
+    Wren --> Chat["챗봇 UI\n자연어 질의"]
+
+    style dbt fill:#fbbf24,color:#1a1a2e
+    style Cube fill:#3b82f6,color:#fff
+    style Wren fill:#22c55e,color:#fff
+</div>
+
+<blockquote>
+<p>💡 <strong>실무 패턴:</strong> dbt(변환) → Cube(BI/API) + WrenAI(NL2SQL) 같이 쓰는 게 이상적.</p>
+</blockquote>
+<hr />
+<h1 id="part-6-의사결정-가이드-5분">Part 6. 의사결정 가이드 (5분)</h1>
+<h2 id="6-1-어떤-도구를-언제-쓸까-결정-트리">6-1. "어떤 도구를 언제 쓸까?" 결정 트리</h2>
+<div class="mermaid">
+flowchart TD
+    Q["NL2SQL/시맨틱 레이어 도입"]
+    Q --> Q1{주된 응용?}
+
+    Q1 -->|① 변환 자동화 + Git| C1[dbt Core]
+    Q1 -->|② BI/대시보드/임베디드 API| C2[Cube]
+    Q1 -->|③ 자연어 챗봇| Q2{DB 환경?}
+    Q1 -->|④ 복합 (모두)| C3[dbt + Cube + WrenAI]
+
+    Q2 -->|PostgreSQL/Oracle 23ai| C4[WrenAI]
+    Q2 -->|Oracle 19c/특수 환경| Q3{복합 쿼리?}
+
+    Q3 -->|단순 조회| C4
+    Q3 -->|팩트-팩트 JOIN, 멀티스텝| C5[자체 구현\nLangGraph + QuerySpec]
+
+    style C1 fill:#fbbf24,color:#1a1a2e
+    style C2 fill:#3b82f6,color:#fff
+    style C4 fill:#22c55e,color:#fff
+    style C5 fill:#a78bfa,color:#fff
+</div>
+
+<h2 id="6-2-의사결정-체크리스트">6-2. 의사결정 체크리스트</h2>
+<p>도입 전 확인할 항목:</p>
+<ul>
+<li>[ ] <strong>주된 응용 영역</strong> (BI/API/NL2SQL/혼합)</li>
+<li>[ ] <strong>DB 환경</strong> (Oracle 버전, 특수 DB 여부)</li>
+<li>[ ] <strong>데이터 규모</strong> (Pre-aggregation 필요 여부)</li>
+<li>[ ] <strong>메트릭 거버넌스</strong> (Git 필요한가?)</li>
+<li>[ ] <strong>비정형 확장 계획</strong> (뉴스/문서 검색 같이 할 건가?)</li>
+<li>[ ] <strong>사내 LLM 사용 여부</strong> (외부 API 가능한가?)</li>
+<li>[ ] <strong>개발 인력</strong> (분석가 위주? 엔지니어 위주?)</li>
+<li>[ ] <strong>운영 복잡도</strong> (단일 도구 vs 하이브리드)</li>
+</ul>
+<h2 id="6-3-단계적-도입-로드맵">6-3. 단계적 도입 로드맵</h2>
+<div class="mermaid">
+flowchart LR
+    P0["Phase 0\n현황 파악\n(1주)"] --> P1["Phase 1\n데이터 정비\n(2-3주)"]
+    P1 --> P2["Phase 2\n도구 구축\n(1-2주)"]
+    P2 --> P3["Phase 3\n튜닝/검증\n(2-3주)"]
+    P3 --> P4["Phase 4\n운영/확장\n(지속)"]
+</div>
+
+<table>
+<thead>
+<tr>
+<th>Phase</th>
+<th>핵심 작업</th>
+<th>산출물</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>0</td>
+<td>질문 유형 수집, 보안 요구사항 정리</td>
+<td>질문셋 20개, allowlist</td>
+</tr>
+<tr>
+<td>1</td>
+<td>Gold Table 설계, Description 작성, DB COMMENT</td>
+<td>Gold 3종 + Curated View</td>
+</tr>
+<tr>
+<td>2</td>
+<td>도구 설치 (dbt/Cube/WrenAI 중 선택)</td>
+<td>동작 환경</td>
+</tr>
+<tr>
+<td>3</td>
+<td>SQL Pairs/Instructions, 자동 평가</td>
+<td>정확도 측정</td>
+</tr>
+<tr>
+<td>4</td>
+<td>모니터링, 사용자 피드백, 점진적 확장</td>
+<td>운영 메트릭</td>
+</tr>
+</tbody>
+</table>
+<blockquote>
+<p>💡 <strong>가장 중요한 단계는 Phase 1 (데이터 정비)</strong>
+도구 선택은 Phase 2의 일부에 불과. 데이터/메트릭/Description 정비가 80% 결정.</p>
+</blockquote>
+<hr />
+<h1 id="part-7-산업-사례--향후-방향-5분">Part 7. 산업 사례 + 향후 방향 (5분)</h1>
+<h2 id="7-1-토스-panda--참고-사례">7-1. 토스 PANDA — 참고 사례</h2>
+<p>토스는 데이터 분석가의 단순 추출 업무 자동화를 위해 <strong>PANDA</strong>라는 NL2SQL 봇을 만들었습니다.</p>
+<h3 id="핵심-통찰">핵심 통찰</h3>
+<table>
+<thead>
+<tr>
+<th>항목</th>
+<th>토스 PANDA</th>
+<th>우리 세미나 메시지와 일치하는 부분</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>시맨틱 레이어 본체</td>
+<td>표준 데이터 마트 (SSOT)</td>
+<td>"Gold Table에 메트릭 SSOT"</td>
+</tr>
+<tr>
+<td>비즈니스 용어 체계</td>
+<td>용어 정의 표준화</td>
+<td>"Description/Glossary 정비"</td>
+</tr>
+<tr>
+<td>스코어링 시스템</td>
+<td>SSOT(×4) &gt; 마트(×3) &gt; 도메인(×2) &gt; 원시(×1)</td>
+<td>"어떤 테이블 우선할지"</td>
+</tr>
+<tr>
+<td>자율 동작</td>
+<td>Agentic Loop (멀티 에이전트)</td>
+<td>"LangGraph 같은 오케스트레이션"</td>
+</tr>
+<tr>
+<td>결과</td>
+<td>70% 사용률 (전체 팀의)</td>
+<td>NL2SQL 도입의 ROI</td>
+</tr>
+</tbody>
+</table>
+<blockquote>
+<p>토스 사례가 <strong>"데이터 정비가 80%, 멀티 에이전트가 필수"</strong> 라는 우리 세미나 메시지를 강력하게 검증합니다.</p>
+</blockquote>
+<h3 id="토스에서-배울-추가-인사이트--계층-가중치-스코어링">토스에서 배울 추가 인사이트 — 계층 가중치 스코어링</h3>
+<div class="codehilite"><pre><span></span><code>같은 질문에 여러 테이블이 후보로 나올 때:
+  유사도 점수 × 계층 가중치
+
+  전사 SSOT 마트     × 4   ← 우선
+  검증된 표준 마트    × 3
+  도메인 분석용 마트  × 2
+  원시 데이터        × 1   ← 최후의 수단
+
+→ &quot;공식 마트가 우선&quot; 이라는 비즈니스 우선순위를 점수에 반영
+</code></pre></div>
+
+<blockquote>
+<p>💡 <strong>실무 적용 가능:</strong> 우리 NL2SQL 시스템에도 이 가중치 로직을 추가하면 정확도 향상 가능.</p>
+</blockquote>
+<p>원문: https://toss.tech/article/da-assistant-panda</p>
+<h2 id="7-2-향후-방향--환경에-맞는-도구가-없을-때">7-2. 향후 방향 — 환경에 맞는 도구가 없을 때</h2>
+<p>지금까지 본 3개 도구 (dbt/Cube/WrenAI) 중 환경에 맞는 게 있다면 그것을 쓰면 됩니다.</p>
+<p>하지만 <strong>다 안 맞을 수도 있습니다.</strong> 예를 들어:</p>
+<div class="codehilite"><pre><span></span><code>사내 환경:
+- Oracle 19c (WrenAI 미지원)
+- 팩트-팩트 JOIN 필요 (Cube 제약)
+- 사내 LLM (OpenAI 외 API 제한)
+- 비정형 데이터 통합 필요 (단일 도구로 안 됨)
+</code></pre></div>
+
+<p>이 경우 옵션 두 가지:</p>
+<h3 id="옵션-a-도구-조합">옵션 A: 도구 조합</h3>
+<div class="codehilite"><pre><span></span><code>dbt (변환) + Cube (BI) + WrenAI 대신 → 자체 NL2SQL Agent
+</code></pre></div>
+
+<h3 id="옵션-b-시맨틱-레이어를-직접-구현">옵션 B: 시맨틱 레이어를 직접 구현</h3>
+<h4 id="핵심-아이디어--queryspec-중간-표현">핵심 아이디어 — QuerySpec (중간 표현)</h4>
+<blockquote>
+<p><strong>LLM에게 SQL을 직접 쓰게 하지 않고, "구조화된 쿼리 명세"만 만들게 한다.</strong></p>
+</blockquote>
+<div class="codehilite"><pre><span></span><code><span class="k">class</span><span class="w"> </span><span class="nc">QuerySpec</span><span class="p">(</span><span class="n">BaseModel</span><span class="p">):</span>
+    <span class="n">tables</span><span class="p">:</span> <span class="nb">list</span><span class="p">[</span><span class="nb">str</span><span class="p">]</span>              <span class="c1"># 어떤 테이블</span>
+    <span class="n">select</span><span class="p">:</span> <span class="nb">list</span><span class="p">[</span><span class="nb">str</span><span class="p">]</span>              <span class="c1"># 어떤 컬럼</span>
+    <span class="n">filters</span><span class="p">:</span> <span class="nb">list</span><span class="p">[</span><span class="n">Filter</span><span class="p">]</span>          <span class="c1"># 어떤 조건</span>
+    <span class="n">order_by</span><span class="p">:</span> <span class="nb">list</span><span class="p">[</span><span class="n">OrderBy</span><span class="p">]</span>        <span class="c1"># 정렬</span>
+    <span class="n">limit</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="mi">20</span>
+</code></pre></div>
+
+<div class="mermaid">
+flowchart LR
+    Q["사용자 질문"] --> LLM["LLM"]
+    LLM --> QS["QuerySpec\n(JSON, SQL 아님)"]
+    QS --> Conv["규칙 기반\nSQL 변환기"]
+    Conv --> SQL["SQL"]
+    SQL --> Val["sqlglot 검증\n+ DB dry-run"]
+    Val --> Exec["실행"]
+    Exec --> Synth["자연어 답변"]
+
+    style LLM fill:#3b82f6,color:#fff
+    style QS fill:#fbbf24,color:#1a1a2e
+    style Conv fill:#22c55e,color:#fff
+</div>
+
+<p><strong>LLM의 책임 vs 코드의 책임:</strong></p>
+<table>
+<thead>
+<tr>
+<th>LLM</th>
+<th>코드</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>질문 의도 파악</td>
+<td>Schema/JOIN 조회</td>
+</tr>
+<tr>
+<td>QuerySpec 생성</td>
+<td>SQL 생성 (규칙 기반)</td>
+</tr>
+<tr>
+<td>결과 → 자연어 변환</td>
+<td>검증 (sqlglot/dry-run)</td>
+</tr>
+<tr>
+<td></td>
+<td>실행 (DB connection)</td>
+</tr>
+<tr>
+<td></td>
+<td>보안 (allowlist/audit)</td>
+</tr>
+</tbody>
+</table>
+<blockquote>
+<p><strong>원칙:</strong> LLM이 결정하는 영역을 최소화하면 환각이 줄어든다.</p>
+</blockquote>
+<p>영감 출처:
+- DAQUV/QUVI — SMQ(중간 표현) 개념
+- 논문 "Querying Databases with Function Calling" (arXiv 2502.00032)</p>
+<h2 id="7-3-결론--세미나-핵심-메시지">7-3. 결론 — 세미나 핵심 메시지</h2>
+<div class="codehilite"><pre><span></span><code><span class="mf">1.</span><span class="w"> </span><span class="n">시맨틱</span><span class="w"> </span><span class="n">레이어</span><span class="w"> </span><span class="n">본체</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">DB</span><span class="w"> </span><span class="n">View</span><span class="w"> </span><span class="o">/</span><span class="w"> </span><span class="n">마트</span><span class="w"> </span><span class="o">/</span><span class="w"> </span><span class="n">메트릭</span><span class="w"> </span><span class="n">정의</span>
+<span class="w">   </span><span class="err">→</span><span class="w"> </span><span class="n">어떤</span><span class="w"> </span><span class="n">도구를</span><span class="w"> </span><span class="n">쓰든</span><span class="w"> </span><span class="n">동일</span>
+
+<span class="mf">2.</span><span class="w"> </span><span class="n">도구</span><span class="w"> </span><span class="n">선택</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">환경</span><span class="w"> </span><span class="err">×</span><span class="w"> </span><span class="n">응용</span><span class="w"> </span><span class="err">×</span><span class="w"> </span><span class="n">제약의</span><span class="w"> </span><span class="n">교차점</span>
+<span class="w">   </span><span class="err">→</span><span class="w"> </span><span class="n">dbt</span><span class="w"> </span><span class="o">/</span><span class="w"> </span><span class="n">Cube</span><span class="w"> </span><span class="o">/</span><span class="w"> </span><span class="n">WrenAI</span><span class="w"> </span><span class="o">/</span><span class="w"> </span><span class="n">자체</span><span class="w"> </span><span class="n">구현</span><span class="w"> </span><span class="n">중</span><span class="w"> </span><span class="n">선택</span>
+
+<span class="mf">3.</span><span class="w"> </span><span class="n">멀티</span><span class="w"> </span><span class="n">에이전트</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">어떤</span><span class="w"> </span><span class="n">경우에도</span><span class="w"> </span><span class="n">필수</span>
+<span class="w">   </span><span class="err">→</span><span class="w"> </span><span class="n">LangGraph</span><span class="w"> </span><span class="n">같은</span><span class="w"> </span><span class="n">오케스트레이션</span>
+
+<span class="n">핵심</span><span class="w"> </span><span class="n">한</span><span class="w"> </span><span class="n">줄</span><span class="p">:</span>
+<span class="n">도구를</span><span class="w"> </span><span class="n">사는</span><span class="w"> </span><span class="n">게</span><span class="w"> </span><span class="n">본질이</span><span class="w"> </span><span class="n">아니다</span><span class="mf">.</span>
+<span class="n">시맨틱</span><span class="w"> </span><span class="n">레이어를</span><span class="w"> </span><span class="n">어떻게</span><span class="w"> </span><span class="n">정의하느냐가</span><span class="w"> </span><span class="n">본질이다</span><span class="mf">.</span>
+</code></pre></div>
+
+<hr />
+<h2 id="부록-a-실습-사전-준비">부록 A. 실습 사전 준비</h2>
+<h3 id="사내-환경-가정-시-필요한-것">사내 환경 가정 시 필요한 것</h3>
+<table>
+<thead>
+<tr>
+<th>항목</th>
+<th>사내 적용 시</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>DB</td>
+<td>Oracle 19c (또는 PostgreSQL)</td>
+</tr>
+<tr>
+<td>Docker</td>
+<td>사내 컨테이너 환경 (OpenShift/Kubernetes)</td>
+</tr>
+<tr>
+<td>네트워크</td>
+<td>내부 VPC, 외부 API 호출 가능 여부</td>
+</tr>
+<tr>
+<td>LLM</td>
+<td>사내 LLM 또는 외부 API (OpenAI)</td>
+</tr>
+<tr>
+<td>인증</td>
+<td>LDAP/SSO 연동</td>
+</tr>
+<tr>
+<td>메타데이터</td>
+<td>OpenMetadata (선택)</td>
+</tr>
+</tbody>
+</table>
+<h3 id="실습-데이터셋-제공">실습 데이터셋 (제공)</h3>
+<p>다음 SQL을 사내 DB에 실행하면 실습 데이터 생성:</p>
+<div class="codehilite"><pre><span></span><code><span class="c1">-- 고객 100명, 주문 1000건, 6개월치 시뮬레이션</span>
+<span class="c1">-- 자세한 SQL은 별도 첨부 (init.sql)</span>
+</code></pre></div>
+
+<h2 id="부록-b-참고-자료">부록 B. 참고 자료</h2>
+<table>
+<thead>
+<tr>
+<th>자료</th>
+<th>URL</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>dbt 공식 문서</td>
+<td>https://docs.getdbt.com</td>
+</tr>
+<tr>
+<td>Cube 공식 문서</td>
+<td>https://cube.dev/docs</td>
+</tr>
+<tr>
+<td>WrenAI 공식 문서</td>
+<td>https://docs.getwren.ai</td>
+</tr>
+<tr>
+<td>LangGraph 공식 문서</td>
+<td>https://langchain-ai.github.io/langgraph/</td>
+</tr>
+<tr>
+<td>토스 PANDA 사례</td>
+<td>https://toss.tech/article/da-assistant-panda</td>
+</tr>
+<tr>
+<td>Gartner 시맨틱 레이어 정의</td>
+<td>https://www.gartner.com/en/glossary</td>
+</tr>
+</tbody>
+</table>
+<h3 id="우리-사내-가이드-문서">우리 사내 가이드 문서</h3>
+<ul>
+<li><code>guide_dbt.md</code> — dbt 상세 가이드 (1,422줄)</li>
+<li><code>guide_cubejs.md</code> — Cube.js 상세 가이드 (1,459줄)</li>
+<li><code>guide_wrenai.md</code> — WrenAI 상세 가이드 (1,372줄)</li>
+<li><code>guide_openmetadata.md</code> — OpenMetadata 가이드 (1,436줄)</li>
+<li><code>nl2sql_agent_design.md</code> — LangGraph + QuerySpec 자체 구현 설계</li>
+<li><code>nl2sql_implementation_plan_v2.md</code> — 사내 NL2SQL 구현 계획</li>
+</ul>
+<h2 id="부록-c-qa-예상-질문">부록 C. Q&amp;A 예상 질문</h2>
+<table>
+<thead>
+<tr>
+<th>Q</th>
+<th>A</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>"dbt와 Cube를 같이 쓸 수 있나?"</td>
+<td>✅ 가능. dbt가 Gold Table 만들고 Cube가 그 위에 시맨틱 + API</td>
+</tr>
+<tr>
+<td>"WrenAI 없이 ChatGPT만 쓰면?"</td>
+<td>가능하지만 정확도/일관성/보안 보장 안 됨</td>
+</tr>
+<tr>
+<td>"Oracle 19c에서 WrenAI 정말 안 되나?"</td>
+<td>ibis-server가 23ai 전용 SQL 사용 → 19c 미지원</td>
+</tr>
+<tr>
+<td>"Cube의 JOIN 제약 어떻게 우회?"</td>
+<td>1) DB View로 미리 JOIN 2) 멀티 에이전트가 결과 합성</td>
+</tr>
+<tr>
+<td>"사내 LLM은 어떻게 연결?"</td>
+<td>LiteLLM 어댑터 사용 (WrenAI/LangGraph 모두 지원)</td>
+</tr>
+<tr>
+<td>"데이터 정비에 얼마나 걸리나?"</td>
+<td>작은 도메인 1-2주, 전사 도입 3-6개월</td>
+</tr>
+<tr>
+<td>"처음 시작은 어떤 도구로?"</td>
+<td>응용 영역에 따라. BI 중심이면 Cube, 변환 중심이면 dbt</td>
+</tr>
+</tbody>
+</table>
+<hr />
+<h2 id="변경-이력">변경 이력</h2>
+<table>
+<thead>
+<tr>
+<th>날짜</th>
+<th>내용</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>2026-05-11</td>
+<td>세미나 자료 초안 작성 (90분 분량, 실습 포함)</td>
+</tr>
+</tbody>
+</table>
+</main>
+
+<script>
+  // 테마 전환
+  function setTheme(theme) {
+    document.documentElement.setAttribute('data-theme', theme);
+    localStorage.setItem('doc-theme', theme);
+    document.getElementById('btn-dark').classList.toggle('active', theme === 'dark');
+    document.getElementById('btn-light').classList.toggle('active', theme === 'light');
+    // Mermaid 재렌더링
+    if (typeof mermaid !== 'undefined') {
+      mermaid.initialize({ startOnLoad: false, theme: 'base', securityLevel: 'loose', themeVariables: getMermaidTheme(theme) });
+      document.querySelectorAll('.mermaid').forEach(el => {
+        // 원본 코드 보존 (최초 1회만 저장)
+        if (!el.dataset.source) {
+          el.dataset.source = el.textContent;
+        }
+        el.removeAttribute('data-processed');
+        el.innerHTML = el.dataset.source;
+      });
+      mermaid.run();
+    }
+  }
+
+  // 저장된 테마 로드
+  const savedTheme = localStorage.getItem('doc-theme') || 'dark';
+  setTheme(savedTheme);
+
+  // Mermaid 초기화
+  function getMermaidTheme(theme) {
+    const dark = {
+      primaryColor: '#3d7be0',
+      primaryTextColor: '#ffffff',
+      primaryBorderColor: '#5a9cf0',
+      secondaryColor: '#7c5cbf',
+      secondaryTextColor: '#ffffff',
+      secondaryBorderColor: '#a29bfe',
+      tertiaryColor: '#00997a',
+      tertiaryTextColor: '#ffffff',
+      tertiaryBorderColor: '#55efc4',
+      noteTextColor: '#f0f0f0',
+      noteBkgColor: '#2d3436',
+      noteBorderColor: '#636e72',
+      lineColor: '#8b949e',
+      textColor: '#e6edf3',
+      mainBkg: '#1e3050',
+      nodeBorder: '#5a9cf0',
+      clusterBkg: '#1a1e2e',
+      clusterBorder: '#4a5568',
+      titleColor: '#79c0ff',
+      edgeLabelBackground: '#21262d',
+      actorBkg: '#3d7be0',
+      actorTextColor: '#ffffff',
+      actorBorder: '#5a9cf0',
+      signalColor: '#8b949e',
+      labelBoxBkgColor: '#21262d',
+      labelBoxBorderColor: '#4a5568',
+      labelTextColor: '#e6edf3',
+      loopTextColor: '#e6edf3',
+      activationBorderColor: '#5a9cf0',
+      activationBkgColor: '#1e3050',
+      sequenceNumberColor: '#ffffff',
+      pie1: '#4f8fea', pie2: '#6c5ce7', pie3: '#00b894', pie4: '#e17055',
+      pie5: '#fdcb6e', pie6: '#00cec9', pie7: '#e84393', pie8: '#0984e3'
+    };
+    const light = {
+      primaryColor: '#4f8fea',
+      primaryTextColor: '#1a1a2e',
+      primaryBorderColor: '#3a7bd5',
+      secondaryColor: '#a29bfe',
+      secondaryTextColor: '#1a1a2e',
+      secondaryBorderColor: '#6c5ce7',
+      tertiaryColor: '#55efc4',
+      tertiaryTextColor: '#1a1a2e',
+      tertiaryBorderColor: '#00b894',
+      noteTextColor: '#2d3436',
+      noteBkgColor: '#ffeaa7',
+      noteBorderColor: '#fdcb6e',
+      lineColor: '#636e72',
+      textColor: '#2d3436',
+      mainBkg: '#dfe6e9',
+      nodeBorder: '#3a7bd5',
+      clusterBkg: '#f0f3f5',
+      clusterBorder: '#b2bec3',
+      titleColor: '#2d3436',
+      edgeLabelBackground: '#ffffff',
+      actorBkg: '#4f8fea',
+      actorTextColor: '#ffffff',
+      actorBorder: '#3a7bd5',
+      signalColor: '#636e72',
+      labelBoxBkgColor: '#ffffff',
+      labelBoxBorderColor: '#b2bec3',
+      labelTextColor: '#2d3436',
+      loopTextColor: '#2d3436',
+      activationBorderColor: '#3a7bd5',
+      activationBkgColor: '#dfe6e9',
+      sequenceNumberColor: '#ffffff',
+      pie1: '#4f8fea', pie2: '#6c5ce7', pie3: '#00b894', pie4: '#e17055',
+      pie5: '#fdcb6e', pie6: '#00cec9', pie7: '#e84393', pie8: '#0984e3'
+    };
+    return theme === 'dark' ? dark : light;
+  }
+
+  // 초기 렌더링 전에 원본 코드 저장
+  document.querySelectorAll('.mermaid').forEach(el => {
+    el.dataset.source = el.textContent;
+  });
+  mermaid.initialize({ startOnLoad: true, theme: 'base', securityLevel: 'loose', themeVariables: getMermaidTheme(savedTheme) });
+
+  // TOC 현재 위치 하이라이트
+  const tocLinks = document.querySelectorAll('.toc a');
+  const headings = [];
+  tocLinks.forEach(link => {
+    const id = link.getAttribute('href').slice(1);
+    const el = document.getElementById(id);
+    if (el) headings.push({ el, link });
+  });
+
+  function updateActiveToc() {
+    let current = null;
+    for (const h of headings) {
+      if (h.el.getBoundingClientRect().top <= 100) current = h;
+    }
+    tocLinks.forEach(l => l.classList.remove('active'));
+    if (current) current.link.classList.add('active');
+  }
+
+  window.addEventListener('scroll', updateActiveToc, { passive: true });
+  updateActiveToc();
+
+  // 모바일: 링크 클릭 시 사이드바 닫기
+  tocLinks.forEach(link => {
+    link.addEventListener('click', () => {
+      if (window.innerWidth <= 900) {
+        document.querySelector('.sidebar').classList.remove('open');
+      }
+    });
+  });
+</script>
+
+</body>
+</html>

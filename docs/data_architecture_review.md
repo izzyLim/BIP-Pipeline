@@ -1340,6 +1340,11 @@ JOIN stock_indicators ind ON sp.ticker = ind.ticker
 | 2026-04-11 | 종목 추천 VCP 돌파 프리셋 추가 (완전정배열 + 거래량 200%+) | 모멘텀 투자자가 선호하는 패턴. 기존 6개 프리셋에 추가 | 프리셋 6개만 유지 |
 | 2026-04-11 | 종목 추천 Phase 2 병렬화 (asyncio.gather) | 5종목 순차 15분 → 병렬 2분으로 단축 | 순차 실행 |
 | 2026-04-03 | 계산 폴백 Instruction 1개 추가 (컬럼 없으면 계산식 유도) | 이격도, PSR, 실질금리 등 DB 컬럼 없는 파생 지표 SQL 생성 | 매번 SQL Pair 개별 등록 |
+| 2026-04-18 | 사내 NL2SQL v2 아키텍처: Cube + LangGraph (OM 메타 + Cube 시맨틱 + Agent 오케스트레이션) | Wren AI ibis-server가 Oracle 19c 미지원 → Cube로 시맨틱 분리 | WrenAI 사내 강행 |
+| 2026-04-26 | **v3 방향 전환: Cube 탈락 → LangGraph + QuerySpec 직접 구현** (Oracle 19c fallback) | Cube 검증 결과 fact↔fact 다중 JOIN 한계, 시맨틱 정의 이중화(OM+Cube) 부담. DAQUV/Function Calling 논문(arXiv 2502.00032) 근거로 LLM에게 SQL 직접 생성 대신 **QuerySpec(구조화 의도)** → 규칙 기반 변환 방식 채택 | Cube 강행, Wren AI 강행 |
+| 2026-04-26 | 시맨틱 레이어 본체는 **DB View(Gold + Curated)**, NL2SQL은 변환 레이어 분리 | Cube/dbt/WrenAI 모두 외부 도구 의존성 — DB 네이티브 View로 단순화하면 도구 락인 제거 + Oracle 19c 즉시 동작 | Cube semantic model 유지 |
+| 2026-04-26 | 멀티 에이전트 오케스트레이션은 **LangGraph가 최상단 서비스 레이어** (도구 선택 무관) | Wren AI/Cube 모두 1질문=1쿼리 한계, 멀티스텝/재시도/도구 라우팅은 항상 별도 필요 | 단일 도구 종속 |
+| 2026-04-26 | 평가셋 23개 정의 + JOIN YAML(11개) + QuerySpec/Converter/Validator 뼈대 구현 (`BIP-Agents/langgraph/nl2sql/`) | v3 직접 구현 위한 기반. WrenAI 결과와 동일 평가셋으로 비교 | 별도 평가 |
 
 ---
 

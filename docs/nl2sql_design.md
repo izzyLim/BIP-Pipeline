@@ -1,12 +1,19 @@
 # BIP-Pipeline NL2SQL 설계 및 아키텍처
 
-> **작성일:** 2026-04-12
+> **작성일:** 2026-04-12 (최신 갱신: 2026-04-26)
 > **통합 원본:** `nl2sql_project_plan.md`, `nl2sql_architecture_v2.md`, `bip_target_architecture.md`
 > **관련 문서:**
 > - `docs/security_governance.md` — 보안 불변 조건
 > - `docs/metadata_governance.md` — 메타데이터/리니지/용어 관리 절차
 > - `docs/wrenai_technical_guide.md` — Wren AI 내부 구조
 > - `docs/wrenai_test_report.md` — NL2SQL 품질 테스트 프레임워크
+> - `docs/nl2sql_implementation_plan_v2.md` §11 — **v3 방향 전환 (Cube 탈락 → LangGraph 직접 구현)**
+> - `docs/nl2sql_agent_design.md` — **LangGraph + QuerySpec 상세 설계 (사내 Oracle 19c 대응)**
+> - `docs/seminar_semantic_layer.md` — 시맨틱 레이어 세미나 (개념·도구 비교·실습)
+
+---
+
+> ⚠️ **이 문서의 위치:** 본 문서는 BIP-Pipeline(개인 투자 검증) 환경의 Wren AI 기반 5-Layer 설계이다. 사내(오라클 19c) 적용은 Wren AI의 호환성 한계로 인해 **LangGraph + QuerySpec 직접 구현**으로 방향 전환되었다. 사내 적용 아키텍처는 위 v3 문서 2개를 우선 참고한다.
 
 ---
 
