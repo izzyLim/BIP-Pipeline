@@ -373,6 +373,11 @@
   <li class="toc-h3"><a href="#실습-3-핵심-통찰">실습 3 핵심 통찰</a></li>
 <li class="toc-h2"><a href="#5-6-세-도구-통합-흐름-전체-그림">5-6. 세 도구 통합 흐름 (전체 그림)</a></li>
 <li class="toc-h2"><a href="#6-1-어떤-도구를-언제-쓸까-결정-트리">6-1. "어떤 도구를 언제 쓸까?" 결정 트리</a></li>
+  <li class="toc-h3"><a href="#6-1-1-dbt-core--변환-자동화--git-거버넌스가-핵심일-때">6-1-1. dbt Core — "변환 자동화 + Git 거버넌스"가 핵심일 때</a></li>
+  <li class="toc-h3"><a href="#6-1-2-cube--bi-대시보드--임베디드-api가-핵심일-때">6-1-2. Cube — "BI 대시보드 / 임베디드 API"가 핵심일 때</a></li>
+  <li class="toc-h3"><a href="#6-1-3-wrenai--자연어-챗봇이-핵심이고-환경이-맞을-때">6-1-3. WrenAI — "자연어 챗봇"이 핵심이고 환경이 맞을 때</a></li>
+  <li class="toc-h3"><a href="#6-1-4-자체-구현-langgraph--queryspec--oracle-19c--복합-쿼리">6-1-4. 자체 구현 (LangGraph + QuerySpec) — Oracle 19c + 복합 쿼리</a></li>
+  <li class="toc-h3"><a href="#6-1-5-한-페이지-요약-비교">6-1-5. 한 페이지 요약 비교</a></li>
 <li class="toc-h2"><a href="#6-2-의사결정-체크리스트">6-2. 의사결정 체크리스트</a></li>
 <li class="toc-h2"><a href="#6-3-단계적-도입-로드맵">6-3. 단계적 도입 로드맵</a></li>
 <li class="toc-h2"><a href="#7-1-토스-panda--참고-사례">7-1. 토스 PANDA — 참고 사례</a></li>
@@ -1894,6 +1899,337 @@ flowchart TD
     style C5 fill:#a78bfa,color:#fff
 </div>
 
+<blockquote>
+<p>결정 트리는 <strong>결론</strong>이고, 그 결론의 <strong>근거</strong>가 더 중요합니다. 4가지 경로 각각의 추천 이유를 펼쳐봅니다.</p>
+</blockquote>
+<h3 id="6-1-1-dbt-core--변환-자동화--git-거버넌스가-핵심일-때">6-1-1. dbt Core — "변환 자동화 + Git 거버넌스"가 핵심일 때</h3>
+<p><strong>한 줄 결론:</strong> 데이터 변환(Raw → Gold)을 <strong>소스코드처럼 관리</strong>해야 한다면 dbt 외엔 대안이 거의 없음.</p>
+<p><strong>추천 시나리오:</strong></p>
+<table>
+<thead>
+<tr>
+<th>만약 ~ 라면</th>
+<th>dbt가 답인 이유</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>변환 모델이 10개를 넘어가고 의존성 관리가 복잡해진다</td>
+<td><code>{{ ref() }}</code> / <code>{{ source() }}</code> 가 의존성을 자동 추적해 실행 순서 결정</td>
+</tr>
+<tr>
+<td>분석가가 직접 변환 모델을 추가하는 셀프서비스가 필요하다</td>
+<td>SQL + Jinja만 알면 됨. 별도 ETL 학습 불필요</td>
+</tr>
+<tr>
+<td>변환 로직을 PR 리뷰로 거버넌스하고 싶다</td>
+<td>모든 모델이 <code>.sql</code> 파일 — 코드 리뷰 자연스러움</td>
+</tr>
+<tr>
+<td>스키마 변경 시 영향도(downstream) 자동 추적이 필요하다</td>
+<td><code>dbt docs generate</code> 가 Lineage 자동 생성</td>
+</tr>
+<tr>
+<td>변환 결과의 데이터 품질 검증이 필요하다</td>
+<td><code>dbt test</code> (not_null/unique/relationships/accepted_values) 내장</td>
+</tr>
+</tbody>
+</table>
+<p><strong>핵심 근거 5가지:</strong></p>
+<ol>
+<li>
+<p><strong>의존성 자동 추적</strong> — <code>{{ ref('stg_orders') }}</code> 한 줄이면 dbt가 실행 순서를 결정. 모델 100개여도 사람이 순서 신경 쓸 필요 없음. ETL 도구들이 못 따라오는 부분.</p>
+</li>
+<li>
+<p><strong>테스트 내장</strong> — <code>schema.yml</code>에 <code>tests: [not_null, unique]</code>만 적으면 매 실행마다 자동 검증. 별도 데이터 품질 도구(Great Expectations 등) 없이도 기본 검증이 됨.</p>
+</li>
+<li>
+<p><strong>문서 자동 생성</strong> — <code>dbt docs serve</code> 한 번이면 모든 모델/컬럼/Lineage가 정적 사이트로 카탈로그됨. Description은 모델 파일 옆 <code>.yml</code>에 작성 → 코드와 문서가 한 PR에서 같이 변경됨 (문서 표류 방지).</p>
+</li>
+<li>
+<p><strong>재사용 가능한 SQL</strong> — Jinja macros로 반복되는 SQL 패턴을 함수처럼 정의. 예: 환율 변환 매크로 한 번 작성 → 30개 모델에서 호출. 복붙 코드 제거.</p>
+</li>
+<li>
+<p><strong>Materialization 전략</strong> — <code>view</code> / <code>table</code> / <code>incremental</code> / <code>ephemeral</code> 한 줄로 선언. 변환 비용/속도 트레이드오프를 코드에서 명시 가능.</p>
+</li>
+</ol>
+<p><strong>dbt가 부적합한 경우:</strong>
+- ❌ <strong>실시간 API 서빙</strong> — dbt는 배치 도구. API 응답을 dbt가 제공하지는 못함 (Cube 등이 그 위에 필요)
+- ❌ <strong>NL2SQL 직접 지원</strong> — 자연어 → SQL 변환 기능 없음. 변환 도구이지 질의 도구가 아님
+- ❌ <strong>빠른 PoC</strong> — 프로젝트 구조(<code>dbt_project.yml</code>, <code>profiles.yml</code>, <code>models/</code>) 학습 부담. 1–2개 변환만 필요하면 그냥 SQL이 빠름</p>
+<blockquote>
+<p>💡 <strong>사내 적용 시:</strong> Oracle 19c 환경이라면 <code>dbt-oracle</code> 어댑터 (Oracle 본사 vendor-supported, <code>python-oracledb</code> thin 모드로 Instant Client 불필요). 새 dbt-core 출시 후 호환 릴리스 지연 가능하므로 <strong>버전 핀 필수</strong>.</p>
+</blockquote>
+<hr />
+<h3 id="6-1-2-cube--bi-대시보드--임베디드-api가-핵심일-때">6-1-2. Cube — "BI 대시보드 / 임베디드 API"가 핵심일 때</h3>
+<p><strong>한 줄 결론:</strong> 메트릭 정의를 <strong>여러 클라이언트(BI 도구, 웹/앱, BI 임베디드)에서 동일하게 사용</strong>해야 한다면 Cube가 사실상 표준.</p>
+<p><strong>추천 시나리오:</strong></p>
+<table>
+<thead>
+<tr>
+<th>만약 ~ 라면</th>
+<th>Cube가 답인 이유</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Tableau/Power BI/Metabase 등 여러 BI를 동시에 쓴다</td>
+<td>SQL API로 BI 도구가 Cube를 일반 DB처럼 연결. 메트릭 정의 한 번 → 모든 BI 동일 결과</td>
+</tr>
+<tr>
+<td>사내 React/Vue 앱에 매출 위젯을 임베드하고 싶다</td>
+<td>REST/GraphQL API. 프론트가 SQL 모르고도 <code>measure=revenue</code> 한 줄로 호출</td>
+</tr>
+<tr>
+<td>대시보드 응답 속도가 핵심이다 (수십 ms 목표)</td>
+<td>Pre-aggregation: Cube가 미리 집계 테이블을 만들어 캐싱</td>
+</tr>
+<tr>
+<td>부서마다 다른 매출 정의를 통일해야 한다</td>
+<td>Cube 모델 파일이 단일 진실 — 모든 측정값이 같은 SQL에서 나옴</td>
+</tr>
+<tr>
+<td>멀티 테넌시 + 권한 관리가 필요하다</td>
+<td><code>securityContext</code> + <code>accessPolicy</code>로 사용자별 필터링</td>
+</tr>
+</tbody>
+</table>
+<p><strong>핵심 근거 5가지:</strong></p>
+<ol>
+<li>
+<p><strong>3가지 API 동시 제공</strong> — REST(웹/앱), GraphQL(유연한 쿼리), SQL(BI 도구 직접 연결). <strong>어떤 클라이언트도 같은 메트릭에 접근 가능.</strong> dbt에는 OSS Core에 이런 API가 없음 (Cloud 유료).</p>
+</li>
+<li>
+<p><strong>Pre-aggregation 캐싱</strong> — "월별 매출"을 Cube가 미리 계산해 별도 테이블에 저장. 대시보드 응답이 원본 DB 쿼리(수초) → Cube 캐시(수십 ms). dbt에는 없는 기능.</p>
+</li>
+<li>
+<p><strong>시각적 쿼리 도구 (Playground)</strong> — 메트릭/차원/필터를 클릭으로 조합 → SQL 자동 생성. 분석가/PM이 직접 쿼리 가능.</p>
+</li>
+<li>
+<p><strong>메트릭 표준화</strong> — <code>cube('Orders').measure('revenue')</code> 가 단일 진실. Tableau 사용자도 Power BI 사용자도 같은 숫자를 봄. 부서 간 회의에서 "왜 매출이 다르냐" 논쟁 종결.</p>
+</li>
+<li>
+<p><strong>Headless BI 패턴</strong> — UI 없이 메트릭/API만 제공. 위에 어떤 BI/앱/봇이든 붙일 수 있는 <strong>인프라 레이어</strong>. WrenAI도 Cube 위에 얹을 수 있음.</p>
+</li>
+</ol>
+<p><strong>Cube가 부적합한 경우:</strong>
+- ❌ <strong>팩트-팩트 JOIN 빈번</strong> — 1:N JOIN은 자동 처리하지만 <strong>N:N(팩트끼리) 결합 불가</strong>. BIP 검증에서 "저평가 + 외국인 순매수" 같은 핵심 사용 케이스 모두 실패
+- ❌ <strong>자연어 챗봇 단독 구축</strong> — Cube 자체에 LLM 없음. 자연어 처리하려면 위에 WrenAI/자체 Agent 필요
+- ❌ <strong>단순 변환 자동화만 필요</strong> — Cube는 시맨틱 + 서빙 레이어. 변환 자동화는 dbt가 더 단순</p>
+<blockquote>
+<p>💡 <strong>사내 적용 시:</strong> Oracle 19c 지원 (community, <code>node-oracledb</code> 6.x). dbt-oracle보다는 한 단계 낮은 등급이지만 BIP 검증으로 단순/2-Cube JOIN까지는 안정적으로 동작 확인.</p>
+</blockquote>
+<hr />
+<h3 id="6-1-3-wrenai--자연어-챗봇이-핵심이고-환경이-맞을-때">6-1-3. WrenAI — "자연어 챗봇"이 핵심이고 환경이 맞을 때</h3>
+<p><strong>한 줄 결론:</strong> PostgreSQL 또는 Oracle 23ai 환경에서 <strong>자연어 → SQL을 30분 안에 띄우고 싶다면</strong> WrenAI.</p>
+<p><strong>추천 시나리오:</strong></p>
+<table>
+<thead>
+<tr>
+<th>만약 ~ 라면</th>
+<th>WrenAI가 답인 이유</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>자연어 챗봇이 메인 인터페이스다</td>
+<td>MDL + LLM + RAG가 통합. 별도 Agent 코드 작성 불필요</td>
+</tr>
+<tr>
+<td>DB가 PostgreSQL 또는 Oracle 23ai다</td>
+<td>ibis-server가 공식 지원</td>
+</tr>
+<tr>
+<td>빠른 PoC가 필요하다</td>
+<td>Docker Compose로 30분이면 동작</td>
+</tr>
+<tr>
+<td>분석가도 SQL 정확도 튜닝에 참여하고 싶다</td>
+<td>SQL Pairs UI에서 질문-SQL 쌍 등록만 하면 됨</td>
+</tr>
+<tr>
+<td>Chat UI를 따로 만들기 부담스럽다</td>
+<td>WrenAI UI 그대로 사용 가능</td>
+</tr>
+</tbody>
+</table>
+<p><strong>핵심 근거 5가지:</strong></p>
+<ol>
+<li>
+<p><strong>All-in-One 통합</strong> — 데이터 연결, MDL, RAG, LLM 호출, SQL 검증, Chat UI가 한 패키지. dbt+Cube+자체 Agent를 합친 것과 동일한 기능을 단일 도구로.</p>
+</li>
+<li>
+<p><strong>SQL Pairs 학습 시스템</strong> — BIP 검증: 29개 → 70개로 늘리며 A등급 58% → 100%. <strong>운영하면서 정확도가 오르는</strong> 구조. 분석가가 UI에서 직접 등록 가능.</p>
+</li>
+<li>
+<p><strong>Wren Engine 검증</strong> — LLM이 생성한 SQL을 dry-run으로 검증 → 실패 시 자동 재생성 (3회). 환각 SQL이 사용자에게 도달하지 않음.</p>
+</li>
+<li>
+<p><strong>Instructions로 도메인 규칙 강제</strong> — "종목명은 한글로", "ETF 제외" 같은 전역 규칙을 LLM에 주입.</p>
+</li>
+<li>
+<p><strong>검증된 운영 성숙도</strong> — BIP에서 100% A등급 + 87% boolean flag 사용률 달성. 다른 NL2SQL 도구들(Vanna, MindsDB 등) 대비 가장 안정적.</p>
+</li>
+</ol>
+<p><strong>WrenAI가 부적합한 경우:</strong>
+- ❌ <strong>Oracle 19c</strong> — ibis-server가 23ai 전용 메타 조회 로직 사용 (<code>get_db_version</code> 등). 사내 19c 환경에서 동작 불가
+- ❌ <strong>BI 도구 통합 중심</strong> — WrenAI는 자연어 UI 위주. Tableau/Power BI 같은 BI 도구 연동은 약함 (Cube가 적합)
+- ❌ <strong>1질문 → 멀티스텝 처리</strong> — WrenAI 구조상 1질문 = 1 SQL. "매출 + 관련 뉴스 요약" 같은 멀티 도구 조합 어려움 (LangGraph로 보완 필요)
+- ❌ <strong>프롬프트 완전 제어</strong> — OSS 소스 수정 부담. 답변 생성(sql_answer) 환각을 직접 고치기 어려움</p>
+<blockquote>
+<p>💡 <strong>검증 가능한 환경에서만 채택:</strong> WrenAI는 환경 호환성이 가장 까다로움. 30분 PoC로 <strong>자기 DB에 연결되는지부터 검증</strong>하고 결정.</p>
+</blockquote>
+<hr />
+<h3 id="6-1-4-자체-구현-langgraph--queryspec--oracle-19c--복합-쿼리">6-1-4. 자체 구현 (LangGraph + QuerySpec) — Oracle 19c + 복합 쿼리</h3>
+<p><strong>한 줄 결론:</strong> <strong>WrenAI도 Cube도 안 되는 환경</strong>(Oracle 19c + 팩트-팩트 JOIN 빈번)에서 자연어 챗봇이 필요하면 자체 구현이 결국 도달점.</p>
+<p><strong>추천 시나리오:</strong></p>
+<table>
+<thead>
+<tr>
+<th>만약 ~ 라면</th>
+<th>자체 구현이 답인 이유</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>DB가 Oracle 19c (또는 다른 특수 환경)이고 챗봇이 필요하다</td>
+<td>WrenAI 불가, Cube는 팩트-팩트 한계 — 우회 불가</td>
+</tr>
+<tr>
+<td>멀티스텝 (NL2SQL + RAG + MCP) 통합이 필요하다</td>
+<td>어떤 도구든 결국 위에 LangGraph 같은 오케스트레이션 필요</td>
+</tr>
+<tr>
+<td>사내 LLM (외부 API 불가) 사용해야 한다</td>
+<td>LiteLLM 어댑터로 모델 자유 교체</td>
+</tr>
+<tr>
+<td>도구 락인을 피하고 싶다</td>
+<td>시맨틱 레이어 본체(DB View)만 남기고 변환 레이어 자체 구현</td>
+</tr>
+<tr>
+<td>멀티 에이전트 / Function Calling 같은 최신 패턴 적용하고 싶다</td>
+<td>DAQUV/arXiv 2502.00032 논문 근거의 QuerySpec 패턴 적용 가능</td>
+</tr>
+</tbody>
+</table>
+<p><strong>핵심 근거 4가지:</strong></p>
+<ol>
+<li>
+<p><strong>QuerySpec 중간 표현으로 안정성 확보</strong> — LLM이 SQL을 직접 안 만들고 구조화된 JSON만 만듦. 문법 오류 원천 차단 + Function Calling 안정성. Claude 3.5 Sonnet 74.3%, GPT-4o mini 73.7% 정확도 달성 (논문).</p>
+</li>
+<li>
+<p><strong>모든 제약 우회 가능</strong> — DB 방언(Oracle 19c FETCH FIRST/SYSDATE)도 변환기 코드에 직접 작성. 외부 도구가 못 따라오는 부분을 코드로 해결.</p>
+</li>
+<li>
+<p><strong>5-Layer 보안 (도구 의존 없음)</strong> — SELECT only + allowlist + sqlglot + EXPLAIN + DB role. 모든 방어선을 자체 통제.</p>
+</li>
+<li>
+<p><strong>확장 자유도</strong> — LangGraph 노드 추가만으로 RAG/MCP/Synthesizer 통합. NL2SQL이 멀티 에이전트 서비스의 한 도구로 자연스럽게 편입.</p>
+</li>
+</ol>
+<p><strong>자체 구현이 부적합한 경우:</strong>
+- ❌ <strong>초기 개발 부담 회피</strong> — 모듈(Registry/QuerySpec/Converter/Validator/RAG/Agent) 직접 구현 필요. Cube/WrenAI가 동작하는 환경이라면 그쪽이 훨씬 빠름
+- ❌ <strong>표준 패턴만 필요</strong> — 단순 조회 위주라면 WrenAI 한 도구로 충분. 자체 구현은 복합 쿼리/멀티스텝까지 가는 조직에 적합
+- ❌ <strong>인력 부족</strong> — Python + LLM + DB + LangGraph 모두 다룰 수 있는 엔지니어가 없으면 운영 부담 큼</p>
+<blockquote>
+<p>💡 <strong>마지막 옵션으로 권장:</strong> 자체 구현은 "다른 도구가 안 맞아서" 가는 길. 환경이 맞는다면 WrenAI/Cube 먼저 시도, 안 되면 자체 구현으로 진행하는 순서가 안전.</p>
+</blockquote>
+<hr />
+<h3 id="6-1-5-한-페이지-요약-비교">6-1-5. 한 페이지 요약 비교</h3>
+<table>
+<thead>
+<tr>
+<th>항목</th>
+<th style="text-align: center;">dbt Core</th>
+<th style="text-align: center;">Cube</th>
+<th style="text-align: center;">WrenAI</th>
+<th style="text-align: center;">자체 구현</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><strong>주된 강점</strong></td>
+<td style="text-align: center;">변환 자동화</td>
+<td style="text-align: center;">API 서빙</td>
+<td style="text-align: center;">자연어 챗봇</td>
+<td style="text-align: center;">환경 자유</td>
+</tr>
+<tr>
+<td><strong>핵심 산출물</strong></td>
+<td style="text-align: center;">Gold Table</td>
+<td style="text-align: center;">API + Pre-agg</td>
+<td style="text-align: center;">SQL + 자연어 답변</td>
+<td style="text-align: center;">QuerySpec + SQL</td>
+</tr>
+<tr>
+<td><strong>거버넌스</strong></td>
+<td style="text-align: center;">Git PR</td>
+<td style="text-align: center;">Cube 모델 파일</td>
+<td style="text-align: center;">UI + SQL Pairs</td>
+<td style="text-align: center;">코드 + 평가셋</td>
+</tr>
+<tr>
+<td><strong>API</strong></td>
+<td style="text-align: center;">❌ (Cloud만)</td>
+<td style="text-align: center;">✅ REST/GraphQL/SQL</td>
+<td style="text-align: center;">✅ REST</td>
+<td style="text-align: center;">자체 FastAPI</td>
+</tr>
+<tr>
+<td><strong>자연어 직접</strong></td>
+<td style="text-align: center;">❌</td>
+<td style="text-align: center;">❌</td>
+<td style="text-align: center;">✅</td>
+<td style="text-align: center;">✅</td>
+</tr>
+<tr>
+<td><strong>캐싱</strong></td>
+<td style="text-align: center;">❌</td>
+<td style="text-align: center;">✅ Pre-agg</td>
+<td style="text-align: center;">부분</td>
+<td style="text-align: center;">자체 구현</td>
+</tr>
+<tr>
+<td><strong>Oracle 19c</strong></td>
+<td style="text-align: center;">⭕ (vendor)</td>
+<td style="text-align: center;">⭕ (community)</td>
+<td style="text-align: center;">❌</td>
+<td style="text-align: center;">✅ (코드 통제)</td>
+</tr>
+<tr>
+<td><strong>개발 부담</strong></td>
+<td style="text-align: center;">낮음</td>
+<td style="text-align: center;">중간</td>
+<td style="text-align: center;">매우 낮음</td>
+<td style="text-align: center;">높음</td>
+</tr>
+<tr>
+<td><strong>운영 부담</strong></td>
+<td style="text-align: center;">낮음</td>
+<td style="text-align: center;">중간</td>
+<td style="text-align: center;">낮음</td>
+<td style="text-align: center;">높음</td>
+</tr>
+<tr>
+<td><strong>NL2SQL 적합</strong></td>
+<td style="text-align: center;">△ (변환만)</td>
+<td style="text-align: center;">△ (어댑터 필요)</td>
+<td style="text-align: center;">✅</td>
+<td style="text-align: center;">✅</td>
+</tr>
+<tr>
+<td><strong>BI 적합</strong></td>
+<td style="text-align: center;">△ (변환만)</td>
+<td style="text-align: center;">✅</td>
+<td style="text-align: center;">△ (UI 위주)</td>
+<td style="text-align: center;">△ (직접 구현)</td>
+</tr>
+</tbody>
+</table>
+<blockquote>
+<p>💡 <strong>실무 패턴 (가장 흔한 조합):</strong> dbt(변환) + Cube(BI/API) + WrenAI(NL2SQL) — 세 도구가 서로 다른 레이어를 담당하므로 충돌 없이 같이 쓸 수 있다. 사내 환경(Oracle 19c)이라면 WrenAI 대신 자체 구현으로 대체.</p>
+</blockquote>
 <h2 id="6-2-의사결정-체크리스트">6-2. 의사결정 체크리스트</h2>
 <p>도입 전 확인할 항목:</p>
 <ul>
@@ -2249,6 +2585,10 @@ flowchart LR
 <tr>
 <td>2026-05-11</td>
 <td>세미나 자료 초안 작성 (90분 분량, 실습 포함)</td>
+</tr>
+<tr>
+<td>2026-05-17</td>
+<td>§6-1 결정 트리에 4가지 추천 경로별 상세 근거 추가 (dbt Core / Cube / WrenAI / 자체 구현). 시나리오 표 + 핵심 근거 + 부적합 케이스 + 한 페이지 요약 비교</td>
 </tr>
 </tbody>
 </table>

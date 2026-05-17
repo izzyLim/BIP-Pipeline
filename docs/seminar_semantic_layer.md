@@ -1314,6 +1314,165 @@ flowchart TD
     style C5 fill:#a78bfa,color:#fff
 ```
 
+> 결정 트리는 **결론**이고, 그 결론의 **근거**가 더 중요합니다. 4가지 경로 각각의 추천 이유를 펼쳐봅니다.
+
+### 6-1-1. dbt Core — "변환 자동화 + Git 거버넌스"가 핵심일 때
+
+**한 줄 결론:** 데이터 변환(Raw → Gold)을 **소스코드처럼 관리**해야 한다면 dbt 외엔 대안이 거의 없음.
+
+**추천 시나리오:**
+
+| 만약 ~ 라면 | dbt가 답인 이유 |
+|------------|---------------|
+| 변환 모델이 10개를 넘어가고 의존성 관리가 복잡해진다 | `{{ ref() }}` / `{{ source() }}` 가 의존성을 자동 추적해 실행 순서 결정 |
+| 분석가가 직접 변환 모델을 추가하는 셀프서비스가 필요하다 | SQL + Jinja만 알면 됨. 별도 ETL 학습 불필요 |
+| 변환 로직을 PR 리뷰로 거버넌스하고 싶다 | 모든 모델이 `.sql` 파일 — 코드 리뷰 자연스러움 |
+| 스키마 변경 시 영향도(downstream) 자동 추적이 필요하다 | `dbt docs generate` 가 Lineage 자동 생성 |
+| 변환 결과의 데이터 품질 검증이 필요하다 | `dbt test` (not_null/unique/relationships/accepted_values) 내장 |
+
+**핵심 근거 5가지:**
+
+1. **의존성 자동 추적** — `{{ ref('stg_orders') }}` 한 줄이면 dbt가 실행 순서를 결정. 모델 100개여도 사람이 순서 신경 쓸 필요 없음. ETL 도구들이 못 따라오는 부분.
+
+2. **테스트 내장** — `schema.yml`에 `tests: [not_null, unique]`만 적으면 매 실행마다 자동 검증. 별도 데이터 품질 도구(Great Expectations 등) 없이도 기본 검증이 됨.
+
+3. **문서 자동 생성** — `dbt docs serve` 한 번이면 모든 모델/컬럼/Lineage가 정적 사이트로 카탈로그됨. Description은 모델 파일 옆 `.yml`에 작성 → 코드와 문서가 한 PR에서 같이 변경됨 (문서 표류 방지).
+
+4. **재사용 가능한 SQL** — Jinja macros로 반복되는 SQL 패턴을 함수처럼 정의. 예: 환율 변환 매크로 한 번 작성 → 30개 모델에서 호출. 복붙 코드 제거.
+
+5. **Materialization 전략** — `view` / `table` / `incremental` / `ephemeral` 한 줄로 선언. 변환 비용/속도 트레이드오프를 코드에서 명시 가능.
+
+**dbt가 부적합한 경우:**
+- ❌ **실시간 API 서빙** — dbt는 배치 도구. API 응답을 dbt가 제공하지는 못함 (Cube 등이 그 위에 필요)
+- ❌ **NL2SQL 직접 지원** — 자연어 → SQL 변환 기능 없음. 변환 도구이지 질의 도구가 아님
+- ❌ **빠른 PoC** — 프로젝트 구조(`dbt_project.yml`, `profiles.yml`, `models/`) 학습 부담. 1–2개 변환만 필요하면 그냥 SQL이 빠름
+
+> 💡 **사내 적용 시:** Oracle 19c 환경이라면 `dbt-oracle` 어댑터 (Oracle 본사 vendor-supported, `python-oracledb` thin 모드로 Instant Client 불필요). 새 dbt-core 출시 후 호환 릴리스 지연 가능하므로 **버전 핀 필수**.
+
+---
+
+### 6-1-2. Cube — "BI 대시보드 / 임베디드 API"가 핵심일 때
+
+**한 줄 결론:** 메트릭 정의를 **여러 클라이언트(BI 도구, 웹/앱, BI 임베디드)에서 동일하게 사용**해야 한다면 Cube가 사실상 표준.
+
+**추천 시나리오:**
+
+| 만약 ~ 라면 | Cube가 답인 이유 |
+|------------|----------------|
+| Tableau/Power BI/Metabase 등 여러 BI를 동시에 쓴다 | SQL API로 BI 도구가 Cube를 일반 DB처럼 연결. 메트릭 정의 한 번 → 모든 BI 동일 결과 |
+| 사내 React/Vue 앱에 매출 위젯을 임베드하고 싶다 | REST/GraphQL API. 프론트가 SQL 모르고도 `measure=revenue` 한 줄로 호출 |
+| 대시보드 응답 속도가 핵심이다 (수십 ms 목표) | Pre-aggregation: Cube가 미리 집계 테이블을 만들어 캐싱 |
+| 부서마다 다른 매출 정의를 통일해야 한다 | Cube 모델 파일이 단일 진실 — 모든 측정값이 같은 SQL에서 나옴 |
+| 멀티 테넌시 + 권한 관리가 필요하다 | `securityContext` + `accessPolicy`로 사용자별 필터링 |
+
+**핵심 근거 5가지:**
+
+1. **3가지 API 동시 제공** — REST(웹/앱), GraphQL(유연한 쿼리), SQL(BI 도구 직접 연결). **어떤 클라이언트도 같은 메트릭에 접근 가능.** dbt에는 OSS Core에 이런 API가 없음 (Cloud 유료).
+
+2. **Pre-aggregation 캐싱** — "월별 매출"을 Cube가 미리 계산해 별도 테이블에 저장. 대시보드 응답이 원본 DB 쿼리(수초) → Cube 캐시(수십 ms). dbt에는 없는 기능.
+
+3. **시각적 쿼리 도구 (Playground)** — 메트릭/차원/필터를 클릭으로 조합 → SQL 자동 생성. 분석가/PM이 직접 쿼리 가능.
+
+4. **메트릭 표준화** — `cube('Orders').measure('revenue')` 가 단일 진실. Tableau 사용자도 Power BI 사용자도 같은 숫자를 봄. 부서 간 회의에서 "왜 매출이 다르냐" 논쟁 종결.
+
+5. **Headless BI 패턴** — UI 없이 메트릭/API만 제공. 위에 어떤 BI/앱/봇이든 붙일 수 있는 **인프라 레이어**. WrenAI도 Cube 위에 얹을 수 있음.
+
+**Cube가 부적합한 경우:**
+- ❌ **팩트-팩트 JOIN 빈번** — 1:N JOIN은 자동 처리하지만 **N:N(팩트끼리) 결합 불가**. BIP 검증에서 "저평가 + 외국인 순매수" 같은 핵심 사용 케이스 모두 실패
+- ❌ **자연어 챗봇 단독 구축** — Cube 자체에 LLM 없음. 자연어 처리하려면 위에 WrenAI/자체 Agent 필요
+- ❌ **단순 변환 자동화만 필요** — Cube는 시맨틱 + 서빙 레이어. 변환 자동화는 dbt가 더 단순
+
+> 💡 **사내 적용 시:** Oracle 19c 지원 (community, `node-oracledb` 6.x). dbt-oracle보다는 한 단계 낮은 등급이지만 BIP 검증으로 단순/2-Cube JOIN까지는 안정적으로 동작 확인.
+
+---
+
+### 6-1-3. WrenAI — "자연어 챗봇"이 핵심이고 환경이 맞을 때
+
+**한 줄 결론:** PostgreSQL 또는 Oracle 23ai 환경에서 **자연어 → SQL을 30분 안에 띄우고 싶다면** WrenAI.
+
+**추천 시나리오:**
+
+| 만약 ~ 라면 | WrenAI가 답인 이유 |
+|------------|------------------|
+| 자연어 챗봇이 메인 인터페이스다 | MDL + LLM + RAG가 통합. 별도 Agent 코드 작성 불필요 |
+| DB가 PostgreSQL 또는 Oracle 23ai다 | ibis-server가 공식 지원 |
+| 빠른 PoC가 필요하다 | Docker Compose로 30분이면 동작 |
+| 분석가도 SQL 정확도 튜닝에 참여하고 싶다 | SQL Pairs UI에서 질문-SQL 쌍 등록만 하면 됨 |
+| Chat UI를 따로 만들기 부담스럽다 | WrenAI UI 그대로 사용 가능 |
+
+**핵심 근거 5가지:**
+
+1. **All-in-One 통합** — 데이터 연결, MDL, RAG, LLM 호출, SQL 검증, Chat UI가 한 패키지. dbt+Cube+자체 Agent를 합친 것과 동일한 기능을 단일 도구로.
+
+2. **SQL Pairs 학습 시스템** — BIP 검증: 29개 → 70개로 늘리며 A등급 58% → 100%. **운영하면서 정확도가 오르는** 구조. 분석가가 UI에서 직접 등록 가능.
+
+3. **Wren Engine 검증** — LLM이 생성한 SQL을 dry-run으로 검증 → 실패 시 자동 재생성 (3회). 환각 SQL이 사용자에게 도달하지 않음.
+
+4. **Instructions로 도메인 규칙 강제** — "종목명은 한글로", "ETF 제외" 같은 전역 규칙을 LLM에 주입.
+
+5. **검증된 운영 성숙도** — BIP에서 100% A등급 + 87% boolean flag 사용률 달성. 다른 NL2SQL 도구들(Vanna, MindsDB 등) 대비 가장 안정적.
+
+**WrenAI가 부적합한 경우:**
+- ❌ **Oracle 19c** — ibis-server가 23ai 전용 메타 조회 로직 사용 (`get_db_version` 등). 사내 19c 환경에서 동작 불가
+- ❌ **BI 도구 통합 중심** — WrenAI는 자연어 UI 위주. Tableau/Power BI 같은 BI 도구 연동은 약함 (Cube가 적합)
+- ❌ **1질문 → 멀티스텝 처리** — WrenAI 구조상 1질문 = 1 SQL. "매출 + 관련 뉴스 요약" 같은 멀티 도구 조합 어려움 (LangGraph로 보완 필요)
+- ❌ **프롬프트 완전 제어** — OSS 소스 수정 부담. 답변 생성(sql_answer) 환각을 직접 고치기 어려움
+
+> 💡 **검증 가능한 환경에서만 채택:** WrenAI는 환경 호환성이 가장 까다로움. 30분 PoC로 **자기 DB에 연결되는지부터 검증**하고 결정.
+
+---
+
+### 6-1-4. 자체 구현 (LangGraph + QuerySpec) — Oracle 19c + 복합 쿼리
+
+**한 줄 결론:** **WrenAI도 Cube도 안 되는 환경**(Oracle 19c + 팩트-팩트 JOIN 빈번)에서 자연어 챗봇이 필요하면 자체 구현이 결국 도달점.
+
+**추천 시나리오:**
+
+| 만약 ~ 라면 | 자체 구현이 답인 이유 |
+|------------|--------------------|
+| DB가 Oracle 19c (또는 다른 특수 환경)이고 챗봇이 필요하다 | WrenAI 불가, Cube는 팩트-팩트 한계 — 우회 불가 |
+| 멀티스텝 (NL2SQL + RAG + MCP) 통합이 필요하다 | 어떤 도구든 결국 위에 LangGraph 같은 오케스트레이션 필요 |
+| 사내 LLM (외부 API 불가) 사용해야 한다 | LiteLLM 어댑터로 모델 자유 교체 |
+| 도구 락인을 피하고 싶다 | 시맨틱 레이어 본체(DB View)만 남기고 변환 레이어 자체 구현 |
+| 멀티 에이전트 / Function Calling 같은 최신 패턴 적용하고 싶다 | DAQUV/arXiv 2502.00032 논문 근거의 QuerySpec 패턴 적용 가능 |
+
+**핵심 근거 4가지:**
+
+1. **QuerySpec 중간 표현으로 안정성 확보** — LLM이 SQL을 직접 안 만들고 구조화된 JSON만 만듦. 문법 오류 원천 차단 + Function Calling 안정성. Claude 3.5 Sonnet 74.3%, GPT-4o mini 73.7% 정확도 달성 (논문).
+
+2. **모든 제약 우회 가능** — DB 방언(Oracle 19c FETCH FIRST/SYSDATE)도 변환기 코드에 직접 작성. 외부 도구가 못 따라오는 부분을 코드로 해결.
+
+3. **5-Layer 보안 (도구 의존 없음)** — SELECT only + allowlist + sqlglot + EXPLAIN + DB role. 모든 방어선을 자체 통제.
+
+4. **확장 자유도** — LangGraph 노드 추가만으로 RAG/MCP/Synthesizer 통합. NL2SQL이 멀티 에이전트 서비스의 한 도구로 자연스럽게 편입.
+
+**자체 구현이 부적합한 경우:**
+- ❌ **초기 개발 부담 회피** — 모듈(Registry/QuerySpec/Converter/Validator/RAG/Agent) 직접 구현 필요. Cube/WrenAI가 동작하는 환경이라면 그쪽이 훨씬 빠름
+- ❌ **표준 패턴만 필요** — 단순 조회 위주라면 WrenAI 한 도구로 충분. 자체 구현은 복합 쿼리/멀티스텝까지 가는 조직에 적합
+- ❌ **인력 부족** — Python + LLM + DB + LangGraph 모두 다룰 수 있는 엔지니어가 없으면 운영 부담 큼
+
+> 💡 **마지막 옵션으로 권장:** 자체 구현은 "다른 도구가 안 맞아서" 가는 길. 환경이 맞는다면 WrenAI/Cube 먼저 시도, 안 되면 자체 구현으로 진행하는 순서가 안전.
+
+---
+
+### 6-1-5. 한 페이지 요약 비교
+
+| 항목 | dbt Core | Cube | WrenAI | 자체 구현 |
+|------|:-:|:-:|:-:|:-:|
+| **주된 강점** | 변환 자동화 | API 서빙 | 자연어 챗봇 | 환경 자유 |
+| **핵심 산출물** | Gold Table | API + Pre-agg | SQL + 자연어 답변 | QuerySpec + SQL |
+| **거버넌스** | Git PR | Cube 모델 파일 | UI + SQL Pairs | 코드 + 평가셋 |
+| **API** | ❌ (Cloud만) | ✅ REST/GraphQL/SQL | ✅ REST | 자체 FastAPI |
+| **자연어 직접** | ❌ | ❌ | ✅ | ✅ |
+| **캐싱** | ❌ | ✅ Pre-agg | 부분 | 자체 구현 |
+| **Oracle 19c** | ⭕ (vendor) | ⭕ (community) | ❌ | ✅ (코드 통제) |
+| **개발 부담** | 낮음 | 중간 | 매우 낮음 | 높음 |
+| **운영 부담** | 낮음 | 중간 | 낮음 | 높음 |
+| **NL2SQL 적합** | △ (변환만) | △ (어댑터 필요) | ✅ | ✅ |
+| **BI 적합** | △ (변환만) | ✅ | △ (UI 위주) | △ (직접 구현) |
+
+> 💡 **실무 패턴 (가장 흔한 조합):** dbt(변환) + Cube(BI/API) + WrenAI(NL2SQL) — 세 도구가 서로 다른 레이어를 담당하므로 충돌 없이 같이 쓸 수 있다. 사내 환경(Oracle 19c)이라면 WrenAI 대신 자체 구현으로 대체.
+
 ## 6-2. 의사결정 체크리스트
 
 도입 전 확인할 항목:
@@ -1534,3 +1693,4 @@ flowchart LR
 | 날짜 | 내용 |
 |------|------|
 | 2026-05-11 | 세미나 자료 초안 작성 (90분 분량, 실습 포함) |
+| 2026-05-17 | §6-1 결정 트리에 4가지 추천 경로별 상세 근거 추가 (dbt Core / Cube / WrenAI / 자체 구현). 시나리오 표 + 핵심 근거 + 부적합 케이스 + 한 페이지 요약 비교 |
