@@ -1,0 +1,778 @@
+<!DOCTYPE html>
+<html lang="ko" data-theme="dark">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>dbt 데모 결과 — 학습조직 세미나 자료</title>
+<script src="https://cdn.jsdelivr.net/npm/mermaid@11/dist/mermaid.min.js"></script>
+<style>
+  /* ── 테마 변수 ── */
+  :root[data-theme="dark"] {
+    --bg: #0d1117;
+    --bg-sidebar: #161b22;
+    --fg: #e6edf3;
+    --fg-muted: #8b949e;
+    --border: #30363d;
+    --accent: #58a6ff;
+    --accent-hover: #79c0ff;
+    --code-bg: #1e293b;
+    --code-fg: #e2e8f0;
+    --table-header: #161b22;
+    --table-even: #0d1117;
+    --table-odd: #161b22;
+    --blockquote-bg: #161b22;
+    --blockquote-border: #3b82f6;
+    --link: #58a6ff;
+    --strong: #79c0ff;
+    --card-bg: #21262d;
+  }
+  :root[data-theme="light"] {
+    --bg: #ffffff;
+    --bg-sidebar: #f6f8fa;
+    --fg: #1f2937;
+    --fg-muted: #6b7280;
+    --border: #e5e7eb;
+    --accent: #2563eb;
+    --accent-hover: #1d4ed8;
+    --code-bg: #f3f4f6;
+    --code-fg: #1e293b;
+    --table-header: #f8fafc;
+    --table-even: #ffffff;
+    --table-odd: #f9fafb;
+    --blockquote-bg: #eff6ff;
+    --blockquote-border: #3b82f6;
+    --link: #2563eb;
+    --strong: #1e40af;
+    --card-bg: #f3f4f6;
+  }
+
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+
+  body {
+    font-family: 'Pretendard', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+    background: var(--bg);
+    color: var(--fg);
+    line-height: 1.75;
+    display: flex;
+    min-height: 100vh;
+  }
+
+  /* ── 사이드바 ── */
+  .sidebar {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 280px;
+    height: 100vh;
+    background: var(--bg-sidebar);
+    border-right: 1px solid var(--border);
+    overflow-y: auto;
+    padding: 20px 0;
+    z-index: 100;
+    transition: transform 0.3s ease;
+  }
+
+  .sidebar-header {
+    padding: 0 20px 16px;
+    border-bottom: 1px solid var(--border);
+    margin-bottom: 12px;
+  }
+
+  .sidebar-title {
+    font-size: 0.95rem;
+    font-weight: 700;
+    color: var(--fg);
+    line-height: 1.3;
+  }
+
+  .sidebar-controls {
+    display: flex;
+    gap: 8px;
+    margin-top: 12px;
+  }
+
+  .theme-btn {
+    background: var(--card-bg);
+    border: 1px solid var(--border);
+    color: var(--fg-muted);
+    padding: 4px 10px;
+    border-radius: 6px;
+    font-size: 0.7rem;
+    cursor: pointer;
+    transition: all 0.2s;
+  }
+  .theme-btn:hover {
+    border-color: var(--accent);
+    color: var(--accent);
+  }
+  .theme-btn.active {
+    background: var(--accent);
+    color: #fff;
+    border-color: var(--accent);
+  }
+
+  .back-link {
+    display: block;
+    margin-top: 10px;
+    font-size: 0.75rem;
+    color: var(--fg-muted);
+    text-decoration: none;
+  }
+  .back-link:hover {
+    color: var(--accent);
+  }
+
+  /* ── TOC ── */
+  .toc {
+    padding: 0 12px;
+  }
+  .toc ul {
+    list-style: none;
+    padding: 0;
+  }
+  .toc li {
+    margin: 0;
+  }
+  .toc a {
+    display: block;
+    padding: 4px 8px;
+    color: var(--fg-muted);
+    text-decoration: none;
+    font-size: 0.78rem;
+    border-radius: 4px;
+    border-left: 2px solid transparent;
+    transition: all 0.15s;
+    line-height: 1.4;
+  }
+  .toc a:hover {
+    color: var(--accent);
+    background: var(--card-bg);
+    border-left-color: var(--accent);
+  }
+  .toc a.active {
+    color: var(--accent);
+    border-left-color: var(--accent);
+    font-weight: 600;
+  }
+  .toc-h3 a { padding-left: 20px; font-size: 0.75rem; }
+  .toc-h4 a { padding-left: 32px; font-size: 0.72rem; }
+
+  /* ── 본문 ── */
+  .content {
+    margin-left: 280px;
+    flex: 1;
+    max-width: 860px;
+    padding: 40px 48px 80px;
+  }
+
+  /* ── 모바일 ── */
+  .menu-toggle {
+    display: none;
+    position: fixed;
+    top: 12px;
+    left: 12px;
+    z-index: 200;
+    background: var(--bg-sidebar);
+    border: 1px solid var(--border);
+    color: var(--fg);
+    padding: 8px 12px;
+    border-radius: 6px;
+    cursor: pointer;
+    font-size: 1.1rem;
+  }
+
+  @media (max-width: 900px) {
+    .sidebar {
+      transform: translateX(-100%);
+    }
+    .sidebar.open {
+      transform: translateX(0);
+    }
+    .content {
+      margin-left: 0;
+      padding: 60px 20px 60px;
+    }
+    .menu-toggle {
+      display: block;
+    }
+  }
+
+  /* ── 타이포그래피 ── */
+  h1 { font-size: 1.9rem; margin: 2rem 0 1rem; padding-bottom: 0.5rem; border-bottom: 2px solid var(--accent); }
+  h2 { font-size: 1.45rem; margin: 2.5rem 0 0.8rem; padding-bottom: 0.3rem; border-bottom: 1px solid var(--border); color: var(--accent); }
+  h3 { font-size: 1.15rem; margin: 1.8rem 0 0.5rem; }
+  h4 { font-size: 1rem; margin: 1.3rem 0 0.4rem; color: var(--fg-muted); }
+  p { margin: 0.6rem 0; }
+  hr { border: none; border-top: 1px solid var(--border); margin: 2rem 0; }
+  strong { color: var(--strong); }
+  a { color: var(--link); text-decoration: none; }
+  a:hover { text-decoration: underline; }
+  ul, ol { margin: 0.5rem 0 0.5rem 1.5rem; }
+  li { margin: 0.25rem 0; }
+
+  /* ── 테이블 ── */
+  table { width: 100%; border-collapse: collapse; margin: 1rem 0; font-size: 0.85rem; }
+  th, td { border: 1px solid var(--border); padding: 0.5rem 0.75rem; text-align: left; }
+  th { background: var(--table-header); font-weight: 600; }
+  tr:nth-child(even) { background: var(--table-even); }
+  tr:nth-child(odd) { background: var(--table-odd); }
+
+  /* ── 코드 ── */
+  code {
+    background: var(--code-bg);
+    color: var(--code-fg);
+    padding: 0.15rem 0.4rem;
+    border-radius: 4px;
+    font-size: 0.82em;
+    font-family: 'JetBrains Mono', 'Fira Code', 'Cascadia Code', monospace;
+  }
+  pre {
+    background: var(--code-bg);
+    color: var(--code-fg);
+    padding: 1rem 1.2rem;
+    border-radius: 8px;
+    overflow-x: auto;
+    margin: 1rem 0;
+    border: 1px solid var(--border);
+  }
+  pre code {
+    background: none;
+    padding: 0;
+    font-size: 0.82rem;
+    line-height: 1.5;
+  }
+
+  /* ── 인용 ── */
+  blockquote {
+    border-left: 4px solid var(--blockquote-border);
+    padding: 0.6rem 1rem;
+    margin: 1rem 0;
+    background: var(--blockquote-bg);
+    border-radius: 0 6px 6px 0;
+  }
+  blockquote p { margin: 0.3rem 0; }
+
+  /* ── Mermaid ── */
+  .mermaid {
+    margin: 1.5rem 0;
+    text-align: center;
+    background: var(--card-bg);
+    padding: 1rem;
+    border-radius: 8px;
+    border: 1px solid var(--border);
+  }
+  .mermaid svg { max-width: 100%; }
+
+  /* ── Footer ── */
+  footer {
+    margin-top: 3rem;
+    padding-top: 1rem;
+    border-top: 1px solid var(--border);
+    color: var(--fg-muted);
+    font-size: 0.8rem;
+  }
+</style>
+</head>
+<body>
+
+<button class="menu-toggle" onclick="document.querySelector('.sidebar').classList.toggle('open')">☰</button>
+
+<aside class="sidebar">
+  <div class="sidebar-header">
+    <div class="sidebar-title">dbt 데모 결과 — 학습조직 세미나 자료</div>
+    <div class="sidebar-controls">
+      <button class="theme-btn" onclick="setTheme('dark')" id="btn-dark">🌙 Dark</button>
+      <button class="theme-btn" onclick="setTheme('light')" id="btn-light">☀️ Light</button>
+    </div>
+    <a class="back-link" href="index.html">← 문서 목록으로</a>
+  </div>
+  <nav class="toc">
+<ul>
+<li class="toc-h2"><a href="#1-구축-결과-요약">1. 구축 결과 요약</a></li>
+<li class="toc-h2"><a href="#2-4-layer-lineage-구조">2. 4-Layer Lineage 구조</a></li>
+<li class="toc-h2"><a href="#3-세미나에서-보여줄-4가지-dbt-강점">3. 세미나에서 보여줄 4가지 dbt 강점</a></li>
+  <li class="toc-h3"><a href="#강점-1---ref--자동-의존성-추적">강점 1 — {{ ref() }} 자동 의존성 추적</a></li>
+  <li class="toc-h3"><a href="#강점-2--dbt-test-데이터-품질-검증-내장">강점 2 — dbt test 데이터 품질 검증 내장</a></li>
+  <li class="toc-h3"><a href="#강점-3--dbt-docs-serve-lineage--카탈로그-자동-생성">강점 3 — dbt docs serve Lineage + 카탈로그 자동 생성</a></li>
+  <li class="toc-h3"><a href="#강점-4--jinja-macro-재사용">강점 4 — Jinja Macro 재사용</a></li>
+<li class="toc-h2"><a href="#4-dbt-vs-수동-sql-비교">4. dbt vs 수동 SQL 비교</a></li>
+<li class="toc-h2"><a href="#5-세미나-시연-명령어">5. 세미나 시연 명령어</a></li>
+<li class="toc-h2"><a href="#6-oracle-19c-적용-가능성">6. Oracle 19c 적용 가능성</a></li>
+<li class="toc-h2"><a href="#7-한계--다음-단계">7. 한계 + 다음 단계</a></li>
+<li class="toc-h2"><a href="#변경-이력">변경 이력</a></li>
+</ul>
+</nav>
+</aside>
+
+<main class="content">
+<h1 id="dbt-데모-결과--학습조직-세미나-자료">dbt 데모 결과 — 학습조직 세미나 자료</h1>
+<blockquote>
+<p><strong>목적:</strong> BIP-Pipeline 실제 데이터(PostgreSQL)에 dbt를 적용한 데모 결과 정리. 세미나에서 dbt의 4가지 핵심 강점을 한 화면에 시연하기 위한 자료.</p>
+<p><strong>환경:</strong> dbt-core 1.9 + dbt-postgres 1.9 / Docker / bip-postgres <code>stockdb</code>
+<strong>데이터:</strong> BIP <code>public</code> 스키마의 4개 원본 → <code>dbt_demo_*</code> 스키마에 변환 결과 적재</p>
+</blockquote>
+<hr />
+<h2 id="1-구축-결과-요약">1. 구축 결과 요약</h2>
+<div class="codehilite"><pre><span></span><code>✅ 6 모델 빌드 성공 (PASS=5)
+✅ 30개 데이터 테스트 통과 (PASS=30)
+✅ Lineage 카탈로그 자동 생성 (catalog.json 1개)
+⏱️  전체 dbt build 소요 시간: ~52초
+</code></pre></div>
+
+<p><strong>적재된 결과:</strong></p>
+<table>
+<thead>
+<tr>
+<th>모델</th>
+<th>스키마</th>
+<th style="text-align: right;">행 수</th>
+<th>비고</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>stg_stock_info</code></td>
+<td>dbt_demo_staging</td>
+<td style="text-align: right;">11,382</td>
+<td>view (Yahoo 종목 마스터 정제)</td>
+</tr>
+<tr>
+<td><code>stg_stock_price</code></td>
+<td>dbt_demo_staging</td>
+<td style="text-align: right;">627,623</td>
+<td>view (90일 시세 + 등락률 계산)</td>
+</tr>
+<tr>
+<td><code>int_valuation_metrics</code></td>
+<td>(ephemeral)</td>
+<td style="text-align: right;">—</td>
+<td>CTE 인라인</td>
+</tr>
+<tr>
+<td><code>fct_stock_daily</code></td>
+<td>dbt_demo_marts</td>
+<td style="text-align: right;">627,623</td>
+<td>table (Gold 와이드)</td>
+</tr>
+<tr>
+<td><code>fct_valuation_yearly</code></td>
+<td>dbt_demo_marts</td>
+<td style="text-align: right;">8,488</td>
+<td>table (PER/PBR/ROE)</td>
+</tr>
+<tr>
+<td><code>signal_valuation</code></td>
+<td>dbt_demo_signals</td>
+<td style="text-align: right;">8,488</td>
+<td>view (Boolean Flag)</td>
+</tr>
+</tbody>
+</table>
+<p><strong>Boolean Flag 검증:</strong>
+- <code>is_value_stock = true</code> (저평가주): <strong>1,689개</strong>
+- <code>is_high_roe = true</code> (고ROE): <strong>764개</strong></p>
+<hr />
+<h2 id="2-4-layer-lineage-구조">2. 4-Layer Lineage 구조</h2>
+<div class="mermaid">
+flowchart LR
+    subgraph S["sources (public)"]
+        SI[stock_info]
+        SP[stock_price_1d]
+        FS[financial_statements]
+    end
+
+    subgraph STG["staging (view)"]
+        SSI[stg_stock_info]
+        SSP[stg_stock_price]
+    end
+
+    subgraph INT["intermediate (ephemeral)"]
+        IV[int_valuation_metrics]
+    end
+
+    subgraph MARTS["marts (table)"]
+        FSD[fct_stock_daily]
+        FVY[fct_valuation_yearly]
+    end
+
+    subgraph SIG["signals (view + Boolean)"]
+        SV[signal_valuation]
+    end
+
+    SI --> SSI
+    SP --> SSP
+    SSI --> FSD
+    SSP --> FSD
+    FS --> IV
+    SSI --> IV
+    IV --> FVY
+    FVY --> SV
+
+    style S fill:#fff3e0,color:#1a1a2e
+    style STG fill:#e3f2fd,color:#1a1a2e
+    style INT fill:#fce4ec,color:#1a1a2e
+    style MARTS fill:#e8f5e9,color:#1a1a2e
+    style SIG fill:#f3e5f5,color:#1a1a2e
+    style S fill:#4f8fea33,stroke:#4f8fea,stroke-width:2px
+    style STG fill:#6c5ce733,stroke:#6c5ce7,stroke-width:2px
+    style INT fill:#00b89433,stroke:#00b894,stroke-width:2px
+    style MARTS fill:#e1705533,stroke:#e17055,stroke-width:2px
+    style SIG fill:#fdcb6e33,stroke:#fdcb6e,stroke-width:2px
+</div>
+
+<blockquote>
+<p>이 그래프는 <code>dbt docs serve</code>에서 자동으로 시각화된다. 모델 1개를 클릭하면 컬럼 description, 테스트, SQL 코드가 모두 보임.</p>
+</blockquote>
+<hr />
+<h2 id="3-세미나에서-보여줄-4가지-dbt-강점">3. 세미나에서 보여줄 4가지 dbt 강점</h2>
+<h3 id="강점-1---ref--자동-의존성-추적">강점 1 — <code>{{ ref() }}</code> 자동 의존성 추적</h3>
+<p><strong>기존 방식 (수동 SQL):</strong></p>
+<div class="codehilite"><pre><span></span><code><span class="c1">-- 사람이 실행 순서를 기억하고 있어야 함</span>
+<span class="k">CREATE</span><span class="w"> </span><span class="k">VIEW</span><span class="w"> </span><span class="n">stg_stock_price</span><span class="w"> </span><span class="p">...;</span>
+<span class="k">CREATE</span><span class="w"> </span><span class="k">TABLE</span><span class="w"> </span><span class="n">fct_stock_daily</span><span class="w"> </span><span class="k">AS</span><span class="w"> </span><span class="k">SELECT</span><span class="w"> </span><span class="p">...</span><span class="w"> </span><span class="k">FROM</span><span class="w"> </span><span class="n">stg_stock_price</span><span class="p">;</span>
+<span class="k">CREATE</span><span class="w"> </span><span class="k">VIEW</span><span class="w"> </span><span class="n">signal_valuation</span><span class="w"> </span><span class="k">AS</span><span class="w"> </span><span class="k">SELECT</span><span class="w"> </span><span class="p">...</span><span class="w"> </span><span class="k">FROM</span><span class="w"> </span><span class="n">fct_valuation_yearly</span><span class="p">;</span>
+</code></pre></div>
+
+<p><strong>dbt 방식:</strong></p>
+<div class="codehilite"><pre><span></span><code><span class="c1">-- signal_valuation.sql</span>
+<span class="k">SELECT</span><span class="w"> </span><span class="o">*</span><span class="w"> </span><span class="k">FROM</span><span class="w"> </span><span class="err">{{</span><span class="w"> </span><span class="k">ref</span><span class="p">(</span><span class="s1">&#39;fct_valuation_yearly&#39;</span><span class="p">)</span><span class="w"> </span><span class="err">}}</span>
+</code></pre></div>
+
+<p><strong>시연:</strong> <code>dbt run</code> 한 번이면 5개 모델이 의존성 순서대로 자동 실행.</p>
+<div class="codehilite"><pre><span></span><code><span class="mf">1</span><span class="w"> </span><span class="n">of</span><span class="w"> </span><span class="mf">5</span><span class="w"> </span><span class="n">START</span><span class="w"> </span><span class="n">sql</span><span class="w"> </span><span class="n">view</span><span class="w"> </span><span class="n">model</span><span class="w"> </span><span class="n">dbt_demo_staging</span><span class="mf">.</span><span class="n">stg_stock_info</span>
+<span class="mf">2</span><span class="w"> </span><span class="n">of</span><span class="w"> </span><span class="mf">5</span><span class="w"> </span><span class="n">START</span><span class="w"> </span><span class="n">sql</span><span class="w"> </span><span class="n">view</span><span class="w"> </span><span class="n">model</span><span class="w"> </span><span class="n">dbt_demo_staging</span><span class="mf">.</span><span class="n">stg_stock_price</span>
+<span class="mf">3</span><span class="w"> </span><span class="n">of</span><span class="w"> </span><span class="mf">5</span><span class="w"> </span><span class="n">START</span><span class="w"> </span><span class="n">sql</span><span class="w"> </span><span class="nb">tab</span><span class="n">le</span><span class="w"> </span><span class="n">model</span><span class="w"> </span><span class="n">dbt_demo_marts</span><span class="mf">.</span><span class="n">fct_stock_daily</span>
+<span class="mf">4</span><span class="w"> </span><span class="n">of</span><span class="w"> </span><span class="mf">5</span><span class="w"> </span><span class="n">START</span><span class="w"> </span><span class="n">sql</span><span class="w"> </span><span class="nb">tab</span><span class="n">le</span><span class="w"> </span><span class="n">model</span><span class="w"> </span><span class="n">dbt_demo_marts</span><span class="mf">.</span><span class="n">fct_valuation_yearly</span>
+<span class="mf">5</span><span class="w"> </span><span class="n">of</span><span class="w"> </span><span class="mf">5</span><span class="w"> </span><span class="n">START</span><span class="w"> </span><span class="n">sql</span><span class="w"> </span><span class="n">view</span><span class="w"> </span><span class="n">model</span><span class="w"> </span><span class="n">dbt_demo_signals</span><span class="mf">.</span><span class="n">signal_valuation</span>
+</code></pre></div>
+
+<blockquote>
+<p><strong>메시지:</strong> 모델 100개여도 사람이 순서 신경 쓸 필요 없음.</p>
+</blockquote>
+<hr />
+<h3 id="강점-2--dbt-test-데이터-품질-검증-내장">강점 2 — <code>dbt test</code> 데이터 품질 검증 내장</h3>
+<p><strong>작성한 테스트 (<code>schema.yml</code>):</strong></p>
+<div class="codehilite"><pre><span></span><code><span class="nt">columns</span><span class="p">:</span>
+<span class="w">  </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="nt">name</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">ticker</span>
+<span class="w">    </span><span class="nt">tests</span><span class="p">:</span><span class="w"> </span><span class="p p-Indicator">[</span><span class="nv">not_null</span><span class="p p-Indicator">,</span><span class="w"> </span><span class="nv">unique</span><span class="p p-Indicator">]</span>
+<span class="w">  </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="nt">name</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">foreign_direction</span>
+<span class="w">    </span><span class="nt">tests</span><span class="p">:</span>
+<span class="w">      </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="nt">accepted_values</span><span class="p">:</span>
+<span class="w">          </span><span class="nt">values</span><span class="p">:</span><span class="w"> </span><span class="p p-Indicator">[</span><span class="s">&#39;순매수&#39;</span><span class="p p-Indicator">,</span><span class="w"> </span><span class="s">&#39;순매도&#39;</span><span class="p p-Indicator">,</span><span class="w"> </span><span class="s">&#39;보합&#39;</span><span class="p p-Indicator">,</span><span class="w"> </span><span class="s">&#39;데이터없음&#39;</span><span class="p p-Indicator">]</span>
+</code></pre></div>
+
+<p><strong>시연:</strong> <code>dbt test</code>로 30개 테스트 자동 실행.</p>
+<div class="codehilite"><pre><span></span><code><span class="mf">30</span><span class="w"> </span><span class="n">of</span><span class="w"> </span><span class="mf">30</span><span class="w"> </span><span class="n">PASS</span><span class="w"> </span><span class="n">unique_stg_stock_info_ticker</span><span class="w"> </span><span class="mf">...</span><span class="w"> </span><span class="err">[</span><span class="n">PASS</span><span class="w"> </span><span class="n">in</span><span class="w"> </span><span class="mf">0.22</span><span class="n">s</span><span class="err">]</span>
+<span class="n">Done</span><span class="mf">.</span><span class="w"> </span><span class="n">PASS</span><span class="o">=</span><span class="mf">30</span><span class="w"> </span><span class="n">WARN</span><span class="o">=</span><span class="mf">0</span><span class="w"> </span><span class="n">ERROR</span><span class="o">=</span><span class="mf">0</span><span class="w"> </span><span class="n">SKIP</span><span class="o">=</span><span class="mf">0</span><span class="w"> </span><span class="kr">TO</span><span class="n">TAL</span><span class="o">=</span><span class="mf">30</span>
+</code></pre></div>
+
+<p><strong>테스트 종류:</strong>
+- <code>not_null</code> — 11개
+- <code>unique</code> — 2개
+- <code>relationships</code> — 3개 (FK 검증)
+- <code>accepted_values</code> — 3개 (enum 검증)
+- 그 외 11개</p>
+<blockquote>
+<p><strong>메시지:</strong> 별도 데이터 품질 도구(Great Expectations 등) 없이도 기본 검증 가능.</p>
+</blockquote>
+<hr />
+<h3 id="강점-3--dbt-docs-serve-lineage--카탈로그-자동-생성">강점 3 — <code>dbt docs serve</code> Lineage + 카탈로그 자동 생성</h3>
+<p><strong>작성:</strong> 컬럼별 description을 <code>schema.yml</code>에 한 번만.</p>
+<p><strong>시연 흐름:</strong></p>
+<div class="codehilite"><pre><span></span><code>dbt<span class="w"> </span>docs<span class="w"> </span>generate<span class="w">    </span><span class="c1"># catalog.json 생성</span>
+dbt<span class="w"> </span>docs<span class="w"> </span>serve<span class="w">       </span><span class="c1"># http://localhost:8081 자동 사이트</span>
+</code></pre></div>
+
+<p><strong>자동 생성되는 것:</strong>
+- 4-Layer Lineage 그래프 (위 mermaid와 동일)
+- 모델별 페이지: 컬럼 + 설명 + 데이터 타입 + 소스 SQL
+- 검색 가능한 데이터 카탈로그
+- Test 결과</p>
+<blockquote>
+<p><strong>메시지:</strong> Description은 모델 옆 <code>.yml</code>에 같이 작성 → 코드와 문서가 한 PR에서 변경됨. <strong>문서 표류 방지.</strong></p>
+</blockquote>
+<hr />
+<h3 id="강점-4--jinja-macro-재사용">강점 4 — Jinja Macro 재사용</h3>
+<p><strong>문제:</strong> BIP에서 자주 발생한 함정 — 시가총액이 어떤 컬럼은 "억원", 어떤 컬럼은 "원" 단위라 PER 계산 시 0이 나옴.</p>
+<p><strong>매크로 (<code>macros/to_won.sql</code>):</strong></p>
+<div class="codehilite"><pre><span></span><code><span class="err">{</span><span class="o">%</span><span class="w"> </span><span class="n">macro</span><span class="w"> </span><span class="n">to_won</span><span class="p">(</span><span class="k">column_name</span><span class="p">,</span><span class="w"> </span><span class="k">alias</span><span class="o">=</span><span class="k">None</span><span class="p">)</span><span class="w"> </span><span class="o">%</span><span class="err">}</span>
+<span class="w">    </span><span class="k">CASE</span>
+<span class="w">        </span><span class="k">WHEN</span><span class="w"> </span><span class="err">{{</span><span class="w"> </span><span class="k">column_name</span><span class="w"> </span><span class="err">}}</span><span class="w"> </span><span class="k">IS</span><span class="w"> </span><span class="k">NULL</span><span class="w"> </span><span class="k">THEN</span><span class="w"> </span><span class="k">NULL</span>
+<span class="w">        </span><span class="k">WHEN</span><span class="w"> </span><span class="err">{{</span><span class="w"> </span><span class="k">column_name</span><span class="w"> </span><span class="err">}}</span><span class="w"> </span><span class="o">&lt;</span><span class="w"> </span><span class="mi">100000000</span><span class="w"> </span><span class="k">THEN</span><span class="w"> </span><span class="p">(</span><span class="err">{{</span><span class="w"> </span><span class="k">column_name</span><span class="w"> </span><span class="err">}}</span><span class="w"> </span><span class="o">*</span><span class="w"> </span><span class="mi">100000000</span><span class="p">)::</span><span class="nb">numeric</span>
+<span class="w">        </span><span class="k">ELSE</span><span class="w"> </span><span class="err">{{</span><span class="w"> </span><span class="k">column_name</span><span class="w"> </span><span class="err">}}</span><span class="p">::</span><span class="nb">numeric</span>
+<span class="w">    </span><span class="k">END</span><span class="w"> </span><span class="err">{</span><span class="o">%</span><span class="w"> </span><span class="k">if</span><span class="w"> </span><span class="k">alias</span><span class="w"> </span><span class="o">%</span><span class="err">}</span><span class="k">AS</span><span class="w"> </span><span class="err">{{</span><span class="w"> </span><span class="k">alias</span><span class="w"> </span><span class="err">}}{</span><span class="o">%</span><span class="w"> </span><span class="n">endif</span><span class="w"> </span><span class="o">%</span><span class="err">}</span>
+<span class="err">{</span><span class="o">%</span><span class="w"> </span><span class="n">endmacro</span><span class="w"> </span><span class="o">%</span><span class="err">}</span>
+</code></pre></div>
+
+<p><strong>사용 (<code>int_valuation_metrics.sql</code>):</strong></p>
+<div class="codehilite"><pre><span></span><code><span class="k">SELECT</span>
+<span class="w">    </span><span class="n">ticker</span><span class="p">,</span>
+<span class="w">    </span><span class="err">{{</span><span class="w"> </span><span class="n">to_won</span><span class="p">(</span><span class="s1">&#39;s.market_value&#39;</span><span class="p">,</span><span class="w"> </span><span class="k">alias</span><span class="o">=</span><span class="s1">&#39;market_value_won&#39;</span><span class="p">)</span><span class="w"> </span><span class="err">}}</span><span class="p">,</span>
+<span class="w">    </span><span class="p">...</span>
+</code></pre></div>
+
+<blockquote>
+<p><strong>메시지:</strong> 단위 변환 함수를 한 번 작성 → 30개 모델에서 호출. 복붙 코드 제거.</p>
+</blockquote>
+<hr />
+<h2 id="4-dbt-vs-수동-sql-비교">4. dbt vs 수동 SQL 비교</h2>
+<table>
+<thead>
+<tr>
+<th>항목</th>
+<th style="text-align: center;">수동 CREATE VIEW</th>
+<th style="text-align: center;">dbt</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>의존성 관리</td>
+<td style="text-align: center;">사람이 순서 기억</td>
+<td style="text-align: center;"><code>{{ ref() }}</code> 자동</td>
+</tr>
+<tr>
+<td>데이터 품질 테스트</td>
+<td style="text-align: center;">별도 스크립트</td>
+<td style="text-align: center;"><code>dbt test</code> 내장</td>
+</tr>
+<tr>
+<td>문서화</td>
+<td style="text-align: center;">별도 도구 / 수동</td>
+<td style="text-align: center;"><code>dbt docs</code> 자동</td>
+</tr>
+<tr>
+<td>단위 변환 같은 반복 SQL</td>
+<td style="text-align: center;">복붙</td>
+<td style="text-align: center;">Jinja Macro 재사용</td>
+</tr>
+<tr>
+<td>Materialization 전략</td>
+<td style="text-align: center;">DDL 수동 작성</td>
+<td style="text-align: center;"><code>{{ config }}</code> 한 줄</td>
+</tr>
+<tr>
+<td>형상 관리</td>
+<td style="text-align: center;">SQL 파일 단순 Git</td>
+<td style="text-align: center;">dbt 프로젝트 단위 PR</td>
+</tr>
+</tbody>
+</table>
+<hr />
+<h2 id="5-세미나-시연-명령어">5. 세미나 시연 명령어</h2>
+<div class="codehilite"><pre><span></span><code><span class="c1"># 1. 컨테이너 기동 (이미 떠 있으면 생략)</span>
+docker<span class="w"> </span>compose<span class="w"> </span>-f<span class="w"> </span>dbt/docker-compose.yml<span class="w"> </span>up<span class="w"> </span>-d
+
+<span class="c1"># 2. 4단계 시연</span>
+docker<span class="w"> </span><span class="nb">exec</span><span class="w"> </span>bip-dbt<span class="w"> </span>dbt<span class="w"> </span>run<span class="w">              </span><span class="c1"># ① 의존성 자동 실행</span>
+docker<span class="w"> </span><span class="nb">exec</span><span class="w"> </span>bip-dbt<span class="w"> </span>dbt<span class="w"> </span><span class="nb">test</span><span class="w">             </span><span class="c1"># ② 30개 테스트 통과</span>
+docker<span class="w"> </span><span class="nb">exec</span><span class="w"> </span>bip-dbt<span class="w"> </span>dbt<span class="w"> </span>docs<span class="w"> </span>generate<span class="w">    </span><span class="c1"># ③ Lineage 카탈로그 생성</span>
+docker<span class="w"> </span><span class="nb">exec</span><span class="w"> </span>bip-dbt<span class="w"> </span>dbt<span class="w"> </span>docs<span class="w"> </span>serve<span class="w"> </span>--port<span class="w"> </span><span class="m">8080</span><span class="w"> </span>--host<span class="w"> </span><span class="m">0</span>.0.0.0<span class="w">  </span><span class="c1"># ④ 브라우저 확인</span>
+<span class="c1"># 브라우저: http://localhost:8081</span>
+</code></pre></div>
+
+<p>자동 스크립트는 <code>scripts/dbt_demo.sh</code> 참고.</p>
+<hr />
+<h2 id="6-oracle-19c-적용-가능성">6. Oracle 19c 적용 가능성</h2>
+<p>이번 데모는 PostgreSQL이지만, 사내 Oracle 19c에서도 같은 패턴 적용 가능.</p>
+<table>
+<thead>
+<tr>
+<th>변경 사항</th>
+<th>내용</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Adapter</td>
+<td><code>dbt-postgres</code> → <strong><code>dbt-oracle</code></strong> (Oracle 본사 vendor-supported)</td>
+</tr>
+<tr>
+<td>드라이버</td>
+<td><code>psycopg2</code> → <code>python-oracledb</code> (thin 모드, Instant Client 불필요)</td>
+</tr>
+<tr>
+<td>SQL 방언</td>
+<td><code>LIMIT</code> → <code>FETCH FIRST n ROWS ONLY</code>, <code>INTERVAL</code> → <code>SYSDATE - n</code></td>
+</tr>
+<tr>
+<td>스키마</td>
+<td><code>dbt_demo_marts</code> → <code>DBT_DEMO_MARTS</code> (Oracle 대소문자)</td>
+</tr>
+<tr>
+<td>나머지</td>
+<td><strong>dbt 프로젝트 구조·테스트·docs 모두 동일</strong></td>
+</tr>
+</tbody>
+</table>
+<blockquote>
+<p><strong>세미나 메시지:</strong> "PostgreSQL에서 동작한 dbt 프로젝트는 Oracle 19c에서도 어댑터/방언만 바꾸면 그대로 동작한다."</p>
+</blockquote>
+<hr />
+<h2 id="7-한계--다음-단계">7. 한계 + 다음 단계</h2>
+<p><strong>dbt가 잘 못하는 것:</strong>
+- 실시간 API 서빙 (배치 도구)
+- 자연어 → SQL (NL2SQL은 별도 도구)
+- 결과 캐싱 (Cube의 Pre-aggregation 같은 기능 없음)</p>
+<p><strong>자연스러운 조합:</strong></p>
+<div class="codehilite"><pre><span></span><code>dbt (변환) → Cube (BI/API 서빙) → WrenAI 또는 자체 NL2SQL Agent
+</code></pre></div>
+
+<p>→ 세미나의 §6 의사결정 가이드와 일관.</p>
+<hr />
+<h2 id="변경-이력">변경 이력</h2>
+<table>
+<thead>
+<tr>
+<th>날짜</th>
+<th>내용</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>2026-05-17</td>
+<td>초안 작성 (BIP PostgreSQL 데모 결과 + Oracle 적용 가능성)</td>
+</tr>
+</tbody>
+</table>
+</main>
+
+<script>
+  // 테마 전환
+  function setTheme(theme) {
+    document.documentElement.setAttribute('data-theme', theme);
+    localStorage.setItem('doc-theme', theme);
+    document.getElementById('btn-dark').classList.toggle('active', theme === 'dark');
+    document.getElementById('btn-light').classList.toggle('active', theme === 'light');
+    // Mermaid 재렌더링
+    if (typeof mermaid !== 'undefined') {
+      mermaid.initialize({ startOnLoad: false, theme: 'base', securityLevel: 'loose', themeVariables: getMermaidTheme(theme) });
+      document.querySelectorAll('.mermaid').forEach(el => {
+        // 원본 코드 보존 (최초 1회만 저장)
+        if (!el.dataset.source) {
+          el.dataset.source = el.textContent;
+        }
+        el.removeAttribute('data-processed');
+        el.innerHTML = el.dataset.source;
+      });
+      mermaid.run();
+    }
+  }
+
+  // 저장된 테마 로드
+  const savedTheme = localStorage.getItem('doc-theme') || 'dark';
+  setTheme(savedTheme);
+
+  // Mermaid 초기화
+  function getMermaidTheme(theme) {
+    const dark = {
+      primaryColor: '#3d7be0',
+      primaryTextColor: '#ffffff',
+      primaryBorderColor: '#5a9cf0',
+      secondaryColor: '#7c5cbf',
+      secondaryTextColor: '#ffffff',
+      secondaryBorderColor: '#a29bfe',
+      tertiaryColor: '#00997a',
+      tertiaryTextColor: '#ffffff',
+      tertiaryBorderColor: '#55efc4',
+      noteTextColor: '#f0f0f0',
+      noteBkgColor: '#2d3436',
+      noteBorderColor: '#636e72',
+      lineColor: '#8b949e',
+      textColor: '#e6edf3',
+      mainBkg: '#1e3050',
+      nodeBorder: '#5a9cf0',
+      clusterBkg: '#1a1e2e',
+      clusterBorder: '#4a5568',
+      titleColor: '#79c0ff',
+      edgeLabelBackground: '#21262d',
+      actorBkg: '#3d7be0',
+      actorTextColor: '#ffffff',
+      actorBorder: '#5a9cf0',
+      signalColor: '#8b949e',
+      labelBoxBkgColor: '#21262d',
+      labelBoxBorderColor: '#4a5568',
+      labelTextColor: '#e6edf3',
+      loopTextColor: '#e6edf3',
+      activationBorderColor: '#5a9cf0',
+      activationBkgColor: '#1e3050',
+      sequenceNumberColor: '#ffffff',
+      pie1: '#4f8fea', pie2: '#6c5ce7', pie3: '#00b894', pie4: '#e17055',
+      pie5: '#fdcb6e', pie6: '#00cec9', pie7: '#e84393', pie8: '#0984e3'
+    };
+    const light = {
+      primaryColor: '#4f8fea',
+      primaryTextColor: '#1a1a2e',
+      primaryBorderColor: '#3a7bd5',
+      secondaryColor: '#a29bfe',
+      secondaryTextColor: '#1a1a2e',
+      secondaryBorderColor: '#6c5ce7',
+      tertiaryColor: '#55efc4',
+      tertiaryTextColor: '#1a1a2e',
+      tertiaryBorderColor: '#00b894',
+      noteTextColor: '#2d3436',
+      noteBkgColor: '#ffeaa7',
+      noteBorderColor: '#fdcb6e',
+      lineColor: '#636e72',
+      textColor: '#2d3436',
+      mainBkg: '#dfe6e9',
+      nodeBorder: '#3a7bd5',
+      clusterBkg: '#f0f3f5',
+      clusterBorder: '#b2bec3',
+      titleColor: '#2d3436',
+      edgeLabelBackground: '#ffffff',
+      actorBkg: '#4f8fea',
+      actorTextColor: '#ffffff',
+      actorBorder: '#3a7bd5',
+      signalColor: '#636e72',
+      labelBoxBkgColor: '#ffffff',
+      labelBoxBorderColor: '#b2bec3',
+      labelTextColor: '#2d3436',
+      loopTextColor: '#2d3436',
+      activationBorderColor: '#3a7bd5',
+      activationBkgColor: '#dfe6e9',
+      sequenceNumberColor: '#ffffff',
+      pie1: '#4f8fea', pie2: '#6c5ce7', pie3: '#00b894', pie4: '#e17055',
+      pie5: '#fdcb6e', pie6: '#00cec9', pie7: '#e84393', pie8: '#0984e3'
+    };
+    return theme === 'dark' ? dark : light;
+  }
+
+  // 초기 렌더링 전에 원본 코드 저장
+  document.querySelectorAll('.mermaid').forEach(el => {
+    el.dataset.source = el.textContent;
+  });
+  mermaid.initialize({ startOnLoad: true, theme: 'base', securityLevel: 'loose', themeVariables: getMermaidTheme(savedTheme) });
+
+  // TOC 현재 위치 하이라이트
+  const tocLinks = document.querySelectorAll('.toc a');
+  const headings = [];
+  tocLinks.forEach(link => {
+    const id = link.getAttribute('href').slice(1);
+    const el = document.getElementById(id);
+    if (el) headings.push({ el, link });
+  });
+
+  function updateActiveToc() {
+    let current = null;
+    for (const h of headings) {
+      if (h.el.getBoundingClientRect().top <= 100) current = h;
+    }
+    tocLinks.forEach(l => l.classList.remove('active'));
+    if (current) current.link.classList.add('active');
+  }
+
+  window.addEventListener('scroll', updateActiveToc, { passive: true });
+  updateActiveToc();
+
+  // 모바일: 링크 클릭 시 사이드바 닫기
+  tocLinks.forEach(link => {
+    link.addEventListener('click', () => {
+      if (window.innerWidth <= 900) {
+        document.querySelector('.sidebar').classList.remove('open');
+      }
+    });
+  });
+</script>
+
+</body>
+</html>

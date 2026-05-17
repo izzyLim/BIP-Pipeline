@@ -1,0 +1,40 @@
+version: 2
+
+models:
+  - name: fct_stock_daily
+    description: "Gold — 종목×일자 와이드. 시세+수급+해석컬럼 포함. Grain: ticker×trade_date"
+    columns:
+      - name: ticker
+        tests: [not_null]
+      - name: trade_date
+        tests: [not_null]
+      - name: close_price
+        tests: [not_null]
+      - name: foreign_direction
+        description: "외국인 수급 해석 (순매수/순매도/보합/데이터없음)"
+        tests:
+          - accepted_values:
+              values: ['순매수', '순매도', '보합', '데이터없음']
+      - name: change_label
+        description: "등락 라벨 (강한 상승/상승/보합/하락/강한 하락/데이터없음)"
+        tests:
+          - accepted_values:
+              values: ['강한 상승', '상승', '보합', '하락', '강한 하락', '데이터없음']
+
+  - name: fct_valuation_yearly
+    description: "Gold — 종목×연도 밸류에이션. PER/PBR/ROE 계산값. Grain: ticker×fiscal_year"
+    columns:
+      - name: ticker
+        tests:
+          - not_null
+          - relationships:
+              to: ref('stg_stock_info')
+              field: ticker
+      - name: fiscal_year
+        tests: [not_null]
+      - name: per_actual
+        description: "주가수익비율. market_value / net_income"
+      - name: pbr_actual
+        description: "주가순자산비율. market_value / total_equity"
+      - name: roe_actual
+        description: "자기자본이익률 (%). net_income / total_equity × 100"

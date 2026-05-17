@@ -1,0 +1,13 @@
+bip_demo:
+  outputs:
+    dev:
+      type: postgres
+      host: "{{ env_var('PG_HOST', 'bip-postgres') }}"
+      port: "{{ env_var('PG_PORT', '5432') | int }}"
+      user: "{{ env_var('PG_USER', 'user') }}"
+      password: "{{ env_var('PG_PASSWORD', 'pw1234') }}"
+      dbname: "{{ env_var('PG_DB', 'stockdb') }}"
+      schema: dbt_demo
+      threads: 4
+      keepalives_idle: 0
+  target: dev

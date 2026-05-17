@@ -1,0 +1,53 @@
+version: 2
+
+sources:
+  - name: bip_raw
+    description: "BIP-Pipeline 원본 데이터 (public 스키마)"
+    schema: public
+    tables:
+      - name: stock_info
+        description: "종목 마스터 (KOSPI/KOSDAQ/미국)"
+        columns:
+          - name: ticker
+            description: "Yahoo Finance 포맷 종목 코드 (예: 005930.KS)"
+            tests:
+              - not_null
+              - unique
+          - name: stock_name
+            description: "종목 한글명"
+            tests:
+              - not_null
+          - name: market_type
+            description: "시장 구분 (KOSPI/KOSDAQ/NASDAQ 등)"
+
+      - name: stock_price_1d
+        description: "일봉 시세 (한국+미국)"
+        columns:
+          - name: ticker
+            tests:
+              - not_null
+              - relationships:
+                  to: source('bip_raw', 'stock_info')
+                  field: ticker
+          - name: timestamp
+            tests: [not_null]
+          - name: close
+            tests: [not_null]
+
+      - name: financial_statements
+        description: "DART 재무제표 (한국 상장사)"
+        columns:
+          - name: ticker
+            tests: [not_null]
+          - name: fiscal_year
+            tests: [not_null]
+          - name: report_type
+            description: "사업보고서/반기/분기 구분"
+
+      - name: analytics_valuation
+        description: "기존 운영 Gold (비교용 baseline)"
+        columns:
+          - name: ticker
+            tests: [not_null]
+          - name: fiscal_year
+            tests: [not_null]

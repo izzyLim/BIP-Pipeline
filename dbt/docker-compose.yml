@@ -1,0 +1,29 @@
+version: '3.8'
+
+services:
+  dbt:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    image: bip-dbt:1.9
+    container_name: bip-dbt
+    environment:
+      PG_HOST: bip-postgres
+      PG_PORT: 5432
+      PG_USER: user
+      PG_PASSWORD: ${PG_PASSWORD:-pw1234}
+      PG_DB: stockdb
+      DBT_PROFILES_DIR: /usr/app/dbt
+    volumes:
+      - ./:/usr/app/dbt
+    ports:
+      - "8081:8080"  # dbt docs serve (host:container)
+    networks:
+      - stock-network
+    # 기본은 tail -f /dev/null 로 띄워두고 docker exec로 명령 실행
+    command: tail -f /dev/null
+
+networks:
+  stock-network:
+    external: true
+    name: stock-network
