@@ -290,11 +290,12 @@
 <ul>
 <li class="toc-h2"><a href="#1-구축-결과-요약">1. 구축 결과 요약</a></li>
 <li class="toc-h2"><a href="#2-4-layer-lineage-구조">2. 4-Layer Lineage 구조</a></li>
-<li class="toc-h2"><a href="#3-세미나에서-보여줄-4가지-dbt-강점">3. 세미나에서 보여줄 4가지 dbt 강점</a></li>
+<li class="toc-h2"><a href="#3-세미나에서-보여줄-5가지-dbt-강점">3. 세미나에서 보여줄 5가지 dbt 강점</a></li>
   <li class="toc-h3"><a href="#강점-1---ref--자동-의존성-추적">강점 1 — {{ ref() }} 자동 의존성 추적</a></li>
   <li class="toc-h3"><a href="#강점-2--dbt-test-데이터-품질-검증-내장">강점 2 — dbt test 데이터 품질 검증 내장</a></li>
   <li class="toc-h3"><a href="#강점-3--dbt-docs-serve-lineage--카탈로그-자동-생성">강점 3 — dbt docs serve Lineage + 카탈로그 자동 생성</a></li>
-  <li class="toc-h3"><a href="#강점-4--jinja-macro-재사용">강점 4 — Jinja Macro 재사용</a></li>
+  <li class="toc-h3"><a href="#강점-4--용어집-doc-blocks--bip의-om-glossary-77개에-대응">강점 4 — 용어집 (doc blocks) — BIP의 OM Glossary 77개에 대응</a></li>
+  <li class="toc-h3"><a href="#강점-5--jinja-macro-재사용">강점 5 — Jinja Macro 재사용</a></li>
 <li class="toc-h2"><a href="#4-dbt-vs-수동-sql-비교">4. dbt vs 수동 SQL 비교</a></li>
 <li class="toc-h2"><a href="#5-세미나-시연-명령어">5. 세미나 시연 명령어</a></li>
 <li class="toc-h2"><a href="#6-oracle-19c-적용-가능성">6. Oracle 19c 적용 가능성</a></li>
@@ -424,7 +425,7 @@ flowchart LR
 <p>이 그래프는 <code>dbt docs serve</code>에서 자동으로 시각화된다. 모델 1개를 클릭하면 컬럼 description, 테스트, SQL 코드가 모두 보임.</p>
 </blockquote>
 <hr />
-<h2 id="3-세미나에서-보여줄-4가지-dbt-강점">3. 세미나에서 보여줄 4가지 dbt 강점</h2>
+<h2 id="3-세미나에서-보여줄-5가지-dbt-강점">3. 세미나에서 보여줄 5가지 dbt 강점</h2>
 <h3 id="강점-1---ref--자동-의존성-추적">강점 1 — <code>{{ ref() }}</code> 자동 의존성 추적</h3>
 <p><strong>기존 방식 (수동 SQL):</strong></p>
 <div class="codehilite"><pre><span></span><code><span class="c1">-- 사람이 실행 순서를 기억하고 있어야 함</span>
@@ -492,7 +493,62 @@ dbt<span class="w"> </span>docs<span class="w"> </span>serve<span class="w">    
 <p><strong>메시지:</strong> Description은 모델 옆 <code>.yml</code>에 같이 작성 → 코드와 문서가 한 PR에서 변경됨. <strong>문서 표류 방지.</strong></p>
 </blockquote>
 <hr />
-<h3 id="강점-4--jinja-macro-재사용">강점 4 — Jinja Macro 재사용</h3>
+<h3 id="강점-4--용어집-doc-blocks--bip의-om-glossary-77개에-대응">강점 4 — 용어집 (doc blocks) — BIP의 OM Glossary 77개에 대응</h3>
+<p><strong>문제:</strong> "저평가주가 뭐냐"라고 부서마다 다르게 정의하면 NL2SQL이 매번 다른 결과를 냄.</p>
+<p><strong>dbt 해결법 — <code>{% docs %}</code> 블록:</strong> 도메인 용어를 한 파일에 정의 + 여러 모델에서 재사용.</p>
+<p><strong>용어집 파일 (<code>models/_glossary.md</code>):</strong></p>
+<div class="codehilite"><pre><span></span><code>{% docs value_stock %}
+<span class="gs">**저평가주 (Value Stock)**</span>
+
+가치 대비 주가가 낮게 형성된 종목. BIP 정의:
+<span class="k">-</span><span class="w"> </span>PER &lt; 10
+<span class="k">-</span><span class="w"> </span>AND PBR &lt; 1
+<span class="k">-</span><span class="w"> </span>AND 두 지표 모두 양수 (적자 제외)
+{% enddocs %}
+</code></pre></div>
+
+<p><strong>컬럼 description에서 참조:</strong></p>
+<div class="codehilite"><pre><span></span><code><span class="p p-Indicator">-</span><span class="w"> </span><span class="nt">name</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">is_value_stock</span>
+<span class="w">  </span><span class="nt">description</span><span class="p">:</span><span class="w"> </span><span class="s">&#39;{{</span><span class="nv"> </span><span class="s">doc(&quot;value_stock&quot;)</span><span class="nv"> </span><span class="s">}}&#39;</span>
+</code></pre></div>
+
+<p><strong>시연 효과:</strong> <code>dbt docs serve</code>에서 컬럼 페이지에 용어 전체 정의가 표시됨. <strong>모든 모델이 같은 정의 공유</strong> → "저평가주가 뭐냐" 논쟁 종결.</p>
+<p><strong>현재 데모에 포함된 용어 (16개):</strong></p>
+<table>
+<thead>
+<tr>
+<th>카테고리</th>
+<th>용어</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>데이터 모델링</td>
+<td><code>grain</code>, <code>gold_table</code>, <code>curated_view</code>, <code>boolean_flag</code>, <code>interpretation_column</code></td>
+</tr>
+<tr>
+<td>밸류에이션 지표</td>
+<td><code>per</code>, <code>pbr</code>, <code>roe</code>, <code>debt_ratio</code></td>
+</tr>
+<tr>
+<td>비즈니스 분류</td>
+<td><code>value_stock</code>, <code>high_roe</code>, <code>quality_stock</code>, <code>high_debt</code></td>
+</tr>
+<tr>
+<td>수급</td>
+<td><code>foreign_direction</code>, <code>change_label</code></td>
+</tr>
+<tr>
+<td>기간/시점</td>
+<td><code>trade_date</code>, <code>fiscal_year</code></td>
+</tr>
+</tbody>
+</table>
+<blockquote>
+<p><strong>메시지:</strong> BIP의 OpenMetadata Glossary(77개 용어)와 동일한 패턴. <strong>dbt에서도 코드와 같은 PR에서 용어집 변경</strong> 가능.</p>
+</blockquote>
+<hr />
+<h3 id="강점-5--jinja-macro-재사용">강점 5 — Jinja Macro 재사용</h3>
 <p><strong>문제:</strong> BIP에서 자주 발생한 함정 — 시가총액이 어떤 컬럼은 "억원", 어떤 컬럼은 "원" 단위라 PER 계산 시 0이 나옴.</p>
 <p><strong>매크로 (<code>macros/to_won.sql</code>):</strong></p>
 <div class="codehilite"><pre><span></span><code><span class="err">{</span><span class="o">%</span><span class="w"> </span><span class="n">macro</span><span class="w"> </span><span class="n">to_won</span><span class="p">(</span><span class="k">column_name</span><span class="p">,</span><span class="w"> </span><span class="k">alias</span><span class="o">=</span><span class="k">None</span><span class="p">)</span><span class="w"> </span><span class="o">%</span><span class="err">}</span>
@@ -539,6 +595,11 @@ dbt<span class="w"> </span>docs<span class="w"> </span>serve<span class="w">    
 <td>문서화</td>
 <td style="text-align: center;">별도 도구 / 수동</td>
 <td style="text-align: center;"><code>dbt docs</code> 자동</td>
+</tr>
+<tr>
+<td><strong>도메인 용어집</strong></td>
+<td style="text-align: center;"><strong>별도 OM/wiki</strong></td>
+<td style="text-align: center;"><strong><code>{% docs %}</code> 블록 + <code>{{ doc() }}</code></strong></td>
 </tr>
 <tr>
 <td>단위 변환 같은 반복 SQL</td>
@@ -631,6 +692,10 @@ docker<span class="w"> </span><span class="nb">exec</span><span class="w"> </spa
 <tr>
 <td>2026-05-17</td>
 <td>초안 작성 (BIP PostgreSQL 데모 결과 + Oracle 적용 가능성)</td>
+</tr>
+<tr>
+<td>2026-05-17</td>
+<td>dbt 도메인 용어집(<code>_glossary.md</code>, 16개 용어) 추가 + 강점 4 신설 (강점 4→5) — BIP OM Glossary 77개와 동일 패턴</td>
 </tr>
 </tbody>
 </table>

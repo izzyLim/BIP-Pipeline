@@ -81,7 +81,7 @@ flowchart LR
 
 ---
 
-## 3. 세미나에서 보여줄 4가지 dbt 강점
+## 3. 세미나에서 보여줄 5가지 dbt 강점
 
 ### 강점 1 — `{{ ref() }}` 자동 의존성 추적
 
@@ -164,7 +164,47 @@ dbt docs serve       # http://localhost:8081 자동 사이트
 
 ---
 
-### 강점 4 — Jinja Macro 재사용
+### 강점 4 — 용어집 (doc blocks) — BIP의 OM Glossary 77개에 대응
+
+**문제:** "저평가주가 뭐냐"라고 부서마다 다르게 정의하면 NL2SQL이 매번 다른 결과를 냄.
+
+**dbt 해결법 — `{% docs %}` 블록:** 도메인 용어를 한 파일에 정의 + 여러 모델에서 재사용.
+
+**용어집 파일 (`models/_glossary.md`):**
+```markdown
+{% docs value_stock %}
+**저평가주 (Value Stock)**
+
+가치 대비 주가가 낮게 형성된 종목. BIP 정의:
+- PER < 10
+- AND PBR < 1
+- AND 두 지표 모두 양수 (적자 제외)
+{% enddocs %}
+```
+
+**컬럼 description에서 참조:**
+```yaml
+- name: is_value_stock
+  description: '{{ doc("value_stock") }}'
+```
+
+**시연 효과:** `dbt docs serve`에서 컬럼 페이지에 용어 전체 정의가 표시됨. **모든 모델이 같은 정의 공유** → "저평가주가 뭐냐" 논쟁 종결.
+
+**현재 데모에 포함된 용어 (16개):**
+
+| 카테고리 | 용어 |
+|---------|------|
+| 데이터 모델링 | `grain`, `gold_table`, `curated_view`, `boolean_flag`, `interpretation_column` |
+| 밸류에이션 지표 | `per`, `pbr`, `roe`, `debt_ratio` |
+| 비즈니스 분류 | `value_stock`, `high_roe`, `quality_stock`, `high_debt` |
+| 수급 | `foreign_direction`, `change_label` |
+| 기간/시점 | `trade_date`, `fiscal_year` |
+
+> **메시지:** BIP의 OpenMetadata Glossary(77개 용어)와 동일한 패턴. **dbt에서도 코드와 같은 PR에서 용어집 변경** 가능.
+
+---
+
+### 강점 5 — Jinja Macro 재사용
 
 **문제:** BIP에서 자주 발생한 함정 — 시가총액이 어떤 컬럼은 "억원", 어떤 컬럼은 "원" 단위라 PER 계산 시 0이 나옴.
 
@@ -198,6 +238,7 @@ SELECT
 | 의존성 관리 | 사람이 순서 기억 | `{{ ref() }}` 자동 |
 | 데이터 품질 테스트 | 별도 스크립트 | `dbt test` 내장 |
 | 문서화 | 별도 도구 / 수동 | `dbt docs` 자동 |
+| **도메인 용어집** | **별도 OM/wiki** | **`{% docs %}` 블록 + `{{ doc() }}`** |
 | 단위 변환 같은 반복 SQL | 복붙 | Jinja Macro 재사용 |
 | Materialization 전략 | DDL 수동 작성 | `{{ config }}` 한 줄 |
 | 형상 관리 | SQL 파일 단순 Git | dbt 프로젝트 단위 PR |
@@ -259,3 +300,4 @@ dbt (변환) → Cube (BI/API 서빙) → WrenAI 또는 자체 NL2SQL Agent
 | 날짜 | 내용 |
 |------|------|
 | 2026-05-17 | 초안 작성 (BIP PostgreSQL 데모 결과 + Oracle 적용 가능성) |
+| 2026-05-17 | dbt 도메인 용어집(`_glossary.md`, 16개 용어) 추가 + 강점 4 신설 (강점 4→5) — BIP OM Glossary 77개와 동일 패턴 |

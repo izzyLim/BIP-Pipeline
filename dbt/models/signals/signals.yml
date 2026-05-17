@@ -2,17 +2,21 @@ version: 2
 
 models:
   - name: signal_valuation
-    description: "Curated View — 밸류에이션 Boolean Flag. LLM 친화적 의미 필터링."
+    description: |
+      **Curated View — 밸류에이션 Boolean Flag.**
+
+      LLM 친화적 의미 필터링. 자세한 개념은 {{ doc('curated_view') }}, {{ doc('boolean_flag') }} 참고.
     columns:
       - name: ticker
         tests: [not_null]
       - name: fiscal_year
+        description: '{{ doc("fiscal_year") }}'
         tests: [not_null]
       - name: is_value_stock
-        description: "저평가 종목 (PER<10 AND PBR<1 AND 둘 다 양수)"
+        description: '{{ doc("value_stock") }}'
       - name: is_high_roe
-        description: "ROE 15% 이상"
+        description: '{{ doc("high_roe") }}'
       - name: is_quality_stock
-        description: "우량주 (저평가 + 고ROE 동시)"
+        description: '{{ doc("quality_stock") }}'
       - name: is_high_debt
-        description: "부채 과다 (debt_ratio > 200%)"
+        description: '{{ doc("high_debt") }}'
