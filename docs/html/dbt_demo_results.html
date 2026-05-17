@@ -298,7 +298,22 @@
   <li class="toc-h3"><a href="#강점-5--jinja-macro-재사용">강점 5 — Jinja Macro 재사용</a></li>
 <li class="toc-h2"><a href="#4-dbt-vs-수동-sql-비교">4. dbt vs 수동 SQL 비교</a></li>
 <li class="toc-h2"><a href="#5-세미나-시연-명령어">5. 세미나 시연 명령어</a></li>
-<li class="toc-h2"><a href="#6-oracle-19c-적용-가능성">6. Oracle 19c 적용 가능성</a></li>
+<li class="toc-h2"><a href="#6-사내-oracle-19c-적용-가이드-단계별">6. 사내 Oracle 19c 적용 가이드 (단계별)</a></li>
+  <li class="toc-h3"><a href="#6-1-변경-범위-한눈에-보기">6-1. 변경 범위 한눈에 보기</a></li>
+  <li class="toc-h3"><a href="#6-2-step-1--dbt-oracle-설치-dockerfile">6-2. Step 1 — dbt-oracle 설치 (Dockerfile)</a></li>
+  <li class="toc-h3"><a href="#6-3-step-2--oracle-연결-설정-profilesyml">6-3. Step 2 — Oracle 연결 설정 (profiles.yml)</a></li>
+  <li class="toc-h3"><a href="#6-4-step-3--sql-방언-변환-모델별-변경-예시">6-4. Step 3 — SQL 방언 변환 (모델별 변경 예시)</a></li>
+    <li class="toc-h4"><a href="#1-stg_stock_pricesql--interval-구문">(1) stg_stock_price.sql — INTERVAL 구문</a></li>
+    <li class="toc-h4"><a href="#2-stg_stock_pricesql--split_part-함수">(2) stg_stock_price.sql — SPLIT_PART 함수</a></li>
+    <li class="toc-h4"><a href="#3-stg_stock_pricesql--lag-윈도우-함수">(3) stg_stock_price.sql — LAG 윈도우 함수</a></li>
+    <li class="toc-h4"><a href="#4-fct_stock_dailysql--boolean-타입">(4) fct_stock_daily.sql — Boolean 타입</a></li>
+    <li class="toc-h4"><a href="#5-signal_valuationsql--accepted_values-테스트">(5) signal_valuation.sql — accepted_values 테스트</a></li>
+    <li class="toc-h4"><a href="#dbt가-자동-변환해주는-것-변경-불필요">dbt가 자동 변환해주는 것 (변경 불필요)</a></li>
+  <li class="toc-h3"><a href="#6-5-step-4--매크로로-방언-차이-추상화-권장">6-5. Step 4 — 매크로로 방언 차이 추상화 (권장)</a></li>
+  <li class="toc-h3"><a href="#6-6-step-5--실행--검증">6-6. Step 5 — 실행 + 검증</a></li>
+  <li class="toc-h3"><a href="#6-7-흔한-함정--대응">6-7. 흔한 함정 + 대응</a></li>
+  <li class="toc-h3"><a href="#6-8-사내-적용-체크리스트">6-8. 사내 적용 체크리스트</a></li>
+  <li class="toc-h3"><a href="#6-9-사내-단계적-도입-시나리오-권장">6-9. 사내 단계적 도입 시나리오 (권장)</a></li>
 <li class="toc-h2"><a href="#7-한계--다음-단계">7. 한계 + 다음 단계</a></li>
 <li class="toc-h2"><a href="#변경-이력">변경 이력</a></li>
 </ul>
@@ -633,41 +648,391 @@ docker<span class="w"> </span><span class="nb">exec</span><span class="w"> </spa
 
 <p>자동 스크립트는 <code>scripts/dbt_demo.sh</code> 참고.</p>
 <hr />
-<h2 id="6-oracle-19c-적용-가능성">6. Oracle 19c 적용 가능성</h2>
-<p>이번 데모는 PostgreSQL이지만, 사내 Oracle 19c에서도 같은 패턴 적용 가능.</p>
+<h2 id="6-사내-oracle-19c-적용-가이드-단계별">6. 사내 Oracle 19c 적용 가이드 (단계별)</h2>
+<p>이번 데모는 BIP의 PostgreSQL에서 검증했지만, <strong>dbt 프로젝트의 모델 구조·테스트·용어집·docs는 그대로 두고 어댑터와 SQL 방언만 변경하면</strong> 사내 Oracle 19c 환경에서 동일하게 동작한다.</p>
+<h3 id="6-1-변경-범위-한눈에-보기">6-1. 변경 범위 한눈에 보기</h3>
+<div class="mermaid">
+flowchart LR
+    subgraph PG["현재 데모 (PostgreSQL)"]
+        PG1[dbt-postgres]
+        PG2[psycopg2]
+        PG3[public 스키마]
+    end
+
+    subgraph ORA["사내 (Oracle 19c)"]
+        OR1[dbt-oracle\nvendor-supported]
+        OR2[python-oracledb\nthin 모드]
+        OR3[USER 스키마 + 대문자]
+    end
+
+    subgraph SAME["그대로 유지"]
+        S1["모델 구조\nstaging/marts/signals"]
+        S2["테스트 30개\nnot_null/unique/..."]
+        S3[용어집 16개\ndoc blocks]
+        S4[dbt docs serve]
+    end
+
+    PG -.교체.-> ORA
+    SAME --> ORA
+
+    style PG fill:#e3f2fd,color:#1a1a2e
+    style ORA fill:#fff3e0,color:#1a1a2e
+    style SAME fill:#e8f5e9,color:#1a1a2e
+    style PG fill:#4f8fea33,stroke:#4f8fea,stroke-width:2px
+    style ORA fill:#6c5ce733,stroke:#6c5ce7,stroke-width:2px
+    style SAME fill:#00b89433,stroke:#00b894,stroke-width:2px
+</div>
+
+<p><strong>변경 부담:</strong> 어댑터 설치 + 연결 설정 + SQL 4–5곳 방언 변환 = <strong>하루 작업.</strong>
+<strong>유지되는 자산:</strong> 모델 6개, 테스트 30개, 용어집 16개, Lineage 카탈로그, 매크로 — <strong>그대로.</strong></p>
+<hr />
+<h3 id="6-2-step-1--dbt-oracle-설치-dockerfile">6-2. Step 1 — dbt-oracle 설치 (Dockerfile)</h3>
+<p><strong>현재 (PostgreSQL):</strong></p>
+<div class="codehilite"><pre><span></span><code><span class="k">RUN</span><span class="w"> </span>pip<span class="w"> </span>install<span class="w"> </span>--no-cache-dir<span class="w"> </span><span class="se">\</span>
+<span class="w">    </span>dbt-core<span class="o">==</span><span class="m">1</span>.9.*<span class="w"> </span><span class="se">\</span>
+<span class="w">    </span>dbt-postgres<span class="o">==</span><span class="m">1</span>.9.*
+</code></pre></div>
+
+<p><strong>Oracle용으로 변경:</strong></p>
+<div class="codehilite"><pre><span></span><code><span class="k">RUN</span><span class="w"> </span>apt-get<span class="w"> </span>update<span class="w"> </span><span class="o">&amp;&amp;</span><span class="w"> </span>apt-get<span class="w"> </span>install<span class="w"> </span>-y<span class="w"> </span>--no-install-recommends<span class="w"> </span><span class="se">\</span>
+<span class="w">    </span>git<span class="w"> </span>curl<span class="w"> </span>libaio1<span class="w"> </span><span class="se">\</span>
+<span class="w">    </span><span class="o">&amp;&amp;</span><span class="w"> </span>rm<span class="w"> </span>-rf<span class="w"> </span>/var/lib/apt/lists/*
+
+<span class="k">RUN</span><span class="w"> </span>pip<span class="w"> </span>install<span class="w"> </span>--no-cache-dir<span class="w"> </span><span class="se">\</span>
+<span class="w">    </span>dbt-core<span class="o">==</span><span class="m">1</span>.9.*<span class="w"> </span><span class="se">\</span>
+<span class="w">    </span>dbt-oracle<span class="o">==</span><span class="m">1</span>.9.*<span class="w"> </span><span class="se">\</span>
+<span class="w">    </span>oracledb
+</code></pre></div>
+
+<p><strong>핵심 변경:</strong>
+- <code>dbt-postgres</code> → <strong><code>dbt-oracle</code></strong> (Oracle 본사가 PyPI에 직접 배포 — vendor-supported)
+- <code>oracledb</code> 패키지 추가 — Oracle 공식 Python 드라이버. <strong>thin 모드</strong> 사용 시 Oracle Instant Client 불필요 → Docker 이미지 가벼움
+- <code>libaio1</code> — Oracle thick 모드 사용 시에만 필요 (대량 데이터 처리 성능 향상). 첫 적용에서는 thin 모드 권장</p>
+<blockquote>
+<p>⚠️ <strong>버전 핀 필수:</strong> <code>dbt-oracle</code>은 vendor-supported 등급이라 새 dbt-core 출시 후 호환 릴리스까지 며칠~몇 주 지연. 운영에서는 <code>dbt-core==1.9.X</code> ↔ <code>dbt-oracle==1.9.X</code> 같은 minor 버전까지 핀.</p>
+</blockquote>
+<hr />
+<h3 id="6-3-step-2--oracle-연결-설정-profilesyml">6-3. Step 2 — Oracle 연결 설정 (profiles.yml)</h3>
+<p><strong>현재 (PostgreSQL):</strong></p>
+<div class="codehilite"><pre><span></span><code><span class="nt">bip_demo</span><span class="p">:</span>
+<span class="w">  </span><span class="nt">outputs</span><span class="p">:</span>
+<span class="w">    </span><span class="nt">dev</span><span class="p">:</span>
+<span class="w">      </span><span class="nt">type</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">postgres</span>
+<span class="w">      </span><span class="nt">host</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">bip-postgres</span>
+<span class="w">      </span><span class="nt">port</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">5432</span>
+<span class="w">      </span><span class="nt">user</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">user</span>
+<span class="w">      </span><span class="nt">password</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">pw1234</span>
+<span class="w">      </span><span class="nt">dbname</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">stockdb</span>
+<span class="w">      </span><span class="nt">schema</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">dbt_demo</span>
+</code></pre></div>
+
+<p><strong>Oracle용 변경:</strong></p>
+<div class="codehilite"><pre><span></span><code><span class="nt">bip_demo</span><span class="p">:</span>
+<span class="w">  </span><span class="nt">outputs</span><span class="p">:</span>
+<span class="w">    </span><span class="nt">dev</span><span class="p">:</span>
+<span class="w">      </span><span class="nt">type</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">oracle</span>
+<span class="w">      </span><span class="c1"># 연결 방법 1: Easy Connect (간단)</span>
+<span class="w">      </span><span class="nt">host</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;{{</span><span class="nv"> </span><span class="s">env_var(&#39;ORA_HOST&#39;)</span><span class="nv"> </span><span class="s">}}&quot;</span>
+<span class="w">      </span><span class="nt">port</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">1521</span>
+<span class="w">      </span><span class="nt">service</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;{{</span><span class="nv"> </span><span class="s">env_var(&#39;ORA_SERVICE&#39;)</span><span class="nv"> </span><span class="s">}}&quot;</span><span class="w">   </span><span class="c1"># 또는 sid</span>
+
+<span class="w">      </span><span class="c1"># 연결 방법 2: TNS (사내 tnsnames.ora 사용 시 권장)</span>
+<span class="w">      </span><span class="c1"># tns_name: &quot;{{ env_var(&#39;ORA_TNS&#39;) }}&quot;</span>
+
+<span class="w">      </span><span class="nt">user</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;{{</span><span class="nv"> </span><span class="s">env_var(&#39;ORA_USER&#39;)</span><span class="nv"> </span><span class="s">}}&quot;</span>
+<span class="w">      </span><span class="nt">password</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;{{</span><span class="nv"> </span><span class="s">env_var(&#39;ORA_PASSWORD&#39;)</span><span class="nv"> </span><span class="s">}}&quot;</span>
+<span class="w">      </span><span class="nt">schema</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;{{</span><span class="nv"> </span><span class="s">env_var(&#39;ORA_USER&#39;)</span><span class="nv"> </span><span class="s">|</span><span class="nv"> </span><span class="s">upper</span><span class="nv"> </span><span class="s">}}&quot;</span><span class="w">  </span><span class="c1"># ★ Oracle 스키마는 대문자</span>
+<span class="w">      </span><span class="nt">threads</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">4</span>
+<span class="w">      </span><span class="nt">protocol</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">tcp</span>
+<span class="w">      </span><span class="c1"># thin 모드 (기본). thick 모드는 oracle_client_lib_dir 지정</span>
+</code></pre></div>
+
+<p><strong>핵심 차이:</strong></p>
 <table>
 <thead>
 <tr>
-<th>변경 사항</th>
-<th>내용</th>
+<th>항목</th>
+<th>PostgreSQL</th>
+<th>Oracle</th>
 </tr>
 </thead>
 <tbody>
 <tr>
-<td>Adapter</td>
-<td><code>dbt-postgres</code> → <strong><code>dbt-oracle</code></strong> (Oracle 본사 vendor-supported)</td>
+<td>연결 식별자</td>
+<td><code>dbname</code></td>
+<td><code>service</code> / <code>sid</code> / <code>tns_name</code></td>
 </tr>
 <tr>
-<td>드라이버</td>
-<td><code>psycopg2</code> → <code>python-oracledb</code> (thin 모드, Instant Client 불필요)</td>
-</tr>
-<tr>
-<td>SQL 방언</td>
-<td><code>LIMIT</code> → <code>FETCH FIRST n ROWS ONLY</code>, <code>INTERVAL</code> → <code>SYSDATE - n</code></td>
+<td>인증</td>
+<td>단순 user/password</td>
+<td>+ Wallet, Kerberos 가능</td>
 </tr>
 <tr>
 <td>스키마</td>
-<td><code>dbt_demo_marts</code> → <code>DBT_DEMO_MARTS</code> (Oracle 대소문자)</td>
+<td>임의 이름</td>
+<td><strong>사용자 이름 = 스키마 이름</strong> (대문자)</td>
 </tr>
 <tr>
-<td>나머지</td>
-<td><strong>dbt 프로젝트 구조·테스트·docs 모두 동일</strong></td>
+<td>포트</td>
+<td>5432</td>
+<td>1521</td>
+</tr>
+<tr>
+<td>연결 방식</td>
+<td>단일</td>
+<td>Easy Connect / TNS / Wallet 3가지</td>
 </tr>
 </tbody>
 </table>
 <blockquote>
-<p><strong>세미나 메시지:</strong> "PostgreSQL에서 동작한 dbt 프로젝트는 Oracle 19c에서도 어댑터/방언만 바꾸면 그대로 동작한다."</p>
+<p>💡 <strong>사내 환경 팁:</strong> 보통 <code>tnsnames.ora</code> 파일이 표준이라 <code>tns_name</code> 방식이 안전. Wallet 인증 필요 시 <a href="https://docs.getdbt.com/docs/core/connect-data-platform/oracle-setup">dbt-oracle 공식 가이드</a> 참고.</p>
 </blockquote>
+<hr />
+<h3 id="6-4-step-3--sql-방언-변환-모델별-변경-예시">6-4. Step 3 — SQL 방언 변환 (모델별 변경 예시)</h3>
+<p>dbt 프로젝트의 모델 6개 중 <strong>방언 변환이 필요한 곳은 4곳</strong>.</p>
+<h4 id="1-stg_stock_pricesql--interval-구문">(1) <code>stg_stock_price.sql</code> — <code>INTERVAL</code> 구문</h4>
+<p><strong>PostgreSQL:</strong></p>
+<div class="codehilite"><pre><span></span><code><span class="k">WHERE</span><span class="w"> </span><span class="k">timestamp</span><span class="w"> </span><span class="o">&gt;=</span><span class="w"> </span><span class="k">CURRENT_DATE</span><span class="w"> </span><span class="o">-</span><span class="w"> </span><span class="nb">INTERVAL</span><span class="w"> </span><span class="s1">&#39;90 days&#39;</span>
+</code></pre></div>
+
+<p><strong>Oracle:</strong></p>
+<div class="codehilite"><pre><span></span><code><span class="k">WHERE</span><span class="w"> </span><span class="k">timestamp</span><span class="w"> </span><span class="o">&gt;=</span><span class="w"> </span><span class="n">TRUNC</span><span class="p">(</span><span class="n">SYSDATE</span><span class="p">)</span><span class="w"> </span><span class="o">-</span><span class="w"> </span><span class="mi">90</span><span class="w">        </span><span class="c1">-- 일수는 그냥 빼기</span>
+<span class="c1">-- 또는 명시적으로</span>
+<span class="k">WHERE</span><span class="w"> </span><span class="k">timestamp</span><span class="w"> </span><span class="o">&gt;=</span><span class="w"> </span><span class="n">SYSDATE</span><span class="w"> </span><span class="o">-</span><span class="w"> </span><span class="n">NUMTODSINTERVAL</span><span class="p">(</span><span class="mi">90</span><span class="p">,</span><span class="w"> </span><span class="s1">&#39;DAY&#39;</span><span class="p">)</span>
+</code></pre></div>
+
+<h4 id="2-stg_stock_pricesql--split_part-함수">(2) <code>stg_stock_price.sql</code> — <code>SPLIT_PART</code> 함수</h4>
+<p><strong>PostgreSQL:</strong></p>
+<div class="codehilite"><pre><span></span><code><span class="n">SPLIT_PART</span><span class="p">(</span><span class="n">ticker</span><span class="p">,</span><span class="w"> </span><span class="s1">&#39;.&#39;</span><span class="p">,</span><span class="w"> </span><span class="mi">1</span><span class="p">)</span><span class="w"> </span><span class="k">AS</span><span class="w"> </span><span class="n">stock_code</span>
+</code></pre></div>
+
+<p><strong>Oracle:</strong></p>
+<div class="codehilite"><pre><span></span><code><span class="n">SUBSTR</span><span class="p">(</span><span class="n">ticker</span><span class="p">,</span><span class="w"> </span><span class="mi">1</span><span class="p">,</span><span class="w"> </span><span class="n">INSTR</span><span class="p">(</span><span class="n">ticker</span><span class="p">,</span><span class="w"> </span><span class="s1">&#39;.&#39;</span><span class="p">)</span><span class="w"> </span><span class="o">-</span><span class="w"> </span><span class="mi">1</span><span class="p">)</span><span class="w"> </span><span class="k">AS</span><span class="w"> </span><span class="n">stock_code</span>
+<span class="c1">-- 또는 regex</span>
+<span class="n">REGEXP_SUBSTR</span><span class="p">(</span><span class="n">ticker</span><span class="p">,</span><span class="w"> </span><span class="s1">&#39;[^.]+&#39;</span><span class="p">,</span><span class="w"> </span><span class="mi">1</span><span class="p">,</span><span class="w"> </span><span class="mi">1</span><span class="p">)</span><span class="w"> </span><span class="k">AS</span><span class="w"> </span><span class="n">stock_code</span>
+</code></pre></div>
+
+<h4 id="3-stg_stock_pricesql--lag-윈도우-함수">(3) <code>stg_stock_price.sql</code> — <code>LAG</code> 윈도우 함수</h4>
+<p>이건 <strong>그대로 동작</strong>. PostgreSQL과 Oracle 둘 다 SQL:2003 표준 지원.</p>
+<div class="codehilite"><pre><span></span><code><span class="n">LAG</span><span class="p">(</span><span class="k">close</span><span class="p">)</span><span class="w"> </span><span class="n">OVER</span><span class="w"> </span><span class="p">(</span><span class="n">PARTITION</span><span class="w"> </span><span class="k">BY</span><span class="w"> </span><span class="n">ticker</span><span class="w"> </span><span class="k">ORDER</span><span class="w"> </span><span class="k">BY</span><span class="w"> </span><span class="k">timestamp</span><span class="p">)</span><span class="w"> </span><span class="k">AS</span><span class="w"> </span><span class="n">prev_close</span>
+</code></pre></div>
+
+<h4 id="4-fct_stock_dailysql--boolean-타입">(4) <code>fct_stock_daily.sql</code> — Boolean 타입</h4>
+<p><strong>PostgreSQL:</strong></p>
+<div class="codehilite"><pre><span></span><code><span class="p">(</span><span class="n">per_actual</span><span class="w"> </span><span class="o">&lt;</span><span class="w"> </span><span class="mi">10</span><span class="w"> </span><span class="k">AND</span><span class="w"> </span><span class="n">pbr_actual</span><span class="w"> </span><span class="o">&lt;</span><span class="w"> </span><span class="mi">1</span><span class="p">)</span><span class="w"> </span><span class="k">AS</span><span class="w"> </span><span class="n">is_value_stock</span><span class="w">  </span><span class="c1">-- boolean 반환</span>
+</code></pre></div>
+
+<p><strong>Oracle (Boolean 타입 없음 — 19c 기준):</strong></p>
+<div class="codehilite"><pre><span></span><code><span class="k">CASE</span>
+<span class="w">    </span><span class="k">WHEN</span><span class="w"> </span><span class="n">per_actual</span><span class="w"> </span><span class="o">&lt;</span><span class="w"> </span><span class="mi">10</span><span class="w"> </span><span class="k">AND</span><span class="w"> </span><span class="n">pbr_actual</span><span class="w"> </span><span class="o">&lt;</span><span class="w"> </span><span class="mi">1</span><span class="w"> </span><span class="k">THEN</span><span class="w"> </span><span class="s1">&#39;Y&#39;</span>
+<span class="w">    </span><span class="k">ELSE</span><span class="w"> </span><span class="s1">&#39;N&#39;</span>
+<span class="k">END</span><span class="w"> </span><span class="k">AS</span><span class="w"> </span><span class="n">is_value_stock</span><span class="w">                                    </span><span class="c1">-- CHAR(1) 반환</span>
+</code></pre></div>
+
+<blockquote>
+<p>💡 <strong>Oracle 21c+</strong> 부터는 <code>BOOLEAN</code> 타입 지원. 19c라면 <code>Y/N</code> 패턴이 사실상 표준.</p>
+</blockquote>
+<h4 id="5-signal_valuationsql--accepted_values-테스트">(5) <code>signal_valuation.sql</code> — accepted_values 테스트</h4>
+<p>Boolean 변환과 함께 <code>signals.yml</code>의 테스트도 변경:</p>
+<div class="codehilite"><pre><span></span><code><span class="p p-Indicator">-</span><span class="w"> </span><span class="nt">name</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">is_value_stock</span>
+<span class="w">  </span><span class="nt">tests</span><span class="p">:</span>
+<span class="w">    </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="nt">accepted_values</span><span class="p">:</span>
+<span class="w">        </span><span class="nt">values</span><span class="p">:</span><span class="w"> </span><span class="p p-Indicator">[</span><span class="s">&#39;Y&#39;</span><span class="p p-Indicator">,</span><span class="w"> </span><span class="s">&#39;N&#39;</span><span class="p p-Indicator">]</span><span class="w">    </span><span class="c1"># PG: [true, false] → Oracle: [&#39;Y&#39;, &#39;N&#39;]</span>
+</code></pre></div>
+
+<h4 id="dbt가-자동-변환해주는-것-변경-불필요">dbt가 자동 변환해주는 것 (변경 불필요)</h4>
+<table>
+<thead>
+<tr>
+<th>구문</th>
+<th>dbt 자동 처리</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>LIMIT n</code></td>
+<td>Oracle은 <code>FETCH FIRST n ROWS ONLY</code> 로 자동 변환 (dbt-oracle 매크로)</td>
+</tr>
+<tr>
+<td>Materialization (<code>view</code>/<code>table</code>/<code>incremental</code>)</td>
+<td>DDL 자동 생성 — 사용자가 신경 안 써도 됨</td>
+</tr>
+<tr>
+<td><code>CREATE OR REPLACE</code></td>
+<td>Oracle의 <code>CREATE OR REPLACE VIEW</code> 자동 사용</td>
+</tr>
+<tr>
+<td>스키마 분리 (<code>+schema: marts</code>)</td>
+<td><code>USER_MARTS</code> 같은 prefix 자동 생성</td>
+</tr>
+</tbody>
+</table>
+<hr />
+<h3 id="6-5-step-4--매크로로-방언-차이-추상화-권장">6-5. Step 4 — 매크로로 방언 차이 추상화 (권장)</h3>
+<p>여러 방언을 동시 지원해야 하면 <strong>매크로로 분기</strong>:</p>
+<div class="codehilite"><pre><span></span><code><span class="err">{</span><span class="o">#</span><span class="w"> </span><span class="n">macros</span><span class="o">/</span><span class="n">date_subtract</span><span class="p">.</span><span class="k">sql</span><span class="w"> </span><span class="o">#</span><span class="err">}</span>
+<span class="err">{</span><span class="o">%</span><span class="w"> </span><span class="n">macro</span><span class="w"> </span><span class="n">date_subtract</span><span class="p">(</span><span class="k">column</span><span class="p">,</span><span class="w"> </span><span class="n">days</span><span class="p">)</span><span class="w"> </span><span class="o">%</span><span class="err">}</span>
+<span class="w">    </span><span class="err">{</span><span class="o">%</span><span class="w"> </span><span class="k">if</span><span class="w"> </span><span class="n">target</span><span class="p">.</span><span class="k">type</span><span class="w"> </span><span class="o">==</span><span class="w"> </span><span class="s1">&#39;postgres&#39;</span><span class="w"> </span><span class="o">%</span><span class="err">}</span>
+<span class="w">        </span><span class="err">{{</span><span class="w"> </span><span class="k">column</span><span class="w"> </span><span class="err">}}</span><span class="w"> </span><span class="o">&gt;=</span><span class="w"> </span><span class="k">CURRENT_DATE</span><span class="w"> </span><span class="o">-</span><span class="w"> </span><span class="nb">INTERVAL</span><span class="w"> </span><span class="s1">&#39;{{ days }} days&#39;</span>
+<span class="w">    </span><span class="err">{</span><span class="o">%</span><span class="w"> </span><span class="n">elif</span><span class="w"> </span><span class="n">target</span><span class="p">.</span><span class="k">type</span><span class="w"> </span><span class="o">==</span><span class="w"> </span><span class="s1">&#39;oracle&#39;</span><span class="w"> </span><span class="o">%</span><span class="err">}</span>
+<span class="w">        </span><span class="err">{{</span><span class="w"> </span><span class="k">column</span><span class="w"> </span><span class="err">}}</span><span class="w"> </span><span class="o">&gt;=</span><span class="w"> </span><span class="n">TRUNC</span><span class="p">(</span><span class="n">SYSDATE</span><span class="p">)</span><span class="w"> </span><span class="o">-</span><span class="w"> </span><span class="err">{{</span><span class="w"> </span><span class="n">days</span><span class="w"> </span><span class="err">}}</span>
+<span class="w">    </span><span class="err">{</span><span class="o">%</span><span class="w"> </span><span class="n">endif</span><span class="w"> </span><span class="o">%</span><span class="err">}</span>
+<span class="err">{</span><span class="o">%</span><span class="w"> </span><span class="n">endmacro</span><span class="w"> </span><span class="o">%</span><span class="err">}</span>
+</code></pre></div>
+
+<p><strong>사용:</strong></p>
+<div class="codehilite"><pre><span></span><code><span class="k">WHERE</span><span class="w"> </span><span class="err">{{</span><span class="w"> </span><span class="n">date_subtract</span><span class="p">(</span><span class="s1">&#39;timestamp&#39;</span><span class="p">,</span><span class="w"> </span><span class="mi">90</span><span class="p">)</span><span class="w"> </span><span class="err">}}</span>
+</code></pre></div>
+
+<p>→ <strong>모델 SQL은 그대로 두고 매크로 한 곳만 수정하면 양쪽 DB 모두 지원.</strong> 사내 적용 시 가장 깔끔한 패턴.</p>
+<hr />
+<h3 id="6-6-step-5--실행--검증">6-6. Step 5 — 실행 + 검증</h3>
+<div class="codehilite"><pre><span></span><code><span class="c1"># 환경변수 (사내 Oracle 계정)</span>
+<span class="nb">export</span><span class="w"> </span><span class="nv">ORA_HOST</span><span class="o">=</span>bip-oracle.company.local
+<span class="nb">export</span><span class="w"> </span><span class="nv">ORA_SERVICE</span><span class="o">=</span>BIPDB
+<span class="nb">export</span><span class="w"> </span><span class="nv">ORA_USER</span><span class="o">=</span>DBT_DEMO
+<span class="nb">export</span><span class="w"> </span><span class="nv">ORA_PASSWORD</span><span class="o">=</span>...
+
+<span class="c1"># 1. 연결 확인</span>
+docker<span class="w"> </span>compose<span class="w"> </span>-f<span class="w"> </span>dbt/docker-compose.yml<span class="w"> </span>up<span class="w"> </span>-d
+docker<span class="w"> </span><span class="nb">exec</span><span class="w"> </span>bip-dbt<span class="w"> </span>dbt<span class="w"> </span>debug
+<span class="c1"># 출력 확인:</span>
+<span class="c1">#   adapter type: oracle</span>
+<span class="c1">#   adapter version: 1.9.x</span>
+<span class="c1">#   Connection test: OK connection ok</span>
+
+<span class="c1"># 2. 컴파일만 먼저 (실행 없이 SQL 확인)</span>
+docker<span class="w"> </span><span class="nb">exec</span><span class="w"> </span>bip-dbt<span class="w"> </span>dbt<span class="w"> </span>compile<span class="w"> </span>--select<span class="w"> </span>stg_stock_price
+cat<span class="w"> </span>target/compiled/bip_demo/models/staging/stg_stock_price.sql
+<span class="c1"># → Oracle 방언으로 컴파일됐는지 시각 확인</span>
+
+<span class="c1"># 3. 전체 실행</span>
+docker<span class="w"> </span><span class="nb">exec</span><span class="w"> </span>bip-dbt<span class="w"> </span>dbt<span class="w"> </span>build
+
+<span class="c1"># 4. 결과 확인</span>
+docker<span class="w"> </span><span class="nb">exec</span><span class="w"> </span>bip-dbt<span class="w"> </span>dbt<span class="w"> </span>run-operation<span class="w"> </span>generate_schema_name
+sqlplus<span class="w"> </span>DBT_DEMO/...@BIPDB
+SQL&gt;<span class="w"> </span>SELECT<span class="w"> </span>COUNT<span class="o">(</span>*<span class="o">)</span><span class="w"> </span>FROM<span class="w"> </span>DBT_DEMO_MARTS.FCT_STOCK_DAILY<span class="p">;</span>
+</code></pre></div>
+
+<hr />
+<h3 id="6-7-흔한-함정--대응">6-7. 흔한 함정 + 대응</h3>
+<table>
+<thead>
+<tr>
+<th>함정</th>
+<th>증상</th>
+<th>대응</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><strong>대소문자</strong></td>
+<td><code>WHERE ticker = '005930.KS'</code> 실패</td>
+<td>Oracle은 식별자 대문자가 기본. 컬럼명은 <code>TICKER</code> 식으로 변경 또는 <code>"ticker"</code> 쌍따옴표 강제</td>
+</tr>
+<tr>
+<td><strong>Boolean 타입</strong></td>
+<td>19c에서 <code>BOOLEAN</code> 컬럼 생성 실패</td>
+<td><code>Y/N</code> CHAR(1) 패턴 사용 + 21c+ 마이그레이션 시 일괄 변경</td>
+</tr>
+<tr>
+<td><strong>VARCHAR2 길이</strong></td>
+<td>한글 종목명에서 <code>ORA-12899: value too large</code></td>
+<td><code>VARCHAR2(255 CHAR)</code> 명시 (BYTE 아닌 CHAR 단위)</td>
+</tr>
+<tr>
+<td><strong><code>LIMIT</code> 미사용</strong></td>
+<td>Oracle 11g/12.1에서 <code>LIMIT</code> 미지원</td>
+<td>dbt-oracle이 19c에서는 자동 변환 — 19c 이상 확인</td>
+</tr>
+<tr>
+<td><strong>dbt-core 버전 충돌</strong></td>
+<td>새 dbt-core 출시 후 dbt-oracle 미호환</td>
+<td><code>requirements.txt</code>에 minor 버전까지 핀 (<code>dbt-core==1.9.0</code> ↔ <code>dbt-oracle==1.9.0</code>)</td>
+</tr>
+<tr>
+<td><strong>세션 스키마</strong></td>
+<td>모델은 만들어지는데 <code>dbt test</code>에서 못 찾음</td>
+<td>profiles.yml의 <code>schema</code> 가 대문자인지 확인</td>
+</tr>
+<tr>
+<td><strong>권한 부족</strong></td>
+<td><code>ORA-01031: insufficient privileges</code></td>
+<td><code>GRANT CREATE TABLE, CREATE VIEW, UNLIMITED TABLESPACE TO DBT_DEMO</code></td>
+</tr>
+<tr>
+<td><strong>Materialized View</strong></td>
+<td>dbt가 <code>view</code> materialization을 했는데 운영에서 MV가 필요</td>
+<td>dbt-oracle은 <code>materialized_view</code> 도 지원 — <code>+materialized: materialized_view</code></td>
+</tr>
+</tbody>
+</table>
+<hr />
+<h3 id="6-8-사내-적용-체크리스트">6-8. 사내 적용 체크리스트</h3>
+<p><strong>환경 준비:</strong>
+- [ ] dbt 전용 Oracle 계정 생성 (예: <code>DBT_DEMO</code>)
+- [ ] 권한 부여: <code>CONNECT</code>, <code>RESOURCE</code>, <code>CREATE TABLE/VIEW</code>, <code>UNLIMITED TABLESPACE</code>
+- [ ] 원본 테이블에 SELECT 권한 부여
+- [ ] tnsnames.ora 또는 Easy Connect 정보 확보</p>
+<p><strong>프로젝트 변경:</strong>
+- [ ] <code>dbt/Dockerfile</code> — dbt-oracle + oracledb 설치
+- [ ] <code>dbt/profiles.yml</code> — type: oracle, 연결 정보
+- [ ] <code>stg_stock_price.sql</code> — INTERVAL, SPLIT_PART 변환 (또는 매크로 도입)
+- [ ] <code>fct_stock_daily.sql</code>, <code>signal_valuation.sql</code> — Boolean → Y/N CHAR(1)
+- [ ] <code>signals.yml</code> — accepted_values 값 변경</p>
+<p><strong>검증:</strong>
+- [ ] <code>dbt debug</code> 성공
+- [ ] <code>dbt compile</code> 로 Oracle SQL 출력 시각 확인
+- [ ] <code>dbt build</code> 성공 (모델 + 테스트 통과)
+- [ ] <code>dbt docs generate</code> 카탈로그 생성
+- [ ] sqlplus로 결과 행 수 검증</p>
+<p><strong>예상 시간:</strong> <strong>반나절 ~ 1일</strong> (환경 준비가 가장 오래 걸리는 부분, 코드 변경 자체는 1–2시간).</p>
+<hr />
+<h3 id="6-9-사내-단계적-도입-시나리오-권장">6-9. 사내 단계적 도입 시나리오 (권장)</h3>
+<div class="mermaid">
+flowchart LR
+    P1["1주차\nPoC\n1-2개 모델"] --> P2["2-3주차\n전체 변환\n6개 모델"]
+    P2 --> P3["4주차\n스케줄링\nAirflow 연동"]
+    P3 --> P4["5주차+\n운영 + 확장\n모델 추가"]
+
+    style P1 fill:#fff3e0,color:#1a1a2e
+    style P2 fill:#e3f2fd,color:#1a1a2e
+    style P3 fill:#e8f5e9,color:#1a1a2e
+    style P4 fill:#f3e5f5,color:#1a1a2e
+</div>
+
+<table>
+<thead>
+<tr>
+<th style="text-align: center;">주차</th>
+<th>목표</th>
+<th>산출물</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td style="text-align: center;">1주차</td>
+<td>PoC — <code>stg_stock_info</code> 1개만 Oracle에서 동작 확인</td>
+<td><code>dbt debug</code> + <code>dbt run --select stg_stock_info</code> 성공</td>
+</tr>
+<tr>
+<td style="text-align: center;">2~3주차</td>
+<td>전체 6개 모델 + 30개 테스트 통과</td>
+<td><code>dbt build</code> 성공 + dbt docs 사이트</td>
+</tr>
+<tr>
+<td style="text-align: center;">4주차</td>
+<td>Airflow에서 <code>dbt build</code> 호출 (BashOperator)</td>
+<td>매일 새벽 자동 실행</td>
+</tr>
+<tr>
+<td style="text-align: center;">5주차+</td>
+<td>사내 도메인 모델 추가 (영업/인사/매출 등)</td>
+<td>모델 수 점진적 확장</td>
+</tr>
+</tbody>
+</table>
 <hr />
 <h2 id="7-한계--다음-단계">7. 한계 + 다음 단계</h2>
 <p><strong>dbt가 잘 못하는 것:</strong>
@@ -696,6 +1061,10 @@ docker<span class="w"> </span><span class="nb">exec</span><span class="w"> </spa
 <tr>
 <td>2026-05-17</td>
 <td>dbt 도메인 용어집(<code>_glossary.md</code>, 16개 용어) 추가 + 강점 4 신설 (강점 4→5) — BIP OM Glossary 77개와 동일 패턴</td>
+</tr>
+<tr>
+<td>2026-05-18</td>
+<td>§6 Oracle 19c 적용 가이드 단계별 확장 — Dockerfile/profiles/SQL 방언 변환(4곳)/매크로 추상화/실행 검증/흔한 함정/사내 도입 시나리오</td>
 </tr>
 </tbody>
 </table>
