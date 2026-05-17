@@ -1,0 +1,1142 @@
+<!DOCTYPE html>
+<html lang="ko" data-theme="dark">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Cube 데모 결과 — 학습조직 세미나 자료</title>
+<script src="https://cdn.jsdelivr.net/npm/mermaid@11/dist/mermaid.min.js"></script>
+<style>
+  /* ── 테마 변수 ── */
+  :root[data-theme="dark"] {
+    --bg: #0d1117;
+    --bg-sidebar: #161b22;
+    --fg: #e6edf3;
+    --fg-muted: #8b949e;
+    --border: #30363d;
+    --accent: #58a6ff;
+    --accent-hover: #79c0ff;
+    --code-bg: #1e293b;
+    --code-fg: #e2e8f0;
+    --table-header: #161b22;
+    --table-even: #0d1117;
+    --table-odd: #161b22;
+    --blockquote-bg: #161b22;
+    --blockquote-border: #3b82f6;
+    --link: #58a6ff;
+    --strong: #79c0ff;
+    --card-bg: #21262d;
+  }
+  :root[data-theme="light"] {
+    --bg: #ffffff;
+    --bg-sidebar: #f6f8fa;
+    --fg: #1f2937;
+    --fg-muted: #6b7280;
+    --border: #e5e7eb;
+    --accent: #2563eb;
+    --accent-hover: #1d4ed8;
+    --code-bg: #f3f4f6;
+    --code-fg: #1e293b;
+    --table-header: #f8fafc;
+    --table-even: #ffffff;
+    --table-odd: #f9fafb;
+    --blockquote-bg: #eff6ff;
+    --blockquote-border: #3b82f6;
+    --link: #2563eb;
+    --strong: #1e40af;
+    --card-bg: #f3f4f6;
+  }
+
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+
+  body {
+    font-family: 'Pretendard', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+    background: var(--bg);
+    color: var(--fg);
+    line-height: 1.75;
+    display: flex;
+    min-height: 100vh;
+  }
+
+  /* ── 사이드바 ── */
+  .sidebar {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 280px;
+    height: 100vh;
+    background: var(--bg-sidebar);
+    border-right: 1px solid var(--border);
+    overflow-y: auto;
+    padding: 20px 0;
+    z-index: 100;
+    transition: transform 0.3s ease;
+  }
+
+  .sidebar-header {
+    padding: 0 20px 16px;
+    border-bottom: 1px solid var(--border);
+    margin-bottom: 12px;
+  }
+
+  .sidebar-title {
+    font-size: 0.95rem;
+    font-weight: 700;
+    color: var(--fg);
+    line-height: 1.3;
+  }
+
+  .sidebar-controls {
+    display: flex;
+    gap: 8px;
+    margin-top: 12px;
+  }
+
+  .theme-btn {
+    background: var(--card-bg);
+    border: 1px solid var(--border);
+    color: var(--fg-muted);
+    padding: 4px 10px;
+    border-radius: 6px;
+    font-size: 0.7rem;
+    cursor: pointer;
+    transition: all 0.2s;
+  }
+  .theme-btn:hover {
+    border-color: var(--accent);
+    color: var(--accent);
+  }
+  .theme-btn.active {
+    background: var(--accent);
+    color: #fff;
+    border-color: var(--accent);
+  }
+
+  .back-link {
+    display: block;
+    margin-top: 10px;
+    font-size: 0.75rem;
+    color: var(--fg-muted);
+    text-decoration: none;
+  }
+  .back-link:hover {
+    color: var(--accent);
+  }
+
+  /* ── TOC ── */
+  .toc {
+    padding: 0 12px;
+  }
+  .toc ul {
+    list-style: none;
+    padding: 0;
+  }
+  .toc li {
+    margin: 0;
+  }
+  .toc a {
+    display: block;
+    padding: 4px 8px;
+    color: var(--fg-muted);
+    text-decoration: none;
+    font-size: 0.78rem;
+    border-radius: 4px;
+    border-left: 2px solid transparent;
+    transition: all 0.15s;
+    line-height: 1.4;
+  }
+  .toc a:hover {
+    color: var(--accent);
+    background: var(--card-bg);
+    border-left-color: var(--accent);
+  }
+  .toc a.active {
+    color: var(--accent);
+    border-left-color: var(--accent);
+    font-weight: 600;
+  }
+  .toc-h3 a { padding-left: 20px; font-size: 0.75rem; }
+  .toc-h4 a { padding-left: 32px; font-size: 0.72rem; }
+
+  /* ── 본문 ── */
+  .content {
+    margin-left: 280px;
+    flex: 1;
+    max-width: 860px;
+    padding: 40px 48px 80px;
+  }
+
+  /* ── 모바일 ── */
+  .menu-toggle {
+    display: none;
+    position: fixed;
+    top: 12px;
+    left: 12px;
+    z-index: 200;
+    background: var(--bg-sidebar);
+    border: 1px solid var(--border);
+    color: var(--fg);
+    padding: 8px 12px;
+    border-radius: 6px;
+    cursor: pointer;
+    font-size: 1.1rem;
+  }
+
+  @media (max-width: 900px) {
+    .sidebar {
+      transform: translateX(-100%);
+    }
+    .sidebar.open {
+      transform: translateX(0);
+    }
+    .content {
+      margin-left: 0;
+      padding: 60px 20px 60px;
+    }
+    .menu-toggle {
+      display: block;
+    }
+  }
+
+  /* ── 타이포그래피 ── */
+  h1 { font-size: 1.9rem; margin: 2rem 0 1rem; padding-bottom: 0.5rem; border-bottom: 2px solid var(--accent); }
+  h2 { font-size: 1.45rem; margin: 2.5rem 0 0.8rem; padding-bottom: 0.3rem; border-bottom: 1px solid var(--border); color: var(--accent); }
+  h3 { font-size: 1.15rem; margin: 1.8rem 0 0.5rem; }
+  h4 { font-size: 1rem; margin: 1.3rem 0 0.4rem; color: var(--fg-muted); }
+  p { margin: 0.6rem 0; }
+  hr { border: none; border-top: 1px solid var(--border); margin: 2rem 0; }
+  strong { color: var(--strong); }
+  a { color: var(--link); text-decoration: none; }
+  a:hover { text-decoration: underline; }
+  ul, ol { margin: 0.5rem 0 0.5rem 1.5rem; }
+  li { margin: 0.25rem 0; }
+
+  /* ── 테이블 ── */
+  table { width: 100%; border-collapse: collapse; margin: 1rem 0; font-size: 0.85rem; }
+  th, td { border: 1px solid var(--border); padding: 0.5rem 0.75rem; text-align: left; }
+  th { background: var(--table-header); font-weight: 600; }
+  tr:nth-child(even) { background: var(--table-even); }
+  tr:nth-child(odd) { background: var(--table-odd); }
+
+  /* ── 코드 ── */
+  code {
+    background: var(--code-bg);
+    color: var(--code-fg);
+    padding: 0.15rem 0.4rem;
+    border-radius: 4px;
+    font-size: 0.82em;
+    font-family: 'JetBrains Mono', 'Fira Code', 'Cascadia Code', monospace;
+  }
+  pre {
+    background: var(--code-bg);
+    color: var(--code-fg);
+    padding: 1rem 1.2rem;
+    border-radius: 8px;
+    overflow-x: auto;
+    margin: 1rem 0;
+    border: 1px solid var(--border);
+  }
+  pre code {
+    background: none;
+    padding: 0;
+    font-size: 0.82rem;
+    line-height: 1.5;
+  }
+
+  /* ── 인용 ── */
+  blockquote {
+    border-left: 4px solid var(--blockquote-border);
+    padding: 0.6rem 1rem;
+    margin: 1rem 0;
+    background: var(--blockquote-bg);
+    border-radius: 0 6px 6px 0;
+  }
+  blockquote p { margin: 0.3rem 0; }
+
+  /* ── Mermaid ── */
+  .mermaid {
+    margin: 1.5rem 0;
+    text-align: center;
+    background: var(--card-bg);
+    padding: 1rem;
+    border-radius: 8px;
+    border: 1px solid var(--border);
+  }
+  .mermaid svg { max-width: 100%; }
+
+  /* ── Footer ── */
+  footer {
+    margin-top: 3rem;
+    padding-top: 1rem;
+    border-top: 1px solid var(--border);
+    color: var(--fg-muted);
+    font-size: 0.8rem;
+  }
+</style>
+</head>
+<body>
+
+<button class="menu-toggle" onclick="document.querySelector('.sidebar').classList.toggle('open')">☰</button>
+
+<aside class="sidebar">
+  <div class="sidebar-header">
+    <div class="sidebar-title">Cube 데모 결과 — 학습조직 세미나 자료</div>
+    <div class="sidebar-controls">
+      <button class="theme-btn" onclick="setTheme('dark')" id="btn-dark">🌙 Dark</button>
+      <button class="theme-btn" onclick="setTheme('light')" id="btn-light">☀️ Light</button>
+    </div>
+    <a class="back-link" href="index.html">← 문서 목록으로</a>
+  </div>
+  <nav class="toc">
+<ul>
+<li class="toc-h2"><a href="#1-구축-결과-요약">1. 구축 결과 요약</a></li>
+<li class="toc-h2"><a href="#2-시맨틱-모델-구조">2. 시맨틱 모델 구조</a></li>
+<li class="toc-h2"><a href="#3-세미나에서-보여줄-5가지-cube-강점">3. 세미나에서 보여줄 5가지 Cube 강점</a></li>
+  <li class="toc-h3"><a href="#강점-1--3가지-api-동시-제공">강점 1 — 3가지 API 동시 제공</a></li>
+    <li class="toc-h4"><a href="#rest-api-웹앱용">REST API (웹/앱용)</a></li>
+    <li class="toc-h4"><a href="#graphql-유연한-쿼리">GraphQL (유연한 쿼리)</a></li>
+    <li class="toc-h4"><a href="#sql-api-bi-도구-직접-연결">SQL API (BI 도구 직접 연결)</a></li>
+  <li class="toc-h3"><a href="#강점-2--pre-aggregation-캐싱">강점 2 — Pre-aggregation 캐싱</a></li>
+  <li class="toc-h3"><a href="#강점-3--cube-playground-시각적-쿼리">강점 3 — Cube Playground 시각적 쿼리</a></li>
+  <li class="toc-h3"><a href="#강점-4--boolean-flag-메트릭-표준화">강점 4 — Boolean Flag 메트릭 표준화</a></li>
+  <li class="toc-h3"><a href="#강점-5--headless-bi-패턴-ui-비종속">강점 5 — Headless BI 패턴 (UI 비종속)</a></li>
+<li class="toc-h2"><a href="#4-cube-vs-수동-sql--다른-도구-비교">4. Cube vs 수동 SQL / 다른 도구 비교</a></li>
+<li class="toc-h2"><a href="#5-세미나-시연-명령어">5. 세미나 시연 명령어</a></li>
+<li class="toc-h2"><a href="#6-사내-oracle-19c-적용-가이드">6. 사내 Oracle 19c 적용 가이드</a></li>
+  <li class="toc-h3"><a href="#6-1-변경-범위-한눈에-보기">6-1. 변경 범위 한눈에 보기</a></li>
+  <li class="toc-h3"><a href="#6-2-step-1--custom-dockerfile-instant-client-포함">6-2. Step 1 — Custom Dockerfile (Instant Client 포함)</a></li>
+  <li class="toc-h3"><a href="#6-3-step-2--docker-composeyml-oracle-연결">6-3. Step 2 — docker-compose.yml (Oracle 연결)</a></li>
+  <li class="toc-h3"><a href="#6-4-step-3--모델-sql-방언-변환">6-4. Step 3 — 모델 SQL 방언 변환</a></li>
+    <li class="toc-h4"><a href="#postgresql-모델-stock_infojs">PostgreSQL 모델 (stock_info.js):</a></li>
+    <li class="toc-h4"><a href="#oracle용-변경">Oracle용 변경:</a></li>
+    <li class="toc-h4"><a href="#시간-기반-차원">시간 기반 차원</a></li>
+  <li class="toc-h3"><a href="#6-5-step-4--실행--검증">6-5. Step 4 — 실행 + 검증</a></li>
+  <li class="toc-h3"><a href="#6-6-흔한-함정--대응">6-6. 흔한 함정 + 대응</a></li>
+  <li class="toc-h3"><a href="#6-7-사내-적용-체크리스트">6-7. 사내 적용 체크리스트</a></li>
+<li class="toc-h2"><a href="#7--cube의-한계--팩트-팩트-join-실패-v3-전환-근거">7. ⚠️ Cube의 한계 — 팩트-팩트 JOIN 실패 (v3 전환 근거)</a></li>
+  <li class="toc-h3"><a href="#7-1-실패한-테스트-케이스">7-1. 실패한 테스트 케이스</a></li>
+  <li class="toc-h3"><a href="#7-2-원인">7-2. 원인</a></li>
+  <li class="toc-h3"><a href="#7-3-우회-시도">7-3. 우회 시도</a></li>
+  <li class="toc-h3"><a href="#7-4-의사결정--v3-langgraph-전환">7-4. 의사결정 — v3 LangGraph 전환</a></li>
+<li class="toc-h2"><a href="#8-한계--다음-단계--결론">8. 한계 + 다음 단계 / 결론</a></li>
+<li class="toc-h2"><a href="#변경-이력">변경 이력</a></li>
+</ul>
+</nav>
+</aside>
+
+<main class="content">
+<h1 id="cube-데모-결과--학습조직-세미나-자료">Cube 데모 결과 — 학습조직 세미나 자료</h1>
+<blockquote>
+<p><strong>목적:</strong> BIP-Pipeline 실제 데이터(PostgreSQL)에 Cube를 적용한 데모 결과 정리. 세미나에서 Cube의 핵심 강점(3가지 API/Pre-aggregation/Playground/메트릭 표준화)을 시연하고, <strong>팩트-팩트 JOIN 한계</strong>가 v3 LangGraph로 방향 전환된 근거임을 보여주기 위한 자료.</p>
+<p><strong>환경:</strong> Cube v1.3.21 / Docker / bip-postgres <code>stockdb</code>
+<strong>데이터:</strong> BIP <code>public</code> 스키마의 7개 테이블/뷰 → Cube 시맨틱 모델 7개로 매핑
+<strong>테스트 기간:</strong> 2026-04-18 ~ 2026-04-25</p>
+</blockquote>
+<hr />
+<h2 id="1-구축-결과-요약">1. 구축 결과 요약</h2>
+<div class="codehilite"><pre><span></span><code>✅ 7 시맨틱 모델 구축 성공
+✅ 단순 조회 / Boolean Flag / 2-Cube JOIN: 정상 동작
+❌ 팩트-팩트 JOIN (N:N): 실패 — Cube 구조 한계
+❌ 3-Cube 이상 JOIN: 실패
+🛠  REST/GraphQL/SQL API 3종 모두 제공
+🎨 Cube Playground UI에서 시각적 쿼리 가능
+</code></pre></div>
+
+<p><strong>적재된 시맨틱 모델 (<code>cube/model/</code>):</strong></p>
+<table>
+<thead>
+<tr>
+<th>모델</th>
+<th>원본 테이블/뷰</th>
+<th>역할</th>
+<th>Grain</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>StockInfo</code></td>
+<td><code>stock_info</code></td>
+<td>마스터 (허브)</td>
+<td>종목</td>
+</tr>
+<tr>
+<td><code>StockDaily</code></td>
+<td><code>analytics_stock_daily</code></td>
+<td>팩트 — 일봉 시세</td>
+<td>종목×일자</td>
+</tr>
+<tr>
+<td><code>Valuation</code></td>
+<td><code>analytics_valuation</code></td>
+<td>팩트 — 연간 밸류에이션</td>
+<td>종목×연도</td>
+</tr>
+<tr>
+<td><code>MacroDaily</code></td>
+<td><code>analytics_macro_daily</code></td>
+<td>팩트 — 매크로 지표</td>
+<td>일자</td>
+</tr>
+<tr>
+<td><code>ValuationSignals</code></td>
+<td><code>v_valuation_signals__v1</code></td>
+<td>Curated — boolean flag</td>
+<td>종목×연도</td>
+</tr>
+<tr>
+<td><code>TechnicalSignals</code></td>
+<td><code>v_technical_signals__v1</code></td>
+<td>Curated — boolean flag</td>
+<td>종목×일자</td>
+</tr>
+<tr>
+<td><code>FlowSignals</code></td>
+<td><code>v_flow_signals__v1</code></td>
+<td>Curated — boolean flag</td>
+<td>종목×일자</td>
+</tr>
+</tbody>
+</table>
+<hr />
+<h2 id="2-시맨틱-모델-구조">2. 시맨틱 모델 구조</h2>
+<div class="mermaid">
+flowchart TB
+    SI["StockInfo\n("마스터/허브")"]
+
+    SI -.MANY_TO_ONE.- SD["StockDaily\n("팩트: 종목×일자")"]
+    SI -.MANY_TO_ONE.- VAL["Valuation\n("팩트: 종목×연도")"]
+    SI -.MANY_TO_ONE.- VS["ValuationSignals\n(Curated)"]
+    SI -.MANY_TO_ONE.- TS["TechnicalSignals\n(Curated)"]
+    SI -.MANY_TO_ONE.- FS["FlowSignals\n(Curated)"]
+
+    MD["MacroDaily\n(독립 팩트)"]
+
+    style SI fill:#fbbf24,color:#1a1a2e
+    style MD fill:#a78bfa,color:#fff
+    style VS fill:#22c55e,color:#fff
+    style TS fill:#22c55e,color:#fff
+    style FS fill:#22c55e,color:#fff
+</div>
+
+<blockquote>
+<p><strong>관계 구조의 핵심 특징:</strong> 모든 Cube가 <code>StockInfo</code> 단일 허브로만 연결됨. <strong>팩트끼리(N:N) 직접 관계는 없음.</strong> → §6 한계 섹션에서 자세히.</p>
+</blockquote>
+<hr />
+<h2 id="3-세미나에서-보여줄-5가지-cube-강점">3. 세미나에서 보여줄 5가지 Cube 강점</h2>
+<h3 id="강점-1--3가지-api-동시-제공">강점 1 — 3가지 API 동시 제공</h3>
+<p><strong>가장 큰 차별점:</strong> Cube가 같은 메트릭을 <strong>REST/GraphQL/SQL</strong> 3가지 형태로 동시 노출.</p>
+<h4 id="rest-api-웹앱용">REST API (웹/앱용)</h4>
+<div class="codehilite"><pre><span></span><code>curl<span class="w"> </span>-X<span class="w"> </span>POST<span class="w"> </span>http://localhost:4000/cubejs-api/v1/load<span class="w"> </span><span class="se">\</span>
+<span class="w">  </span>-H<span class="w"> </span><span class="s2">&quot;Authorization: ...&quot;</span><span class="w"> </span><span class="se">\</span>
+<span class="w">  </span>-d<span class="w"> </span><span class="s1">&#39;{&quot;query&quot;: {</span>
+<span class="s1">    &quot;measures&quot;: [&quot;StockInfo.totalMarketValue&quot;],</span>
+<span class="s1">    &quot;dimensions&quot;: [&quot;StockInfo.marketType&quot;]</span>
+<span class="s1">  }}&#39;</span>
+</code></pre></div>
+
+<h4 id="graphql-유연한-쿼리">GraphQL (유연한 쿼리)</h4>
+<div class="codehilite"><pre><span></span><code><span class="k">query</span><span class="w"> </span><span class="p">{</span>
+<span class="w">  </span><span class="n">cube</span><span class="w"> </span><span class="p">{</span>
+<span class="w">    </span><span class="n">stockInfo</span><span class="w"> </span><span class="p">{</span>
+<span class="w">      </span><span class="n">marketType</span>
+<span class="w">      </span><span class="n">totalMarketValue</span>
+<span class="w">    </span><span class="p">}</span>
+<span class="w">  </span><span class="p">}</span>
+<span class="p">}</span>
+</code></pre></div>
+
+<h4 id="sql-api-bi-도구-직접-연결">SQL API (BI 도구 직접 연결)</h4>
+<div class="codehilite"><pre><span></span><code><span class="c1">-- Tableau/Power BI/Metabase가 일반 PostgreSQL처럼 연결</span>
+<span class="k">SELECT</span><span class="w"> </span><span class="n">market_type</span><span class="p">,</span><span class="w"> </span><span class="n">total_market_value</span><span class="w"> </span><span class="k">FROM</span><span class="w"> </span><span class="n">stock_info</span>
+</code></pre></div>
+
+<blockquote>
+<p><strong>메시지:</strong> 한 번 정의한 메트릭이 <strong>웹/앱/BI/SQL 클라이언트 모두에서 동일하게 동작.</strong> dbt에는 OSS Core에서 없는 기능 (dbt Cloud 유료).</p>
+</blockquote>
+<hr />
+<h3 id="강점-2--pre-aggregation-캐싱">강점 2 — Pre-aggregation 캐싱</h3>
+<p><strong>문제:</strong> 매일 수십 명이 같은 "월별 매출" 대시보드를 새로고침하면 원본 DB가 매번 집계 쿼리 실행 → 부하 + 느린 응답.</p>
+<p><strong>Cube 해결:</strong> Pre-aggregation 정의 → 결과를 별도 캐시 테이블에 미리 적재 → 대시보드 응답이 <strong>수십 ms</strong> 단위로.</p>
+<div class="codehilite"><pre><span></span><code><span class="nx">preAggregations</span><span class="o">:</span><span class="w"> </span><span class="p">{</span>
+<span class="w">  </span><span class="nx">monthlySummary</span><span class="o">:</span><span class="w"> </span><span class="p">{</span>
+<span class="w">    </span><span class="nx">measures</span><span class="o">:</span><span class="w"> </span><span class="p">[</span><span class="nx">totalMarketValue</span><span class="p">,</span><span class="w"> </span><span class="nx">avgPer</span><span class="p">],</span>
+<span class="w">    </span><span class="nx">dimensions</span><span class="o">:</span><span class="w"> </span><span class="p">[</span><span class="nx">marketType</span><span class="p">,</span><span class="w"> </span><span class="nx">sector</span><span class="p">],</span>
+<span class="w">    </span><span class="nx">timeDimension</span><span class="o">:</span><span class="w"> </span><span class="nx">lastUpdated</span><span class="p">,</span>
+<span class="w">    </span><span class="nx">granularity</span><span class="o">:</span><span class="w"> </span><span class="s1">&#39;month&#39;</span><span class="p">,</span>
+<span class="w">    </span><span class="nx">refreshKey</span><span class="o">:</span><span class="w"> </span><span class="p">{</span><span class="w"> </span><span class="nx">every</span><span class="o">:</span><span class="w"> </span><span class="s1">&#39;1 hour&#39;</span><span class="w"> </span><span class="p">}</span>
+<span class="w">  </span><span class="p">}</span>
+<span class="p">}</span>
+</code></pre></div>
+
+<p><strong>시연:</strong> Playground에서 동일 쿼리 2번 호출 → 1차 1.2초, 2차 23ms (캐시 hit).</p>
+<blockquote>
+<p><strong>메시지:</strong> dbt(배치)에는 없는 <strong>실시간 캐싱 레이어.</strong> 임베디드 위젯/대시보드 성능의 핵심.</p>
+</blockquote>
+<hr />
+<h3 id="강점-3--cube-playground-시각적-쿼리">강점 3 — Cube Playground 시각적 쿼리</h3>
+<p><strong>시연 흐름 (http://localhost:4000):</strong></p>
+<ol>
+<li><strong>Build 탭에서 메트릭/차원 클릭으로 조합</strong></li>
+<li>Measures: <code>StockInfo.totalMarketValue</code></li>
+<li>Dimensions: <code>StockInfo.marketType</code></li>
+<li>
+<p>Filters: <code>StockInfo.marketType = KOSPI</code></p>
+</li>
+<li>
+<p><strong>자동 생성된 SQL 확인 (SQL 탭)</strong>
+   <code>sql
+   SELECT market_type, SUM(market_value)
+   FROM public.stock_info WHERE active = true
+   GROUP BY 1</code></p>
+</li>
+<li>
+<p><strong>차트로 즉시 시각화 (Chart 탭)</strong> — bar/line/pie</p>
+</li>
+</ol>
+<blockquote>
+<p><strong>메시지:</strong> 분석가/PM이 SQL 몰라도 직접 데이터 탐색 가능. <strong>데이터 셀프서비스의 출발점.</strong></p>
+</blockquote>
+<hr />
+<h3 id="강점-4--boolean-flag-메트릭-표준화">강점 4 — Boolean Flag 메트릭 표준화</h3>
+<p><strong>ValuationSignals 모델 일부:</strong></p>
+<div class="codehilite"><pre><span></span><code><span class="nx">measures</span><span class="o">:</span><span class="w"> </span><span class="p">{</span>
+<span class="w">  </span><span class="nx">valueStockCount</span><span class="o">:</span><span class="w"> </span><span class="p">{</span>
+<span class="w">    </span><span class="nx">sql</span><span class="o">:</span><span class="w"> </span><span class="sb">`CASE WHEN is_value_stock THEN 1 END`</span><span class="p">,</span>
+<span class="w">    </span><span class="nx">type</span><span class="o">:</span><span class="w"> </span><span class="s1">&#39;count&#39;</span><span class="p">,</span>
+<span class="w">    </span><span class="nx">title</span><span class="o">:</span><span class="w"> </span><span class="s1">&#39;저평가주 수&#39;</span><span class="p">,</span>
+<span class="w">  </span><span class="p">},</span>
+<span class="p">}</span>
+</code></pre></div>
+
+<p><strong>시연 쿼리 결과 (BIP 검증):</strong>
+- <code>ValuationSignals.valueStockCount</code> → <strong>1,676개</strong> (저평가주)
+- <code>ValuationSignals.count</code> (전체) → 8,488개
+- <strong>저평가 비율 ≈ 19.7%</strong></p>
+<blockquote>
+<p><strong>메시지:</strong> "저평가주" 정의가 Cube 모델에 SQL로 고정됨 → 어떤 클라이언트(BI/API/봇)에서 호출해도 <strong>동일한 1,676개</strong> 반환. 정의 표류 차단.</p>
+</blockquote>
+<hr />
+<h3 id="강점-5--headless-bi-패턴-ui-비종속">강점 5 — Headless BI 패턴 (UI 비종속)</h3>
+<p><strong>구조:</strong> Cube는 UI를 가지지 않음 — 메트릭 + API만 제공하는 <strong>인프라 레이어</strong>.</p>
+<div class="mermaid">
+flowchart TB
+    DB["(BIP DB)"] --> CUBE["Cube\n(Headless BI)"]
+    CUBE --> T1[Tableau]
+    CUBE --> T2[Power BI]
+    CUBE --> T3[Metabase]
+    CUBE --> T4[자체 React 앱]
+    CUBE --> T5[Slack 봇]
+    CUBE --> T6[WrenAI\nNL2SQL]
+
+    style CUBE fill:#3b82f6,color:#fff
+</div>
+
+<p><strong>의미:</strong> 위에 어떤 클라이언트가 붙어도 같은 메트릭 정의 공유. WrenAI도 Cube 위에 얹을 수 있음 (실제로 dbt + Cube + WrenAI 조합이 가장 일반적).</p>
+<blockquote>
+<p><strong>메시지:</strong> Cube는 <strong>다른 도구와 경쟁이 아니라 협력 관계.</strong> dbt와 합치고, WrenAI와 합치는 인프라.</p>
+</blockquote>
+<hr />
+<h2 id="4-cube-vs-수동-sql--다른-도구-비교">4. Cube vs 수동 SQL / 다른 도구 비교</h2>
+<table>
+<thead>
+<tr>
+<th>항목</th>
+<th style="text-align: center;">수동 SQL</th>
+<th style="text-align: center;">dbt</th>
+<th style="text-align: center;"><strong>Cube</strong></th>
+<th style="text-align: center;">WrenAI</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>메트릭 정의</td>
+<td style="text-align: center;">분산</td>
+<td style="text-align: center;">YAML 분산</td>
+<td style="text-align: center;"><strong>Cube 모델 단일</strong></td>
+<td style="text-align: center;">MDL 단일</td>
+</tr>
+<tr>
+<td>실시간 API</td>
+<td style="text-align: center;">❌</td>
+<td style="text-align: center;">❌ (Cloud만)</td>
+<td style="text-align: center;"><strong>✅ REST/GraphQL/SQL</strong></td>
+<td style="text-align: center;">△ REST만</td>
+</tr>
+<tr>
+<td>캐싱</td>
+<td style="text-align: center;">별도 구현</td>
+<td style="text-align: center;">❌</td>
+<td style="text-align: center;"><strong>✅ Pre-aggregation</strong></td>
+<td style="text-align: center;">부분</td>
+</tr>
+<tr>
+<td>BI 도구 통합</td>
+<td style="text-align: center;">각자 SQL</td>
+<td style="text-align: center;">❌</td>
+<td style="text-align: center;"><strong>✅ SQL API</strong></td>
+<td style="text-align: center;">△</td>
+</tr>
+<tr>
+<td>셀프서비스 UI</td>
+<td style="text-align: center;">❌</td>
+<td style="text-align: center;">dbt docs</td>
+<td style="text-align: center;"><strong>✅ Playground</strong></td>
+<td style="text-align: center;">✅ Chat UI</td>
+</tr>
+<tr>
+<td>자연어 직접</td>
+<td style="text-align: center;">❌</td>
+<td style="text-align: center;">❌</td>
+<td style="text-align: center;">❌</td>
+<td style="text-align: center;">✅</td>
+</tr>
+<tr>
+<td>변환 자동화</td>
+<td style="text-align: center;">❌</td>
+<td style="text-align: center;"><strong>✅</strong></td>
+<td style="text-align: center;">△ (간단)</td>
+<td style="text-align: center;">❌</td>
+</tr>
+<tr>
+<td>팩트-팩트 JOIN</td>
+<td style="text-align: center;">✅</td>
+<td style="text-align: center;">✅</td>
+<td style="text-align: center;"><strong>❌ 제약</strong></td>
+<td style="text-align: center;">✅</td>
+</tr>
+</tbody>
+</table>
+<hr />
+<h2 id="5-세미나-시연-명령어">5. 세미나 시연 명령어</h2>
+<div class="codehilite"><pre><span></span><code><span class="c1"># 1. Cube 컨테이너 기동</span>
+<span class="nb">cd</span><span class="w"> </span>cube<span class="w"> </span><span class="o">&amp;&amp;</span><span class="w"> </span>docker<span class="w"> </span>compose<span class="w"> </span>up<span class="w"> </span>-d
+
+<span class="c1"># 2. Playground 브라우저 접속</span>
+open<span class="w"> </span>http://localhost:4000
+<span class="c1">#    → Build 탭에서 메트릭 클릭으로 시각적 쿼리</span>
+
+<span class="c1"># 3. REST API 호출 (CLI 시연)</span>
+curl<span class="w"> </span>-X<span class="w"> </span>POST<span class="w"> </span>http://localhost:4000/cubejs-api/v1/load<span class="w"> </span><span class="se">\</span>
+<span class="w">  </span>-H<span class="w"> </span><span class="s2">&quot;Authorization: bip-cube-secret-2026&quot;</span><span class="w"> </span><span class="se">\</span>
+<span class="w">  </span>-H<span class="w"> </span><span class="s2">&quot;Content-Type: application/json&quot;</span><span class="w"> </span><span class="se">\</span>
+<span class="w">  </span>-d<span class="w"> </span><span class="s1">&#39;{&quot;query&quot;: {</span>
+<span class="s1">    &quot;measures&quot;: [&quot;ValuationSignals.valueStockCount&quot;]</span>
+<span class="s1">  }}&#39;</span>
+<span class="c1"># → {&quot;data&quot;:[{&quot;ValuationSignals.valueStockCount&quot;:&quot;1676&quot;}]}</span>
+
+<span class="c1"># 4. GraphQL 확인</span>
+open<span class="w"> </span>http://localhost:4000/cubejs-api/graphql
+</code></pre></div>
+
+<hr />
+<h2 id="6-사내-oracle-19c-적용-가이드">6. 사내 Oracle 19c 적용 가이드</h2>
+<h3 id="6-1-변경-범위-한눈에-보기">6-1. 변경 범위 한눈에 보기</h3>
+<div class="mermaid">
+flowchart LR
+    subgraph PG["현재 데모 (PostgreSQL)"]
+        PG1[Cube 공식 이미지]
+        PG2[CUBEJS_DB_TYPE=postgres]
+        PG3[모델 7개 그대로]
+    end
+
+    subgraph ORA["사내 (Oracle 19c)"]
+        OR1[Custom Dockerfile\nInstant Client 19.x]
+        OR2[CUBEJS_DB_TYPE=oracle]
+        OR3[oracledb 6.x npm]
+        OR4[community-supported]
+    end
+
+    subgraph SAME["그대로 유지"]
+        S1[Cube 모델 7개]
+        S2["메트릭/차원 정의"]
+        S3[Playground UI]
+        S4["REST/GraphQL/SQL API"]
+    end
+
+    PG -.교체.-> ORA
+    SAME --> ORA
+
+    style PG fill:#e3f2fd,color:#1a1a2e
+    style ORA fill:#fff3e0,color:#1a1a2e
+    style SAME fill:#e8f5e9,color:#1a1a2e
+    style PG fill:#4f8fea33,stroke:#4f8fea,stroke-width:2px
+    style ORA fill:#6c5ce733,stroke:#6c5ce7,stroke-width:2px
+    style SAME fill:#00b89433,stroke:#00b894,stroke-width:2px
+</div>
+
+<blockquote>
+<p>⚠️ <strong>dbt-oracle과의 차이:</strong> dbt-oracle은 Oracle 본사 vendor-supported (등급 높음). Cube-oracle은 <strong>community-supported</strong> — Cube 본사가 직접 유지하지 않음. <strong>버그 픽스 지연 가능성</strong>이 있어 사전 호환성 테스트 필수.</p>
+</blockquote>
+<hr />
+<h3 id="6-2-step-1--custom-dockerfile-instant-client-포함">6-2. Step 1 — Custom Dockerfile (Instant Client 포함)</h3>
+<p>Cube 공식 이미지에는 Oracle 드라이버가 포함되어 있지 않다. <strong>Instant Client 19.x + oracledb npm</strong>을 직접 추가해야 함.</p>
+<div class="codehilite"><pre><span></span><code><span class="k">FROM</span><span class="w"> </span><span class="s">cubejs/cube:v1.3.21</span>
+
+<span class="c"># Oracle Instant Client 의존성</span>
+<span class="k">RUN</span><span class="w"> </span>apt-get<span class="w"> </span>update<span class="w"> </span><span class="o">&amp;&amp;</span><span class="w"> </span>apt-get<span class="w"> </span>install<span class="w"> </span>-y<span class="w"> </span><span class="se">\</span>
+<span class="w">    </span>libaio1<span class="w"> </span>wget<span class="w"> </span>unzip<span class="w"> </span><span class="se">\</span>
+<span class="w">    </span><span class="o">&amp;&amp;</span><span class="w"> </span>rm<span class="w"> </span>-rf<span class="w"> </span>/var/lib/apt/lists/*
+
+<span class="c"># Instant Client 19.20 설치</span>
+<span class="k">RUN</span><span class="w"> </span>mkdir<span class="w"> </span>-p<span class="w"> </span>/opt/oracle<span class="w"> </span><span class="o">&amp;&amp;</span><span class="w"> </span><span class="nb">cd</span><span class="w"> </span>/opt/oracle<span class="w"> </span><span class="se">\</span>
+<span class="w">    </span><span class="o">&amp;&amp;</span><span class="w"> </span>wget<span class="w"> </span>https://download.oracle.com/otn_software/linux/instantclient/1920000/instantclient-basic-linux.x64-19.20.0.0.0dbru.zip<span class="w"> </span><span class="se">\</span>
+<span class="w">    </span><span class="o">&amp;&amp;</span><span class="w"> </span>unzip<span class="w"> </span>instantclient-basic-linux.x64-19.20.0.0.0dbru.zip<span class="w"> </span><span class="se">\</span>
+<span class="w">    </span><span class="o">&amp;&amp;</span><span class="w"> </span>rm<span class="w"> </span>*.zip<span class="w"> </span><span class="se">\</span>
+<span class="w">    </span><span class="o">&amp;&amp;</span><span class="w"> </span>ldconfig
+
+<span class="c"># oracledb npm 패키지 추가</span>
+<span class="k">WORKDIR</span><span class="w"> </span><span class="s">/cube/conf</span>
+<span class="k">RUN</span><span class="w"> </span>npm<span class="w"> </span>install<span class="w"> </span>oracledb@6.3.0
+
+<span class="k">ENV</span><span class="w"> </span><span class="nv">LD_LIBRARY_PATH</span><span class="o">=</span>/opt/oracle/instantclient_19_20
+</code></pre></div>
+
+<blockquote>
+<p>💡 <strong>thin 모드 대안 검토:</strong> <code>oracledb</code> 6.x는 thin 모드(JS only) 지원. Instant Client 설치 부담을 줄이려면 thin 모드 시도 가능. 단 <strong>Cube의 Oracle 드라이버가 thin 모드를 안정적으로 처리하는지는 사전 검증 필요.</strong></p>
+</blockquote>
+<hr />
+<h3 id="6-3-step-2--docker-composeyml-oracle-연결">6-3. Step 2 — docker-compose.yml (Oracle 연결)</h3>
+<div class="codehilite"><pre><span></span><code><span class="nt">version</span><span class="p">:</span><span class="w"> </span><span class="s">&#39;3.8&#39;</span>
+
+<span class="nt">services</span><span class="p">:</span>
+<span class="w">  </span><span class="nt">cube</span><span class="p">:</span>
+<span class="w">    </span><span class="nt">build</span><span class="p">:</span>
+<span class="w">      </span><span class="nt">context</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">.</span>
+<span class="w">      </span><span class="nt">dockerfile</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">Dockerfile.oracle</span><span class="w">  </span><span class="c1"># ★ 위 Dockerfile</span>
+<span class="w">    </span><span class="nt">container_name</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">bip-cube-oracle</span>
+<span class="w">    </span><span class="nt">environment</span><span class="p">:</span>
+<span class="w">      </span><span class="nt">CUBEJS_DB_TYPE</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">oracle</span><span class="w">               </span><span class="c1"># ★ postgres → oracle</span>
+<span class="w">      </span><span class="nt">CUBEJS_DB_HOST</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">${ORA_HOST}</span>
+<span class="w">      </span><span class="nt">CUBEJS_DB_PORT</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">1521</span><span class="w">                 </span><span class="c1"># ★ 5432 → 1521</span>
+<span class="w">      </span><span class="nt">CUBEJS_DB_NAME</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">${ORA_SERVICE}</span><span class="w">       </span><span class="c1"># ★ dbname → service_name</span>
+<span class="w">      </span><span class="nt">CUBEJS_DB_USER</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">${ORA_USER}</span>
+<span class="w">      </span><span class="nt">CUBEJS_DB_PASS</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">${ORA_PASSWORD}</span>
+<span class="w">      </span><span class="nt">CUBEJS_DEV_MODE</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;true&quot;</span>
+<span class="w">      </span><span class="nt">CUBEJS_API_SECRET</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">&lt;secret&gt;</span>
+<span class="w">      </span><span class="nt">LD_LIBRARY_PATH</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">/opt/oracle/instantclient_19_20</span><span class="w">  </span><span class="c1"># ★ 필수</span>
+<span class="w">    </span><span class="nt">ports</span><span class="p">:</span>
+<span class="w">      </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="s">&quot;4000:4000&quot;</span>
+<span class="w">    </span><span class="nt">volumes</span><span class="p">:</span>
+<span class="w">      </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">./model:/cube/conf/model:ro</span>
+<span class="w">    </span><span class="nt">networks</span><span class="p">:</span>
+<span class="w">      </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">stock-network</span>
+</code></pre></div>
+
+<hr />
+<h3 id="6-4-step-3--모델-sql-방언-변환">6-4. Step 3 — 모델 SQL 방언 변환</h3>
+<p>Cube 모델 7개 중 <strong>방언 변환이 필요한 곳은 1–2곳</strong>.</p>
+<h4 id="postgresql-모델-stock_infojs">PostgreSQL 모델 (<code>stock_info.js</code>):</h4>
+<div class="codehilite"><pre><span></span><code><span class="nx">cube</span><span class="p">(</span><span class="s1">&#39;StockInfo&#39;</span><span class="p">,</span><span class="w"> </span><span class="p">{</span>
+<span class="w">  </span><span class="nx">sql</span><span class="o">:</span><span class="w"> </span><span class="sb">`SELECT * FROM public.stock_info WHERE active = true`</span><span class="p">,</span>
+<span class="w">  </span><span class="c1">// ...</span>
+<span class="p">})</span>
+</code></pre></div>
+
+<h4 id="oracle용-변경">Oracle용 변경:</h4>
+<div class="codehilite"><pre><span></span><code><span class="nx">cube</span><span class="p">(</span><span class="s1">&#39;StockInfo&#39;</span><span class="p">,</span><span class="w"> </span><span class="p">{</span>
+<span class="w">  </span><span class="c1">// Oracle 스키마는 대문자 + 따옴표 주의</span>
+<span class="w">  </span><span class="nx">sql</span><span class="o">:</span><span class="w"> </span><span class="sb">`SELECT * FROM BIP.STOCK_INFO WHERE ACTIVE = &#39;Y&#39;`</span><span class="p">,</span>
+<span class="w">  </span><span class="c1">// ★ 변경: public → BIP, active = true → ACTIVE = &#39;Y&#39;</span>
+<span class="w">  </span><span class="c1">// ...</span>
+<span class="w">  </span><span class="nx">dimensions</span><span class="o">:</span><span class="w"> </span><span class="p">{</span>
+<span class="w">    </span><span class="nx">isKospi</span><span class="o">:</span><span class="w"> </span><span class="p">{</span>
+<span class="w">      </span><span class="nx">sql</span><span class="o">:</span><span class="w"> </span><span class="sb">`CASE WHEN MARKET_TYPE = &#39;KOSPI&#39; THEN &#39;Y&#39; ELSE &#39;N&#39; END`</span><span class="p">,</span>
+<span class="w">      </span><span class="nx">type</span><span class="o">:</span><span class="w"> </span><span class="s1">&#39;string&#39;</span><span class="p">,</span><span class="w">  </span><span class="c1">// ★ boolean → string (Oracle 19c는 boolean 미지원)</span>
+<span class="w">    </span><span class="p">}</span>
+<span class="w">  </span><span class="p">}</span>
+<span class="p">})</span>
+</code></pre></div>
+
+<h4 id="시간-기반-차원">시간 기반 차원</h4>
+<div class="codehilite"><pre><span></span><code><span class="c1">// PostgreSQL</span>
+<span class="p">{</span><span class="w"> </span><span class="nx">sql</span><span class="o">:</span><span class="w"> </span><span class="sb">`created_at`</span><span class="p">,</span><span class="w"> </span><span class="nx">type</span><span class="o">:</span><span class="w"> </span><span class="s1">&#39;time&#39;</span><span class="p">,</span><span class="w"> </span><span class="nx">granularity</span><span class="o">:</span><span class="w"> </span><span class="s1">&#39;day&#39;</span><span class="w"> </span><span class="p">}</span>
+
+<span class="c1">// Oracle — 그대로 작동 (Cube가 자동 변환)</span>
+<span class="c1">// 단, NUMBER, VARCHAR2 같은 데이터 타입은 명시 권장</span>
+</code></pre></div>
+
+<hr />
+<h3 id="6-5-step-4--실행--검증">6-5. Step 4 — 실행 + 검증</h3>
+<div class="codehilite"><pre><span></span><code><span class="c1"># 환경변수</span>
+<span class="nb">export</span><span class="w"> </span><span class="nv">ORA_HOST</span><span class="o">=</span>bip-oracle.company.local
+<span class="nb">export</span><span class="w"> </span><span class="nv">ORA_SERVICE</span><span class="o">=</span>BIPDB
+<span class="nb">export</span><span class="w"> </span><span class="nv">ORA_USER</span><span class="o">=</span>CUBE_READER
+<span class="nb">export</span><span class="w"> </span><span class="nv">ORA_PASSWORD</span><span class="o">=</span>...
+
+<span class="c1"># 빌드 + 기동</span>
+docker<span class="w"> </span>compose<span class="w"> </span>-f<span class="w"> </span>cube/docker-compose.oracle.yml<span class="w"> </span>build
+docker<span class="w"> </span>compose<span class="w"> </span>-f<span class="w"> </span>cube/docker-compose.oracle.yml<span class="w"> </span>up<span class="w"> </span>-d
+
+<span class="c1"># 로그 확인 (Oracle 연결 성공 여부)</span>
+docker<span class="w"> </span>logs<span class="w"> </span>bip-cube-oracle<span class="w"> </span><span class="m">2</span>&gt;<span class="p">&amp;</span><span class="m">1</span><span class="w"> </span><span class="p">|</span><span class="w"> </span>grep<span class="w"> </span>-iE<span class="w"> </span><span class="s2">&quot;ready|error|listen&quot;</span>
+<span class="c1"># 정상: &quot;🚀 Cube API server is listening on 4000&quot;</span>
+
+<span class="c1"># Playground에서 시각 검증</span>
+open<span class="w"> </span>http://localhost:4000
+<span class="c1"># Build 탭 → StockInfo.count 클릭 → 결과 행 수 확인</span>
+
+<span class="c1"># REST API 검증</span>
+curl<span class="w"> </span>-X<span class="w"> </span>POST<span class="w"> </span>http://localhost:4000/cubejs-api/v1/load<span class="w"> </span><span class="se">\</span>
+<span class="w">  </span>-H<span class="w"> </span><span class="s2">&quot;Authorization: &lt;secret&gt;&quot;</span><span class="w"> </span><span class="se">\</span>
+<span class="w">  </span>-d<span class="w"> </span><span class="s1">&#39;{&quot;query&quot;: {&quot;measures&quot;: [&quot;StockInfo.count&quot;]}}&#39;</span>
+</code></pre></div>
+
+<hr />
+<h3 id="6-6-흔한-함정--대응">6-6. 흔한 함정 + 대응</h3>
+<table>
+<thead>
+<tr>
+<th>함정</th>
+<th>증상</th>
+<th>대응</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><strong><code>DPI-1047: Cannot locate Oracle Client library</code></strong></td>
+<td>컨테이너 시작 시 즉시 종료</td>
+<td>Instant Client 경로 + <code>LD_LIBRARY_PATH</code> 확인, <code>ldconfig</code> 실행</td>
+</tr>
+<tr>
+<td><strong>대소문자</strong></td>
+<td><code>WHERE active = true</code> → ORA-00942</td>
+<td>Oracle은 식별자 대문자 기본. <code>ACTIVE = 'Y'</code> 형태로 변경</td>
+</tr>
+<tr>
+<td><strong>Boolean 컬럼</strong></td>
+<td>Cube dimension type: boolean 인데 Oracle 19c는 BOOLEAN 미지원</td>
+<td>type: 'string'으로 변경 + <code>'Y'/'N'</code> 값 사용</td>
+</tr>
+<tr>
+<td><strong>NUMBER 정밀도</strong></td>
+<td>시가총액 같은 큰 숫자가 JSON 응답에서 정밀도 손실</td>
+<td>모델에서 <code>CAST(market_value AS NUMBER(20,2))</code> 명시</td>
+</tr>
+<tr>
+<td><strong>한글 종목명</strong></td>
+<td><code>ORA-12899: value too large</code></td>
+<td><code>VARCHAR2(255 CHAR)</code> 단위 명시 (BYTE 아닌 CHAR)</td>
+</tr>
+<tr>
+<td><strong>세션 자동 종료</strong></td>
+<td>장시간 대기 후 첫 쿼리 실패</td>
+<td>Cube의 <code>CUBEJS_DB_POOL_*</code> 환경변수로 keepalive 설정</td>
+</tr>
+<tr>
+<td><strong>Pre-aggregation 실패</strong></td>
+<td><code>CREATE TABLE</code> 권한 없음</td>
+<td>별도 캐시 스키마 + <code>GRANT CREATE TABLE</code></td>
+</tr>
+<tr>
+<td><strong>드라이버 community 한계</strong></td>
+<td>특수 데이터 타입(CLOB, BLOB, RAW) 처리 오류</td>
+<td>사전 테스트 + 필요 시 Cube 측 GitHub 이슈 모니터링</td>
+</tr>
+</tbody>
+</table>
+<hr />
+<h3 id="6-7-사내-적용-체크리스트">6-7. 사내 적용 체크리스트</h3>
+<p><strong>환경 준비:</strong>
+- [ ] Cube 전용 Oracle 계정 생성 (예: <code>CUBE_READER</code>)
+- [ ] 원본 테이블/뷰에 <code>SELECT</code> 권한 부여
+- [ ] Pre-aggregation 사용 시 별도 캐시 스키마 + <code>CREATE TABLE</code> 권한
+- [ ] Oracle service_name 또는 tnsnames 정보 확보
+- [ ] Instant Client 19.20 다운로드 또는 사내 미러 위치 확인</p>
+<p><strong>프로젝트 변경:</strong>
+- [ ] <code>Dockerfile.oracle</code> 작성 (Instant Client + oracledb npm)
+- [ ] <code>docker-compose.yml</code> — <code>CUBEJS_DB_TYPE=oracle</code> + 환경변수
+- [ ] 모델 SQL — 스키마 대문자, <code>active=true</code> → <code>'Y'</code>, boolean → string
+- [ ] BIP 검증된 7개 모델 → 사내 도메인 모델로 재작성 (영업/매출/재고 등)</p>
+<p><strong>검증:</strong>
+- [ ] 컨테이너 정상 기동 (<code>docker logs</code>)
+- [ ] Playground 접속 → 모든 모델 조회 성공
+- [ ] REST API 호출 성공 + JSON 응답 정합성
+- [ ] Pre-aggregation 캐시 적재 확인
+- [ ] community 드라이버 호환성 테스트 (특수 타입)</p>
+<p><strong>예상 시간:</strong> <strong>1–2일</strong> (Instant Client 설치/디버깅이 가장 오래 걸림).</p>
+<hr />
+<h2 id="7--cube의-한계--팩트-팩트-join-실패-v3-전환-근거">7. ⚠️ Cube의 한계 — 팩트-팩트 JOIN 실패 (v3 전환 근거)</h2>
+<h3 id="7-1-실패한-테스트-케이스">7-1. 실패한 테스트 케이스</h3>
+<p>BIP 검증에서 <strong>핵심 사용 케이스가 모두 실패</strong>.</p>
+<table>
+<thead>
+<tr>
+<th>테스트</th>
+<th style="text-align: center;">결과</th>
+<th>비고</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>단순 조회 (<code>StockInfo.count</code>)</td>
+<td style="text-align: center;">✅ 11,382</td>
+<td>정상</td>
+</tr>
+<tr>
+<td>단일 Cube 쿼리 (삼성전자 종가)</td>
+<td style="text-align: center;">✅ 224,500원</td>
+<td>정상</td>
+</tr>
+<tr>
+<td>Boolean flag (저평가주 수)</td>
+<td style="text-align: center;">✅ 1,676개</td>
+<td>정상</td>
+</tr>
+<tr>
+<td>2-Cube JOIN (StockInfo 경유)</td>
+<td style="text-align: center;">✅</td>
+<td>정상 (마스터 허브)</td>
+</tr>
+<tr>
+<td><strong>팩트-팩트 JOIN</strong> (ValuationSignals + FlowSignals)</td>
+<td style="text-align: center;">❌</td>
+<td><code>Can't find join path</code></td>
+</tr>
+<tr>
+<td><strong>3-Cube JOIN</strong></td>
+<td style="text-align: center;">❌</td>
+<td>동일 에러</td>
+</tr>
+<tr>
+<td><strong>저평가 + 외국인 순매수 종목</strong></td>
+<td style="text-align: center;">❌</td>
+<td>핵심 사용 케이스</td>
+</tr>
+<tr>
+<td><strong>과매도이면서 저평가 종목</strong></td>
+<td style="text-align: center;">❌</td>
+<td>핵심 사용 케이스</td>
+</tr>
+</tbody>
+</table>
+<h3 id="7-2-원인">7-2. 원인</h3>
+<div class="mermaid">
+flowchart TB
+    SI[StockInfo]
+    VS[ValuationSignals]
+    FS[FlowSignals]
+
+    SI -.MANY_TO_ONE.- VS
+    SI -.MANY_TO_ONE.- FS
+    VS -.???.- FS
+
+    style VS fill:#fee,color:#1a1a2e
+    style FS fill:#fee,color:#1a1a2e
+</div>
+
+<ul>
+<li>모든 Cube가 <strong>StockInfo 단일 허브</strong>로만 연결됨</li>
+<li>ValuationSignals(연도 grain)과 FlowSignals(일자 grain) 사이에 <strong>직접 관계 정의 불가</strong> (Cube는 1:N 자동 처리는 잘하지만 N:N 결합 자동화는 없음)</li>
+<li>Cube는 "JOIN 경로 자동 탐색"을 시도하다 실패 → <code>Can't find join path</code></li>
+</ul>
+<h3 id="7-3-우회-시도">7-3. 우회 시도</h3>
+<table>
+<thead>
+<tr>
+<th>시도</th>
+<th style="text-align: center;">결과</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>StockInfo 경유 3-way JOIN 명시</td>
+<td style="text-align: center;">❌ Cube가 N:N 자동 비허용</td>
+</tr>
+<tr>
+<td><code>joinPath</code> 옵션으로 강제 지정</td>
+<td style="text-align: center;">△ 부분 가능하나 Grain 불일치로 행 폭증</td>
+</tr>
+<tr>
+<td>Cube를 메타 정의용으로만 쓰고 SQL 직접 작성</td>
+<td style="text-align: center;">Cube 도입 의미 상실</td>
+</tr>
+<tr>
+<td>Agent 멀티스텝으로 우회 (각 Cube 따로 쿼리 후 합성)</td>
+<td style="text-align: center;">가능하지만 Cube 거치는 의미 줄어듦</td>
+</tr>
+</tbody>
+</table>
+<h3 id="7-4-의사결정--v3-langgraph-전환">7-4. 의사결정 — v3 LangGraph 전환</h3>
+<p>WrenAI는 단일 SQL로 처리하던 복합 질문이 Cube에서는 모두 실패. <strong>사내 NL2SQL 시스템의 핵심 사용 케이스가 안 됨</strong> → Cube 탈락 → <strong>v3 LangGraph + QuerySpec 직접 구현</strong> 으로 전환.</p>
+<blockquote>
+<p>상세 의사결정 이력: <code>docs/nl2sql_implementation_plan_v3.md</code> §13-2</p>
+</blockquote>
+<hr />
+<h2 id="8-한계--다음-단계--결론">8. 한계 + 다음 단계 / 결론</h2>
+<p><strong>Cube가 잘하는 것:</strong>
+- ✅ BI 대시보드 임베디드 API (3가지 API)
+- ✅ 메트릭 표준화 (단일 정의)
+- ✅ Pre-aggregation 캐싱 (대시보드 응답 ms 단위)
+- ✅ 셀프서비스 Playground</p>
+<p><strong>Cube가 잘 못하는 것:</strong>
+- ❌ 팩트-팩트 JOIN (BIP에서 발견)
+- ❌ 자연어 → SQL (LLM 없음)
+- ❌ 변환 자동화 (dbt가 적합)</p>
+<p><strong>자연스러운 조합:</strong></p>
+<div class="codehilite"><pre><span></span><code>dbt (변환) → Cube (BI/API 서빙) → WrenAI 또는 자체 NL2SQL Agent
+                ↑
+        본 데모는 이 레이어
+</code></pre></div>
+
+<p>→ 세미나의 §6 의사결정 가이드와 일관: <strong>"BI/대시보드/임베디드 API가 핵심이면 Cube"</strong></p>
+<hr />
+<h2 id="변경-이력">변경 이력</h2>
+<table>
+<thead>
+<tr>
+<th>날짜</th>
+<th>내용</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>2026-04-25</td>
+<td>BIP-Pipeline Cube 검증 완료 (7개 모델, 팩트-팩트 한계 발견)</td>
+</tr>
+<tr>
+<td>2026-05-18</td>
+<td>데모 결과 문서로 정리 (dbt 문서와 동일 포맷). 5가지 강점 + Oracle 19c 적용 가이드 + 팩트-팩트 한계(v3 전환 근거)</td>
+</tr>
+</tbody>
+</table>
+</main>
+
+<script>
+  // 테마 전환
+  function setTheme(theme) {
+    document.documentElement.setAttribute('data-theme', theme);
+    localStorage.setItem('doc-theme', theme);
+    document.getElementById('btn-dark').classList.toggle('active', theme === 'dark');
+    document.getElementById('btn-light').classList.toggle('active', theme === 'light');
+    // Mermaid 재렌더링
+    if (typeof mermaid !== 'undefined') {
+      mermaid.initialize({ startOnLoad: false, theme: 'base', securityLevel: 'loose', themeVariables: getMermaidTheme(theme) });
+      document.querySelectorAll('.mermaid').forEach(el => {
+        // 원본 코드 보존 (최초 1회만 저장)
+        if (!el.dataset.source) {
+          el.dataset.source = el.textContent;
+        }
+        el.removeAttribute('data-processed');
+        el.innerHTML = el.dataset.source;
+      });
+      mermaid.run();
+    }
+  }
+
+  // 저장된 테마 로드
+  const savedTheme = localStorage.getItem('doc-theme') || 'dark';
+  setTheme(savedTheme);
+
+  // Mermaid 초기화
+  function getMermaidTheme(theme) {
+    const dark = {
+      primaryColor: '#3d7be0',
+      primaryTextColor: '#ffffff',
+      primaryBorderColor: '#5a9cf0',
+      secondaryColor: '#7c5cbf',
+      secondaryTextColor: '#ffffff',
+      secondaryBorderColor: '#a29bfe',
+      tertiaryColor: '#00997a',
+      tertiaryTextColor: '#ffffff',
+      tertiaryBorderColor: '#55efc4',
+      noteTextColor: '#f0f0f0',
+      noteBkgColor: '#2d3436',
+      noteBorderColor: '#636e72',
+      lineColor: '#8b949e',
+      textColor: '#e6edf3',
+      mainBkg: '#1e3050',
+      nodeBorder: '#5a9cf0',
+      clusterBkg: '#1a1e2e',
+      clusterBorder: '#4a5568',
+      titleColor: '#79c0ff',
+      edgeLabelBackground: '#21262d',
+      actorBkg: '#3d7be0',
+      actorTextColor: '#ffffff',
+      actorBorder: '#5a9cf0',
+      signalColor: '#8b949e',
+      labelBoxBkgColor: '#21262d',
+      labelBoxBorderColor: '#4a5568',
+      labelTextColor: '#e6edf3',
+      loopTextColor: '#e6edf3',
+      activationBorderColor: '#5a9cf0',
+      activationBkgColor: '#1e3050',
+      sequenceNumberColor: '#ffffff',
+      pie1: '#4f8fea', pie2: '#6c5ce7', pie3: '#00b894', pie4: '#e17055',
+      pie5: '#fdcb6e', pie6: '#00cec9', pie7: '#e84393', pie8: '#0984e3'
+    };
+    const light = {
+      primaryColor: '#4f8fea',
+      primaryTextColor: '#1a1a2e',
+      primaryBorderColor: '#3a7bd5',
+      secondaryColor: '#a29bfe',
+      secondaryTextColor: '#1a1a2e',
+      secondaryBorderColor: '#6c5ce7',
+      tertiaryColor: '#55efc4',
+      tertiaryTextColor: '#1a1a2e',
+      tertiaryBorderColor: '#00b894',
+      noteTextColor: '#2d3436',
+      noteBkgColor: '#ffeaa7',
+      noteBorderColor: '#fdcb6e',
+      lineColor: '#636e72',
+      textColor: '#2d3436',
+      mainBkg: '#dfe6e9',
+      nodeBorder: '#3a7bd5',
+      clusterBkg: '#f0f3f5',
+      clusterBorder: '#b2bec3',
+      titleColor: '#2d3436',
+      edgeLabelBackground: '#ffffff',
+      actorBkg: '#4f8fea',
+      actorTextColor: '#ffffff',
+      actorBorder: '#3a7bd5',
+      signalColor: '#636e72',
+      labelBoxBkgColor: '#ffffff',
+      labelBoxBorderColor: '#b2bec3',
+      labelTextColor: '#2d3436',
+      loopTextColor: '#2d3436',
+      activationBorderColor: '#3a7bd5',
+      activationBkgColor: '#dfe6e9',
+      sequenceNumberColor: '#ffffff',
+      pie1: '#4f8fea', pie2: '#6c5ce7', pie3: '#00b894', pie4: '#e17055',
+      pie5: '#fdcb6e', pie6: '#00cec9', pie7: '#e84393', pie8: '#0984e3'
+    };
+    return theme === 'dark' ? dark : light;
+  }
+
+  // 초기 렌더링 전에 원본 코드 저장
+  document.querySelectorAll('.mermaid').forEach(el => {
+    el.dataset.source = el.textContent;
+  });
+  mermaid.initialize({ startOnLoad: true, theme: 'base', securityLevel: 'loose', themeVariables: getMermaidTheme(savedTheme) });
+
+  // TOC 현재 위치 하이라이트
+  const tocLinks = document.querySelectorAll('.toc a');
+  const headings = [];
+  tocLinks.forEach(link => {
+    const id = link.getAttribute('href').slice(1);
+    const el = document.getElementById(id);
+    if (el) headings.push({ el, link });
+  });
+
+  function updateActiveToc() {
+    let current = null;
+    for (const h of headings) {
+      if (h.el.getBoundingClientRect().top <= 100) current = h;
+    }
+    tocLinks.forEach(l => l.classList.remove('active'));
+    if (current) current.link.classList.add('active');
+  }
+
+  window.addEventListener('scroll', updateActiveToc, { passive: true });
+  updateActiveToc();
+
+  // 모바일: 링크 클릭 시 사이드바 닫기
+  tocLinks.forEach(link => {
+    link.addEventListener('click', () => {
+      if (window.innerWidth <= 900) {
+        document.querySelector('.sidebar').classList.remove('open');
+      }
+    });
+  });
+</script>
+
+</body>
+</html>
