@@ -1,0 +1,1063 @@
+<!DOCTYPE html>
+<html lang="ko" data-theme="dark">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>WrenAI 데모 결과 — 학습조직 세미나 자료</title>
+<script src="https://cdn.jsdelivr.net/npm/mermaid@11/dist/mermaid.min.js"></script>
+<style>
+  /* ── 테마 변수 ── */
+  :root[data-theme="dark"] {
+    --bg: #0d1117;
+    --bg-sidebar: #161b22;
+    --fg: #e6edf3;
+    --fg-muted: #8b949e;
+    --border: #30363d;
+    --accent: #58a6ff;
+    --accent-hover: #79c0ff;
+    --code-bg: #1e293b;
+    --code-fg: #e2e8f0;
+    --table-header: #161b22;
+    --table-even: #0d1117;
+    --table-odd: #161b22;
+    --blockquote-bg: #161b22;
+    --blockquote-border: #3b82f6;
+    --link: #58a6ff;
+    --strong: #79c0ff;
+    --card-bg: #21262d;
+  }
+  :root[data-theme="light"] {
+    --bg: #ffffff;
+    --bg-sidebar: #f6f8fa;
+    --fg: #1f2937;
+    --fg-muted: #6b7280;
+    --border: #e5e7eb;
+    --accent: #2563eb;
+    --accent-hover: #1d4ed8;
+    --code-bg: #f3f4f6;
+    --code-fg: #1e293b;
+    --table-header: #f8fafc;
+    --table-even: #ffffff;
+    --table-odd: #f9fafb;
+    --blockquote-bg: #eff6ff;
+    --blockquote-border: #3b82f6;
+    --link: #2563eb;
+    --strong: #1e40af;
+    --card-bg: #f3f4f6;
+  }
+
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+
+  body {
+    font-family: 'Pretendard', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+    background: var(--bg);
+    color: var(--fg);
+    line-height: 1.75;
+    display: flex;
+    min-height: 100vh;
+  }
+
+  /* ── 사이드바 ── */
+  .sidebar {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 280px;
+    height: 100vh;
+    background: var(--bg-sidebar);
+    border-right: 1px solid var(--border);
+    overflow-y: auto;
+    padding: 20px 0;
+    z-index: 100;
+    transition: transform 0.3s ease;
+  }
+
+  .sidebar-header {
+    padding: 0 20px 16px;
+    border-bottom: 1px solid var(--border);
+    margin-bottom: 12px;
+  }
+
+  .sidebar-title {
+    font-size: 0.95rem;
+    font-weight: 700;
+    color: var(--fg);
+    line-height: 1.3;
+  }
+
+  .sidebar-controls {
+    display: flex;
+    gap: 8px;
+    margin-top: 12px;
+  }
+
+  .theme-btn {
+    background: var(--card-bg);
+    border: 1px solid var(--border);
+    color: var(--fg-muted);
+    padding: 4px 10px;
+    border-radius: 6px;
+    font-size: 0.7rem;
+    cursor: pointer;
+    transition: all 0.2s;
+  }
+  .theme-btn:hover {
+    border-color: var(--accent);
+    color: var(--accent);
+  }
+  .theme-btn.active {
+    background: var(--accent);
+    color: #fff;
+    border-color: var(--accent);
+  }
+
+  .back-link {
+    display: block;
+    margin-top: 10px;
+    font-size: 0.75rem;
+    color: var(--fg-muted);
+    text-decoration: none;
+  }
+  .back-link:hover {
+    color: var(--accent);
+  }
+
+  /* ── TOC ── */
+  .toc {
+    padding: 0 12px;
+  }
+  .toc ul {
+    list-style: none;
+    padding: 0;
+  }
+  .toc li {
+    margin: 0;
+  }
+  .toc a {
+    display: block;
+    padding: 4px 8px;
+    color: var(--fg-muted);
+    text-decoration: none;
+    font-size: 0.78rem;
+    border-radius: 4px;
+    border-left: 2px solid transparent;
+    transition: all 0.15s;
+    line-height: 1.4;
+  }
+  .toc a:hover {
+    color: var(--accent);
+    background: var(--card-bg);
+    border-left-color: var(--accent);
+  }
+  .toc a.active {
+    color: var(--accent);
+    border-left-color: var(--accent);
+    font-weight: 600;
+  }
+  .toc-h3 a { padding-left: 20px; font-size: 0.75rem; }
+  .toc-h4 a { padding-left: 32px; font-size: 0.72rem; }
+
+  /* ── 본문 ── */
+  .content {
+    margin-left: 280px;
+    flex: 1;
+    max-width: 860px;
+    padding: 40px 48px 80px;
+  }
+
+  /* ── 모바일 ── */
+  .menu-toggle {
+    display: none;
+    position: fixed;
+    top: 12px;
+    left: 12px;
+    z-index: 200;
+    background: var(--bg-sidebar);
+    border: 1px solid var(--border);
+    color: var(--fg);
+    padding: 8px 12px;
+    border-radius: 6px;
+    cursor: pointer;
+    font-size: 1.1rem;
+  }
+
+  @media (max-width: 900px) {
+    .sidebar {
+      transform: translateX(-100%);
+    }
+    .sidebar.open {
+      transform: translateX(0);
+    }
+    .content {
+      margin-left: 0;
+      padding: 60px 20px 60px;
+    }
+    .menu-toggle {
+      display: block;
+    }
+  }
+
+  /* ── 타이포그래피 ── */
+  h1 { font-size: 1.9rem; margin: 2rem 0 1rem; padding-bottom: 0.5rem; border-bottom: 2px solid var(--accent); }
+  h2 { font-size: 1.45rem; margin: 2.5rem 0 0.8rem; padding-bottom: 0.3rem; border-bottom: 1px solid var(--border); color: var(--accent); }
+  h3 { font-size: 1.15rem; margin: 1.8rem 0 0.5rem; }
+  h4 { font-size: 1rem; margin: 1.3rem 0 0.4rem; color: var(--fg-muted); }
+  p { margin: 0.6rem 0; }
+  hr { border: none; border-top: 1px solid var(--border); margin: 2rem 0; }
+  strong { color: var(--strong); }
+  a { color: var(--link); text-decoration: none; }
+  a:hover { text-decoration: underline; }
+  ul, ol { margin: 0.5rem 0 0.5rem 1.5rem; }
+  li { margin: 0.25rem 0; }
+
+  /* ── 테이블 ── */
+  table { width: 100%; border-collapse: collapse; margin: 1rem 0; font-size: 0.85rem; }
+  th, td { border: 1px solid var(--border); padding: 0.5rem 0.75rem; text-align: left; }
+  th { background: var(--table-header); font-weight: 600; }
+  tr:nth-child(even) { background: var(--table-even); }
+  tr:nth-child(odd) { background: var(--table-odd); }
+
+  /* ── 코드 ── */
+  code {
+    background: var(--code-bg);
+    color: var(--code-fg);
+    padding: 0.15rem 0.4rem;
+    border-radius: 4px;
+    font-size: 0.82em;
+    font-family: 'JetBrains Mono', 'Fira Code', 'Cascadia Code', monospace;
+  }
+  pre {
+    background: var(--code-bg);
+    color: var(--code-fg);
+    padding: 1rem 1.2rem;
+    border-radius: 8px;
+    overflow-x: auto;
+    margin: 1rem 0;
+    border: 1px solid var(--border);
+  }
+  pre code {
+    background: none;
+    padding: 0;
+    font-size: 0.82rem;
+    line-height: 1.5;
+  }
+
+  /* ── 인용 ── */
+  blockquote {
+    border-left: 4px solid var(--blockquote-border);
+    padding: 0.6rem 1rem;
+    margin: 1rem 0;
+    background: var(--blockquote-bg);
+    border-radius: 0 6px 6px 0;
+  }
+  blockquote p { margin: 0.3rem 0; }
+
+  /* ── Mermaid ── */
+  .mermaid {
+    margin: 1.5rem 0;
+    text-align: center;
+    background: var(--card-bg);
+    padding: 1rem;
+    border-radius: 8px;
+    border: 1px solid var(--border);
+  }
+  .mermaid svg { max-width: 100%; }
+
+  /* ── Footer ── */
+  footer {
+    margin-top: 3rem;
+    padding-top: 1rem;
+    border-top: 1px solid var(--border);
+    color: var(--fg-muted);
+    font-size: 0.8rem;
+  }
+</style>
+</head>
+<body>
+
+<button class="menu-toggle" onclick="document.querySelector('.sidebar').classList.toggle('open')">☰</button>
+
+<aside class="sidebar">
+  <div class="sidebar-header">
+    <div class="sidebar-title">WrenAI 데모 결과 — 학습조직 세미나 자료</div>
+    <div class="sidebar-controls">
+      <button class="theme-btn" onclick="setTheme('dark')" id="btn-dark">🌙 Dark</button>
+      <button class="theme-btn" onclick="setTheme('light')" id="btn-light">☀️ Light</button>
+    </div>
+    <a class="back-link" href="index.html">← 문서 목록으로</a>
+  </div>
+  <nav class="toc">
+<ul>
+<li class="toc-h2"><a href="#1-구축-결과-요약">1. 구축 결과 요약</a></li>
+<li class="toc-h2"><a href="#2-시맨틱-모델-구조-mdl--relationship">2. 시맨틱 모델 구조 (MDL + Relationship)</a></li>
+<li class="toc-h2"><a href="#3-세미나에서-보여줄-5가지-wrenai-강점">3. 세미나에서 보여줄 5가지 WrenAI 강점</a></li>
+  <li class="toc-h3"><a href="#강점-1--all-in-one-통합-설치-30분이면-챗봇-동작">강점 1 — All-in-One 통합 (설치 30분이면 챗봇 동작)</a></li>
+  <li class="toc-h3"><a href="#강점-2--sql-pairs-학습-시스템-정확도가-시간이-갈수록-오름">강점 2 — SQL Pairs 학습 시스템 (정확도가 시간이 갈수록 오름)</a></li>
+  <li class="toc-h3"><a href="#강점-3--wren-engine-sql-검증-환각-sql-차단">강점 3 — Wren Engine SQL 검증 (환각 SQL 차단)</a></li>
+  <li class="toc-h3"><a href="#강점-4--instructions로-도메인-규칙-강제">강점 4 — Instructions로 도메인 규칙 강제</a></li>
+  <li class="toc-h3"><a href="#강점-5--chat-ui--threadasking-task-내장">강점 5 — Chat UI + Thread/Asking Task 내장</a></li>
+<li class="toc-h2"><a href="#4-wrenai-vs-다른-도구-비교">4. WrenAI vs 다른 도구 비교</a></li>
+<li class="toc-h2"><a href="#5-세미나-시연-명령어">5. 세미나 시연 명령어</a></li>
+<li class="toc-h2"><a href="#6-사내-oracle-19c-적용-가이드--실질적으로-불가능--우회-경로">6. 사내 Oracle 19c 적용 가이드 — 실질적으로 불가능 + 우회 경로</a></li>
+  <li class="toc-h3"><a href="#6-1-실패-원인">6-1. 실패 원인</a></li>
+  <li class="toc-h3"><a href="#6-2-우회-경로-3가지">6-2. 우회 경로 3가지</a></li>
+    <li class="toc-h4"><a href="#우회-1-postgresqloracle-23ai로-데이터-복제">우회 1: PostgreSQL/Oracle 23ai로 데이터 복제</a></li>
+    <li class="toc-h4"><a href="#우회-2-wrenai-포크--ibis-server-수정">우회 2: WrenAI 포크 + ibis-server 수정</a></li>
+    <li class="toc-h4"><a href="#우회-3-포기하고-v3-langgraph--queryspec">우회 3: 포기하고 v3 (LangGraph + QuerySpec)</a></li>
+  <li class="toc-h3"><a href="#6-3-우회-경로-결정-트리">6-3. 우회 경로 결정 트리</a></li>
+<li class="toc-h2"><a href="#7-wrenai를-어디에-통합확장하나--역방향-패턴">7. WrenAI를 어디에 통합/확장하나 — 역방향 패턴</a></li>
+  <li class="toc-h3"><a href="#pattern-a--단독-사용-가장-단순">Pattern A — 단독 사용 (가장 단순)</a></li>
+  <li class="toc-h3"><a href="#pattern-b--langgraph-agent의-tool로-통합">Pattern B — LangGraph Agent의 Tool로 통합</a></li>
+  <li class="toc-h3"><a href="#pattern-c--slackteams-봇-통합">Pattern C — Slack/Teams 봇 통합</a></li>
+  <li class="toc-h3"><a href="#pattern-d--fastapi-임베드-자체-앱-안에">Pattern D — FastAPI 임베드 (자체 앱 안에)</a></li>
+  <li class="toc-h3"><a href="#패턴-비교표">패턴 비교표</a></li>
+  <li class="toc-h3"><a href="#권장-경로">권장 경로</a></li>
+<li class="toc-h2"><a href="#8-한계--다음-단계--결론">8. 한계 + 다음 단계 / 결론</a></li>
+<li class="toc-h2"><a href="#부록--상세-이력">부록 — 상세 이력</a></li>
+<li class="toc-h2"><a href="#변경-이력">변경 이력</a></li>
+</ul>
+</nav>
+</aside>
+
+<main class="content">
+<h1 id="wrenai-데모-결과--학습조직-세미나-자료">WrenAI 데모 결과 — 학습조직 세미나 자료</h1>
+<blockquote>
+<p><strong>목적:</strong> BIP-Pipeline 실제 데이터(PostgreSQL)에 WrenAI를 적용한 데모 결과 정리. 세미나에서 WrenAI의 핵심 강점(All-in-One NL2SQL/SQL Pairs 학습/검증/UI 내장)을 시연하고, <strong>Oracle 19c 미지원 한계</strong>가 v3 LangGraph로 방향 전환된 근거임을 보여주기 위한 자료.</p>
+<p><strong>환경:</strong> WrenAI v0.18.x / Docker Compose (5 컨테이너) / bip-postgres <code>stockdb</code>
+<strong>데이터:</strong> BIP의 Gold 3종 + Curated View 4종 = <strong>7개 모델</strong>로 시맨틱 레이어 구성
+<strong>테스트 기간:</strong> 2026-03~04 (5차에 걸친 개선 사이클, 상세는 <a href="wrenai_test_report.md">wrenai_test_report.md</a>)</p>
+</blockquote>
+<hr />
+<h2 id="1-구축-결과-요약">1. 구축 결과 요약</h2>
+<div class="codehilite"><pre><span></span><code>✅ 5 시맨틱 모델 등록 + Relationship 자동 추론
+✅ SQL Pairs 70개 등록 (29 → 70개로 점진 확장)
+✅ Instructions 4개 (도메인 규칙)
+✅ 컬럼 description 99% 커버리지 (115개 컬럼)
+🏆 최종 A등급 정확도: 100% (4차 테스트)
+🏆 Boolean flag 사용률: 0% → 87% (Curated View 등록 후)
+🛠  Chat UI 내장 (별도 프론트 불필요)
+</code></pre></div>
+
+<p><strong>적재된 시맨틱 모델 (BIP Gold + Curated):</strong></p>
+<table>
+<thead>
+<tr>
+<th>모델</th>
+<th>원본</th>
+<th>역할</th>
+<th style="text-align: center;">BIP 검증</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>stock_info</code></td>
+<td><code>stock_info</code></td>
+<td>마스터 (허브)</td>
+<td style="text-align: center;">✅</td>
+</tr>
+<tr>
+<td><code>analytics_stock_daily</code></td>
+<td><code>analytics_stock_daily</code></td>
+<td>Gold — 일봉 와이드</td>
+<td style="text-align: center;">✅</td>
+</tr>
+<tr>
+<td><code>analytics_valuation</code></td>
+<td><code>analytics_valuation</code></td>
+<td>Gold — 연간 밸류에이션</td>
+<td style="text-align: center;">✅</td>
+</tr>
+<tr>
+<td><code>analytics_macro_daily</code></td>
+<td><code>analytics_macro_daily</code></td>
+<td>Gold — 매크로 일자별</td>
+<td style="text-align: center;">✅</td>
+</tr>
+<tr>
+<td><code>v_valuation_signals__v1</code></td>
+<td>Curated View</td>
+<td>Boolean Flag — 밸류에이션</td>
+<td style="text-align: center;">✅</td>
+</tr>
+<tr>
+<td><code>v_technical_signals__v1</code></td>
+<td>Curated View</td>
+<td>Boolean Flag — 기술적</td>
+<td style="text-align: center;">✅</td>
+</tr>
+<tr>
+<td><code>v_flow_signals__v1</code></td>
+<td>Curated View</td>
+<td>Boolean Flag — 수급</td>
+<td style="text-align: center;">✅</td>
+</tr>
+</tbody>
+</table>
+<hr />
+<h2 id="2-시맨틱-모델-구조-mdl--relationship">2. 시맨틱 모델 구조 (MDL + Relationship)</h2>
+<div class="mermaid">
+flowchart TB
+    SI["stock_info\n("마스터/허브")"]
+
+    SI -.MANY_TO_ONE.- SD["analytics_stock_daily\n("Gold: 종목×일자")"]
+    SI -.MANY_TO_ONE.- VAL["analytics_valuation\n("Gold: 종목×연도")"]
+    SI -.MANY_TO_ONE.- VS["v_valuation_signals\n(Boolean Flag)"]
+    SI -.MANY_TO_ONE.- TS["v_technical_signals\n(Boolean Flag)"]
+    SI -.MANY_TO_ONE.- FS["v_flow_signals\n(Boolean Flag)"]
+
+    MD["analytics_macro_daily\n(독립)"]
+
+    style SI fill:#fbbf24,color:#1a1a2e
+    style MD fill:#a78bfa,color:#fff
+    style VS fill:#22c55e,color:#fff
+    style TS fill:#22c55e,color:#fff
+    style FS fill:#22c55e,color:#fff
+</div>
+
+<blockquote>
+<p><strong>구조 특성:</strong> Cube와 동일하게 <code>stock_info</code> 단일 허브 구조. <strong>WrenAI는 1질문=1SQL이므로 팩트-팩트 결합을 LLM이 단일 SQL로 작성</strong>하여 Cube 같은 JOIN 경로 제약 없음.</p>
+</blockquote>
+<hr />
+<h2 id="3-세미나에서-보여줄-5가지-wrenai-강점">3. 세미나에서 보여줄 5가지 WrenAI 강점</h2>
+<h3 id="강점-1--all-in-one-통합-설치-30분이면-챗봇-동작">강점 1 — All-in-One 통합 (설치 30분이면 챗봇 동작)</h3>
+<p><strong>구조:</strong> 데이터 연결 / MDL 정의 / RAG / LLM 호출 / SQL 검증 / Chat UI가 <strong>단일 Docker Compose 패키지</strong>.</p>
+<div class="mermaid">
+flowchart LR
+    UI["WrenAI UI\nChat"] --> AI["AI Service\nRAG + LLM"]
+    AI --> ENG["Wren Engine\nSQL 검증"]
+    ENG --> IBIS["ibis-server\nDB 어댑터"]
+    IBIS --> DB["(#quot;PostgreSQL/\nOracle 23ai#quot;)"]
+    AI <--> QDR["Qdrant\n벡터 DB"]
+
+    style AI fill:#3b82f6,color:#fff
+    style ENG fill:#22c55e,color:#fff
+</div>
+
+<p><strong>dbt+Cube+자체 Agent 조합과 비교:</strong></p>
+<table>
+<thead>
+<tr>
+<th>항목</th>
+<th style="text-align: center;">dbt+Cube+Agent 조합</th>
+<th style="text-align: center;">WrenAI 단독</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>컨테이너 수</td>
+<td style="text-align: center;">3~5개</td>
+<td style="text-align: center;"><strong>5개 한 패키지</strong></td>
+</tr>
+<tr>
+<td>구축 시간</td>
+<td style="text-align: center;">1-2주</td>
+<td style="text-align: center;"><strong>30분</strong></td>
+</tr>
+<tr>
+<td>학습 곡선</td>
+<td style="text-align: center;">3개 도구 학습</td>
+<td style="text-align: center;"><strong>MDL + UI만</strong></td>
+</tr>
+<tr>
+<td>챗봇 UI</td>
+<td style="text-align: center;">별도 개발 필요</td>
+<td style="text-align: center;"><strong>내장</strong></td>
+</tr>
+</tbody>
+</table>
+<blockquote>
+<p><strong>메시지:</strong> "PoC 단계에서 가장 빠른 도구. <strong>챗봇 UI를 따로 만들 부담 없음.</strong>"</p>
+</blockquote>
+<hr />
+<h3 id="강점-2--sql-pairs-학습-시스템-정확도가-시간이-갈수록-오름">강점 2 — SQL Pairs 학습 시스템 (정확도가 시간이 갈수록 오름)</h3>
+<p><strong>핵심 패턴:</strong> 질문-SQL 쌍을 UI에서 등록하면 RAG가 자동으로 Few-shot으로 활용.</p>
+<p><strong>BIP 실측 결과:</strong></p>
+<div class="mermaid">
+flowchart LR
+    P1["1차\nSQL Pairs 0개\nA등급 75%"] --> P2["2차\nSQL Pairs 29개\nA등급 85%"]
+    P2 --> P3["3차\nSQL Pairs 41개\nA등급 90%"]
+    P3 --> P4["4차\nSQL Pairs 70개\nA등급 100%"]
+
+    style P1 fill:#fff3e0,color:#1a1a2e
+    style P4 fill:#22c55e,color:#fff
+</div>
+
+<p><strong>SQL Pair 예시:</strong></p>
+<div class="codehilite"><pre><span></span><code>Q: &quot;월별 매출 보여줘&quot;
+A: SELECT DATE_TRUNC(&#39;month&#39;, created_at) AS month,
+          SUM(amount) AS revenue
+   FROM orders
+   WHERE status=&#39;paid&#39;
+   GROUP BY 1 ORDER BY 1
+</code></pre></div>
+
+<blockquote>
+<p><strong>메시지:</strong> "<strong>가장 ROI 높은 튜닝 수단.</strong> 운영하면서 실패 케이스를 Pair로 등록 → 다음번부터 자동으로 맞음. BIP에서 70개 등록으로 A등급 100% 달성."</p>
+</blockquote>
+<hr />
+<h3 id="강점-3--wren-engine-sql-검증-환각-sql-차단">강점 3 — Wren Engine SQL 검증 (환각 SQL 차단)</h3>
+<p><strong>구조:</strong> LLM이 생성한 SQL을 <strong>Wren Engine이 dry-run으로 검증</strong> → 실패 시 자동 재생성 (최대 3회).</p>
+<div class="mermaid">
+flowchart TD
+    Q["사용자 질문"] --> LLM["LLM\nSQL 생성"]
+    LLM --> ENG["Wren Engine\ndry-run 검증"]
+    ENG -->|실패| LLM
+    ENG -->|통과| EXEC["DB 실행"]
+
+    style ENG fill:#22c55e,color:#fff
+</div>
+
+<p><strong>검증 항목:</strong>
+- 스키마 일치 (테이블·컬럼 존재 여부)
+- 문법 정확성 (PostgreSQL/Oracle 방언)
+- Relationship 일관성 (JOIN 키 유효성)
+- Materialization 가능성 (예: View가 deploy됐는지)</p>
+<blockquote>
+<p><strong>메시지:</strong> "<strong>환각 SQL이 사용자에게 도달하지 않음.</strong> 자체 구현 시 Validator를 만들어야 하는데, WrenAI는 이게 내장."</p>
+</blockquote>
+<hr />
+<h3 id="강점-4--instructions로-도메인-규칙-강제">강점 4 — Instructions로 도메인 규칙 강제</h3>
+<p><strong>문제:</strong> LLM이 "셀트리온" 같은 종목명을 자동으로 영문 번역하거나, ETF를 일반 종목과 혼동.</p>
+<p><strong>해결:</strong> Instructions에 전역 규칙 등록 → 모든 SQL 생성에 강제 적용.</p>
+<p><strong>BIP에서 등록한 4개 Instructions:</strong></p>
+<table>
+<thead>
+<tr>
+<th>규칙</th>
+<th>효과</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>종목명 한글 필수 + ETF 제외</td>
+<td>"셀트리온" → <code>WHERE stock_name = '셀트리온'</code> (영문 X, ETF 매칭 X)</td>
+</tr>
+<tr>
+<td>계산식 힌트 (거래대금 = close × volume)</td>
+<td>컬럼에 없는 파생 지표를 LLM이 SQL로 계산</td>
+</tr>
+<tr>
+<td>data_type 설명 (actual/estimate/preliminary)</td>
+<td>"확정 실적"이면 자동으로 <code>data_type='actual'</code> 필터</td>
+</tr>
+<tr>
+<td>검색 결과에 stock_name 포함</td>
+<td>티커만 반환 안 함 (사용자가 어떤 종목인지 인지 가능)</td>
+</tr>
+</tbody>
+</table>
+<blockquote>
+<p><strong>메시지:</strong> "<strong>프롬프트 엔지니어링을 UI에서 관리.</strong> 코드 배포 없이 즉시 반영."</p>
+</blockquote>
+<hr />
+<h3 id="강점-5--chat-ui--threadasking-task-내장">강점 5 — Chat UI + Thread/Asking Task 내장</h3>
+<p><strong>구조:</strong> WrenAI UI에 사용자 인터페이스 모두 내장 — 별도 프론트 개발 불필요.</p>
+<p><strong>제공 기능:</strong>
+- <strong>Thread:</strong> 대화 세션 관리 (이전 질문 컨텍스트 유지)
+- <strong>Asking Task:</strong> 한 번에 여러 후보 SQL 생성 → 사용자가 고름
+- <strong>Breakdown:</strong> 복잡한 질문을 sub-step으로 분해
+- <strong>Recommendation:</strong> "이런 질문도 해보세요" 자동 제안</p>
+<blockquote>
+<p><strong>메시지:</strong> "<strong>자체 React 챗봇 UI 만들 필요 없음.</strong> WrenAI UI 그대로 사용 또는 임베드. dbt/Cube에는 없는 부분."</p>
+</blockquote>
+<hr />
+<h2 id="4-wrenai-vs-다른-도구-비교">4. WrenAI vs 다른 도구 비교</h2>
+<table>
+<thead>
+<tr>
+<th>항목</th>
+<th style="text-align: center;">수동 SQL</th>
+<th style="text-align: center;">dbt</th>
+<th style="text-align: center;">Cube</th>
+<th style="text-align: center;"><strong>WrenAI</strong></th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>변환 자동화</td>
+<td style="text-align: center;">❌</td>
+<td style="text-align: center;"><strong>✅</strong></td>
+<td style="text-align: center;">△</td>
+<td style="text-align: center;">❌</td>
+</tr>
+<tr>
+<td>메트릭 표준화</td>
+<td style="text-align: center;">❌</td>
+<td style="text-align: center;">✅</td>
+<td style="text-align: center;"><strong>✅</strong></td>
+<td style="text-align: center;">✅ (MDL)</td>
+</tr>
+<tr>
+<td>실시간 API</td>
+<td style="text-align: center;">❌</td>
+<td style="text-align: center;">❌</td>
+<td style="text-align: center;"><strong>✅ 3종</strong></td>
+<td style="text-align: center;">△ REST만</td>
+</tr>
+<tr>
+<td><strong>자연어 → SQL</strong></td>
+<td style="text-align: center;">❌</td>
+<td style="text-align: center;">❌</td>
+<td style="text-align: center;">△ (별도)</td>
+<td style="text-align: center;"><strong>✅ 내장</strong></td>
+</tr>
+<tr>
+<td>Chat UI</td>
+<td style="text-align: center;">❌</td>
+<td style="text-align: center;">❌</td>
+<td style="text-align: center;">△ Playground</td>
+<td style="text-align: center;"><strong>✅ 내장</strong></td>
+</tr>
+<tr>
+<td>캐싱</td>
+<td style="text-align: center;">별도</td>
+<td style="text-align: center;">❌</td>
+<td style="text-align: center;">✅ Pre-agg</td>
+<td style="text-align: center;">부분</td>
+</tr>
+<tr>
+<td>환각 검증</td>
+<td style="text-align: center;">없음</td>
+<td style="text-align: center;">❌</td>
+<td style="text-align: center;">❌</td>
+<td style="text-align: center;"><strong>✅ Wren Engine</strong></td>
+</tr>
+<tr>
+<td>운영 학습</td>
+<td style="text-align: center;">—</td>
+<td style="text-align: center;">dbt test</td>
+<td style="text-align: center;">정적</td>
+<td style="text-align: center;"><strong>SQL Pairs 학습</strong></td>
+</tr>
+<tr>
+<td><strong>Oracle 19c</strong></td>
+<td style="text-align: center;">✅</td>
+<td style="text-align: center;">⭕ vendor</td>
+<td style="text-align: center;">⭕ community</td>
+<td style="text-align: center;"><strong>❌ 23ai만</strong></td>
+</tr>
+</tbody>
+</table>
+<hr />
+<h2 id="5-세미나-시연-명령어">5. 세미나 시연 명령어</h2>
+<div class="codehilite"><pre><span></span><code><span class="c1"># 1. WrenAI 컨테이너 기동 (5개 컨테이너)</span>
+docker<span class="w"> </span>compose<span class="w"> </span>-f<span class="w"> </span>docker-compose.wrenai.yml<span class="w"> </span>up<span class="w"> </span>-d
+
+<span class="c1"># 2. UI 접속</span>
+open<span class="w"> </span>http://localhost:3000
+<span class="c1">#    → 데이터소스 연결 (bip-postgres)</span>
+<span class="c1">#    → 모델 등록 (7개)</span>
+<span class="c1">#    → Chat 탭에서 질문</span>
+
+<span class="c1"># 3. 시연 질문 예시 (BIP에서 100% 통과 확인)</span>
+<span class="c1">#    - &quot;삼성전자 PER 알려줘&quot;</span>
+<span class="c1">#    - &quot;코스피 시총 상위 5종목&quot;</span>
+<span class="c1">#    - &quot;저평가주 찾아줘&quot;           ← Boolean Flag 활용</span>
+<span class="c1">#    - &quot;외국인 순매수 상위 종목&quot;   ← 수급 데이터</span>
+<span class="c1">#    - &quot;ROE 20% 이상이면서 PER 10 이하&quot;  ← 복합 조건</span>
+
+<span class="c1"># 4. SQL Pairs 추가 시연 (UI에서)</span>
+<span class="c1">#    - 실패한 질문 → 정답 SQL 작성 → SQL Pair 등록</span>
+<span class="c1">#    - Deploy 클릭 → 같은 질문 재실행 → 정확도 향상 확인</span>
+</code></pre></div>
+
+<hr />
+<h2 id="6-사내-oracle-19c-적용-가이드--실질적으로-불가능--우회-경로">6. 사내 Oracle 19c 적용 가이드 — <strong>실질적으로 불가능 + 우회 경로</strong></h2>
+<h3 id="6-1-실패-원인">6-1. 실패 원인</h3>
+<p>WrenAI는 <strong>Oracle 23ai 이상만 공식 지원</strong> — 19c에서는 동작 불가.</p>
+<p><strong>발생하는 에러:</strong></p>
+<div class="codehilite"><pre><span></span><code>IBIS_SERVER_ERROR
+ORA-00942: table or view does not exist
+</code></pre></div>
+
+<p><strong>원인 분석:</strong>
+- DB 연결 자체는 성공 (<code>oracle.cx_Oracle</code> 드라이버 동작)
+- WrenAI 내부의 <strong>ibis-server</strong> 가 <code>get_db_version</code>, <code>metadata_query</code> 등 23ai 전용 시스템 뷰 호출
+- 19c에서는 해당 시스템 뷰가 다른 이름/구조 → 메타데이터 추출 실패 → 모든 후속 동작 불가</p>
+<div class="mermaid">
+flowchart LR
+    W[WrenAI UI] --> AS[AI Service]
+    AS --> IB[ibis-server]
+    IB -->|get_db_version\n23ai 전용 SQL| ORA["(Oracle 19c)"]
+    ORA --> ERR[ORA-00942\n❌ 메타 추출 실패]
+
+    style ERR fill:#fee,color:#1a1a2e
+</div>
+
+<h3 id="6-2-우회-경로-3가지">6-2. 우회 경로 3가지</h3>
+<h4 id="우회-1-postgresqloracle-23ai로-데이터-복제">우회 1: PostgreSQL/Oracle 23ai로 데이터 복제</h4>
+<p><strong>구조:</strong></p>
+<div class="codehilite"><pre><span></span><code>Oracle 19c → CDC (GoldenGate/Debezium) → PostgreSQL → WrenAI
+또는
+Oracle 19c → 정기 Export → Oracle 23ai → WrenAI
+</code></pre></div>
+
+<p><strong>장점:</strong> WrenAI 그대로 사용 가능 (BIP 검증 자산 활용)
+<strong>단점:</strong> 데이터 복제 인프라 부담, 실시간성 손실, Oracle 23ai 라이선스 추가</p>
+<p><strong>적합:</strong> 분석용 데이터마트가 명확히 분리되어 있고 일일 배치 정도면 충분한 경우</p>
+<hr />
+<h4 id="우회-2-wrenai-포크--ibis-server-수정">우회 2: WrenAI 포크 + ibis-server 수정</h4>
+<p><strong>구조:</strong> WrenAI 소스를 포크하고 ibis-server의 Oracle 어댑터 코드를 19c 호환으로 수정.</p>
+<p><strong>장점:</strong> 인프라 추가 없음
+<strong>단점:</strong>
+- ibis-server 코드 변경 부담 (Python + Rust 일부)
+- WrenAI 신규 릴리스마다 머지 필요
+- <strong>유지보수 비용 매우 큼</strong></p>
+<p><strong>적합:</strong> 사내 OSS 컨트리뷰션 역량이 풍부한 조직 (현실적으로 드뭄)</p>
+<hr />
+<h4 id="우회-3-포기하고-v3-langgraph--queryspec">우회 3: 포기하고 v3 (LangGraph + QuerySpec)</h4>
+<p><strong>구조:</strong> WrenAI 패턴(MDL + SQL Pairs + 검증)을 <strong>자체 코드로 재구현</strong>.</p>
+<p><strong>장점:</strong>
+- Oracle 19c 즉시 동작
+- 사내 LLM 자유 선택
+- 도구 락인 없음</p>
+<p><strong>단점:</strong>
+- 자체 구현 부담 (Schema Registry / Converter / Validator)</p>
+<p><strong>적합:</strong> 사내 표준이 Oracle 19c이고 변경 어려운 환경 → <strong>현재 BIP의 v3 방향</strong></p>
+<blockquote>
+<p>📚 <strong>상세 설계:</strong> <code>docs/nl2sql_implementation_plan_v3.md</code> §6</p>
+</blockquote>
+<h3 id="6-3-우회-경로-결정-트리">6-3. 우회 경로 결정 트리</h3>
+<div class="mermaid">
+flowchart TD
+    Q["사내 NL2SQL 필요"] --> Q1{"PostgreSQL/23ai\n인프라 추가 가능?"}
+
+    Q1 -->|Yes| W1["우회 1\n데이터 복제 + WrenAI"]
+    Q1 -->|No| Q2{"OSS 포크 운영\n역량 있음?"}
+
+    Q2 -->|Yes| W2["우회 2\nWrenAI 포크"]
+    Q2 -->|No| W3["✅ 우회 3\nv3 LangGraph 자체 구현"]
+
+    style W3 fill:#a78bfa,color:#fff
+</div>
+
+<p><strong>BIP의 결정:</strong> 우회 3 (v3 LangGraph + QuerySpec). 우회 1은 인프라 부담, 우회 2는 유지보수 비용 과다.</p>
+<hr />
+<h2 id="7-wrenai를-어디에-통합확장하나--역방향-패턴">7. WrenAI를 어디에 통합/확장하나 — 역방향 패턴</h2>
+<p><strong>핵심 차이점:</strong> dbt/Cube는 "챗봇이 필요하면 어떻게?"가 질문이지만, <strong>WrenAI는 그 자체가 챗봇</strong>. 그래서 질문이 반대 — "WrenAI를 어디에 통합/확장하나".</p>
+<div class="mermaid">
+flowchart TB
+    W["WrenAI\n(챗봇 그 자체)"]
+    W --> P1["Pattern A\n단독 사용\n(UI 그대로)"]
+    W --> P2["Pattern B\nLangGraph 위에 얹기\n(멀티 에이전트의 한 Tool)"]
+    W --> P3["Pattern C\nSlack/Teams 봇 통합"]
+    W --> P4["Pattern D\nFastAPI 임베드\n(자체 React 앱 안에)"]
+
+    style W fill:#22c55e,color:#fff
+    style P2 fill:#a78bfa,color:#fff
+</div>
+
+<h3 id="pattern-a--단독-사용-가장-단순">Pattern A — 단독 사용 (가장 단순)</h3>
+<p><strong>구조:</strong> WrenAI UI를 그대로 노출. 사내 사용자가 직접 접속해서 질문.</p>
+<p><strong>장점:</strong> 추가 개발 불필요. 30분 PoC.
+<strong>단점:</strong> 멀티스텝 질문 처리 한계 (1질문=1SQL). 비정형 데이터(뉴스/문서) 못 다룸.
+<strong>적합:</strong> 정형 데이터 조회만 필요한 환경, 빠른 PoC</p>
+<hr />
+<h3 id="pattern-b--langgraph-agent의-tool로-통합">Pattern B — LangGraph Agent의 Tool로 통합</h3>
+<p><strong>구조:</strong> WrenAI를 LangGraph 서비스 레이어의 <strong>한 도구</strong>로 노출.</p>
+<div class="mermaid">
+flowchart LR
+    USER["사용자 질문"] --> LG["LangGraph\nIntent Classifier"]
+    LG -->|정형 KPI| W["WrenAI Tool\n(NL2SQL)"]
+    LG -->|문서 검색| R["RAG Tool"]
+    LG -->|외부 API| M["MCP Tool"]
+    W --> S["Result Synthesizer"]
+    R --> S
+    M --> S
+    S --> A["통합 답변"]
+
+    style LG fill:#fbbf24,color:#1a1a2e
+    style W fill:#22c55e,color:#fff
+</div>
+
+<p><strong>장점:</strong>
+- WrenAI 정확도(100%)는 그대로 활용
+- 멀티스텝/RAG/MCP 통합 가능 (WrenAI 단독 한계 우회)
+- 사용자가 자연어로 정형+비정형 동시 질문</p>
+<p><strong>구현:</strong> WrenAI REST API를 LangGraph Tool로 등록.</p>
+<div class="codehilite"><pre><span></span><code><span class="k">def</span><span class="w"> </span><span class="nf">wrenai_query_tool</span><span class="p">(</span><span class="n">question</span><span class="p">:</span> <span class="nb">str</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">dict</span><span class="p">:</span>
+    <span class="n">response</span> <span class="o">=</span> <span class="n">requests</span><span class="o">.</span><span class="n">post</span><span class="p">(</span>
+        <span class="s2">&quot;http://wrenai-ai-service:5555/v1/ask&quot;</span><span class="p">,</span>
+        <span class="n">json</span><span class="o">=</span><span class="p">{</span><span class="s2">&quot;question&quot;</span><span class="p">:</span> <span class="n">question</span><span class="p">,</span> <span class="s2">&quot;thread_id&quot;</span><span class="p">:</span> <span class="n">session_id</span><span class="p">}</span>
+    <span class="p">)</span>
+    <span class="k">return</span> <span class="n">response</span><span class="o">.</span><span class="n">json</span><span class="p">()</span>
+</code></pre></div>
+
+<p><strong>적합:</strong> <strong>WrenAI가 호환되는 환경에서 멀티 에이전트 확장하고 싶은 경우.</strong> dbt + Cube + WrenAI + LangGraph 조합도 가능.</p>
+<blockquote>
+<p>💡 <strong>세미나 메시지:</strong> "WrenAI도 결국 멀티 에이전트의 한 도구로 흡수된다. LangGraph가 위에서 라우팅."</p>
+</blockquote>
+<hr />
+<h3 id="pattern-c--slackteams-봇-통합">Pattern C — Slack/Teams 봇 통합</h3>
+<p><strong>구조:</strong> 사용자가 Slack 메시지로 질문 → WrenAI API 호출 → 답변을 Slack에 회신.</p>
+<p><strong>구현:</strong>
+- Slack Bolt SDK 또는 Teams Bot Framework
+- 멘션 이벤트 → WrenAI <code>/v1/ask</code> 호출 → 결과 메시지로 회신
+- Thread 관리로 대화 컨텍스트 유지</p>
+<p><strong>장점:</strong>
+- 사내 협업 도구 안에서 자연스럽게 사용
+- 별도 UI 학습 불필요
+- 결과 공유가 쉬움 (Slack 메시지 그대로 포워딩)</p>
+<p><strong>단점:</strong>
+- Slack/Teams 봇 인증·인프라 별도 관리
+- Slack 메시지 길이 제한 (긴 표는 부적합)</p>
+<p><strong>적합:</strong> 사내 표준 메신저가 Slack/Teams이고, 대시보드보다 질문-답변 위주인 조직</p>
+<hr />
+<h3 id="pattern-d--fastapi-임베드-자체-앱-안에">Pattern D — FastAPI 임베드 (자체 앱 안에)</h3>
+<p><strong>구조:</strong> 자체 React/Vue 앱에서 WrenAI API를 백엔드로 사용.</p>
+<div class="mermaid">
+flowchart LR
+    UI["자체 React 앱"] --> API["FastAPI\n(WrenAI 래핑)"]
+    API --> WAI["WrenAI\nAI Service"]
+    WAI --> DB["(BIP DB)"]
+
+    style API fill:#3b82f6,color:#fff
+</div>
+
+<p><strong>장점:</strong>
+- 사내 디자인 시스템에 맞춘 UI 가능
+- 권한 관리·감사 로그 자체 통제
+- 다른 사내 도구(Jira/Confluence)와 통합 자유</p>
+<p><strong>단점:</strong>
+- WrenAI UI의 풍부한 기능(Thread/Breakdown/Recommendation)을 재구현해야 함
+- 개발 부담</p>
+<p><strong>적합:</strong> 사내 통합 포털이 있고, NL2SQL을 그중 한 기능으로 임베드하고 싶은 조직</p>
+<hr />
+<h3 id="패턴-비교표">패턴 비교표</h3>
+<table>
+<thead>
+<tr>
+<th>패턴</th>
+<th>추가 도구</th>
+<th style="text-align: center;">멀티스텝 가능</th>
+<th style="text-align: center;">사내 통합도</th>
+<th style="text-align: center;">개발 부담</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><strong>A. 단독 사용</strong></td>
+<td>—</td>
+<td style="text-align: center;">❌</td>
+<td style="text-align: center;">낮음</td>
+<td style="text-align: center;">매우 낮음</td>
+</tr>
+<tr>
+<td><strong>B. LangGraph Tool</strong></td>
+<td>LangGraph</td>
+<td style="text-align: center;"><strong>✅</strong></td>
+<td style="text-align: center;">중간</td>
+<td style="text-align: center;">중간</td>
+</tr>
+<tr>
+<td><strong>C. Slack/Teams 봇</strong></td>
+<td>Bolt SDK</td>
+<td style="text-align: center;">부분</td>
+<td style="text-align: center;">매우 높음</td>
+<td style="text-align: center;">중간</td>
+</tr>
+<tr>
+<td><strong>D. FastAPI 임베드</strong></td>
+<td>FastAPI + 프론트</td>
+<td style="text-align: center;">부분</td>
+<td style="text-align: center;"><strong>매우 높음</strong></td>
+<td style="text-align: center;">높음</td>
+</tr>
+</tbody>
+</table>
+<h3 id="권장-경로">권장 경로</h3>
+<ol>
+<li><strong>PoC 단계:</strong> Pattern A (단독 사용) — 30분 안에 동작 확인</li>
+<li><strong>운영 진입:</strong> Pattern C (Slack/Teams 봇) — 사용자가 자연스럽게 접근</li>
+<li><strong>고도화:</strong> Pattern B (LangGraph) — 멀티스텝·RAG·MCP 통합 필요해질 때</li>
+</ol>
+<blockquote>
+<p>💡 <strong>세미나 메시지:</strong> "<strong>WrenAI는 시작점이고, 운영 성숙도가 올라가면 LangGraph 위에 흡수된다.</strong> dbt/Cube와 달리 단독으로 챗봇이 되지만, 결국 멀티 에이전트 시대로 가면 한 도구가 됨."</p>
+</blockquote>
+<hr />
+<h2 id="8-한계--다음-단계--결론">8. 한계 + 다음 단계 / 결론</h2>
+<p><strong>WrenAI가 잘하는 것:</strong>
+- ✅ <strong>자연어 → SQL 정확도</strong> (BIP 100% A등급 달성)
+- ✅ All-in-One 통합 (30분 PoC)
+- ✅ SQL Pairs 학습 시스템 (운영하면서 정확도 향상)
+- ✅ Wren Engine 검증 (환각 SQL 차단)
+- ✅ Chat UI 내장</p>
+<p><strong>WrenAI가 잘 못하는 것:</strong>
+- ❌ <strong>Oracle 19c 미지원</strong> (사내 표준 환경 부적합 — §6)
+- ❌ 1질문 = 1SQL (멀티스텝/RAG 통합은 LangGraph 필요 — §7 Pattern B)
+- ❌ sql_answer 환각 (답변 생성 단계 — 해석 컬럼으로 우회)
+- ❌ 프롬프트 커스터마이징 (OSS 소스 수정 부담)</p>
+<p><strong>자연스러운 조합 (BIP 적용 사례):</strong></p>
+<div class="codehilite"><pre><span></span><code>dbt (변환) → Gold Table → WrenAI (NL2SQL) → LangGraph (멀티 에이전트로 확장)
+</code></pre></div>
+
+<p><strong>v3 전환 근거:</strong> Oracle 19c 미지원 + 1질문=1SQL 한계가 사내 핵심 사용 케이스(복합 질문, 멀티스텝)와 맞지 않음 → <strong>자체 구현(LangGraph + QuerySpec)으로 전환</strong>. 단, <strong>WrenAI의 패턴(MDL/SQL Pairs/Validator)은 v3에 그대로 이식.</strong></p>
+<p>→ 세미나의 §6 의사결정 가이드와 일관: <strong>"PostgreSQL/Oracle 23ai면 WrenAI, Oracle 19c면 v3 자체 구현."</strong></p>
+<hr />
+<h2 id="부록--상세-이력">부록 — 상세 이력</h2>
+<p>본 문서는 <strong>세미나 데모용 요약</strong>이다. 시간순 5차 테스트 개선 이력, 차원별 채점 결과, 발견된 모든 함정·조치는 별도 문서:</p>
+<p>📚 <strong><code>docs/wrenai_test_report.md</code></strong> — 1차~5차 테스트 (1,200줄)
+📚 <strong><code>docs/wrenai_technical_guide.md</code></strong> — Wren AI 내부 구조
+📚 <strong><code>docs/guide_wrenai.md</code></strong> — 기능 가이드</p>
+<hr />
+<h2 id="변경-이력">변경 이력</h2>
+<table>
+<thead>
+<tr>
+<th>날짜</th>
+<th>내용</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>2026-03-28 ~ 2026-04-12</td>
+<td>WrenAI 1~5차 테스트 (별도 <code>wrenai_test_report.md</code>)</td>
+</tr>
+<tr>
+<td>2026-05-18</td>
+<td>데모 결과 문서로 정리 (dbt/Cube와 동일 포맷). 5가지 강점 + Oracle 19c 우회 경로 3종 + 통합 패턴 4종 (역방향)</td>
+</tr>
+</tbody>
+</table>
+</main>
+
+<script>
+  // 테마 전환
+  function setTheme(theme) {
+    document.documentElement.setAttribute('data-theme', theme);
+    localStorage.setItem('doc-theme', theme);
+    document.getElementById('btn-dark').classList.toggle('active', theme === 'dark');
+    document.getElementById('btn-light').classList.toggle('active', theme === 'light');
+    // Mermaid 재렌더링
+    if (typeof mermaid !== 'undefined') {
+      mermaid.initialize({ startOnLoad: false, theme: 'base', securityLevel: 'loose', themeVariables: getMermaidTheme(theme) });
+      document.querySelectorAll('.mermaid').forEach(el => {
+        // 원본 코드 보존 (최초 1회만 저장)
+        if (!el.dataset.source) {
+          el.dataset.source = el.textContent;
+        }
+        el.removeAttribute('data-processed');
+        el.innerHTML = el.dataset.source;
+      });
+      mermaid.run();
+    }
+  }
+
+  // 저장된 테마 로드
+  const savedTheme = localStorage.getItem('doc-theme') || 'dark';
+  setTheme(savedTheme);
+
+  // Mermaid 초기화
+  function getMermaidTheme(theme) {
+    const dark = {
+      primaryColor: '#3d7be0',
+      primaryTextColor: '#ffffff',
+      primaryBorderColor: '#5a9cf0',
+      secondaryColor: '#7c5cbf',
+      secondaryTextColor: '#ffffff',
+      secondaryBorderColor: '#a29bfe',
+      tertiaryColor: '#00997a',
+      tertiaryTextColor: '#ffffff',
+      tertiaryBorderColor: '#55efc4',
+      noteTextColor: '#f0f0f0',
+      noteBkgColor: '#2d3436',
+      noteBorderColor: '#636e72',
+      lineColor: '#8b949e',
+      textColor: '#e6edf3',
+      mainBkg: '#1e3050',
+      nodeBorder: '#5a9cf0',
+      clusterBkg: '#1a1e2e',
+      clusterBorder: '#4a5568',
+      titleColor: '#79c0ff',
+      edgeLabelBackground: '#21262d',
+      actorBkg: '#3d7be0',
+      actorTextColor: '#ffffff',
+      actorBorder: '#5a9cf0',
+      signalColor: '#8b949e',
+      labelBoxBkgColor: '#21262d',
+      labelBoxBorderColor: '#4a5568',
+      labelTextColor: '#e6edf3',
+      loopTextColor: '#e6edf3',
+      activationBorderColor: '#5a9cf0',
+      activationBkgColor: '#1e3050',
+      sequenceNumberColor: '#ffffff',
+      pie1: '#4f8fea', pie2: '#6c5ce7', pie3: '#00b894', pie4: '#e17055',
+      pie5: '#fdcb6e', pie6: '#00cec9', pie7: '#e84393', pie8: '#0984e3'
+    };
+    const light = {
+      primaryColor: '#4f8fea',
+      primaryTextColor: '#1a1a2e',
+      primaryBorderColor: '#3a7bd5',
+      secondaryColor: '#a29bfe',
+      secondaryTextColor: '#1a1a2e',
+      secondaryBorderColor: '#6c5ce7',
+      tertiaryColor: '#55efc4',
+      tertiaryTextColor: '#1a1a2e',
+      tertiaryBorderColor: '#00b894',
+      noteTextColor: '#2d3436',
+      noteBkgColor: '#ffeaa7',
+      noteBorderColor: '#fdcb6e',
+      lineColor: '#636e72',
+      textColor: '#2d3436',
+      mainBkg: '#dfe6e9',
+      nodeBorder: '#3a7bd5',
+      clusterBkg: '#f0f3f5',
+      clusterBorder: '#b2bec3',
+      titleColor: '#2d3436',
+      edgeLabelBackground: '#ffffff',
+      actorBkg: '#4f8fea',
+      actorTextColor: '#ffffff',
+      actorBorder: '#3a7bd5',
+      signalColor: '#636e72',
+      labelBoxBkgColor: '#ffffff',
+      labelBoxBorderColor: '#b2bec3',
+      labelTextColor: '#2d3436',
+      loopTextColor: '#2d3436',
+      activationBorderColor: '#3a7bd5',
+      activationBkgColor: '#dfe6e9',
+      sequenceNumberColor: '#ffffff',
+      pie1: '#4f8fea', pie2: '#6c5ce7', pie3: '#00b894', pie4: '#e17055',
+      pie5: '#fdcb6e', pie6: '#00cec9', pie7: '#e84393', pie8: '#0984e3'
+    };
+    return theme === 'dark' ? dark : light;
+  }
+
+  // 초기 렌더링 전에 원본 코드 저장
+  document.querySelectorAll('.mermaid').forEach(el => {
+    el.dataset.source = el.textContent;
+  });
+  mermaid.initialize({ startOnLoad: true, theme: 'base', securityLevel: 'loose', themeVariables: getMermaidTheme(savedTheme) });
+
+  // TOC 현재 위치 하이라이트
+  const tocLinks = document.querySelectorAll('.toc a');
+  const headings = [];
+  tocLinks.forEach(link => {
+    const id = link.getAttribute('href').slice(1);
+    const el = document.getElementById(id);
+    if (el) headings.push({ el, link });
+  });
+
+  function updateActiveToc() {
+    let current = null;
+    for (const h of headings) {
+      if (h.el.getBoundingClientRect().top <= 100) current = h;
+    }
+    tocLinks.forEach(l => l.classList.remove('active'));
+    if (current) current.link.classList.add('active');
+  }
+
+  window.addEventListener('scroll', updateActiveToc, { passive: true });
+  updateActiveToc();
+
+  // 모바일: 링크 클릭 시 사이드바 닫기
+  tocLinks.forEach(link => {
+    link.addEventListener('click', () => {
+      if (window.innerWidth <= 900) {
+        document.querySelector('.sidebar').classList.remove('open');
+      }
+    });
+  });
+</script>
+
+</body>
+</html>
