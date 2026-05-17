@@ -585,11 +585,166 @@ flowchart LR
 
 ---
 
-## 7. 한계 + 다음 단계
+## 7. 챗봇 형태 서비스가 필요할 때 — 통합 패턴
+
+**핵심 사실:** dbt는 **자체 NL2SQL/챗봇 기능이 없다.** 변환·메트릭 정의에 특화된 도구이므로 챗봇이 필요하면 **다른 도구와 조합**해야 한다.
+
+dbt가 만드는 **Gold Table + 메트릭 정의 + 용어집은 자산**이고, 챗봇은 그 위에 어떤 방식으로 얹을지 선택의 문제다.
+
+```mermaid
+flowchart TB
+    DBT["dbt<br/>Gold Table + manifest.json + 용어집"]
+    DBT --> P1["Pattern A<br/>WrenAI 연결"]
+    DBT --> P2["Pattern B<br/>Cube 경유"]
+    DBT --> P3["Pattern C<br/>자체 LangGraph Agent"]
+    DBT --> P4["Pattern D<br/>dbt Cloud Semantic + GenAI"]
+
+    style DBT fill:#fbbf24,color:#1a1a2e
+    style P3 fill:#a78bfa,color:#fff
+```
+
+### Pattern A — dbt → WrenAI (가장 단순)
+
+**구조:**
+```
+dbt 변환 → Gold Table (DB) → WrenAI 연결 → 자연어 챗봇
+```
+
+**구현 방식:**
+- WrenAI를 BIP-Pipeline에 띄우고 **dbt가 만든 마트 스키마**(`dbt_demo_marts.*`)를 데이터소스로 등록
+- dbt의 컬럼 description은 **DB COMMENT**로 동기화 → WrenAI가 자동 인식
+- 추가로 dbt `manifest.json` → WrenAI MDL 변환 스크립트 작성하면 모델/관계까지 자동 import 가능
+
+**장점:**
+- 가장 빠른 PoC (1–2일)
+- BIP에서 검증된 패턴 (Wren AI 100% A등급)
+- dbt 자산(description/test 결과)을 거의 그대로 활용
+
+**단점:**
+- WrenAI가 **Oracle 19c 미지원** → 사내 환경 부적합
+- dbt manifest와 WrenAI MDL 이중화 (자동 동기화 스크립트 필요)
+
+**적합:** PostgreSQL/Oracle 23ai 환경, 빠른 PoC
+
+---
+
+### Pattern B — dbt → Cube → 챗봇 (정석 3-tier)
+
+**구조:**
+```
+dbt 변환 → Gold Table → Cube 시맨틱 → REST API → 챗봇 (LangGraph/Vanna 등)
+```
+
+**구현 방식:**
+- dbt가 Gold Table을 만들고, Cube가 그 위에 시맨틱 레이어 + Pre-aggregation 적용
+- 챗봇 (LangGraph Agent 또는 Vanna)이 **Cube REST API를 Tool로 호출** → 자연어 질문을 Cube 쿼리 JSON으로 변환 후 호출
+- 메트릭 정의: dbt와 Cube 양쪽에 존재 → 일관성 관리 필요
+
+**장점:**
+- 변환·시맨틱·서빙·챗봇 레이어가 명확히 분리
+- BI 도구(Tableau 등)도 같이 사용 가능 (Cube SQL API)
+- 가장 확장성 높은 구조
+
+**단점:**
+- 3개 도구 운영 부담
+- 메트릭 정의가 dbt + Cube 두 군데로 분산 (`dbt_models` ↔ `cube/model/*.js`)
+- Cube의 팩트-팩트 JOIN 한계 그대로 (BIP 검증)
+
+**적합:** 대규모 조직, BI + 챗봇 동시 운영, 멀티 클라이언트
+
+---
+
+### Pattern C — dbt + 자체 LangGraph Agent (v3 방식)
+
+**구조:**
+```
+dbt 변환 → Gold Table → DB 직결 → LangGraph Agent → QuerySpec → SQL
+                                     ↑
+                          manifest.json을 Schema RAG로 활용
+```
+
+**구현 방식:**
+- dbt가 만든 `manifest.json`을 **Schema Registry의 입력**으로 사용
+  - 모델 description → LLM 프롬프트의 테이블 설명
+  - 컬럼 description → 컬럼 의미 (dbt 용어집 그대로)
+  - JOIN 관계 → joins.yaml (수동 또는 manifest에서 추출)
+- LangGraph Agent가 QuerySpec 생성 → SQL Converter → DB 직접 실행
+- Cube 없이 dbt의 메트릭/관계 정의를 직접 활용
+
+**장점:**
+- **Oracle 19c 즉시 동작** (Cube/WrenAI 호환성 무관)
+- dbt 용어집(`{% docs %}`)을 LLM 컨텍스트로 그대로 주입
+- 도구 락인 없음, 사내 LLM 자유 선택
+
+**단점:**
+- 자체 구현 부담 (Schema Registry/Converter/Validator)
+- Cube의 Pre-aggregation 캐싱 같은 기능 별도 구현 필요
+
+**적합:** 사내 Oracle 19c, 자체 LLM 사용, 팩트-팩트 JOIN 빈번
+
+> 📚 **상세 설계:** `docs/nl2sql_implementation_plan_v3.md` §6 (Phase 2 LangGraph + QuerySpec)
+
+---
+
+### Pattern D — dbt Cloud Semantic Layer + GenAI (유료, 참고)
+
+**구조:**
+```
+dbt Cloud (Semantic Layer + MetricFlow) → GenAI Integration → 챗봇
+```
+
+**구현 방식:**
+- dbt Cloud의 **Semantic Layer API**가 메트릭을 표준화된 형태로 노출
+- ChatGPT/Claude 등이 직접 Semantic Layer API를 호출 (Function Calling)
+- dbt Labs가 공식 통합 제공 (Hex, Mode 등)
+
+**장점:**
+- dbt Cloud 사용 조직이라면 추가 구축 없이 챗봇 가능
+- dbt Labs 공식 지원
+
+**단점:**
+- **유료** (dbt Cloud 라이선스 필요)
+- 사내 환경/사내 LLM 사용 어려움 (외부 SaaS 의존)
+- dbt Core 단독으론 불가
+
+**적합:** 이미 dbt Cloud 라이선스가 있는 조직, SaaS 친화적
+
+---
+
+### 패턴 비교표
+
+| 패턴 | 추가 도구 | Oracle 19c | 개발 부담 | BIP 검증 |
+|------|---------|:-:|:-:|:-:|
+| **A. dbt + WrenAI** | WrenAI | ❌ | 낮음 | ✅ |
+| **B. dbt + Cube + Agent** | Cube + Agent | ⭕ (community) | 중간 | △ (Cube 한계) |
+| **C. dbt + 자체 LangGraph** | LangGraph | **✅** | 높음 (초기) | 진행 중 (v3) |
+| **D. dbt Cloud Semantic + GenAI** | dbt Cloud (유료) | ❌ | 낮음 | — |
+
+### 사내 환경 권장 경로
+
+```mermaid
+flowchart LR
+    Q["사내 챗봇 필요"] --> Q1{"환경?"}
+
+    Q1 -->|PostgreSQL/Oracle 23ai| A["Pattern A<br/>dbt + WrenAI"]
+    Q1 -->|Oracle 19c| Q2{"복합 쿼리?"}
+
+    Q2 -->|단순| B["Pattern A 검토<br/>PG로 데이터 복제"]
+    Q2 -->|팩트-팩트 빈번| C["Pattern C<br/>dbt + 자체 LangGraph"]
+
+    style A fill:#22c55e,color:#fff
+    style C fill:#a78bfa,color:#fff
+```
+
+> 💡 **세미나 메시지:** "**dbt만으로는 챗봇 안 됨. 어떤 도구와 조합하느냐가 다음 결정.** 환경이 PostgreSQL이면 WrenAI, Oracle 19c이면 자체 구현이 사실상 답."
+
+---
+
+## 8. 한계 + 다음 단계
 
 **dbt가 잘 못하는 것:**
 - 실시간 API 서빙 (배치 도구)
-- 자연어 → SQL (NL2SQL은 별도 도구)
+- 자연어 → SQL (NL2SQL은 별도 도구 — §7 패턴 참고)
 - 결과 캐싱 (Cube의 Pre-aggregation 같은 기능 없음)
 
 **자연스러운 조합:**
@@ -608,3 +763,4 @@ dbt (변환) → Cube (BI/API 서빙) → WrenAI 또는 자체 NL2SQL Agent
 | 2026-05-17 | 초안 작성 (BIP PostgreSQL 데모 결과 + Oracle 적용 가능성) |
 | 2026-05-17 | dbt 도메인 용어집(`_glossary.md`, 16개 용어) 추가 + 강점 4 신설 (강점 4→5) — BIP OM Glossary 77개와 동일 패턴 |
 | 2026-05-18 | §6 Oracle 19c 적용 가이드 단계별 확장 — Dockerfile/profiles/SQL 방언 변환(4곳)/매크로 추상화/실행 검증/흔한 함정/사내 도입 시나리오 |
+| 2026-05-18 | §7 챗봇 통합 패턴 4종 추가 — A(WrenAI) / B(Cube 경유) / C(자체 LangGraph) / D(dbt Cloud GenAI) + 사내 권장 경로 |

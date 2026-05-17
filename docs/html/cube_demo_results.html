@@ -317,7 +317,14 @@
   <li class="toc-h3"><a href="#7-2-원인">7-2. 원인</a></li>
   <li class="toc-h3"><a href="#7-3-우회-시도">7-3. 우회 시도</a></li>
   <li class="toc-h3"><a href="#7-4-의사결정--v3-langgraph-전환">7-4. 의사결정 — v3 LangGraph 전환</a></li>
-<li class="toc-h2"><a href="#8-한계--다음-단계--결론">8. 한계 + 다음 단계 / 결론</a></li>
+<li class="toc-h2"><a href="#8-챗봇-형태-서비스가-필요할-때--통합-패턴">8. 챗봇 형태 서비스가 필요할 때 — 통합 패턴</a></li>
+  <li class="toc-h3"><a href="#pattern-a--cube--wrenai">Pattern A — Cube + WrenAI</a></li>
+  <li class="toc-h3"><a href="#pattern-b--cube-ai-공식-실험-기능">Pattern B — Cube AI (공식 실험 기능)</a></li>
+  <li class="toc-h3"><a href="#pattern-c--cube--langgraph-agent-rest-api를-tool로">Pattern C — Cube + LangGraph Agent (REST API를 Tool로)</a></li>
+  <li class="toc-h3"><a href="#pattern-d--cube--vanna-ai--langchain-sql-agent">Pattern D — Cube + Vanna AI / LangChain SQL Agent</a></li>
+  <li class="toc-h3"><a href="#패턴-비교표">패턴 비교표</a></li>
+  <li class="toc-h3"><a href="#사내-환경-권장-경로">사내 환경 권장 경로</a></li>
+<li class="toc-h2"><a href="#9-한계--다음-단계--결론">9. 한계 + 다음 단계 / 결론</a></li>
 <li class="toc-h2"><a href="#변경-이력">변경 이력</a></li>
 </ul>
 </nav>
@@ -961,7 +968,181 @@ flowchart TB
 <p>상세 의사결정 이력: <code>docs/nl2sql_implementation_plan_v3.md</code> §13-2</p>
 </blockquote>
 <hr />
-<h2 id="8-한계--다음-단계--결론">8. 한계 + 다음 단계 / 결론</h2>
+<h2 id="8-챗봇-형태-서비스가-필요할-때--통합-패턴">8. 챗봇 형태 서비스가 필요할 때 — 통합 패턴</h2>
+<p><strong>핵심 사실:</strong> Cube는 <strong>자체 NL2SQL/챗봇 기능이 없다.</strong> BI 대시보드·API 서빙에 특화된 도구이므로 챗봇이 필요하면 <strong>다른 도구와 조합</strong>해야 한다.</p>
+<p>다만 Cube는 <strong>API가 강력</strong>해서(REST/GraphQL/SQL 3종), 챗봇에서 호출하기 쉬운 구조다. dbt가 "Gold Table 자산"을 제공한다면 Cube는 "<strong>호출 가능한 메트릭 자산</strong>"을 제공한다.</p>
+<div class="mermaid">
+flowchart TB
+    CUBE["Cube\n메트릭 + 3가지 API"]
+    CUBE --> P1["Pattern A\nCube + WrenAI\n(가장 단순)"]
+    CUBE --> P2["Pattern B\nCube AI\n(공식 실험 기능)"]
+    CUBE --> P3["Pattern C\nCube + LangGraph\n(REST를 Tool로)"]
+    CUBE --> P4["Pattern D\nCube + Vanna/LangChain"]
+
+    style CUBE fill:#3b82f6,color:#fff
+    style P3 fill:#a78bfa,color:#fff
+</div>
+
+<h3 id="pattern-a--cube--wrenai">Pattern A — Cube + WrenAI</h3>
+<p><strong>구조:</strong></p>
+<div class="codehilite"><pre><span></span><code>Cube 메트릭 → WrenAI (Cube를 데이터소스로) → 자연어 챗봇
+</code></pre></div>
+
+<p><strong>구현 방식:</strong>
+- WrenAI 모델 등록 시 <strong>Cube 모델을 그대로 import</strong> (Cube의 dimension/measure를 WrenAI MDL로 변환)
+- 또는 Cube가 만든 마트 테이블을 WrenAI에 직접 연결 (Cube의 시맨틱 정의는 활용 못 함)
+- WrenAI가 자연어 처리, Cube가 메트릭 정의</p>
+<p><strong>장점:</strong>
+- BIP 검증된 WrenAI 활용 (100% A등급)
+- Cube의 메트릭 표준화 + WrenAI의 NL2SQL 동시 활용</p>
+<p><strong>단점:</strong>
+- <strong>Oracle 19c 미지원</strong> (WrenAI 한계)
+- 메트릭 정의가 Cube + WrenAI MDL 두 군데로 분산
+- 두 도구의 시맨틱 모델 동기화 부담</p>
+<p><strong>적합:</strong> PostgreSQL 환경, 이미 Cube를 BI에 쓰고 있는 조직</p>
+<hr />
+<h3 id="pattern-b--cube-ai-공식-실험-기능">Pattern B — Cube AI (공식 실험 기능)</h3>
+<p><strong>구조:</strong></p>
+<div class="codehilite"><pre><span></span><code>Cube → Cube AI (ChatGPT 통합) → 자연어 챗봇
+</code></pre></div>
+
+<p><strong>구현 방식:</strong>
+- Cube에 내장된 <strong>AI 기능</strong> 활성화 (OpenAI API 키 설정)
+- 사용자가 자연어로 질문 → Cube AI가 Cube 쿼리 JSON 자동 생성 → 실행
+- Cube Playground 또는 Cube Cloud UI에서 직접 사용</p>
+<p><strong>장점:</strong>
+- Cube 본사 공식 지원, 별도 도구 불필요
+- Cube 모델 정의를 그대로 LLM 컨텍스트로 활용 (이중화 없음)
+- 빠른 설정 (1시간 이내)</p>
+<p><strong>단점:</strong>
+- <strong>OpenAI API 의존</strong> (외부 API 호출, 사내 LLM 어려움)
+- 아직 실험 기능 — 안정성·기능 부족
+- 멀티스텝/RAG 통합 불가
+- Cube의 팩트-팩트 한계 그대로 (질문이 안 풀림)</p>
+<p><strong>적합:</strong> PoC, OpenAI 사용 가능 환경, BI 사용자가 자연어로 빠른 조회</p>
+<hr />
+<h3 id="pattern-c--cube--langgraph-agent-rest-api를-tool로">Pattern C — Cube + LangGraph Agent (REST API를 Tool로)</h3>
+<p><strong>구조:</strong></p>
+<div class="codehilite"><pre><span></span><code>자연어 질문 → LangGraph Agent → &quot;Cube Tool&quot; 호출 → Cube REST API → 결과
+</code></pre></div>
+
+<p><strong>구현 방식:</strong>
+- LangGraph Agent의 Tool로 <strong>Cube REST API 호출 함수</strong> 등록
+- LLM이 자연어 → Cube 쿼리 JSON 생성 (Function Calling)
+- Agent가 Cube API 호출 → JSON 결과 받음 → 자연어 답변 합성
+- <strong>Cube 쿼리 JSON은 SQL보다 안정적</strong> (구조화된 형식)</p>
+<p><strong>예시 (<code>guide_cubejs.md</code> §9 인용):</strong></p>
+<div class="codehilite"><pre><span></span><code><span class="k">def</span><span class="w"> </span><span class="nf">cube_query</span><span class="p">(</span><span class="n">measures</span><span class="p">:</span> <span class="nb">list</span><span class="p">,</span> <span class="n">dimensions</span><span class="p">:</span> <span class="nb">list</span><span class="p">,</span> <span class="n">filters</span><span class="p">:</span> <span class="nb">list</span> <span class="o">=</span> <span class="kc">None</span><span class="p">):</span>
+    <span class="n">response</span> <span class="o">=</span> <span class="n">requests</span><span class="o">.</span><span class="n">post</span><span class="p">(</span>
+        <span class="s2">&quot;http://cube:4000/cubejs-api/v1/load&quot;</span><span class="p">,</span>
+        <span class="n">headers</span><span class="o">=</span><span class="p">{</span><span class="s2">&quot;Authorization&quot;</span><span class="p">:</span> <span class="n">CUBE_API_SECRET</span><span class="p">},</span>
+        <span class="n">json</span><span class="o">=</span><span class="p">{</span><span class="s2">&quot;query&quot;</span><span class="p">:</span> <span class="p">{</span><span class="s2">&quot;measures&quot;</span><span class="p">:</span> <span class="n">measures</span><span class="p">,</span> <span class="s2">&quot;dimensions&quot;</span><span class="p">:</span> <span class="n">dimensions</span><span class="p">,</span> <span class="s2">&quot;filters&quot;</span><span class="p">:</span> <span class="n">filters</span> <span class="ow">or</span> <span class="p">[]}}</span>
+    <span class="p">)</span>
+    <span class="k">return</span> <span class="n">response</span><span class="o">.</span><span class="n">json</span><span class="p">()[</span><span class="s2">&quot;data&quot;</span><span class="p">]</span>
+</code></pre></div>
+
+<p><strong>장점:</strong>
+- Cube 쿼리 JSON 형식이 SQL 환각보다 안정적
+- LangGraph로 멀티스텝/RAG/MCP 확장 자유로움
+- 사내 LLM 자유 선택 (LiteLLM)
+- Oracle 19c도 동작 (Cube가 community 드라이버로 연결)</p>
+<p><strong>단점:</strong>
+- 자체 구현 부담
+- <strong>Cube의 팩트-팩트 한계 그대로</strong> — 복합 질문은 Agent가 멀티스텝으로 우회 필요
+- Pre-aggregation 캐싱은 Cube 레이어에 의존</p>
+<p><strong>적합:</strong> 사내 LLM 사용, Cube를 BI와 챗봇 양쪽에 동시 활용, 복합 쿼리가 적은 환경</p>
+<blockquote>
+<p>📚 <strong>유사 패턴이지만 Cube 없이 DB 직결:</strong> <code>docs/nl2sql_implementation_plan_v3.md</code> §6 (v3 자체 구현)</p>
+</blockquote>
+<hr />
+<h3 id="pattern-d--cube--vanna-ai--langchain-sql-agent">Pattern D — Cube + Vanna AI / LangChain SQL Agent</h3>
+<p><strong>구조:</strong></p>
+<div class="codehilite"><pre><span></span><code>Cube SQL API (BI 도구가 보는 가상 DB) ← Vanna 또는 LangChain SQL Agent
+</code></pre></div>
+
+<p><strong>구현 방식:</strong>
+- Cube의 <strong>SQL API</strong>가 Cube를 일반 PostgreSQL처럼 노출
+- Vanna AI 또는 LangChain의 SQL Agent를 그 위에 붙임
+- Agent가 자연어 → SQL 생성 → Cube SQL API 호출
+- Cube가 내부에서 시맨틱 모델 기반 실제 SQL로 변환·실행</p>
+<p><strong>장점:</strong>
+- 기존 SQL Agent 도구를 그대로 활용 (코드 거의 안 짜도 됨)
+- Cube가 SQL 검증 1차 방어선 (잘못된 컬럼/테이블 거부)</p>
+<p><strong>단점:</strong>
+- Vanna/LangChain SQL Agent 모두 <strong>WrenAI보다 정확도 낮음</strong> (커스터마이징 어려움)
+- 메트릭 정의를 LLM에 어떻게 알릴지 별도 RAG 필요
+- Cube + 별도 도구라 운영 부담 중간</p>
+<p><strong>적합:</strong> 빠른 PoC, 이미 Vanna/LangChain 친숙한 팀</p>
+<hr />
+<h3 id="패턴-비교표">패턴 비교표</h3>
+<table>
+<thead>
+<tr>
+<th>패턴</th>
+<th>추가 도구</th>
+<th style="text-align: center;">Oracle 19c</th>
+<th style="text-align: center;">개발 부담</th>
+<th style="text-align: center;">정확도</th>
+<th style="text-align: center;">BIP 검증</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><strong>A. Cube + WrenAI</strong></td>
+<td>WrenAI</td>
+<td style="text-align: center;">❌</td>
+<td style="text-align: center;">낮음</td>
+<td style="text-align: center;">⭐⭐⭐⭐⭐</td>
+<td style="text-align: center;">✅</td>
+</tr>
+<tr>
+<td><strong>B. Cube AI</strong></td>
+<td>OpenAI API</td>
+<td style="text-align: center;">⭕</td>
+<td style="text-align: center;">매우 낮음</td>
+<td style="text-align: center;">⭐⭐⭐</td>
+<td style="text-align: center;">—</td>
+</tr>
+<tr>
+<td><strong>C. Cube + LangGraph</strong></td>
+<td>LangGraph</td>
+<td style="text-align: center;"><strong>✅</strong></td>
+<td style="text-align: center;">높음</td>
+<td style="text-align: center;">⭐⭐⭐⭐</td>
+<td style="text-align: center;">△</td>
+</tr>
+<tr>
+<td><strong>D. Cube + Vanna/LangChain</strong></td>
+<td>Vanna 또는 LangChain</td>
+<td style="text-align: center;">⭕</td>
+<td style="text-align: center;">중간</td>
+<td style="text-align: center;">⭐⭐⭐</td>
+<td style="text-align: center;">—</td>
+</tr>
+</tbody>
+</table>
+<h3 id="사내-환경-권장-경로">사내 환경 권장 경로</h3>
+<div class="mermaid">
+flowchart LR
+    Q["사내 챗봇 + Cube 사용 중"] --> Q1{"Oracle 환경?"}
+
+    Q1 -->|PostgreSQL/Oracle 23ai| A["Pattern A\nCube + WrenAI"]
+    Q1 -->|Oracle 19c| Q2{"외부 API 허용?"}
+
+    Q2 -->|허용| B["Pattern B\nCube AI\n(빠른 PoC)"]
+    Q2 -->|불가 + 자체 LLM| C["Pattern C\nCube + LangGraph"]
+
+    style A fill:#22c55e,color:#fff
+    style B fill:#3b82f6,color:#fff
+    style C fill:#a78bfa,color:#fff
+</div>
+
+<blockquote>
+<p>⚠️ <strong>하지만 BIP에서 발견한 한계 그대로:</strong> 어느 패턴을 쓰든 <strong>Cube의 팩트-팩트 JOIN 제약</strong>(§7)은 우회 안 됨. "저평가 + 외국인 순매수" 같은 복합 질문이 사내에서 빈번하다면 Cube를 시맨틱 본체로 두는 것 자체가 부적합.</p>
+<p>💡 <strong>세미나 메시지:</strong> "<strong>Cube + 챗봇 패턴 4가지 모두 Cube의 팩트-팩트 한계를 상속한다.</strong> 챗봇용 시맨틱 본체로 Cube를 둘지, DB View로 둘지(v3)가 결국 핵심 결정."</p>
+</blockquote>
+<hr />
+<h2 id="9-한계--다음-단계--결론">9. 한계 + 다음 단계 / 결론</h2>
 <p><strong>Cube가 잘하는 것:</strong>
 - ✅ BI 대시보드 임베디드 API (3가지 API)
 - ✅ 메트릭 표준화 (단일 정의)
@@ -995,6 +1176,10 @@ flowchart TB
 <tr>
 <td>2026-05-18</td>
 <td>데모 결과 문서로 정리 (dbt 문서와 동일 포맷). 5가지 강점 + Oracle 19c 적용 가이드 + 팩트-팩트 한계(v3 전환 근거)</td>
+</tr>
+<tr>
+<td>2026-05-18</td>
+<td>§8 챗봇 통합 패턴 4종 추가 — A(WrenAI) / B(Cube AI) / C(LangGraph Tool) / D(Vanna/LangChain) + 사내 권장 경로</td>
 </tr>
 </tbody>
 </table>
