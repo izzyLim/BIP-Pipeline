@@ -1692,11 +1692,13 @@ flowchart TD
 </code></pre></div>
 
 <blockquote>
-<p><strong>이 코드가 하는 일:</strong>
-1. <strong>상태(<code>AgentState</code>)에</strong> 질문/중간 결과/최종 답변을 다 담는다 (한 곳에서 추적 가능)
-2. <strong><code>classify</code> 노드</strong>가 질문 유형 판단 → 분기 결정
-3. <strong>조건부 엣지</strong>가 정형이면 NL2SQL만, 복합이면 RAG도 호출
-4. 모든 결과는 <code>synthesize</code>에서 자연어로 합성</p>
+<p><strong>이 코드가 하는 일:</strong></p>
+<ol>
+<li><strong>상태(<code>AgentState</code>)에</strong> 질문/중간 결과/최종 답변을 다 담는다 (한 곳에서 추적 가능)</li>
+<li><strong><code>classify</code> 노드</strong>가 질문 유형 판단 → 분기 결정</li>
+<li><strong>조건부 엣지</strong>가 정형이면 NL2SQL만, 복합이면 RAG도 호출</li>
+<li>모든 결과는 <code>synthesize</code>에서 자연어로 합성</li>
+</ol>
 </blockquote>
 <div class="mermaid">
 flowchart TD
@@ -2150,10 +2152,12 @@ dbt<span class="w"> </span>docs<span class="w"> </span>generate<span class="w"> 
 </code></pre></div>
 
 <blockquote>
-<p><strong>이 명령어가 하는 일:</strong>
-1. <code>dbt run</code>: stg_orders → stg_customers → fct_sales 순서로 자동 빌드
-2. <code>dbt test</code>: order_id가 unique한지, customer_id가 stg_customers에 있는지 검증
-3. <code>dbt docs serve</code>: 데이터 카탈로그 웹 UI 열기 (http://localhost:8080)</p>
+<p><strong>이 명령어가 하는 일:</strong></p>
+<ol>
+<li><code>dbt run</code>: stg_orders → stg_customers → fct_sales 순서로 자동 빌드</li>
+<li><code>dbt test</code>: order_id가 unique한지, customer_id가 stg_customers에 있는지 검증</li>
+<li><code>dbt docs serve</code>: 데이터 카탈로그 웹 UI 열기 (http://localhost:8080)</li>
+</ol>
 </blockquote>
 <h3 id="실습-1-결과-확인">실습 1 결과 확인</h3>
 <div class="codehilite"><pre><span></span><code><span class="c1">-- DB에서 직접 확인</span>
@@ -2348,11 +2352,13 @@ docker<span class="w"> </span>compose<span class="w"> </span>-f<span class="w"> 
 </code></pre></div>
 
 <blockquote>
-<p><strong>이 화면에서 보이는 4가지:</strong>
-1. <strong>자연어 답변</strong> — 사용자 친화적 텍스트
-2. <strong>자동 시각화</strong> — bar/line/pie 차트 자동 선택
-3. <strong>투명한 SQL</strong> — 어떤 SQL이 실행됐는지 펼쳐서 확인 (신뢰)
-4. <strong>추천 질문</strong> — Asking Task 기능, 후속 분석 유도</p>
+<p><strong>이 화면에서 보이는 4가지:</strong></p>
+<ol>
+<li><strong>자연어 답변</strong> — 사용자 친화적 텍스트</li>
+<li><strong>자동 시각화</strong> — bar/line/pie 차트 자동 선택</li>
+<li><strong>투명한 SQL</strong> — 어떤 SQL이 실행됐는지 펼쳐서 확인 (신뢰)</li>
+<li><strong>추천 질문</strong> — Asking Task 기능, 후속 분석 유도</li>
+</ol>
 </blockquote>
 <h3 id="실습-3-핵심-통찰">실습 3 핵심 통찰</h3>
 <div class="codehilite"><pre><span></span><code><span class="err">사용자</span><span class="o">:</span><span class="w"> </span><span class="s">&quot;지난달 서울 매출&quot;</span>

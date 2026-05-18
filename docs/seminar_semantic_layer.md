@@ -994,6 +994,7 @@ print(result["answer"])
 ```
 
 > **이 코드가 하는 일:**
+>
 > 1. **상태(`AgentState`)에** 질문/중간 결과/최종 답변을 다 담는다 (한 곳에서 추적 가능)
 > 2. **`classify` 노드**가 질문 유형 판단 → 분기 결정
 > 3. **조건부 엣지**가 정형이면 NL2SQL만, 복합이면 RAG도 호출
@@ -1372,6 +1373,7 @@ dbt docs generate && dbt docs serve  # 문서 자동 생성
 ```
 
 > **이 명령어가 하는 일:**
+>
 > 1. `dbt run`: stg_orders → stg_customers → fct_sales 순서로 자동 빌드
 > 2. `dbt test`: order_id가 unique한지, customer_id가 stg_customers에 있는지 검증
 > 3. `dbt docs serve`: 데이터 카탈로그 웹 UI 열기 (http://localhost:8080)
@@ -1593,6 +1595,7 @@ WrenAI UI (Home 탭) 화면:
 ```
 
 > **이 화면에서 보이는 4가지:**
+>
 > 1. **자연어 답변** — 사용자 친화적 텍스트
 > 2. **자동 시각화** — bar/line/pie 차트 자동 선택
 > 3. **투명한 SQL** — 어떤 SQL이 실행됐는지 펼쳐서 확인 (신뢰)
