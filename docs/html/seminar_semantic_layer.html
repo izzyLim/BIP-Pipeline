@@ -349,7 +349,18 @@
   <li class="toc-h3"><a href="#시나리오-복합-질문">시나리오: 복합 질문</a></li>
 <li class="toc-h2"><a href="#4-2-멀티-에이전트가-하는-일">4-2. 멀티 에이전트가 하는 일</a></li>
 <li class="toc-h2"><a href="#4-3-langgraph란">4-3. LangGraph란</a></li>
-<li class="toc-h2"><a href="#4-4-핵심-통찰--langgraph는-도구의-대체재가-아니라-상위-레이어">4-4. 핵심 통찰 — LangGraph는 도구의 "대체재"가 아니라 "상위 레이어"</a></li>
+  <li class="toc-h3"><a href="#상태-머신이-뭔지-한-문장으로">"상태 머신"이 뭔지 한 문장으로</a></li>
+  <li class="toc-h3"><a href="#실제-동작하는-최소-예시-bip-사내-적용-시">실제 동작하는 최소 예시 (BIP 사내 적용 시)</a></li>
+  <li class="toc-h3"><a href="#langgraph의-4가지-핵심-특징">LangGraph의 4가지 핵심 특징</a></li>
+<li class="toc-h2"><a href="#4-4-wrenai-agent로-안-풀리는-예시--왜-langgraph가-필요한가">4-4. WrenAI Agent로 안 풀리는 예시 — 왜 LangGraph가 필요한가</a></li>
+  <li class="toc-h3"><a href="#시나리오-1--멀티스텝-추론">시나리오 1 — 멀티스텝 추론</a></li>
+  <li class="toc-h3"><a href="#시나리오-2--정형--비정형--외부-시스템-동시">시나리오 2 — 정형 + 비정형 + 외부 시스템 동시</a></li>
+  <li class="toc-h3"><a href="#시나리오-3--자동-보정-루프">시나리오 3 — 자동 보정 루프</a></li>
+  <li class="toc-h3"><a href="#시나리오-4--멀티턴--세션-컨텍스트">시나리오 4 — 멀티턴 + 세션 컨텍스트</a></li>
+  <li class="toc-h3"><a href="#wrenai-agent-vs-langgraph-비교">WrenAI Agent vs LangGraph 비교</a></li>
+<li class="toc-h2"><a href="#4-5-다른-멀티-에이전트-프레임워크와의-비교">4-5. 다른 멀티 에이전트 프레임워크와의 비교</a></li>
+  <li class="toc-h3"><a href="#langgraph-선정-근거-bip-기준">LangGraph 선정 근거 (BIP 기준)</a></li>
+<li class="toc-h2"><a href="#4-6-핵심-통찰--langgraph는-도구의-대체재가-아니라-상위-레이어">4-6. 핵심 통찰 — LangGraph는 도구의 "대체재"가 아니라 "상위 레이어"</a></li>
 <li class="toc-h2"><a href="#5-1-실습-시나리오">5-1. 실습 시나리오</a></li>
   <li class="toc-h3"><a href="#사용할-데이터셋">사용할 데이터셋</a></li>
   <li class="toc-h3"><a href="#실습-목표">실습 목표</a></li>
@@ -1603,42 +1614,314 @@ flowchart TD
 <p><strong>"LangGraph는 LLM 에이전트를 그래프(상태 머신)로 정의하는 프레임워크다."</strong>
 노드(작업) + 엣지(흐름) + 상태(메모리)로 구성. LangChain의 후속.</p>
 </blockquote>
-<div class="codehilite"><pre><span></span><code><span class="kn">from</span><span class="w"> </span><span class="nn">langgraph.graph</span><span class="w"> </span><span class="kn">import</span> <span class="n">StateGraph</span>
+<h3 id="상태-머신이-뭔지-한-문장으로">"상태 머신"이 뭔지 한 문장으로</h3>
+<p>상태 머신 = <strong>현재 상태를 보고 다음 단계를 결정하는 구조</strong>. 예: 자판기는 "동전 투입 → 메뉴 선택 → 음료 배출" 같은 상태 흐름. LangGraph도 동일 — 상태(<code>AgentState</code>) 안에 "현재까지 모은 정보"가 있고, 다음 노드는 그 상태를 보고 무엇을 할지 결정.</p>
+<h3 id="실제-동작하는-최소-예시-bip-사내-적용-시">실제 동작하는 최소 예시 (BIP 사내 적용 시)</h3>
+<p><code>pip install langgraph</code> 하고 그대로 실행 가능한 코드입니다.</p>
+<div class="codehilite"><pre><span></span><code><span class="kn">from</span><span class="w"> </span><span class="nn">typing</span><span class="w"> </span><span class="kn">import</span> <span class="n">TypedDict</span><span class="p">,</span> <span class="n">Literal</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">langgraph.graph</span><span class="w"> </span><span class="kn">import</span> <span class="n">StateGraph</span><span class="p">,</span> <span class="n">END</span>
 
-<span class="c1"># 노드 정의</span>
-<span class="k">def</span><span class="w"> </span><span class="nf">classify_intent</span><span class="p">(</span><span class="n">state</span><span class="p">):</span>
-    <span class="c1"># 질문이 정형인지 비정형인지 분류</span>
-    <span class="k">return</span> <span class="p">{</span><span class="s2">&quot;intent&quot;</span><span class="p">:</span> <span class="s2">&quot;structured&quot;</span><span class="p">}</span>
+<span class="c1"># ───── 1. 상태(State) 정의 ─────</span>
+<span class="k">class</span><span class="w"> </span><span class="nc">AgentState</span><span class="p">(</span><span class="n">TypedDict</span><span class="p">):</span>
+    <span class="n">question</span><span class="p">:</span> <span class="nb">str</span>           <span class="c1"># 사용자 질문</span>
+    <span class="n">intent</span><span class="p">:</span> <span class="nb">str</span>             <span class="c1"># 분류 결과</span>
+    <span class="n">sql_result</span><span class="p">:</span> <span class="nb">str</span>         <span class="c1"># NL2SQL 결과</span>
+    <span class="n">news_result</span><span class="p">:</span> <span class="nb">str</span>        <span class="c1"># RAG 결과</span>
+    <span class="n">answer</span><span class="p">:</span> <span class="nb">str</span>             <span class="c1"># 최종 답변</span>
 
-<span class="k">def</span><span class="w"> </span><span class="nf">call_nl2sql</span><span class="p">(</span><span class="n">state</span><span class="p">):</span>
-    <span class="c1"># WrenAI/Cube 호출</span>
-    <span class="k">return</span> <span class="p">{</span><span class="s2">&quot;sql_result&quot;</span><span class="p">:</span> <span class="o">...</span><span class="p">}</span>
+<span class="c1"># ───── 2. 노드(Node) 정의 ─────</span>
+<span class="k">def</span><span class="w"> </span><span class="nf">classify_intent</span><span class="p">(</span><span class="n">state</span><span class="p">:</span> <span class="n">AgentState</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">dict</span><span class="p">:</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;질문 유형 분류 (실제로는 LLM 호출)&quot;&quot;&quot;</span>
+    <span class="n">q</span> <span class="o">=</span> <span class="n">state</span><span class="p">[</span><span class="s2">&quot;question&quot;</span><span class="p">]</span>
+    <span class="k">if</span> <span class="s2">&quot;뉴스&quot;</span> <span class="ow">in</span> <span class="n">q</span> <span class="ow">or</span> <span class="s2">&quot;보고서&quot;</span> <span class="ow">in</span> <span class="n">q</span><span class="p">:</span>
+        <span class="k">return</span> <span class="p">{</span><span class="s2">&quot;intent&quot;</span><span class="p">:</span> <span class="s2">&quot;mixed&quot;</span><span class="p">}</span>     <span class="c1"># 정형 + 비정형 필요</span>
+    <span class="k">return</span> <span class="p">{</span><span class="s2">&quot;intent&quot;</span><span class="p">:</span> <span class="s2">&quot;structured&quot;</span><span class="p">}</span>    <span class="c1"># 정형만</span>
 
-<span class="k">def</span><span class="w"> </span><span class="nf">call_rag</span><span class="p">(</span><span class="n">state</span><span class="p">):</span>
-    <span class="c1"># 뉴스 RAG 호출</span>
-    <span class="k">return</span> <span class="p">{</span><span class="s2">&quot;news_result&quot;</span><span class="p">:</span> <span class="o">...</span><span class="p">}</span>
+<span class="k">def</span><span class="w"> </span><span class="nf">call_nl2sql</span><span class="p">(</span><span class="n">state</span><span class="p">:</span> <span class="n">AgentState</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">dict</span><span class="p">:</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;NL2SQL Tool 호출 (WrenAI/v3 Agent 등)&quot;&quot;&quot;</span>
+    <span class="c1"># 실제로는 WrenAI REST API 호출</span>
+    <span class="k">return</span> <span class="p">{</span><span class="s2">&quot;sql_result&quot;</span><span class="p">:</span> <span class="s2">&quot;이번 달 매출 12억 (저평가주 5개 포함)&quot;</span><span class="p">}</span>
 
-<span class="k">def</span><span class="w"> </span><span class="nf">synthesize</span><span class="p">(</span><span class="n">state</span><span class="p">):</span>
-    <span class="c1"># 결과 합성</span>
-    <span class="k">return</span> <span class="p">{</span><span class="s2">&quot;answer&quot;</span><span class="p">:</span> <span class="o">...</span><span class="p">}</span>
+<span class="k">def</span><span class="w"> </span><span class="nf">call_rag</span><span class="p">(</span><span class="n">state</span><span class="p">:</span> <span class="n">AgentState</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">dict</span><span class="p">:</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;뉴스 RAG Tool 호출&quot;&quot;&quot;</span>
+    <span class="c1"># 실제로는 벡터 DB 검색</span>
+    <span class="k">return</span> <span class="p">{</span><span class="s2">&quot;news_result&quot;</span><span class="p">:</span> <span class="s2">&quot;삼성전자 1Q 실적 호조 (5개 기사)&quot;</span><span class="p">}</span>
 
-<span class="c1"># 그래프 구축</span>
-<span class="n">graph</span> <span class="o">=</span> <span class="n">StateGraph</span><span class="p">(</span><span class="n">AgentState</span><span class="p">)</span>
-<span class="n">graph</span><span class="o">.</span><span class="n">add_node</span><span class="p">(</span><span class="s2">&quot;classify&quot;</span><span class="p">,</span> <span class="n">classify_intent</span><span class="p">)</span>
-<span class="n">graph</span><span class="o">.</span><span class="n">add_node</span><span class="p">(</span><span class="s2">&quot;nl2sql&quot;</span><span class="p">,</span> <span class="n">call_nl2sql</span><span class="p">)</span>
-<span class="n">graph</span><span class="o">.</span><span class="n">add_node</span><span class="p">(</span><span class="s2">&quot;rag&quot;</span><span class="p">,</span> <span class="n">call_rag</span><span class="p">)</span>
-<span class="n">graph</span><span class="o">.</span><span class="n">add_node</span><span class="p">(</span><span class="s2">&quot;synthesize&quot;</span><span class="p">,</span> <span class="n">synthesize</span><span class="p">)</span>
+<span class="k">def</span><span class="w"> </span><span class="nf">synthesize</span><span class="p">(</span><span class="n">state</span><span class="p">:</span> <span class="n">AgentState</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">dict</span><span class="p">:</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;결과를 자연어로 합성&quot;&quot;&quot;</span>
+    <span class="n">sql</span> <span class="o">=</span> <span class="n">state</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;sql_result&quot;</span><span class="p">,</span> <span class="s2">&quot;&quot;</span><span class="p">)</span>
+    <span class="n">news</span> <span class="o">=</span> <span class="n">state</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;news_result&quot;</span><span class="p">,</span> <span class="s2">&quot;&quot;</span><span class="p">)</span>
+    <span class="k">return</span> <span class="p">{</span><span class="s2">&quot;answer&quot;</span><span class="p">:</span> <span class="sa">f</span><span class="s2">&quot;📊 </span><span class="si">{</span><span class="n">sql</span><span class="si">}</span><span class="se">\n</span><span class="s2">📰 </span><span class="si">{</span><span class="n">news</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">}</span>
 
-<span class="n">graph</span><span class="o">.</span><span class="n">add_edge</span><span class="p">(</span><span class="s2">&quot;classify&quot;</span><span class="p">,</span> <span class="s2">&quot;nl2sql&quot;</span><span class="p">)</span>
-<span class="n">graph</span><span class="o">.</span><span class="n">add_edge</span><span class="p">(</span><span class="s2">&quot;classify&quot;</span><span class="p">,</span> <span class="s2">&quot;rag&quot;</span><span class="p">)</span>
-<span class="n">graph</span><span class="o">.</span><span class="n">add_edge</span><span class="p">(</span><span class="s2">&quot;nl2sql&quot;</span><span class="p">,</span> <span class="s2">&quot;synthesize&quot;</span><span class="p">)</span>
-<span class="n">graph</span><span class="o">.</span><span class="n">add_edge</span><span class="p">(</span><span class="s2">&quot;rag&quot;</span><span class="p">,</span> <span class="s2">&quot;synthesize&quot;</span><span class="p">)</span>
+<span class="c1"># ───── 3. 라우팅 함수 (조건부 분기) ─────</span>
+<span class="k">def</span><span class="w"> </span><span class="nf">route_after_classify</span><span class="p">(</span><span class="n">state</span><span class="p">:</span> <span class="n">AgentState</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Literal</span><span class="p">[</span><span class="s2">&quot;nl2sql&quot;</span><span class="p">,</span> <span class="s2">&quot;both&quot;</span><span class="p">]:</span>
+    <span class="k">return</span> <span class="s2">&quot;both&quot;</span> <span class="k">if</span> <span class="n">state</span><span class="p">[</span><span class="s2">&quot;intent&quot;</span><span class="p">]</span> <span class="o">==</span> <span class="s2">&quot;mixed&quot;</span> <span class="k">else</span> <span class="s2">&quot;nl2sql&quot;</span>
+
+<span class="c1"># ───── 4. 그래프 구축 ─────</span>
+<span class="n">g</span> <span class="o">=</span> <span class="n">StateGraph</span><span class="p">(</span><span class="n">AgentState</span><span class="p">)</span>
+<span class="n">g</span><span class="o">.</span><span class="n">add_node</span><span class="p">(</span><span class="s2">&quot;classify&quot;</span><span class="p">,</span> <span class="n">classify_intent</span><span class="p">)</span>
+<span class="n">g</span><span class="o">.</span><span class="n">add_node</span><span class="p">(</span><span class="s2">&quot;nl2sql&quot;</span><span class="p">,</span> <span class="n">call_nl2sql</span><span class="p">)</span>
+<span class="n">g</span><span class="o">.</span><span class="n">add_node</span><span class="p">(</span><span class="s2">&quot;rag&quot;</span><span class="p">,</span> <span class="n">call_rag</span><span class="p">)</span>
+<span class="n">g</span><span class="o">.</span><span class="n">add_node</span><span class="p">(</span><span class="s2">&quot;synthesize&quot;</span><span class="p">,</span> <span class="n">synthesize</span><span class="p">)</span>
+
+<span class="n">g</span><span class="o">.</span><span class="n">set_entry_point</span><span class="p">(</span><span class="s2">&quot;classify&quot;</span><span class="p">)</span>
+<span class="n">g</span><span class="o">.</span><span class="n">add_conditional_edges</span><span class="p">(</span><span class="s2">&quot;classify&quot;</span><span class="p">,</span> <span class="n">route_after_classify</span><span class="p">,</span> <span class="p">{</span>
+    <span class="s2">&quot;nl2sql&quot;</span><span class="p">:</span> <span class="s2">&quot;nl2sql&quot;</span><span class="p">,</span>
+    <span class="s2">&quot;both&quot;</span><span class="p">:</span> <span class="s2">&quot;nl2sql&quot;</span><span class="p">,</span>       <span class="c1"># 정형 먼저 실행 후</span>
+<span class="p">})</span>
+<span class="n">g</span><span class="o">.</span><span class="n">add_edge</span><span class="p">(</span><span class="s2">&quot;nl2sql&quot;</span><span class="p">,</span> <span class="s2">&quot;rag&quot;</span><span class="p">)</span>  <span class="c1"># mixed면 RAG도 호출</span>
+<span class="n">g</span><span class="o">.</span><span class="n">add_edge</span><span class="p">(</span><span class="s2">&quot;rag&quot;</span><span class="p">,</span> <span class="s2">&quot;synthesize&quot;</span><span class="p">)</span>
+<span class="n">g</span><span class="o">.</span><span class="n">add_edge</span><span class="p">(</span><span class="s2">&quot;synthesize&quot;</span><span class="p">,</span> <span class="n">END</span><span class="p">)</span>
+
+<span class="n">agent</span> <span class="o">=</span> <span class="n">g</span><span class="o">.</span><span class="n">compile</span><span class="p">()</span>
+
+<span class="c1"># ───── 5. 실행 ─────</span>
+<span class="n">result</span> <span class="o">=</span> <span class="n">agent</span><span class="o">.</span><span class="n">invoke</span><span class="p">({</span><span class="s2">&quot;question&quot;</span><span class="p">:</span> <span class="s2">&quot;이번 달 매출과 관련 뉴스 알려줘&quot;</span><span class="p">})</span>
+<span class="nb">print</span><span class="p">(</span><span class="n">result</span><span class="p">[</span><span class="s2">&quot;answer&quot;</span><span class="p">])</span>
+<span class="c1"># 출력:</span>
+<span class="c1"># 📊 이번 달 매출 12억 (저평가주 5개 포함)</span>
+<span class="c1"># 📰 삼성전자 1Q 실적 호조 (5개 기사)</span>
 </code></pre></div>
 
 <blockquote>
-<p><strong>이 코드가 하는 일:</strong> 질문이 들어오면 분류 → 정형/비정형 도구 병렬 호출 → 결과 합성. 각 노드는 독립적으로 테스트 가능.</p>
+<p><strong>이 코드가 하는 일:</strong>
+1. <strong>상태(<code>AgentState</code>)에</strong> 질문/중간 결과/최종 답변을 다 담는다 (한 곳에서 추적 가능)
+2. <strong><code>classify</code> 노드</strong>가 질문 유형 판단 → 분기 결정
+3. <strong>조건부 엣지</strong>가 정형이면 NL2SQL만, 복합이면 RAG도 호출
+4. 모든 결과는 <code>synthesize</code>에서 자연어로 합성</p>
 </blockquote>
-<h2 id="4-4-핵심-통찰--langgraph는-도구의-대체재가-아니라-상위-레이어">4-4. 핵심 통찰 — LangGraph는 도구의 "대체재"가 아니라 "상위 레이어"</h2>
+<div class="mermaid">
+flowchart TD
+    START([질문]) --> C["classify_intent\n유형 분류"]
+    C -->|structured| N1["call_nl2sql"]
+    C -->|mixed| N2["call_nl2sql"]
+    N1 --> S["synthesize"]
+    N2 --> R["call_rag"]
+    R --> S
+    S --> END([답변])
+
+    style C fill:#fbbf24,color:#1a1a2e
+    style S fill:#22c55e,color:#fff
+</div>
+
+<h3 id="langgraph의-4가지-핵심-특징">LangGraph의 4가지 핵심 특징</h3>
+<table>
+<thead>
+<tr>
+<th>특징</th>
+<th>의미</th>
+<th>실무 효과</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><strong>State 공유</strong></td>
+<td>모든 노드가 <code>AgentState</code> 1개 공유</td>
+<td>"중간 결과 어디 갔지?" 디버깅 쉬움</td>
+</tr>
+<tr>
+<td><strong>Conditional Edge</strong></td>
+<td><code>route_after_classify</code> 같은 조건 분기</td>
+<td>질문 유형에 따라 다른 도구 호출</td>
+</tr>
+<tr>
+<td><strong>Checkpoint</strong></td>
+<td>상태를 DB에 자동 저장 (Postgres/SQLite)</td>
+<td>멀티턴 대화 + 장애 복구</td>
+</tr>
+<tr>
+<td><strong>Streaming</strong></td>
+<td>토큰 단위 스트리밍 응답</td>
+<td>ChatGPT처럼 점진적 출력 가능</td>
+</tr>
+</tbody>
+</table>
+<blockquote>
+<p>💡 <strong>실무 팁:</strong> 노드는 독립적이라 <strong>단위 테스트가 쉽다.</strong> <code>call_nl2sql({"question": ...})</code> 호출해서 결과만 보면 됨. WrenAI는 내부 동작을 단위 테스트하기 어렵다.</p>
+</blockquote>
+<h2 id="4-4-wrenai-agent로-안-풀리는-예시--왜-langgraph가-필요한가">4-4. WrenAI Agent로 안 풀리는 예시 — 왜 LangGraph가 필요한가</h2>
+<blockquote>
+<p>⚠️ <strong>자주 받는 질문:</strong> "WrenAI에도 Agent 기능 있다는데, 왜 굳이 LangGraph가 필요한가?"</p>
+</blockquote>
+<p>WrenAI에 내장된 Agent도 있긴 하지만, <strong>다음 4가지 시나리오에서 한계가 명확</strong>합니다.</p>
+<h3 id="시나리오-1--멀티스텝-추론">시나리오 1 — 멀티스텝 추론</h3>
+<blockquote>
+<p>사용자: "지난달 매출 하락한 부서를 찾고, 그 부서의 클레임 보고서를 요약해줘"</p>
+</blockquote>
+<p><strong>WrenAI Agent:</strong>
+- 1질문 = 1 SQL이 구조적 전제 → 단일 SQL 생성 후 결과 반환에서 끝남
+- "그 부서의 클레임 보고서"는 비정형 RAG가 필요한데 WrenAI는 정형만 처리</p>
+<p><strong>LangGraph Agent:</strong></p>
+<div class="codehilite"><pre><span></span><code><span class="n">classify</span> <span class="err">→</span> <span class="n">call_nl2sql</span> <span class="p">(</span><span class="mi">1</span><span class="n">단계</span><span class="p">:</span> <span class="n">매출</span> <span class="n">하락</span> <span class="n">부서</span> <span class="o">=</span> <span class="p">[</span><span class="n">영업1팀</span><span class="p">])</span>
+        <span class="err">→</span> <span class="n">call_rag</span> <span class="p">(</span><span class="mi">2</span><span class="n">단계</span><span class="p">:</span> <span class="n">영업1팀</span> <span class="n">클레임</span> <span class="n">검색</span><span class="p">)</span>  <span class="err">←</span> <span class="mi">1</span><span class="n">단계</span> <span class="n">결과를</span> <span class="n">입력으로</span>
+        <span class="err">→</span> <span class="n">synthesize</span> <span class="p">(</span><span class="mi">3</span><span class="n">단계</span><span class="p">:</span> <span class="n">통합</span> <span class="n">답변</span><span class="p">)</span>
+</code></pre></div>
+
+<h3 id="시나리오-2--정형--비정형--외부-시스템-동시">시나리오 2 — 정형 + 비정형 + 외부 시스템 동시</h3>
+<blockquote>
+<p>사용자: "이번 분기 매출 + 관련 뉴스 + Jira 미해결 티켓 같이 봐줘"</p>
+</blockquote>
+<p><strong>WrenAI:</strong> 매출(NL2SQL)만 처리. 뉴스/Jira는 별도 도구 필요.</p>
+<p><strong>LangGraph:</strong> 3개 Tool 병렬 호출 → 결과 합성. 한 그래프 안에서 처리.</p>
+<h3 id="시나리오-3--자동-보정-루프">시나리오 3 — 자동 보정 루프</h3>
+<blockquote>
+<p>SQL 검증 실패 시 LLM 에러 메시지를 컨텍스트로 다시 주고 재생성</p>
+</blockquote>
+<p><strong>WrenAI:</strong> Wren Engine이 자동 재시도 (최대 3회)는 하지만 <strong>재시도 전략이 고정</strong> — 사용자가 커스터마이즈 불가.</p>
+<p><strong>LangGraph:</strong></p>
+<div class="codehilite"><pre><span></span><code><span class="n">g</span><span class="o">.</span><span class="n">add_conditional_edges</span><span class="p">(</span><span class="s2">&quot;validate&quot;</span><span class="p">,</span> <span class="k">lambda</span> <span class="n">s</span><span class="p">:</span> <span class="s2">&quot;retry&quot;</span> <span class="k">if</span> <span class="n">s</span><span class="p">[</span><span class="s2">&quot;retry&quot;</span><span class="p">]</span> <span class="o">&lt;</span> <span class="mi">3</span> <span class="k">else</span> <span class="s2">&quot;fail&quot;</span><span class="p">,</span> <span class="p">{</span>
+    <span class="s2">&quot;retry&quot;</span><span class="p">:</span> <span class="s2">&quot;generate_sql&quot;</span><span class="p">,</span>  <span class="c1"># 에러 메시지 추가해서 재생성</span>
+    <span class="s2">&quot;fail&quot;</span><span class="p">:</span> <span class="s2">&quot;fallback&quot;</span><span class="p">,</span>        <span class="c1"># 3회 초과 시 사람이 작성한 SQL Pair 검색</span>
+<span class="p">})</span>
+</code></pre></div>
+
+<p>→ 재시도 횟수, fallback 동작, 에러 분석 모두 코드에서 제어.</p>
+<h3 id="시나리오-4--멀티턴--세션-컨텍스트">시나리오 4 — 멀티턴 + 세션 컨텍스트</h3>
+<blockquote>
+<p>사용자: "삼성전자 PER 보여줘" → "그 종목 동종 업계와 비교해줘"</p>
+</blockquote>
+<p><strong>WrenAI:</strong> Thread 기능은 있지만 <strong>이전 SQL 결과를 다음 질문에 자동 주입</strong>하지 않음 — 사용자가 "삼성전자"를 다시 언급해야 함.</p>
+<p><strong>LangGraph:</strong> <code>AgentState</code>에 이전 결과 누적 → 다음 노드가 자동 참조.</p>
+<div class="codehilite"><pre><span></span><code><span class="k">class</span><span class="w"> </span><span class="nc">AgentState</span><span class="p">(</span><span class="n">TypedDict</span><span class="p">):</span>
+    <span class="n">history</span><span class="p">:</span> <span class="nb">list</span><span class="p">[</span><span class="nb">dict</span><span class="p">]</span>   <span class="c1"># 이전 질문/SQL/결과 누적</span>
+    <span class="n">current_entity</span><span class="p">:</span> <span class="nb">str</span>   <span class="c1"># &quot;삼성전자&quot; 같은 컨텍스트</span>
+</code></pre></div>
+
+<h3 id="wrenai-agent-vs-langgraph-비교">WrenAI Agent vs LangGraph 비교</h3>
+<table>
+<thead>
+<tr>
+<th>기능</th>
+<th style="text-align: center;">WrenAI 내장 Agent</th>
+<th style="text-align: center;">LangGraph</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>1질문 = 1SQL</td>
+<td style="text-align: center;">⭕ 고정</td>
+<td style="text-align: center;">❌ (멀티스텝 가능)</td>
+</tr>
+<tr>
+<td>정형 + 비정형 통합</td>
+<td style="text-align: center;">❌</td>
+<td style="text-align: center;">✅</td>
+</tr>
+<tr>
+<td>외부 시스템 호출 (Jira/Slack/MCP)</td>
+<td style="text-align: center;">❌</td>
+<td style="text-align: center;">✅</td>
+</tr>
+<tr>
+<td>재시도 전략 커스터마이즈</td>
+<td style="text-align: center;">❌</td>
+<td style="text-align: center;">✅</td>
+</tr>
+<tr>
+<td>멀티턴 컨텍스트 누적</td>
+<td style="text-align: center;">△ Thread만</td>
+<td style="text-align: center;">✅ State 자유</td>
+</tr>
+<tr>
+<td>노드 단위 테스트</td>
+<td style="text-align: center;">❌</td>
+<td style="text-align: center;">✅</td>
+</tr>
+<tr>
+<td>프롬프트 완전 제어</td>
+<td style="text-align: center;">❌ (OSS 수정)</td>
+<td style="text-align: center;">✅</td>
+</tr>
+<tr>
+<td>Streaming 응답</td>
+<td style="text-align: center;">△</td>
+<td style="text-align: center;">✅</td>
+</tr>
+<tr>
+<td>Checkpoint 영속화</td>
+<td style="text-align: center;">❌</td>
+<td style="text-align: center;">✅</td>
+</tr>
+</tbody>
+</table>
+<blockquote>
+<p>💡 <strong>결론:</strong> WrenAI Agent는 <strong>챗봇 형태의 시연용</strong>으론 충분, 하지만 <strong>운영 환경의 복잡한 시나리오</strong>(BIP 같은 멀티 도메인 + 멀티 도구)에선 LangGraph 같은 별도 오케스트레이션 필요.</p>
+</blockquote>
+<h2 id="4-5-다른-멀티-에이전트-프레임워크와의-비교">4-5. 다른 멀티 에이전트 프레임워크와의 비교</h2>
+<p>LangGraph 외에도 비슷한 프레임워크가 있습니다. BIP가 LangGraph를 선택한 이유.</p>
+<table>
+<thead>
+<tr>
+<th>프레임워크</th>
+<th>추상화 단위</th>
+<th>강점</th>
+<th>약점</th>
+<th>적합</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><strong>LangGraph</strong></td>
+<td>그래프(State + Node + Edge)</td>
+<td><strong>결정론적 흐름</strong> 명시, 상태 추적 쉬움, Checkpoint, LangChain 생태계</td>
+<td>그래프 정의 부담 (한 번 짜면 명확)</td>
+<td>정해진 흐름 + 디버깅 중시</td>
+</tr>
+<tr>
+<td><strong>AutoGen</strong> (Microsoft)</td>
+<td>다중 Agent 대화</td>
+<td>자율 대화 (Agent끼리 협상)</td>
+<td>흐름 예측 어려움, 비용 증가 가능</td>
+<td>창의적/탐색적 작업</td>
+</tr>
+<tr>
+<td><strong>CrewAI</strong></td>
+<td>역할(Role) + Task</td>
+<td>"PM/엔지니어/QA" 같은 역할 분담 직관적</td>
+<td>흐름 통제 어려움</td>
+<td>협업 시뮬레이션</td>
+</tr>
+<tr>
+<td><strong>OpenAI Swarm</strong></td>
+<td>핸드오프(Handoff)</td>
+<td>가장 단순 (수십 줄로 가능)</td>
+<td>OpenAI API 종속, 기능 제한</td>
+<td>빠른 PoC</td>
+</tr>
+<tr>
+<td><strong>자체 구현 (FSM)</strong></td>
+<td>직접 코딩</td>
+<td>완전 통제, 의존성 없음</td>
+<td>모든 걸 만들어야 함</td>
+<td>사내 보안 극강 환경</td>
+</tr>
+</tbody>
+</table>
+<h3 id="langgraph-선정-근거-bip-기준">LangGraph 선정 근거 (BIP 기준)</h3>
+<div class="mermaid">
+flowchart LR
+    Q["프레임워크 선정 기준"] --> R1["결정론적 흐름\n(SQL 생성 같은 정확성 중요)"]
+    Q --> R2["Checkpoint\n(감사 로그 필수)"]
+    Q --> R3["사내 LLM 호환\n(LiteLLM 통합)"]
+    Q --> R4["LangChain 생태계\n("Tool/RAG/Memory 기성품")"]
+
+    R1 --> LG["LangGraph 선정"]
+    R2 --> LG
+    R3 --> LG
+    R4 --> LG
+
+    style LG fill:#22c55e,color:#fff
+</div>
+
+<p><strong>선정 이유 한 줄:</strong>
+- <strong>AutoGen은 너무 자율적</strong> — Agent끼리 대화하다 비용 폭증 위험. NL2SQL은 결정론이 중요.
+- <strong>CrewAI는 흐름 통제 어려움</strong> — Task 순서가 LLM 판단에 의존, 운영 환경에서 예측 어려움.
+- <strong>Swarm은 OpenAI 종속</strong> — 사내 LLM(Azure/사내 LLaMA) 사용 시 LiteLLM 어댑터 필요한데 Swarm은 지원 약함.
+- <strong>LangGraph는 그래프로 흐름 명시</strong> — 코드를 보면 어떤 노드가 언제 호출되는지 한눈에 보임. 감사·디버깅·운영에 유리.</p>
+<blockquote>
+<p>💡 <strong>세미나 메시지:</strong> "AutoGen/CrewAI는 실험·창의 영역에 적합. <strong>운영 NL2SQL은 LangGraph 같은 결정론적 그래프</strong>가 안전."</p>
+</blockquote>
+<h2 id="4-6-핵심-통찰--langgraph는-도구의-대체재가-아니라-상위-레이어">4-6. 핵심 통찰 — LangGraph는 도구의 "대체재"가 아니라 "상위 레이어"</h2>
 <div class="codehilite"><pre><span></span><code>잘못된 그림 (LangGraph를 4번째 도구로 봄):
 ┌──────────────────────────────────┐
 │  dbt | Cube | WrenAI | LangGraph │
@@ -2759,6 +3042,10 @@ flowchart LR
 <tr>
 <td>2026-05-18</td>
 <td>Part 1 개념 보강 — §1-2 Before/After 시각 비교(mermaid 2개), §1-3 각 구성요소에 "없으면 어떻게 되나" + dbt/Cube/WrenAI 용어 매핑표, §1-6 KG 1분 예시 (Cypher + mermaid)</td>
+</tr>
+<tr>
+<td>2026-05-18</td>
+<td>Part 4 LangGraph 보강 — §4-3 실제 동작 최소 예시 (TypedDict + 조건부 엣지 + invoke 결과), §4-4 신설 "WrenAI Agent로 안 풀리는 4 시나리오" + 기능 비교표, §4-5 신설 다른 멀티 에이전트 프레임워크 비교 (LangGraph/AutoGen/CrewAI/Swarm)</td>
 </tr>
 </tbody>
 </table>

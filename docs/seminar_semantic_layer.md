@@ -918,42 +918,222 @@ flowchart TD
 > **"LangGraph는 LLM 에이전트를 그래프(상태 머신)로 정의하는 프레임워크다."**
 > 노드(작업) + 엣지(흐름) + 상태(메모리)로 구성. LangChain의 후속.
 
+### "상태 머신"이 뭔지 한 문장으로
+
+상태 머신 = **현재 상태를 보고 다음 단계를 결정하는 구조**. 예: 자판기는 "동전 투입 → 메뉴 선택 → 음료 배출" 같은 상태 흐름. LangGraph도 동일 — 상태(`AgentState`) 안에 "현재까지 모은 정보"가 있고, 다음 노드는 그 상태를 보고 무엇을 할지 결정.
+
+### 실제 동작하는 최소 예시 (BIP 사내 적용 시)
+
+`pip install langgraph` 하고 그대로 실행 가능한 코드입니다.
+
 ```python
-from langgraph.graph import StateGraph
+from typing import TypedDict, Literal
+from langgraph.graph import StateGraph, END
 
-# 노드 정의
-def classify_intent(state):
-    # 질문이 정형인지 비정형인지 분류
-    return {"intent": "structured"}
+# ───── 1. 상태(State) 정의 ─────
+class AgentState(TypedDict):
+    question: str           # 사용자 질문
+    intent: str             # 분류 결과
+    sql_result: str         # NL2SQL 결과
+    news_result: str        # RAG 결과
+    answer: str             # 최종 답변
 
-def call_nl2sql(state):
-    # WrenAI/Cube 호출
-    return {"sql_result": ...}
+# ───── 2. 노드(Node) 정의 ─────
+def classify_intent(state: AgentState) -> dict:
+    """질문 유형 분류 (실제로는 LLM 호출)"""
+    q = state["question"]
+    if "뉴스" in q or "보고서" in q:
+        return {"intent": "mixed"}     # 정형 + 비정형 필요
+    return {"intent": "structured"}    # 정형만
 
-def call_rag(state):
-    # 뉴스 RAG 호출
-    return {"news_result": ...}
+def call_nl2sql(state: AgentState) -> dict:
+    """NL2SQL Tool 호출 (WrenAI/v3 Agent 등)"""
+    # 실제로는 WrenAI REST API 호출
+    return {"sql_result": "이번 달 매출 12억 (저평가주 5개 포함)"}
 
-def synthesize(state):
-    # 결과 합성
-    return {"answer": ...}
+def call_rag(state: AgentState) -> dict:
+    """뉴스 RAG Tool 호출"""
+    # 실제로는 벡터 DB 검색
+    return {"news_result": "삼성전자 1Q 실적 호조 (5개 기사)"}
 
-# 그래프 구축
-graph = StateGraph(AgentState)
-graph.add_node("classify", classify_intent)
-graph.add_node("nl2sql", call_nl2sql)
-graph.add_node("rag", call_rag)
-graph.add_node("synthesize", synthesize)
+def synthesize(state: AgentState) -> dict:
+    """결과를 자연어로 합성"""
+    sql = state.get("sql_result", "")
+    news = state.get("news_result", "")
+    return {"answer": f"📊 {sql}\n📰 {news}"}
 
-graph.add_edge("classify", "nl2sql")
-graph.add_edge("classify", "rag")
-graph.add_edge("nl2sql", "synthesize")
-graph.add_edge("rag", "synthesize")
+# ───── 3. 라우팅 함수 (조건부 분기) ─────
+def route_after_classify(state: AgentState) -> Literal["nl2sql", "both"]:
+    return "both" if state["intent"] == "mixed" else "nl2sql"
+
+# ───── 4. 그래프 구축 ─────
+g = StateGraph(AgentState)
+g.add_node("classify", classify_intent)
+g.add_node("nl2sql", call_nl2sql)
+g.add_node("rag", call_rag)
+g.add_node("synthesize", synthesize)
+
+g.set_entry_point("classify")
+g.add_conditional_edges("classify", route_after_classify, {
+    "nl2sql": "nl2sql",
+    "both": "nl2sql",       # 정형 먼저 실행 후
+})
+g.add_edge("nl2sql", "rag")  # mixed면 RAG도 호출
+g.add_edge("rag", "synthesize")
+g.add_edge("synthesize", END)
+
+agent = g.compile()
+
+# ───── 5. 실행 ─────
+result = agent.invoke({"question": "이번 달 매출과 관련 뉴스 알려줘"})
+print(result["answer"])
+# 출력:
+# 📊 이번 달 매출 12억 (저평가주 5개 포함)
+# 📰 삼성전자 1Q 실적 호조 (5개 기사)
 ```
 
-> **이 코드가 하는 일:** 질문이 들어오면 분류 → 정형/비정형 도구 병렬 호출 → 결과 합성. 각 노드는 독립적으로 테스트 가능.
+> **이 코드가 하는 일:**
+> 1. **상태(`AgentState`)에** 질문/중간 결과/최종 답변을 다 담는다 (한 곳에서 추적 가능)
+> 2. **`classify` 노드**가 질문 유형 판단 → 분기 결정
+> 3. **조건부 엣지**가 정형이면 NL2SQL만, 복합이면 RAG도 호출
+> 4. 모든 결과는 `synthesize`에서 자연어로 합성
 
-## 4-4. 핵심 통찰 — LangGraph는 도구의 "대체재"가 아니라 "상위 레이어"
+```mermaid
+flowchart TD
+    START([질문]) --> C["classify_intent<br/>유형 분류"]
+    C -->|structured| N1["call_nl2sql"]
+    C -->|mixed| N2["call_nl2sql"]
+    N1 --> S["synthesize"]
+    N2 --> R["call_rag"]
+    R --> S
+    S --> END([답변])
+
+    style C fill:#fbbf24,color:#1a1a2e
+    style S fill:#22c55e,color:#fff
+```
+
+### LangGraph의 4가지 핵심 특징
+
+| 특징 | 의미 | 실무 효과 |
+|------|------|---------|
+| **State 공유** | 모든 노드가 `AgentState` 1개 공유 | "중간 결과 어디 갔지?" 디버깅 쉬움 |
+| **Conditional Edge** | `route_after_classify` 같은 조건 분기 | 질문 유형에 따라 다른 도구 호출 |
+| **Checkpoint** | 상태를 DB에 자동 저장 (Postgres/SQLite) | 멀티턴 대화 + 장애 복구 |
+| **Streaming** | 토큰 단위 스트리밍 응답 | ChatGPT처럼 점진적 출력 가능 |
+
+> 💡 **실무 팁:** 노드는 독립적이라 **단위 테스트가 쉽다.** `call_nl2sql({"question": ...})` 호출해서 결과만 보면 됨. WrenAI는 내부 동작을 단위 테스트하기 어렵다.
+
+## 4-4. WrenAI Agent로 안 풀리는 예시 — 왜 LangGraph가 필요한가
+
+> ⚠️ **자주 받는 질문:** "WrenAI에도 Agent 기능 있다는데, 왜 굳이 LangGraph가 필요한가?"
+
+WrenAI에 내장된 Agent도 있긴 하지만, **다음 4가지 시나리오에서 한계가 명확**합니다.
+
+### 시나리오 1 — 멀티스텝 추론
+
+> 사용자: "지난달 매출 하락한 부서를 찾고, 그 부서의 클레임 보고서를 요약해줘"
+
+**WrenAI Agent:**
+- 1질문 = 1 SQL이 구조적 전제 → 단일 SQL 생성 후 결과 반환에서 끝남
+- "그 부서의 클레임 보고서"는 비정형 RAG가 필요한데 WrenAI는 정형만 처리
+
+**LangGraph Agent:**
+```python
+classify → call_nl2sql (1단계: 매출 하락 부서 = [영업1팀])
+        → call_rag (2단계: 영업1팀 클레임 검색)  ← 1단계 결과를 입력으로
+        → synthesize (3단계: 통합 답변)
+```
+
+### 시나리오 2 — 정형 + 비정형 + 외부 시스템 동시
+
+> 사용자: "이번 분기 매출 + 관련 뉴스 + Jira 미해결 티켓 같이 봐줘"
+
+**WrenAI:** 매출(NL2SQL)만 처리. 뉴스/Jira는 별도 도구 필요.
+
+**LangGraph:** 3개 Tool 병렬 호출 → 결과 합성. 한 그래프 안에서 처리.
+
+### 시나리오 3 — 자동 보정 루프
+
+> SQL 검증 실패 시 LLM 에러 메시지를 컨텍스트로 다시 주고 재생성
+
+**WrenAI:** Wren Engine이 자동 재시도 (최대 3회)는 하지만 **재시도 전략이 고정** — 사용자가 커스터마이즈 불가.
+
+**LangGraph:**
+```python
+g.add_conditional_edges("validate", lambda s: "retry" if s["retry"] < 3 else "fail", {
+    "retry": "generate_sql",  # 에러 메시지 추가해서 재생성
+    "fail": "fallback",        # 3회 초과 시 사람이 작성한 SQL Pair 검색
+})
+```
+→ 재시도 횟수, fallback 동작, 에러 분석 모두 코드에서 제어.
+
+### 시나리오 4 — 멀티턴 + 세션 컨텍스트
+
+> 사용자: "삼성전자 PER 보여줘" → "그 종목 동종 업계와 비교해줘"
+
+**WrenAI:** Thread 기능은 있지만 **이전 SQL 결과를 다음 질문에 자동 주입**하지 않음 — 사용자가 "삼성전자"를 다시 언급해야 함.
+
+**LangGraph:** `AgentState`에 이전 결과 누적 → 다음 노드가 자동 참조.
+```python
+class AgentState(TypedDict):
+    history: list[dict]   # 이전 질문/SQL/결과 누적
+    current_entity: str   # "삼성전자" 같은 컨텍스트
+```
+
+### WrenAI Agent vs LangGraph 비교
+
+| 기능 | WrenAI 내장 Agent | LangGraph |
+|------|:-:|:-:|
+| 1질문 = 1SQL | ⭕ 고정 | ❌ (멀티스텝 가능) |
+| 정형 + 비정형 통합 | ❌ | ✅ |
+| 외부 시스템 호출 (Jira/Slack/MCP) | ❌ | ✅ |
+| 재시도 전략 커스터마이즈 | ❌ | ✅ |
+| 멀티턴 컨텍스트 누적 | △ Thread만 | ✅ State 자유 |
+| 노드 단위 테스트 | ❌ | ✅ |
+| 프롬프트 완전 제어 | ❌ (OSS 수정) | ✅ |
+| Streaming 응답 | △ | ✅ |
+| Checkpoint 영속화 | ❌ | ✅ |
+
+> 💡 **결론:** WrenAI Agent는 **챗봇 형태의 시연용**으론 충분, 하지만 **운영 환경의 복잡한 시나리오**(BIP 같은 멀티 도메인 + 멀티 도구)에선 LangGraph 같은 별도 오케스트레이션 필요.
+
+## 4-5. 다른 멀티 에이전트 프레임워크와의 비교
+
+LangGraph 외에도 비슷한 프레임워크가 있습니다. BIP가 LangGraph를 선택한 이유.
+
+| 프레임워크 | 추상화 단위 | 강점 | 약점 | 적합 |
+|----------|-----------|------|------|------|
+| **LangGraph** | 그래프(State + Node + Edge) | **결정론적 흐름** 명시, 상태 추적 쉬움, Checkpoint, LangChain 생태계 | 그래프 정의 부담 (한 번 짜면 명확) | 정해진 흐름 + 디버깅 중시 |
+| **AutoGen** (Microsoft) | 다중 Agent 대화 | 자율 대화 (Agent끼리 협상) | 흐름 예측 어려움, 비용 증가 가능 | 창의적/탐색적 작업 |
+| **CrewAI** | 역할(Role) + Task | "PM/엔지니어/QA" 같은 역할 분담 직관적 | 흐름 통제 어려움 | 협업 시뮬레이션 |
+| **OpenAI Swarm** | 핸드오프(Handoff) | 가장 단순 (수십 줄로 가능) | OpenAI API 종속, 기능 제한 | 빠른 PoC |
+| **자체 구현 (FSM)** | 직접 코딩 | 완전 통제, 의존성 없음 | 모든 걸 만들어야 함 | 사내 보안 극강 환경 |
+
+### LangGraph 선정 근거 (BIP 기준)
+
+```mermaid
+flowchart LR
+    Q["프레임워크 선정 기준"] --> R1["결정론적 흐름<br/>(SQL 생성 같은 정확성 중요)"]
+    Q --> R2["Checkpoint<br/>(감사 로그 필수)"]
+    Q --> R3["사내 LLM 호환<br/>(LiteLLM 통합)"]
+    Q --> R4["LangChain 생태계<br/>(Tool/RAG/Memory 기성품)"]
+
+    R1 --> LG["LangGraph 선정"]
+    R2 --> LG
+    R3 --> LG
+    R4 --> LG
+
+    style LG fill:#22c55e,color:#fff
+```
+
+**선정 이유 한 줄:**
+- **AutoGen은 너무 자율적** — Agent끼리 대화하다 비용 폭증 위험. NL2SQL은 결정론이 중요.
+- **CrewAI는 흐름 통제 어려움** — Task 순서가 LLM 판단에 의존, 운영 환경에서 예측 어려움.
+- **Swarm은 OpenAI 종속** — 사내 LLM(Azure/사내 LLaMA) 사용 시 LiteLLM 어댑터 필요한데 Swarm은 지원 약함.
+- **LangGraph는 그래프로 흐름 명시** — 코드를 보면 어떤 노드가 언제 호출되는지 한눈에 보임. 감사·디버깅·운영에 유리.
+
+> 💡 **세미나 메시지:** "AutoGen/CrewAI는 실험·창의 영역에 적합. **운영 NL2SQL은 LangGraph 같은 결정론적 그래프**가 안전."
+
+## 4-6. 핵심 통찰 — LangGraph는 도구의 "대체재"가 아니라 "상위 레이어"
 
 ```
 잘못된 그림 (LangGraph를 4번째 도구로 봄):
@@ -1807,3 +1987,4 @@ flowchart LR
 | 2026-05-11 | 세미나 자료 초안 작성 (90분 분량, 실습 포함) |
 | 2026-05-17 | §6-1 결정 트리에 4가지 추천 경로별 상세 근거 추가 (dbt Core / Cube / WrenAI / 자체 구현). 시나리오 표 + 핵심 근거 + 부적합 케이스 + 한 페이지 요약 비교 |
 | 2026-05-18 | Part 1 개념 보강 — §1-2 Before/After 시각 비교(mermaid 2개), §1-3 각 구성요소에 "없으면 어떻게 되나" + dbt/Cube/WrenAI 용어 매핑표, §1-6 KG 1분 예시 (Cypher + mermaid) |
+| 2026-05-18 | Part 4 LangGraph 보강 — §4-3 실제 동작 최소 예시 (TypedDict + 조건부 엣지 + invoke 결과), §4-4 신설 "WrenAI Agent로 안 풀리는 4 시나리오" + 기능 비교표, §4-5 신설 다른 멀티 에이전트 프레임워크 비교 (LangGraph/AutoGen/CrewAI/Swarm) |
