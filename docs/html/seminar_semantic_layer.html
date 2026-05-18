@@ -1906,10 +1906,10 @@ flowchart TD
 <h3 id="langgraph-선정-근거-bip-기준">LangGraph 선정 근거 (BIP 기준)</h3>
 <div class="mermaid">
 flowchart LR
-    Q["프레임워크 선정 기준"] --> R1["결정론적 흐름\n(SQL 생성 같은 정확성 중요)"]
-    Q --> R2["Checkpoint\n(감사 로그 필수)"]
-    Q --> R3["사내 LLM 호환\n(LiteLLM 통합)"]
-    Q --> R4["LangChain 생태계\n("Tool/RAG/Memory 기성품")"]
+    Q["프레임워크 선정 기준"] --> R1["결정론적 흐름\nSQL 생성 정확성 중요"]
+    Q --> R2["Checkpoint\n감사 로그 필수"]
+    Q --> R3["사내 LLM 호환\nLiteLLM 통합"]
+    Q --> R4["LangChain 생태계\nTool · RAG · Memory 기성품"]
 
     R1 --> LG["LangGraph 선정"]
     R2 --> LG
