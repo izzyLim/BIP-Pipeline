@@ -348,6 +348,13 @@
 <li class="toc-h2"><a href="#4-1-도구만으로-부족한-이유">4-1. 도구만으로 부족한 이유</a></li>
   <li class="toc-h3"><a href="#시나리오-복합-질문">시나리오: 복합 질문</a></li>
 <li class="toc-h2"><a href="#4-2-멀티-에이전트가-하는-일">4-2. 멀티 에이전트가 하는 일</a></li>
+<li class="toc-h2"><a href="#4-2-1-잠깐--langchain은-뭔가-langchain-vs-langgraph">4-2-1. 잠깐 — LangChain은 뭔가? (LangChain vs LangGraph)</a></li>
+  <li class="toc-h3"><a href="#한-줄-정리">한 줄 정리</a></li>
+  <li class="toc-h3"><a href="#비유">비유</a></li>
+  <li class="toc-h3"><a href="#언제-무엇을-쓰나">언제 무엇을 쓰나?</a></li>
+  <li class="toc-h3"><a href="#둘은-경쟁이-아니라-보완">둘은 경쟁이 아니라 보완</a></li>
+  <li class="toc-h3"><a href="#langchain-vs-langgraph-비교">LangChain vs LangGraph 비교</a></li>
+  <li class="toc-h3"><a href="#langchain의-진화-흐름">LangChain의 진화 흐름</a></li>
 <li class="toc-h2"><a href="#4-3-langgraph란">4-3. LangGraph란</a></li>
   <li class="toc-h3"><a href="#상태-머신이-뭔지-한-문장으로">"상태 머신"이 뭔지 한 문장으로</a></li>
   <li class="toc-h3"><a href="#실제-동작하는-최소-예시-bip-사내-적용-시">실제 동작하는 최소 예시 (BIP 사내 적용 시)</a></li>
@@ -1617,6 +1624,138 @@ flowchart TD
 </tr>
 </tbody>
 </table>
+<h2 id="4-2-1-잠깐--langchain은-뭔가-langchain-vs-langgraph">4-2-1. 잠깐 — LangChain은 뭔가? (LangChain vs LangGraph)</h2>
+<blockquote>
+<p>청중이 자주 헷갈리는 부분 — LangGraph 설명 전에 LangChain과의 관계를 명확히 합니다.</p>
+</blockquote>
+<h3 id="한-줄-정리">한 줄 정리</h3>
+<ul>
+<li><strong>LangChain</strong> = LLM 앱 만들 때 쓰는 <strong>SDK/도구상자</strong> (Tool, RAG, Memory, Embeddings 같은 부품)</li>
+<li><strong>LangGraph</strong> = LangChain 위에 얹은 <strong>"복잡한 흐름 제어"</strong> 프레임워크 (그래프 기반)</li>
+</ul>
+<h3 id="비유">비유</h3>
+<table>
+<thead>
+<tr>
+<th>비유</th>
+<th>의미</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><strong>레고 블록</strong> = LangChain</td>
+<td>LLM, Tool, Memory, RAG 검색 등 부품</td>
+</tr>
+<tr>
+<td><strong>레고 설계도</strong> = LangGraph</td>
+<td>블록들을 그래프로 어떻게 연결할지 정의</td>
+</tr>
+</tbody>
+</table>
+<h3 id="언제-무엇을-쓰나">언제 무엇을 쓰나?</h3>
+<table>
+<thead>
+<tr>
+<th>시나리오</th>
+<th>적합한 도구</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>단순 흐름 (질문 → LLM → 답)</td>
+<td><strong>LangChain Chain</strong>만으로 충분</td>
+</tr>
+<tr>
+<td>RAG 단순 검색 (질문 → 검색 → LLM)</td>
+<td><strong>LangChain RetrievalQA</strong></td>
+</tr>
+<tr>
+<td>복잡한 흐름 (분기/순환/재시도)</td>
+<td><strong>LangGraph</strong> 필요</td>
+</tr>
+<tr>
+<td>멀티 에이전트 (NL2SQL + RAG + MCP)</td>
+<td><strong>LangGraph</strong> 필수</td>
+</tr>
+</tbody>
+</table>
+<h3 id="둘은-경쟁이-아니라-보완">둘은 경쟁이 아니라 보완</h3>
+<p>LangGraph는 LangChain의 부품(Tool/Memory/Embeddings)을 <strong>그대로 사용 가능</strong> → 독립 프레임워크가 아니라 <strong>LangChain 생태계의 일부</strong>.</p>
+<div class="codehilite"><pre><span></span><code><span class="kn">from</span><span class="w"> </span><span class="nn">langchain_openai</span><span class="w"> </span><span class="kn">import</span> <span class="n">ChatOpenAI</span>         <span class="c1"># LangChain 부품</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">langchain.tools</span><span class="w"> </span><span class="kn">import</span> <span class="n">Tool</span>                 <span class="c1"># LangChain 부품</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">langgraph.graph</span><span class="w"> </span><span class="kn">import</span> <span class="n">StateGraph</span>           <span class="c1"># LangGraph 흐름</span>
+
+<span class="c1"># LangChain 부품을 LangGraph 노드 안에서 그대로 사용</span>
+<span class="n">llm</span> <span class="o">=</span> <span class="n">ChatOpenAI</span><span class="p">(</span><span class="n">model</span><span class="o">=</span><span class="s2">&quot;gpt-4o-mini&quot;</span><span class="p">)</span>
+
+<span class="k">def</span><span class="w"> </span><span class="nf">call_llm</span><span class="p">(</span><span class="n">state</span><span class="p">):</span>
+    <span class="k">return</span> <span class="p">{</span><span class="s2">&quot;answer&quot;</span><span class="p">:</span> <span class="n">llm</span><span class="o">.</span><span class="n">invoke</span><span class="p">(</span><span class="n">state</span><span class="p">[</span><span class="s2">&quot;question&quot;</span><span class="p">])</span><span class="o">.</span><span class="n">content</span><span class="p">}</span>
+</code></pre></div>
+
+<h3 id="langchain-vs-langgraph-비교">LangChain vs LangGraph 비교</h3>
+<table>
+<thead>
+<tr>
+<th>항목</th>
+<th>LangChain</th>
+<th>LangGraph</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><strong>흐름 형태</strong></td>
+<td>선형 (Chain)</td>
+<td>그래프 (분기/순환)</td>
+</tr>
+<tr>
+<td><strong>상태 관리</strong></td>
+<td>약함 (체인 입출력만)</td>
+<td>TypedDict로 명시</td>
+</tr>
+<tr>
+<td><strong>분기/조건부</strong></td>
+<td>어려움</td>
+<td><code>add_conditional_edges</code></td>
+</tr>
+<tr>
+<td><strong>순환/재시도</strong></td>
+<td>불가능 (선형)</td>
+<td>자유</td>
+</tr>
+<tr>
+<td><strong>멀티 에이전트</strong></td>
+<td>LangChain Agents (이전)</td>
+<td><strong>LangGraph (현재 권장)</strong></td>
+</tr>
+<tr>
+<td><strong>시각화</strong></td>
+<td>없음</td>
+<td>그래프 자동 시각화</td>
+</tr>
+<tr>
+<td><strong>사용 시점</strong></td>
+<td>단순 LLM 호출</td>
+<td>복잡한 워크플로우</td>
+</tr>
+</tbody>
+</table>
+<h3 id="langchain의-진화-흐름">LangChain의 진화 흐름</h3>
+<div class="mermaid">
+flowchart LR
+    L1["2022\nLangChain\n(Chain - 선형)"] --> L2["2023\nLangChain Agents\n(Agent + Tool 추가)"]
+    L2 --> L3["2024\nLangGraph\n(그래프 기반)"]
+    L3 --> L4["2025+\n현재 표준\n운영 환경 권장"]
+
+    style L1 fill:#fff3e0,color:#1a1a2e
+    style L3 fill:#e3f2fd,color:#1a1a2e
+    style L4 fill:#22c55e,color:#fff
+</div>
+
+<blockquote>
+<p>💡 <strong>LangChain Agents는 왜 LangGraph로 옮겨갔나?</strong>
+LangChain Agents는 흐름이 LLM 판단에 의존(AgentExecutor) → 흐름 예측 어렵고 디버깅 힘듦. LangGraph는 흐름을 <strong>코드로 명시</strong>하므로 운영 환경에 적합. LangChain 본사도 공식적으로 <strong>"운영은 LangGraph"</strong> 를 권장.</p>
+<p>⚠️ <strong>혼동 주의:</strong> "LangChain Agent" 라는 말이 옛 버전(AgentExecutor)을 의미하면 deprecated. 새 프로젝트는 <strong>LangGraph Agent</strong>가 정답.</p>
+</blockquote>
 <h2 id="4-3-langgraph란">4-3. LangGraph란</h2>
 <blockquote>
 <p><strong>"LangGraph는 LLM 에이전트를 그래프(상태 머신)로 정의하는 프레임워크다."</strong>
@@ -3327,6 +3466,10 @@ flowchart LR
 <tr>
 <td>2026-05-18</td>
 <td>Part 5 실습 보강 — §5-5 WrenAI UI 화면 ASCII 박스 묘사 (Settings/Modeling/Ask), §5-6 신설 "같은 질문을 3 도구가 어떻게 답하나" 9개 항목 비교표 + sequenceDiagram, §5-8 신설 실습 정리 명령 (down -v + sys prune) + 사내 적용 가이드 링크표</td>
+</tr>
+<tr>
+<td>2026-05-18</td>
+<td>§4-2-1 신설 "잠깐 — LangChain은 뭔가?" — LangChain vs LangGraph 비교. 레고 비유, 사용 시점 표, 두 도구 부품 결합 코드 예시, 9개 항목 비교표, LangChain → Agents → LangGraph 진화 mermaid, "운영은 LangGraph" 권장 근거</td>
 </tr>
 </tbody>
 </table>

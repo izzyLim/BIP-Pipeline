@@ -914,6 +914,77 @@ flowchart TD
 | **재시도** | 실패 시 다른 방법 시도 |
 | **세션 관리** | 사용자 컨텍스트 유지 |
 
+## 4-2-1. 잠깐 — LangChain은 뭔가? (LangChain vs LangGraph)
+
+> 청중이 자주 헷갈리는 부분 — LangGraph 설명 전에 LangChain과의 관계를 명확히 합니다.
+
+### 한 줄 정리
+
+- **LangChain** = LLM 앱 만들 때 쓰는 **SDK/도구상자** (Tool, RAG, Memory, Embeddings 같은 부품)
+- **LangGraph** = LangChain 위에 얹은 **"복잡한 흐름 제어"** 프레임워크 (그래프 기반)
+
+### 비유
+
+| 비유 | 의미 |
+|------|------|
+| **레고 블록** = LangChain | LLM, Tool, Memory, RAG 검색 등 부품 |
+| **레고 설계도** = LangGraph | 블록들을 그래프로 어떻게 연결할지 정의 |
+
+### 언제 무엇을 쓰나?
+
+| 시나리오 | 적합한 도구 |
+|---------|---------|
+| 단순 흐름 (질문 → LLM → 답) | **LangChain Chain**만으로 충분 |
+| RAG 단순 검색 (질문 → 검색 → LLM) | **LangChain RetrievalQA** |
+| 복잡한 흐름 (분기/순환/재시도) | **LangGraph** 필요 |
+| 멀티 에이전트 (NL2SQL + RAG + MCP) | **LangGraph** 필수 |
+
+### 둘은 경쟁이 아니라 보완
+
+LangGraph는 LangChain의 부품(Tool/Memory/Embeddings)을 **그대로 사용 가능** → 독립 프레임워크가 아니라 **LangChain 생태계의 일부**.
+
+```python
+from langchain_openai import ChatOpenAI         # LangChain 부품
+from langchain.tools import Tool                 # LangChain 부품
+from langgraph.graph import StateGraph           # LangGraph 흐름
+
+# LangChain 부품을 LangGraph 노드 안에서 그대로 사용
+llm = ChatOpenAI(model="gpt-4o-mini")
+
+def call_llm(state):
+    return {"answer": llm.invoke(state["question"]).content}
+```
+
+### LangChain vs LangGraph 비교
+
+| 항목 | LangChain | LangGraph |
+|------|---------|---------|
+| **흐름 형태** | 선형 (Chain) | 그래프 (분기/순환) |
+| **상태 관리** | 약함 (체인 입출력만) | TypedDict로 명시 |
+| **분기/조건부** | 어려움 | `add_conditional_edges` |
+| **순환/재시도** | 불가능 (선형) | 자유 |
+| **멀티 에이전트** | LangChain Agents (이전) | **LangGraph (현재 권장)** |
+| **시각화** | 없음 | 그래프 자동 시각화 |
+| **사용 시점** | 단순 LLM 호출 | 복잡한 워크플로우 |
+
+### LangChain의 진화 흐름
+
+```mermaid
+flowchart LR
+    L1["2022<br/>LangChain<br/>(Chain - 선형)"] --> L2["2023<br/>LangChain Agents<br/>(Agent + Tool 추가)"]
+    L2 --> L3["2024<br/>LangGraph<br/>(그래프 기반)"]
+    L3 --> L4["2025+<br/>현재 표준<br/>운영 환경 권장"]
+
+    style L1 fill:#fff3e0,color:#1a1a2e
+    style L3 fill:#e3f2fd,color:#1a1a2e
+    style L4 fill:#22c55e,color:#fff
+```
+
+> 💡 **LangChain Agents는 왜 LangGraph로 옮겨갔나?**
+> LangChain Agents는 흐름이 LLM 판단에 의존(AgentExecutor) → 흐름 예측 어렵고 디버깅 힘듦. LangGraph는 흐름을 **코드로 명시**하므로 운영 환경에 적합. LangChain 본사도 공식적으로 **"운영은 LangGraph"** 를 권장.
+
+> ⚠️ **혼동 주의:** "LangChain Agent" 라는 말이 옛 버전(AgentExecutor)을 의미하면 deprecated. 새 프로젝트는 **LangGraph Agent**가 정답.
+
 ## 4-3. LangGraph란
 
 > **"LangGraph는 LLM 에이전트를 그래프(상태 머신)로 정의하는 프레임워크다."**
@@ -2147,3 +2218,4 @@ flowchart LR
 | 2026-05-18 | Part 1 개념 보강 — §1-2 Before/After 시각 비교(mermaid 2개), §1-3 각 구성요소에 "없으면 어떻게 되나" + dbt/Cube/WrenAI 용어 매핑표, §1-6 KG 1분 예시 (Cypher + mermaid) |
 | 2026-05-18 | Part 4 LangGraph 보강 — §4-3 실제 동작 최소 예시 (TypedDict + 조건부 엣지 + invoke 결과), §4-4 신설 "WrenAI Agent로 안 풀리는 4 시나리오" + 기능 비교표, §4-5 신설 다른 멀티 에이전트 프레임워크 비교 (LangGraph/AutoGen/CrewAI/Swarm) |
 | 2026-05-18 | Part 5 실습 보강 — §5-5 WrenAI UI 화면 ASCII 박스 묘사 (Settings/Modeling/Ask), §5-6 신설 "같은 질문을 3 도구가 어떻게 답하나" 9개 항목 비교표 + sequenceDiagram, §5-8 신설 실습 정리 명령 (down -v + sys prune) + 사내 적용 가이드 링크표 |
+| 2026-05-18 | §4-2-1 신설 "잠깐 — LangChain은 뭔가?" — LangChain vs LangGraph 비교. 레고 비유, 사용 시점 표, 두 도구 부품 결합 코드 예시, 9개 항목 비교표, LangChain → Agents → LangGraph 진화 mermaid, "운영은 LangGraph" 권장 근거 |
