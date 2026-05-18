@@ -410,11 +410,25 @@
 <li class="toc-h2"><a href="#7-1-토스-panda--참고-사례">7-1. 토스 PANDA — 참고 사례</a></li>
   <li class="toc-h3"><a href="#핵심-통찰">핵심 통찰</a></li>
   <li class="toc-h3"><a href="#토스에서-배울-추가-인사이트--계층-가중치-스코어링">토스에서 배울 추가 인사이트 — 계층 가중치 스코어링</a></li>
-<li class="toc-h2"><a href="#7-2-향후-방향--환경에-맞는-도구가-없을-때">7-2. 향후 방향 — 환경에 맞는 도구가 없을 때</a></li>
+<li class="toc-h2"><a href="#7-2-uber-querygpt--자체-nl2sql-운영-사례-글로벌-최대-roi">7-2. Uber QueryGPT — 자체 NL2SQL 운영 사례 (글로벌 최대 ROI)</a></li>
+  <li class="toc-h3"><a href="#핵심-지표">핵심 지표</a></li>
+  <li class="toc-h3"><a href="#아키텍처--bip-v3와-거의-동일한-패턴">아키텍처 — BIP v3와 거의 동일한 패턴</a></li>
+  <li class="toc-h3"><a href="#우리-세미나와-일치하는-메시지">우리 세미나와 일치하는 메시지</a></li>
+<li class="toc-h2"><a href="#7-3-airbnb-minerva--시맨틱-레이어-본체의-정석">7-3. Airbnb Minerva — 시맨틱 레이어 본체의 정석</a></li>
+  <li class="toc-h3"><a href="#핵심-지표_1">핵심 지표</a></li>
+  <li class="toc-h3"><a href="#구조">구조</a></li>
+  <li class="toc-h3"><a href="#설계-원칙-airbnb-공식-발표-기준">설계 원칙 (Airbnb 공식 발표 기준)</a></li>
+  <li class="toc-h3"><a href="#우리-세미나와-일치하는-메시지_1">우리 세미나와 일치하는 메시지</a></li>
+<li class="toc-h2"><a href="#7-4-doordash-메트릭-스토어--description의-힘">7-4. DoorDash 메트릭 스토어 — Description의 힘</a></li>
+  <li class="toc-h3"><a href="#핵심-통찰_1">핵심 통찰</a></li>
+  <li class="toc-h3"><a href="#우리-세미나와-일치하는-메시지_2">우리 세미나와 일치하는 메시지</a></li>
+<li class="toc-h2"><a href="#7-5-시장-동향--universal-semantic-layer-표준화-20252026">7-5. 시장 동향 — Universal Semantic Layer 표준화 (2025~2026)</a></li>
+<li class="toc-h2"><a href="#7-6-5가지-사례-종합--우리-세미나-메시지의-글로벌-검증">7-6. 5가지 사례 종합 — 우리 세미나 메시지의 글로벌 검증</a></li>
+<li class="toc-h2"><a href="#7-7-향후-방향--환경에-맞는-도구가-없을-때">7-7. 향후 방향 — 환경에 맞는 도구가 없을 때</a></li>
   <li class="toc-h3"><a href="#옵션-a-도구-조합">옵션 A: 도구 조합</a></li>
   <li class="toc-h3"><a href="#옵션-b-시맨틱-레이어를-직접-구현">옵션 B: 시맨틱 레이어를 직접 구현</a></li>
     <li class="toc-h4"><a href="#핵심-아이디어--queryspec-중간-표현">핵심 아이디어 — QuerySpec (중간 표현)</a></li>
-<li class="toc-h2"><a href="#7-3-결론--세미나-핵심-메시지">7-3. 결론 — 세미나 핵심 메시지</a></li>
+<li class="toc-h2"><a href="#7-8-결론--세미나-핵심-메시지">7-8. 결론 — 세미나 핵심 메시지</a></li>
 <li class="toc-h2"><a href="#부록-a-실습-사전-준비">부록 A. 실습 사전 준비</a></li>
   <li class="toc-h3"><a href="#사내-환경-가정-시-필요한-것">사내 환경 가정 시 필요한 것</a></li>
   <li class="toc-h3"><a href="#실습-데이터셋-제공">실습 데이터셋 (제공)</a></li>
@@ -470,7 +484,7 @@
 </tr>
 <tr>
 <td style="text-align: center;">85~90</td>
-<td>Part 7. 산업 사례 (토스 PANDA) + 향후 방향</td>
+<td>Part 7. 산업 사례 5선 (토스/Uber/Airbnb/DoorDash) + 향후 방향</td>
 </tr>
 </tbody>
 </table>
@@ -3216,7 +3230,252 @@ flowchart LR
 <p>💡 <strong>실무 적용 가능:</strong> 우리 NL2SQL 시스템에도 이 가중치 로직을 추가하면 정확도 향상 가능.</p>
 </blockquote>
 <p>원문: https://toss.tech/article/da-assistant-panda</p>
-<h2 id="7-2-향후-방향--환경에-맞는-도구가-없을-때">7-2. 향후 방향 — 환경에 맞는 도구가 없을 때</h2>
+<h2 id="7-2-uber-querygpt--자체-nl2sql-운영-사례-글로벌-최대-roi">7-2. Uber QueryGPT — 자체 NL2SQL 운영 사례 (글로벌 최대 ROI)</h2>
+<p>Uber는 2023년 사내 Hackdays에서 시작한 NL2SQL 봇 <strong>QueryGPT</strong>를 운영에 투입해 <strong>월 140,000 시간</strong> 절약을 달성했습니다.</p>
+<h3 id="핵심-지표">핵심 지표</h3>
+<table>
+<thead>
+<tr>
+<th>항목</th>
+<th>결과</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>쿼리 작성 시간 단축</td>
+<td><strong>10분 → 3분</strong> (1쿼리당)</td>
+</tr>
+<tr>
+<td>월간 시간 절약</td>
+<td><strong>140,000 시간</strong></td>
+</tr>
+<tr>
+<td>시작</td>
+<td>2023년 5월 Hackdays</td>
+</tr>
+<tr>
+<td>운영 진입</td>
+<td>2024년 본격 사용</td>
+</tr>
+</tbody>
+</table>
+<h3 id="아키텍처--bip-v3와-거의-동일한-패턴">아키텍처 — BIP v3와 거의 동일한 패턴</h3>
+<div class="mermaid">
+flowchart LR
+    Q["자연어 질문"] --> WS["Workspace\n도메인 라우팅"]
+    WS --> TA["Table Agent\n벡터 검색"]
+    TA --> CP["Column Prune Agent\n불필요 컬럼 제거"]
+    CP --> LLM["LLM\nSQL 생성"]
+    LLM --> SQL["실행 + 답변"]
+
+    style WS fill:#fbbf24,color:#1a1a2e
+    style TA fill:#3b82f6,color:#fff
+    style CP fill:#22c55e,color:#fff
+</div>
+
+<table>
+<thead>
+<tr>
+<th>Uber 컴포넌트</th>
+<th>BIP v3 대응</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><strong>Workspace</strong> (Ads/Mobility/Core 도메인 라우팅)</td>
+<td>LangGraph Intent Classifier</td>
+</tr>
+<tr>
+<td><strong>Table Agent</strong> (벡터 기반 메타 검색)</td>
+<td>Schema RAG (pgvector)</td>
+</tr>
+<tr>
+<td><strong>Column Prune Agent</strong> (토큰 절약)</td>
+<td>Schema Registry 컬럼 필터링</td>
+</tr>
+<tr>
+<td><strong>LLM SQL 생성</strong></td>
+<td>LLM + QuerySpec 변환기</td>
+</tr>
+</tbody>
+</table>
+<h3 id="우리-세미나와-일치하는-메시지">우리 세미나와 일치하는 메시지</h3>
+<ul>
+<li>✅ <strong>자체 NL2SQL 운영 가능</strong> — Uber 규모에서도 자체 구현이 정답</li>
+<li>✅ <strong>멀티 에이전트 패턴</strong> — Workspace + Table + Column Prune Agent (= LangGraph 노드들)</li>
+<li>✅ <strong>Schema RAG 효과</strong> — 벡터 검색으로 메타 매핑이 핵심</li>
+<li>✅ <strong>ROI 명확</strong> — 자연어 챗봇은 분석가 시간을 직접 절약 (월 14만 시간)</li>
+</ul>
+<blockquote>
+<p>💡 <strong>시사점:</strong> "<strong>우리 v3(LangGraph + QuerySpec) 방향이 글로벌 검증된 패턴</strong>". Uber의 Workspace/Table/Column 분리는 LangGraph 노드 구성과 동형.</p>
+</blockquote>
+<p>원문: https://www.uber.com/blog/query-gpt/</p>
+<h2 id="7-3-airbnb-minerva--시맨틱-레이어-본체의-정석">7-3. Airbnb Minerva — 시맨틱 레이어 본체의 정석</h2>
+<p>Airbnb는 <strong>Minerva</strong> 라는 메트릭 플랫폼을 사내 모든 분석/실험/리포팅의 단일 진실로 운영합니다.</p>
+<h3 id="핵심-지표_1">핵심 지표</h3>
+<table>
+<thead>
+<tr>
+<th>항목</th>
+<th>규모</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>메트릭</td>
+<td><strong>12,000개</strong></td>
+</tr>
+<tr>
+<td>차원</td>
+<td><strong>4,000개</strong></td>
+</tr>
+<tr>
+<td>데이터 생산자</td>
+<td><strong>200+ 팀/개인</strong></td>
+</tr>
+<tr>
+<td>단일 저장소</td>
+<td><strong>GitHub</strong> (메트릭 정의가 코드처럼 PR 리뷰)</td>
+</tr>
+</tbody>
+</table>
+<h3 id="구조">구조</h3>
+<div class="codehilite"><pre><span></span><code>GitHub 저장소 (메트릭 정의 SSOT)
+       ↓
+Minerva (declarative 시맨틱 레이어)
+       ↓
+Airflow 오케스트레이션
+       ↓
+Hive/Spark (계산) + Presto/Druid (서빙)
+       ↓
+BI / 실험 플랫폼 / Slack 봇 / 챗봇 모두 동일 메트릭
+</code></pre></div>
+
+<p><strong>dbt와의 통합:</strong> dbt가 raw → 정제 변환을 담당, Minerva가 그 위에 메트릭 정의/계산/서빙. <strong>dbt + Minerva = 우리 세미나의 "변환 + 시맨틱 분리" 패턴 그대로.</strong></p>
+<h3 id="설계-원칙-airbnb-공식-발표-기준">설계 원칙 (Airbnb 공식 발표 기준)</h3>
+<table>
+<thead>
+<tr>
+<th>원칙</th>
+<th>의미</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><strong>Declarative</strong></td>
+<td>사용자는 결과만 정의, Minerva가 계산/저장/서빙 결정</td>
+</tr>
+<tr>
+<td><strong>Scalable</strong></td>
+<td>12,000 메트릭 동시 운영</td>
+</tr>
+<tr>
+<td><strong>Consistent</strong></td>
+<td>정의 변경 시 자동 backfill</td>
+</tr>
+<tr>
+<td><strong>Well-tested</strong></td>
+<td>변경 전 검증 (코드 리뷰 + 정적 검증)</td>
+</tr>
+</tbody>
+</table>
+<h3 id="우리-세미나와-일치하는-메시지_1">우리 세미나와 일치하는 메시지</h3>
+<ul>
+<li>✅ <strong>시맨틱 레이어 본체 = 메트릭 단일 정의</strong> (§1 핵심 메시지)</li>
+<li>✅ <strong>dbt + 시맨틱 분리</strong> 패턴 (§3·5 통합 패턴)</li>
+<li>✅ <strong>메트릭은 코드처럼 관리</strong> — Git PR 리뷰 (§3-1 dbt 강점과 동일)</li>
+</ul>
+<blockquote>
+<p>💡 <strong>시사점:</strong> "<strong>메트릭 12,000개를 단일 저장소로 운영 가능</strong>" — 규모가 커져도 시맨틱 레이어 본체 원칙은 동일.</p>
+</blockquote>
+<p>원문: https://medium.com/airbnb-engineering/how-airbnb-achieved-metric-consistency-at-scale-f23cc53dea70</p>
+<h2 id="7-4-doordash-메트릭-스토어--description의-힘">7-4. DoorDash 메트릭 스토어 — Description의 힘</h2>
+<p>DoorDash는 실험 플랫폼(A/B 테스트) 표준화를 위해 <strong>메트릭 스토어</strong>를 구축. NL2SQL 정확도 향상의 핵심으로 <strong>스키마 enrichment</strong>(컬럼 정의 + 예시)를 강조.</p>
+<h3 id="핵심-통찰_1">핵심 통찰</h3>
+<table>
+<thead>
+<tr>
+<th>DoorDash 사례</th>
+<th>우리 세미나 메시지</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>컬럼별 정의 + 예시 작성 → text-to-SQL 정확도 향상</td>
+<td>Phase 1 "Description 99% 커버리지가 핵심"</td>
+</tr>
+<tr>
+<td>메트릭 스토어 = 실험 SSOT</td>
+<td>"<strong>메트릭 표류 방지</strong>"</td>
+</tr>
+<tr>
+<td>실험 플랫폼이 메트릭 스토어 호출</td>
+<td>"<strong>API 서빙으로 다양한 응용</strong>"</td>
+</tr>
+</tbody>
+</table>
+<h3 id="우리-세미나와-일치하는-메시지_2">우리 세미나와 일치하는 메시지</h3>
+<ul>
+<li>✅ <strong>Phase 1 (데이터 정비)이 80% 결정</strong> — Description이 NL2SQL 정확도 좌우</li>
+<li>✅ <strong>메트릭 스토어 = 실험/분석/대시보드 SSOT</strong> — 시맨틱 레이어의 5가지 응용 영역 검증</li>
+</ul>
+<blockquote>
+<p>💡 <strong>시사점:</strong> "<strong>컬럼 description은 부수적 작업이 아니라 NL2SQL 품질의 핵심 자산</strong>" — BIP에서도 동일하게 검증됨 (WrenAI 컬럼 99% 채우니 A등급 100%).</p>
+</blockquote>
+<p>원문: https://careersatdoordash.com/blog/using-metrics-layer-to-standardize-and-scale-experimentation-at-doordash-2/</p>
+<h2 id="7-5-시장-동향--universal-semantic-layer-표준화-20252026">7-5. 시장 동향 — Universal Semantic Layer 표준화 (2025~2026)</h2>
+<div class="mermaid">
+flowchart LR
+    P1["~2023\n각 BI 도구에\n메트릭 흩어짐"] --> P2["2024\ndbt Semantic Layer\nMetricFlow 발표"]
+    P2 --> P3["2025\nCube가\nUniversal Layer 후보"]
+    P3 --> P4["2026~\n시맨틱 레이어\n분리가 표준"]
+
+    style P4 fill:#22c55e,color:#fff
+</div>
+
+<p><strong>핵심 흐름:</strong>
+- <strong>2024:</strong> dbt Labs가 MetricFlow 인수 → 메트릭 정의를 dbt 영역으로 끌어옴
+- <strong>2025:</strong> Cube가 "Universal Semantic Layer" 슬로건으로 BI/AI/임베디드 모두 통합 시도
+- <strong>2026~:</strong> Snowflake/Databricks도 시맨틱 레이어를 SQL 엔진에 통합 시작
+- <strong>방향:</strong> <strong>시맨틱 레이어를 BI 도구에서 분리해 인프라 계층으로 둔다</strong> — 우리 세미나의 핵심 메시지와 정확히 일치</p>
+<blockquote>
+<p>💡 <strong>세미나 메시지 강화:</strong> "<strong>도구 선택보다 시맨틱 레이어 분리가 중요</strong>"는 우리만의 주장이 아니라 <strong>글로벌 데이터 인프라 흐름</strong>.</p>
+</blockquote>
+<h2 id="7-6-5가지-사례-종합--우리-세미나-메시지의-글로벌-검증">7-6. 5가지 사례 종합 — 우리 세미나 메시지의 글로벌 검증</h2>
+<table>
+<thead>
+<tr>
+<th>우리 메시지</th>
+<th>검증 사례</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><strong>데이터 정비 80%, 도구 20%</strong></td>
+<td>DoorDash (Description 강조), Airbnb (코드 리뷰 워크플로)</td>
+</tr>
+<tr>
+<td><strong>시맨틱 레이어 본체 = 메트릭 단일 정의</strong></td>
+<td>Airbnb Minerva (12,000 메트릭), 토스 PANDA (SSOT 마트)</td>
+</tr>
+<tr>
+<td><strong>자체 NL2SQL 구현이 운영 가능</strong></td>
+<td><strong>Uber QueryGPT (월 14만 시간 ROI)</strong></td>
+</tr>
+<tr>
+<td><strong>멀티 에이전트가 결국 필요</strong></td>
+<td>Uber (Workspace/Table/Column Agent), 토스 (Agentic Loop)</td>
+</tr>
+<tr>
+<td><strong>시맨틱 레이어 분리는 시장 흐름</strong></td>
+<td>시장 동향 (dbt/Cube/Snowflake 모두 같은 방향)</td>
+</tr>
+</tbody>
+</table>
+<blockquote>
+<p>💡 <strong>세미나 결론 강화:</strong> 5개 사례 모두 우리 메시지를 검증. <strong>우리는 글로벌과 같은 방향</strong>을 보고 있다.</p>
+</blockquote>
+<h2 id="7-7-향후-방향--환경에-맞는-도구가-없을-때">7-7. 향후 방향 — 환경에 맞는 도구가 없을 때</h2>
 <p>지금까지 본 3개 도구 (dbt/Cube/WrenAI) 중 환경에 맞는 게 있다면 그것을 쓰면 됩니다.</p>
 <p>하지만 <strong>다 안 맞을 수도 있습니다.</strong> 예를 들어:</p>
 <div class="codehilite"><pre><span></span><code>사내 환경:
@@ -3296,7 +3555,7 @@ flowchart LR
 <p>영감 출처:
 - DAQUV/QUVI — SMQ(중간 표현) 개념
 - 논문 "Querying Databases with Function Calling" (arXiv 2502.00032)</p>
-<h2 id="7-3-결론--세미나-핵심-메시지">7-3. 결론 — 세미나 핵심 메시지</h2>
+<h2 id="7-8-결론--세미나-핵심-메시지">7-8. 결론 — 세미나 핵심 메시지</h2>
 <div class="codehilite"><pre><span></span><code><span class="mf">1.</span><span class="w"> </span><span class="n">시맨틱</span><span class="w"> </span><span class="n">레이어</span><span class="w"> </span><span class="n">본체</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">DB</span><span class="w"> </span><span class="n">View</span><span class="w"> </span><span class="o">/</span><span class="w"> </span><span class="n">마트</span><span class="w"> </span><span class="o">/</span><span class="w"> </span><span class="n">메트릭</span><span class="w"> </span><span class="n">정의</span>
 <span class="w">   </span><span class="err">→</span><span class="w"> </span><span class="n">어떤</span><span class="w"> </span><span class="n">도구를</span><span class="w"> </span><span class="n">쓰든</span><span class="w"> </span><span class="n">동일</span>
 
@@ -3470,6 +3729,10 @@ flowchart LR
 <tr>
 <td>2026-05-18</td>
 <td>§4-2-1 신설 "잠깐 — LangChain은 뭔가?" — LangChain vs LangGraph 비교. 레고 비유, 사용 시점 표, 두 도구 부품 결합 코드 예시, 9개 항목 비교표, LangChain → Agents → LangGraph 진화 mermaid, "운영은 LangGraph" 권장 근거</td>
+</tr>
+<tr>
+<td>2026-05-19</td>
+<td>Part 7 산업 사례 확장 — 토스 PANDA 외 4개 추가 (§7-2 Uber QueryGPT 월 14만 시간 ROI, §7-3 Airbnb Minerva 12,000 메트릭, §7-4 DoorDash 메트릭 스토어 Description 강조, §7-5 시장 동향 dbt/Cube/Snowflake 통합 흐름) + §7-6 5가지 사례와 세미나 메시지 매핑표</td>
 </tr>
 </tbody>
 </table>

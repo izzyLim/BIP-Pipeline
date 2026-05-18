@@ -17,7 +17,7 @@
 | 50~60 | Part 4. 멀티 에이전트의 필요성 — LangGraph |
 | 60~80 | Part 5. 실습 — 사내 환경에서 시맨틱 레이어 만들기 |
 | 80~85 | Part 6. 의사결정 가이드 — 어떤 도구를 언제? |
-| 85~90 | Part 7. 산업 사례 (토스 PANDA) + 향후 방향 |
+| 85~90 | Part 7. 산업 사례 5선 (토스/Uber/Airbnb/DoorDash) + 향후 방향 |
 
 ---
 
@@ -2066,7 +2066,153 @@ flowchart LR
 
 원문: https://toss.tech/article/da-assistant-panda
 
-## 7-2. 향후 방향 — 환경에 맞는 도구가 없을 때
+## 7-2. Uber QueryGPT — 자체 NL2SQL 운영 사례 (글로벌 최대 ROI)
+
+Uber는 2023년 사내 Hackdays에서 시작한 NL2SQL 봇 **QueryGPT**를 운영에 투입해 **월 140,000 시간** 절약을 달성했습니다.
+
+### 핵심 지표
+
+| 항목 | 결과 |
+|------|------|
+| 쿼리 작성 시간 단축 | **10분 → 3분** (1쿼리당) |
+| 월간 시간 절약 | **140,000 시간** |
+| 시작 | 2023년 5월 Hackdays |
+| 운영 진입 | 2024년 본격 사용 |
+
+### 아키텍처 — BIP v3와 거의 동일한 패턴
+
+```mermaid
+flowchart LR
+    Q["자연어 질문"] --> WS["Workspace<br/>도메인 라우팅"]
+    WS --> TA["Table Agent<br/>벡터 검색"]
+    TA --> CP["Column Prune Agent<br/>불필요 컬럼 제거"]
+    CP --> LLM["LLM<br/>SQL 생성"]
+    LLM --> SQL["실행 + 답변"]
+
+    style WS fill:#fbbf24,color:#1a1a2e
+    style TA fill:#3b82f6,color:#fff
+    style CP fill:#22c55e,color:#fff
+```
+
+| Uber 컴포넌트 | BIP v3 대응 |
+|------------|-----------|
+| **Workspace** (Ads/Mobility/Core 도메인 라우팅) | LangGraph Intent Classifier |
+| **Table Agent** (벡터 기반 메타 검색) | Schema RAG (pgvector) |
+| **Column Prune Agent** (토큰 절약) | Schema Registry 컬럼 필터링 |
+| **LLM SQL 생성** | LLM + QuerySpec 변환기 |
+
+### 우리 세미나와 일치하는 메시지
+
+- ✅ **자체 NL2SQL 운영 가능** — Uber 규모에서도 자체 구현이 정답
+- ✅ **멀티 에이전트 패턴** — Workspace + Table + Column Prune Agent (= LangGraph 노드들)
+- ✅ **Schema RAG 효과** — 벡터 검색으로 메타 매핑이 핵심
+- ✅ **ROI 명확** — 자연어 챗봇은 분석가 시간을 직접 절약 (월 14만 시간)
+
+> 💡 **시사점:** "**우리 v3(LangGraph + QuerySpec) 방향이 글로벌 검증된 패턴**". Uber의 Workspace/Table/Column 분리는 LangGraph 노드 구성과 동형.
+
+원문: https://www.uber.com/blog/query-gpt/
+
+## 7-3. Airbnb Minerva — 시맨틱 레이어 본체의 정석
+
+Airbnb는 **Minerva** 라는 메트릭 플랫폼을 사내 모든 분석/실험/리포팅의 단일 진실로 운영합니다.
+
+### 핵심 지표
+
+| 항목 | 규모 |
+|------|------|
+| 메트릭 | **12,000개** |
+| 차원 | **4,000개** |
+| 데이터 생산자 | **200+ 팀/개인** |
+| 단일 저장소 | **GitHub** (메트릭 정의가 코드처럼 PR 리뷰) |
+
+### 구조
+
+```
+GitHub 저장소 (메트릭 정의 SSOT)
+       ↓
+Minerva (declarative 시맨틱 레이어)
+       ↓
+Airflow 오케스트레이션
+       ↓
+Hive/Spark (계산) + Presto/Druid (서빙)
+       ↓
+BI / 실험 플랫폼 / Slack 봇 / 챗봇 모두 동일 메트릭
+```
+
+**dbt와의 통합:** dbt가 raw → 정제 변환을 담당, Minerva가 그 위에 메트릭 정의/계산/서빙. **dbt + Minerva = 우리 세미나의 "변환 + 시맨틱 분리" 패턴 그대로.**
+
+### 설계 원칙 (Airbnb 공식 발표 기준)
+
+| 원칙 | 의미 |
+|------|------|
+| **Declarative** | 사용자는 결과만 정의, Minerva가 계산/저장/서빙 결정 |
+| **Scalable** | 12,000 메트릭 동시 운영 |
+| **Consistent** | 정의 변경 시 자동 backfill |
+| **Well-tested** | 변경 전 검증 (코드 리뷰 + 정적 검증) |
+
+### 우리 세미나와 일치하는 메시지
+
+- ✅ **시맨틱 레이어 본체 = 메트릭 단일 정의** (§1 핵심 메시지)
+- ✅ **dbt + 시맨틱 분리** 패턴 (§3·5 통합 패턴)
+- ✅ **메트릭은 코드처럼 관리** — Git PR 리뷰 (§3-1 dbt 강점과 동일)
+
+> 💡 **시사점:** "**메트릭 12,000개를 단일 저장소로 운영 가능**" — 규모가 커져도 시맨틱 레이어 본체 원칙은 동일.
+
+원문: https://medium.com/airbnb-engineering/how-airbnb-achieved-metric-consistency-at-scale-f23cc53dea70
+
+## 7-4. DoorDash 메트릭 스토어 — Description의 힘
+
+DoorDash는 실험 플랫폼(A/B 테스트) 표준화를 위해 **메트릭 스토어**를 구축. NL2SQL 정확도 향상의 핵심으로 **스키마 enrichment**(컬럼 정의 + 예시)를 강조.
+
+### 핵심 통찰
+
+| DoorDash 사례 | 우리 세미나 메시지 |
+|------------|----------------|
+| 컬럼별 정의 + 예시 작성 → text-to-SQL 정확도 향상 | Phase 1 "Description 99% 커버리지가 핵심" |
+| 메트릭 스토어 = 실험 SSOT | "**메트릭 표류 방지**" |
+| 실험 플랫폼이 메트릭 스토어 호출 | "**API 서빙으로 다양한 응용**" |
+
+### 우리 세미나와 일치하는 메시지
+
+- ✅ **Phase 1 (데이터 정비)이 80% 결정** — Description이 NL2SQL 정확도 좌우
+- ✅ **메트릭 스토어 = 실험/분석/대시보드 SSOT** — 시맨틱 레이어의 5가지 응용 영역 검증
+
+> 💡 **시사점:** "**컬럼 description은 부수적 작업이 아니라 NL2SQL 품질의 핵심 자산**" — BIP에서도 동일하게 검증됨 (WrenAI 컬럼 99% 채우니 A등급 100%).
+
+원문: https://careersatdoordash.com/blog/using-metrics-layer-to-standardize-and-scale-experimentation-at-doordash-2/
+
+## 7-5. 시장 동향 — Universal Semantic Layer 표준화 (2025~2026)
+
+```mermaid
+flowchart LR
+    P1["~2023<br/>각 BI 도구에<br/>메트릭 흩어짐"] --> P2["2024<br/>dbt Semantic Layer<br/>MetricFlow 발표"]
+    P2 --> P3["2025<br/>Cube가<br/>Universal Layer 후보"]
+    P3 --> P4["2026~<br/>시맨틱 레이어<br/>분리가 표준"]
+
+    style P4 fill:#22c55e,color:#fff
+```
+
+**핵심 흐름:**
+- **2024:** dbt Labs가 MetricFlow 인수 → 메트릭 정의를 dbt 영역으로 끌어옴
+- **2025:** Cube가 "Universal Semantic Layer" 슬로건으로 BI/AI/임베디드 모두 통합 시도
+- **2026~:** Snowflake/Databricks도 시맨틱 레이어를 SQL 엔진에 통합 시작
+- **방향:** **시맨틱 레이어를 BI 도구에서 분리해 인프라 계층으로 둔다** — 우리 세미나의 핵심 메시지와 정확히 일치
+
+> 💡 **세미나 메시지 강화:** "**도구 선택보다 시맨틱 레이어 분리가 중요**"는 우리만의 주장이 아니라 **글로벌 데이터 인프라 흐름**.
+
+## 7-6. 5가지 사례 종합 — 우리 세미나 메시지의 글로벌 검증
+
+| 우리 메시지 | 검증 사례 |
+|-----------|---------|
+| **데이터 정비 80%, 도구 20%** | DoorDash (Description 강조), Airbnb (코드 리뷰 워크플로) |
+| **시맨틱 레이어 본체 = 메트릭 단일 정의** | Airbnb Minerva (12,000 메트릭), 토스 PANDA (SSOT 마트) |
+| **자체 NL2SQL 구현이 운영 가능** | **Uber QueryGPT (월 14만 시간 ROI)** |
+| **멀티 에이전트가 결국 필요** | Uber (Workspace/Table/Column Agent), 토스 (Agentic Loop) |
+| **시맨틱 레이어 분리는 시장 흐름** | 시장 동향 (dbt/Cube/Snowflake 모두 같은 방향) |
+
+> 💡 **세미나 결론 강화:** 5개 사례 모두 우리 메시지를 검증. **우리는 글로벌과 같은 방향**을 보고 있다.
+
+## 7-7. 향후 방향 — 환경에 맞는 도구가 없을 때
 
 지금까지 본 3개 도구 (dbt/Cube/WrenAI) 중 환경에 맞는 게 있다면 그것을 쓰면 됩니다.
 
@@ -2134,7 +2280,7 @@ flowchart LR
 - DAQUV/QUVI — SMQ(중간 표현) 개념
 - 논문 "Querying Databases with Function Calling" (arXiv 2502.00032)
 
-## 7-3. 결론 — 세미나 핵심 메시지
+## 7-8. 결론 — 세미나 핵심 메시지
 
 ```
 1. 시맨틱 레이어 본체 = DB View / 마트 / 메트릭 정의
@@ -2219,3 +2365,4 @@ flowchart LR
 | 2026-05-18 | Part 4 LangGraph 보강 — §4-3 실제 동작 최소 예시 (TypedDict + 조건부 엣지 + invoke 결과), §4-4 신설 "WrenAI Agent로 안 풀리는 4 시나리오" + 기능 비교표, §4-5 신설 다른 멀티 에이전트 프레임워크 비교 (LangGraph/AutoGen/CrewAI/Swarm) |
 | 2026-05-18 | Part 5 실습 보강 — §5-5 WrenAI UI 화면 ASCII 박스 묘사 (Settings/Modeling/Ask), §5-6 신설 "같은 질문을 3 도구가 어떻게 답하나" 9개 항목 비교표 + sequenceDiagram, §5-8 신설 실습 정리 명령 (down -v + sys prune) + 사내 적용 가이드 링크표 |
 | 2026-05-18 | §4-2-1 신설 "잠깐 — LangChain은 뭔가?" — LangChain vs LangGraph 비교. 레고 비유, 사용 시점 표, 두 도구 부품 결합 코드 예시, 9개 항목 비교표, LangChain → Agents → LangGraph 진화 mermaid, "운영은 LangGraph" 권장 근거 |
+| 2026-05-19 | Part 7 산업 사례 확장 — 토스 PANDA 외 4개 추가 (§7-2 Uber QueryGPT 월 14만 시간 ROI, §7-3 Airbnb Minerva 12,000 메트릭, §7-4 DoorDash 메트릭 스토어 Description 강조, §7-5 시장 동향 dbt/Cube/Snowflake 통합 흐름) + §7-6 5가지 사례와 세미나 메시지 매핑표 |
