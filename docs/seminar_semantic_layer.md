@@ -62,6 +62,55 @@
 | **"표준어 사전"** | 부서마다 쓰는 사투리(SQL) 대신 표준어(메트릭)로 |
 | **"엑셀 시트의 정의서"** | 한 시트 = 한 비즈니스 객체 (Customer, Order...) |
 
+### Before vs After — 한눈에 보기
+
+같은 "이번 달 매출이 얼마야?" 질문이 어떻게 달라지는지 비교합니다.
+
+```mermaid
+flowchart TB
+    subgraph Before["❌ Before — 시맨틱 레이어 없음"]
+        U1["사용자: '이번 달 매출?'"]
+        U1 --> SQL1["분석가가 SQL 직접 작성"]
+        SQL1 --> R1["SELECT SUM amount FROM orders<br/>WHERE month=current<br/>(영업팀 버전)"]
+        SQL1 --> R2["SELECT SUM amount FROM orders<br/>WHERE status='paid'<br/>(재무팀 버전)"]
+        SQL1 --> R3["SELECT SUM amount FROM v_sales<br/>(BI 도구 버전)"]
+        R1 --> A1["13.2억"]
+        R2 --> A2["12.0억"]
+        R3 --> A3["11.4억"]
+    end
+
+    style Before fill:#fee,color:#1a1a2e
+```
+
+```mermaid
+flowchart TB
+    subgraph After["✅ After — 시맨틱 레이어 있음"]
+        U2["사용자: '이번 달 매출?'"]
+        U2 --> SL["시맨틱 레이어<br/>revenue = SUM amount<br/>WHERE status='paid'"]
+        SL --> Q1["Tableau"]
+        SL --> Q2["Power BI"]
+        SL --> Q3["Slack 봇"]
+        SL --> Q4["ChatGPT/WrenAI"]
+        Q1 --> A4["12.0억"]
+        Q2 --> A5["12.0억"]
+        Q3 --> A6["12.0억"]
+        Q4 --> A7["12.0억"]
+    end
+
+    style After fill:#e8f5e9,color:#1a1a2e
+    style SL fill:#22c55e,color:#fff
+```
+
+| | Before (없음) | After (있음) |
+|---|---|---|
+| **정의 위치** | 분석가/도구별 SQL에 흩어짐 | 한 곳 (메트릭 카탈로그) |
+| **결과 일관성** | 매번 다른 숫자 | 항상 같은 숫자 |
+| **신뢰** | "왜 숫자가 달라요?" 회의 | "공식 매출 12억" |
+| **변경 영향** | 모든 SQL을 다 고쳐야 함 | 정의 한 곳만 수정 |
+| **누가 정의를 아는가** | 작성한 분석가만 | 누구나 참조 가능 |
+
+> **핵심:** 시맨틱 레이어는 **"매출 정의가 어디 있느냐"** 의 문제를 푸는 도구. 도구가 화려한 게 아니라 **정의를 한 곳에 두는 단순한 아이디어**.
+
 ## 1-3. 시맨틱 레이어의 4가지 구성 요소
 
 ```mermaid
@@ -91,6 +140,8 @@ revenue:
 
 > **이 정의가 하는 일:** "매출"이라는 한 단어로 정의된 SQL 표현. 어떤 도구가 호출하든 같은 SQL이 실행된다.
 
+**❌ 없으면 어떻게 되나:** 분석가 5명이 각자 다른 SQL을 짬 → 같은 "매출"인데 결과 다름 → 회의에서 "내 매출 12억인데 너는 11억?".
+
 ### Dimensions (분석 축)
 
 > **데이터를 자르는 기준**. 피벗 테이블의 행/열에 들어가는 것.
@@ -106,6 +157,8 @@ customer_tier:
   type: string  # VIP, Regular, New 등
 ```
 
+**❌ 없으면 어떻게 되나:** "월별 매출"이 필요할 때 누군가 `DATE_TRUNC('month', ...)`, 다른 누군가 `EXTRACT(MONTH FROM ...)` 써서 그룹핑이 미세하게 어긋남.
+
 ### Entities (비즈니스 객체)
 
 > **현실 세계의 개체**를 데이터 모델로 표현한 것. Customer, Order, Product 같은.
@@ -120,6 +173,8 @@ order:
   attributes: [customer_id, amount, status]
 ```
 
+**❌ 없으면 어떻게 되나:** "고객"이 사람마다 다른 의미 — 가입자? 결제자? 활성 사용자? 각자 다른 테이블을 보고 다른 답을 냄.
+
 ### Relationships (관계)
 
 > 엔티티 간 연결. SQL JOIN의 기반이지만 **한 번 정의하면 매번 JOIN을 직접 쓸 필요 없음**.
@@ -131,6 +186,21 @@ order:
       type: belongsTo
       on: order.customer_id = customer.id
 ```
+
+**❌ 없으면 어떻게 되나:** "고객별 매출"이 필요할 때마다 분석가가 JOIN을 매번 작성 → 어떤 사람은 `LEFT JOIN`, 어떤 사람은 `INNER JOIN` → 결과 행 수가 미세하게 다름.
+
+### 4가지 구성요소가 도구별로 어떻게 표현되는가
+
+같은 개념이지만 도구마다 부르는 이름·문법이 다릅니다. 헷갈리지 않도록 매핑표.
+
+| 개념 | 일반 용어 | **dbt** | **Cube** | **WrenAI** |
+|------|---------|---------|---------|----------|
+| **Metric** | 측정값 | `measures` (MetricFlow) | `measures` | `measures` (MDL) |
+| **Dimension** | 차원 | `dimensions` (MetricFlow) | `dimensions` | `dimensions` (MDL) |
+| **Entity** | 비즈니스 객체 | `semantic_model` 단위 | `cube('Name', {...})` | `models[]` (MDL) |
+| **Relationship** | 객체 관계 | `entities` + 외부키 | `joins: {...}` | `relationships[]` (MDL) |
+
+> 💡 **세 도구가 같은 4구성요소를 다른 이름으로 표현할 뿐.** 한 도구를 익히면 다른 도구도 빠르게 이해 가능.
 
 ## 1-4. 시맨틱 레이어가 없으면 생기는 문제 — 4가지 시나리오
 
@@ -212,8 +282,50 @@ LLM:    "어떤 매출요? 주문? 결제? 환불 차감?"
 | **대표 도구** | dbt, Cube | Neo4j, Wikidata | Protégé |
 | **전형적 질문** | "월 매출 얼마?" | "삼성 경쟁사는?" | "Company란?" |
 
+#### Knowledge Graph가 뭔지 1분 만에 — 예시
+
+KG는 "**엔티티(노드) + 관계(엣지)**" 로 데이터를 표현. 같은 정보를 SQL과 비교해보면:
+
+**SQL 방식 (관계형 DB):**
+```sql
+-- "삼성전자의 같은 섹터 경쟁사 찾기"
+SELECT b.stock_name
+FROM stock_info a
+JOIN stock_info b ON a.sector = b.sector
+WHERE a.ticker = '005930.KS' AND b.ticker != a.ticker;
+```
+
+**Knowledge Graph 방식 (Cypher / Neo4j):**
+```cypher
+MATCH (s:Company {name:'삼성전자'})-[:IN_SECTOR]->(sec)<-[:IN_SECTOR]-(c:Company)
+RETURN c.name
+```
+
+```mermaid
+flowchart LR
+    SEC["반도체<br/>(Sector)"]
+    S["삼성전자<br/>(Company)"]
+    H["SK하이닉스<br/>(Company)"]
+    L["LG디스플레이<br/>(Company)"]
+
+    S -.IN_SECTOR.- SEC
+    H -.IN_SECTOR.- SEC
+    L -.IN_SECTOR.- SEC
+    S -.COMPETITOR.- H
+    S -.SUPPLIES.- L
+
+    style SEC fill:#fbbf24,color:#1a1a2e
+    style S fill:#3b82f6,color:#fff
+```
+
+> **KG가 강한 영역:** "**관련된**" 같은 관계 탐색 (n-hop 가능). "삼성 경쟁사 → 그 경쟁사들의 자회사 → 그 자회사들의 주력 제품" 같은 다단계 관계.
+>
+> **시맨틱 레이어가 강한 영역:** "**얼마/몇 개**" 같은 정형 메트릭 집계.
+>
+> **둘은 보완 관계:** BIP의 미래 아키텍처는 정형(시맨틱 레이어) + 관계(KG) + 비정형(RAG) 통합. 자세한 건 `nl2sql_design.md` §2 (5-Layer 구조).
+
 > **이 세미나의 범위:** Semantic Layer (정형 DB의 비즈니스 메트릭 추상화).
-> Knowledge Graph/Ontology는 별도 주제.
+> Knowledge Graph/Ontology는 별도 주제 — 위 예시 정도만 인지하면 충분.
 
 ### Semantic Layer vs Data Catalog
 
@@ -1694,3 +1806,4 @@ flowchart LR
 |------|------|
 | 2026-05-11 | 세미나 자료 초안 작성 (90분 분량, 실습 포함) |
 | 2026-05-17 | §6-1 결정 트리에 4가지 추천 경로별 상세 근거 추가 (dbt Core / Cube / WrenAI / 자체 구현). 시나리오 표 + 핵심 근거 + 부적합 케이스 + 한 페이지 요약 비교 |
+| 2026-05-18 | Part 1 개념 보강 — §1-2 Before/After 시각 비교(mermaid 2개), §1-3 각 구성요소에 "없으면 어떻게 되나" + dbt/Cube/WrenAI 용어 매핑표, §1-6 KG 1분 예시 (Cypher + mermaid) |
