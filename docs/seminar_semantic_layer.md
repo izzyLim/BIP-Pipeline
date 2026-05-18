@@ -655,9 +655,9 @@ preAggregations: {
 ```mermaid
 flowchart LR
     M["메트릭 정의<br/>한 번"]
-    M --> R["REST API<br/>(웹/앱 통계)"]
-    M --> G["GraphQL API<br/>(유연한 쿼리)"]
-    M --> S["SQL API<br/>(BI 도구 직접 연결)"]
+    M --> R["REST API<br/>웹·앱 통계"]
+    M --> G["GraphQL API<br/>유연한 쿼리"]
+    M --> S["SQL API<br/>BI 도구 직접 연결"]
 ```
 
 ```bash
