@@ -1496,14 +1496,48 @@ docker compose -f docker-compose.wrenai.yml up -d
 
 ### Step 2: 데이터 소스 연결 + 모델 등록
 
-UI에서:
-1. PostgreSQL 연결 (`postgres:5432/sales`)
-2. fct_sales 테이블 임포트
-3. 컬럼 description 작성:
-   - amount: "주문 금액 (원)"
-   - sale_month: "매출 발생 월"
-   - region: "고객 지역"
-4. Deploy 클릭 → Qdrant에 임베딩
+UI 흐름 (왼쪽 사이드바 → Settings → Data Sources):
+
+```
+┌─────────────────────────────────────────────────────┐
+│ WrenAI - Data Sources                               │
+├─────────────────────────────────────────────────────┤
+│  + Add New Data Source                              │
+│  ┌─────────────────────────────────────────────┐   │
+│  │ Type:     [PostgreSQL ▾]                    │   │
+│  │ Host:     postgres                           │   │
+│  │ Port:     5432                               │   │
+│  │ Database: sales                              │   │
+│  │ User:     admin                              │   │
+│  │ Password: ****                               │   │
+│  │                                              │   │
+│  │           [Test Connection]   [Save]         │   │
+│  └─────────────────────────────────────────────┘   │
+└─────────────────────────────────────────────────────┘
+```
+
+**모델 등록 (Modeling 탭):**
+
+```
+┌─────────────────────────────────────────────────────┐
+│ Modeling > Add Model                                │
+├─────────────────────────────────────────────────────┤
+│  Source Table: [fct_sales ▾]                        │
+│                                                     │
+│  Columns (5개):                                     │
+│   ☑ order_id      ─ description: "주문 ID"          │
+│   ☑ customer_id   ─ description: "고객 ID"          │
+│   ☑ amount        ─ description: "주문 금액 (원)"   │
+│   ☑ sale_month    ─ description: "매출 발생 월"     │
+│   ☑ region        ─ description: "고객 지역"        │
+│                                                     │
+│  Primary Key: order_id                              │
+│                                                     │
+│           [Save]   [Deploy → Qdrant]                │
+└─────────────────────────────────────────────────────┘
+```
+
+> 💡 **이 단계가 핵심:** Description이 비어 있으면 LLM이 컬럼 의미를 모름 → 정확도 급락. BIP에서 description 99% 커버리지 달성 후 A등급 100% 달성한 이유.
 
 ### Step 3: SQL Pairs 등록 (선택, 정확도 향상)
 
@@ -1522,21 +1556,44 @@ A: SELECT region, SUM(amount) AS revenue
 
 ### Step 4: 자연어 질의
 
-WrenAI UI에서:
+WrenAI UI (Home 탭) 화면:
 
 ```
-질문: "지난달 서울 지역 매출 알려줘"
+┌─────────────────────────────────────────────────────┐
+│ WrenAI - Ask Anything                               │
+├─────────────────────────────────────────────────────┤
+│  💬 "지난달 서울 지역 매출 알려줘"        [▶ Ask]   │
+└─────────────────────────────────────────────────────┘
 
-WrenAI 응답:
-- SQL:
-  SELECT SUM(amount) AS revenue
-  FROM fct_sales
-  WHERE region = '서울'
-    AND DATE_TRUNC('month', sale_month) = DATE_TRUNC('month', CURRENT_DATE - INTERVAL '1 month')
+         ↓ (3~5초 후)
 
-- 답변: "지난달 서울 지역 매출은 1억 2천만원입니다."
-- 차트: 자동 생성
+┌─────────────────────────────────────────────────────┐
+│  📊 답변                                            │
+│  "지난달 서울 지역 매출은 1억 2천만원입니다."       │
+│                                                     │
+│  📈 [자동 생성 차트 — bar chart]                    │
+│                                                     │
+│  🔍 생성된 SQL  ▾ (펼치기)                          │
+│  ┌─────────────────────────────────────────────┐   │
+│  │ SELECT SUM(amount) AS revenue                │   │
+│  │ FROM fct_sales                               │   │
+│  │ WHERE region = '서울'                        │   │
+│  │   AND DATE_TRUNC('month', sale_month) =      │   │
+│  │       DATE_TRUNC('month',                    │   │
+│  │           CURRENT_DATE - INTERVAL '1 month') │   │
+│  └─────────────────────────────────────────────┘   │
+│                                                     │
+│  💡 추천 후속 질문:                                  │
+│   - "전월 대비 증감률은?"                            │
+│   - "다른 지역도 비교해줘"                           │
+└─────────────────────────────────────────────────────┘
 ```
+
+> **이 화면에서 보이는 4가지:**
+> 1. **자연어 답변** — 사용자 친화적 텍스트
+> 2. **자동 시각화** — bar/line/pie 차트 자동 선택
+> 3. **투명한 SQL** — 어떤 SQL이 실행됐는지 펼쳐서 확인 (신뢰)
+> 4. **추천 질문** — Asking Task 기능, 후속 분석 유도
 
 ### 실습 3 핵심 통찰
 
@@ -1554,7 +1611,66 @@ WrenAI:
 
 같은 질문을 다음에 또 하면 같은 SQL이 생성됩니다 (재현성).
 
-## 5-6. 세 도구 통합 흐름 (전체 그림)
+## 5-6. 같은 질문 — 세 도구가 어떻게 답하나 (실습 결과 비교)
+
+### 비교 질문: **"이번 달 매출 알려줘"**
+
+같은 데이터(`fct_sales`)에서 같은 결과를 얻기까지 세 도구가 다른 방식으로 동작합니다.
+
+| 항목 | **dbt** | **Cube** | **WrenAI** |
+|------|---------|---------|----------|
+| **입력 형태** | SQL 쿼리 (사람이 직접) | API 요청 JSON | 자연어 텍스트 |
+| **사용자 입력 예시** | `SELECT SUM(amount) FROM fct_sales WHERE ...` | `{"measures": ["Sales.revenue"]}` | "이번 달 매출 알려줘" |
+| **메트릭 정의** | dbt `semantic_models` (Cloud만) | `cube('Sales').measures.revenue` | MDL description + SQL Pair |
+| **메트릭 SSOT** | YAML 파일 | JS 파일 | UI + MDL JSON |
+| **출력 형태** | DB에 적재된 테이블/뷰 | JSON 응답 | 자연어 답변 + 차트 + SQL |
+| **응답 시간** | 빌드 시 1회 | 50~200ms (Pre-agg 시 ~30ms) | 3~5초 (LLM 호출) |
+| **누가 사용하나** | 분석가, 엔지니어 | 프론트엔드, BI 도구 | 현업, 임원 (비 IT) |
+| **재현성** | 100% (SQL 고정) | 100% (메트릭 고정) | ~95% (SQL Pair 등록 시) |
+| **결과 (12억)** | `fct_sales` 테이블에서 직접 조회 | `{"Sales.revenue": "1200000000"}` | "이번 달 매출은 12억원입니다." |
+
+### 실습 시연 흐름 한눈에
+
+```mermaid
+sequenceDiagram
+    participant U as 사용자 질문<br/>"이번 달 매출"
+    participant D as dbt
+    participant C as Cube
+    participant W as WrenAI
+    participant DB as fct_sales
+
+    Note over D: 사람이 SQL 작성
+    U->>D: SQL 직접 실행
+    D->>DB: SUM(amount) WHERE month=now
+    DB-->>U: 12억 (테이블)
+
+    Note over C: 프론트엔드가 API 호출
+    U->>C: POST /v1/load<br/>{"measures":["Sales.revenue"]}
+    C->>DB: SUM(amount)...
+    DB-->>C: 12억
+    C-->>U: JSON {"revenue": 12억}
+
+    Note over W: 사용자가 자연어
+    U->>W: "이번 달 매출 알려줘"
+    W->>W: MDL + RAG로 SQL 생성
+    W->>DB: SUM(amount) WHERE ...
+    DB-->>W: 12억
+    W-->>U: "이번 달 매출은 12억원입니다."
+```
+
+### 세 도구의 역할이 다른 이유
+
+| 차원 | dbt | Cube | WrenAI |
+|------|-----|------|--------|
+| **본질적 역할** | 데이터 정제 (T) | 메트릭 표준화 + 서빙 | 자연어 인터페이스 |
+| **레이어 위치** | DB 위 (변환) | DB 위 (API) | DB 위 (LLM) |
+| **상호 보완** | ✅ Gold Table 제공 | ✅ Gold를 API로 노출 | ✅ Gold/Cube를 자연어로 |
+| **단독 사용 가능** | ⭕ (변환만) | ⭕ (BI만) | ⭕ (NL2SQL만) |
+| **통합 사용 시 이상적** | 변환 담당 | 서빙 담당 | 자연어 담당 |
+
+> 💡 **세 도구는 경쟁이 아니라 보완.** dbt가 깨끗한 Gold를 만들면 Cube가 그걸 API로 노출하고 WrenAI가 자연어로 호출. **각자 다른 레이어를 맡는 분업 구조.**
+
+## 5-7. 세 도구 통합 흐름 (전체 그림)
 
 ```mermaid
 flowchart LR
@@ -1577,6 +1693,38 @@ flowchart LR
 ```
 
 > 💡 **실무 패턴:** dbt(변환) → Cube(BI/API) + WrenAI(NL2SQL) 같이 쓰는 게 이상적.
+
+## 5-8. 실습 정리 (세션 종료 시)
+
+세미나 후 실습 환경 깨끗하게 정리하기:
+
+```bash
+# 1. WrenAI 종료 (별도 docker-compose였으므로 분리 정리)
+docker compose -f docker-compose.wrenai.yml down -v
+
+# 2. 메인 환경 종료 (dbt + Cube + PostgreSQL)
+docker compose down -v
+#   -v 옵션: PostgreSQL 데이터 볼륨도 같이 삭제
+
+# 3. 사용한 Docker 이미지 삭제 (선택)
+docker rmi cubejs/cube:latest ghcr.io/dbt-labs/dbt-postgres:1.7.0
+
+# 4. 디스크 정리 (사용 안 하는 이미지/볼륨 일괄 삭제)
+docker system prune -a --volumes
+```
+
+> ⚠️ **`-v` 옵션은 데이터를 영구 삭제.** 실습 데이터를 보관하고 싶다면 `-v` 빼고 `docker compose down`만 실행.
+
+### 사내 적용으로 진행 시
+
+세미나 실습은 **로컬 PoC**용. 사내 적용은 다음 가이드 참고:
+
+| 가이드 | 위치 | 내용 |
+|--------|------|------|
+| dbt 사내 적용 | `dbt_demo_results.md` §6 | dbt-oracle 단계별 7개 섹션 |
+| Cube 사내 적용 | `cube_demo_results.md` §6 | Cube-oracle Instant Client + 함정 |
+| WrenAI 사내 적용 | `wrenai_demo_results.md` §6 | Oracle 19c 불가 → 우회 3종 |
+| 자체 구현 (v3) | `nl2sql_implementation_plan_v3.md` | LangGraph + QuerySpec Phase 0-4 |
 
 ---
 
@@ -1988,3 +2136,4 @@ flowchart LR
 | 2026-05-17 | §6-1 결정 트리에 4가지 추천 경로별 상세 근거 추가 (dbt Core / Cube / WrenAI / 자체 구현). 시나리오 표 + 핵심 근거 + 부적합 케이스 + 한 페이지 요약 비교 |
 | 2026-05-18 | Part 1 개념 보강 — §1-2 Before/After 시각 비교(mermaid 2개), §1-3 각 구성요소에 "없으면 어떻게 되나" + dbt/Cube/WrenAI 용어 매핑표, §1-6 KG 1분 예시 (Cypher + mermaid) |
 | 2026-05-18 | Part 4 LangGraph 보강 — §4-3 실제 동작 최소 예시 (TypedDict + 조건부 엣지 + invoke 결과), §4-4 신설 "WrenAI Agent로 안 풀리는 4 시나리오" + 기능 비교표, §4-5 신설 다른 멀티 에이전트 프레임워크 비교 (LangGraph/AutoGen/CrewAI/Swarm) |
+| 2026-05-18 | Part 5 실습 보강 — §5-5 WrenAI UI 화면 ASCII 박스 묘사 (Settings/Modeling/Ask), §5-6 신설 "같은 질문을 3 도구가 어떻게 답하나" 9개 항목 비교표 + sequenceDiagram, §5-8 신설 실습 정리 명령 (down -v + sys prune) + 사내 적용 가이드 링크표 |
