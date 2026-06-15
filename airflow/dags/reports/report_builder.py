@@ -58,6 +58,13 @@ def build_morning_report(
     """
     result = {"success": False, "html": "", "data": {}, "error": ""}
 
+    # 휴장일이면 스킵
+    from utils.market_calendar import is_market_open
+    if not is_market_open():
+        print("📅 오늘은 휴장일 — 모닝리포트 생성 스킵")
+        result["error"] = "market_closed"
+        return result
+
     try:
         # 1. 데이터 수집
         print("📊 데이터 수집 중...")
@@ -209,14 +216,19 @@ def build_morning_report(
         except Exception as e:
             print(f"⚠️ 뉴스 수집 실패 (계속 진행): {e}")
 
-        # 3-1. 사전 수집 뉴스 다이제스트 (최근 48시간) 추가
-        print("📰 뉴스 다이제스트 조회 중...")
+        # 3-1. 사전 수집 뉴스 다이제스트 (평일 24h, 월요일 72h)
+        from datetime import datetime as _dt, timezone as _tz, timedelta as _td
+        _kst = _tz(_td(hours=9))
+        _weekday = _dt.now(_kst).weekday()  # 0=월 ~ 6=일 (KST 기준)
+        digest_hours = 72 if _weekday == 0 else 24
+        print(f"📰 뉴스 다이제스트 조회 중... (최근 {digest_hours}시간)")
         try:
             from reports.news_digest_collector import get_consolidated_digest
-            digest_context = get_consolidated_digest(hours=48)
+            digest_context = get_consolidated_digest(hours=digest_hours)
             if digest_context:
+                label = "주말 포함" if digest_hours == 72 else "전일"
                 news_context = (
-                    f"## 최근 48시간 뉴스 다이제스트 (사전 수집, 주말 포함)\n"
+                    f"## 최근 {digest_hours}시간 뉴스 다이제스트 ({label})\n"
                     f"{digest_context}\n\n"
                     f"## 실시간 수집 뉴스\n"
                     f"{news_context}"
@@ -227,9 +239,47 @@ def build_morning_report(
         except Exception as e:
             print(f"⚠️ 뉴스 다이제스트 조회 실패 (무시): {e}")
 
+        # 3-2. 해외 AI 동향 다이제스트 (RSS 기반 — TechCrunch/VentureBeat/Verge)
+        # DAG가 8h 간격(06:30/14:30/22:30)으로 스냅샷 저장 → 최근 24h의 여러 행을 Haiku로 1건 통합
+        print("🌐 해외 AI 동향 다이제스트 조회 중... (최근 24h 스냅샷 통합)")
+        try:
+            from reports.overseas_ai_news_collector import get_consolidated_overseas_digest
+            ai_digest = get_consolidated_overseas_digest(hours=24)
+            if ai_digest:
+                news_context = (
+                    f"{news_context}\n\n"
+                    f"## 🌐 해외 AI 동향 (최근 24시간)\n"
+                    f"{ai_digest}"
+                )
+                print(f"    해외 AI 동향 추가 완료 ({len(ai_digest)}자)")
+            else:
+                print(f"    해외 AI 동향 없음 (아직 수집 전)")
+        except Exception as e:
+            print(f"⚠️ 해외 AI 동향 조회 실패 (무시): {e}")
+
         # 4. LLM 분석 (RAG 통합)
         print("🤖 AI 분석 생성 중...")
         ai_analysis = analyze_market_v2(macro_data, news_context)
+
+        # 4-0. 시장 판정(outlook) 추출 → 본문에서 제거 + DB 기록 (모델별 적중률 추적)
+        try:
+            from outlook_tracker import extract_outlook_json, save_outlook
+            from llm_analyzer_v2 import get_llm_model
+            outlook, ai_analysis = extract_outlook_json(ai_analysis)
+            if outlook:
+                rule_signal = None
+                try:
+                    rule_signal = calculate_reference_signals(macro_data).get("한국(전망)")
+                except Exception:
+                    pass
+                save_outlook(
+                    outlook=outlook,
+                    rule_signal=rule_signal,
+                    llm_model=get_llm_model(),
+                )
+                print(f"    📌 시장 판정 기록: {outlook['bias']} (confidence {outlook.get('confidence')})")
+        except Exception as e:
+            print(f"⚠️ outlook 기록 실패 (계속 진행): {e}")
 
         # 4-1. 상세 분석 기반 인사이트 요약 생성 (Haiku)
         print("💡 인사이트 요약 생성 중 (Haiku)...")

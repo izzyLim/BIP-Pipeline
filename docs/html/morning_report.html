@@ -299,13 +299,9 @@
   <li class="toc-h3"><a href="#프롬프트에-주입되는-데이터">프롬프트에 주입되는 데이터</a></li>
   <li class="toc-h3"><a href="#출력-구조-2500자-이상">출력 구조 (2,500자 이상)</a></li>
   <li class="toc-h3"><a href="#프롬프트-핵심-원칙">프롬프트 핵심 원칙</a></li>
-<li class="toc-h2"><a href="#용어-설명-자동-추가-glossarypy">용어 설명 자동 추가 (glossary.py)</a></li>
-  <li class="toc-h3"><a href="#예시">예시</a></li>
-  <li class="toc-h3"><a href="#등록된-용어-카테고리">등록된 용어 카테고리</a></li>
-<li class="toc-h2"><a href="#pdf-첨부-pdf_generatorpy">PDF 첨부 (pdf_generator.py)</a></li>
-  <li class="toc-h3"><a href="#특징">특징</a></li>
-<li class="toc-h2"><a href="#이메일-발송-email_senderpy">이메일 발송 (email_sender.py)</a></li>
-  <li class="toc-h3"><a href="#발송-방식">발송 방식</a></li>
+<li class="toc-h2"><a href="#뉴스-활용-방식">뉴스 활용 방식</a></li>
+<li class="toc-h2"><a href="#이상치-우선-분석">이상치 우선 분석</a></li>
+<li class="toc-h2"><a href="#시간순-분석-중요">시간순 분석 (중요!)</a></li>
 <li class="toc-h2"><a href="#dag-스케줄">DAG 스케줄</a></li>
 <li class="toc-h2"><a href="#환경변수--airflow-variables">환경변수 / Airflow Variables</a></li>
 <li class="toc-h2"><a href="#주요-파일">주요 파일</a></li>
@@ -630,7 +626,11 @@
 </tr>
 </tbody>
 </table>
-<p>설정: Airflow Variable <code>llm_model</code> = <code>claude-sonnet-4-6</code> (운영)</p>
+<p><strong>설정 우선순위 (2026-06-15 개선)</strong>: <code>get_llm_model()</code> 이 다음 순서로 모델을 선택.
+1. <strong>Airflow Variable <code>LLM_MODEL</code></strong> — Airflow UI에서 즉시 변경 가능, 컨테이너 재시작 불필요
+2. <strong>환경변수 <code>LLM_MODEL</code></strong> — docker-compose.yaml 기본값 (fallback)
+3. <strong>하드코드 기본값</strong> — <code>claude-sonnet</code> (claude-sonnet-4-6)</p>
+<p>운영 권장: Admin &gt; Variables 에서 <code>LLM_MODEL = claude-sonnet</code> 등록 → 다음 DAG 실행부터 바로 반영.</p>
 <blockquote>
 <p><strong>모델 비교 결과 (2026-04-07):</strong> 동일 데이터로 Opus/Sonnet/GPT-5.4 3종 비교.
 Sonnet이 분석 깊이, 체크리스트 품질, 비용 대비 가치 모두 최우수. Opus는 용어 설명만 우위.</p>
@@ -703,6 +703,10 @@ Sonnet이 분석 깊이, 체크리스트 품질, 비용 대비 가치 모두 최
 <td>동조화/디커플링 분석</td>
 </tr>
 <tr>
+<td>🌐 해외 AI 동향</td>
+<td>TechCrunch/VentureBeat/Verge RSS 기반, 한국 증시 관점 시사점 (2026-06-15 신설)</td>
+</tr>
+<tr>
 <td>🔬 반도체 섹터 심층 분석</td>
 <td>DRAM/NAND 현물가, HBM 동향, 반도체 ETF</td>
 </tr>
@@ -760,99 +764,155 @@ Sonnet이 분석 깊이, 체크리스트 품질, 비용 대비 가치 모두 최
 
 <span class="o">---</span>
 
-<span class="c1">## 뉴스 활용 방식</span>
+<span class="c1">## 해외 AI 뉴스 다이제스트 파이프라인 (overseas_ai_news_collector.py) — 2026-06-15 신설</span>
 
-<span class="n">❌</span><span class="w"> </span><span class="n">절대</span><span class="w"> </span><span class="n">금지</span><span class="o">:</span>
-<span class="o">-</span><span class="w"> </span><span class="s2">&quot;뉴스에서 자주 언급된...&quot;</span>
-<span class="o">-</span><span class="w"> </span><span class="s2">&quot;뉴스에 따르면...&quot;</span>
-<span class="o">-</span><span class="w"> </span><span class="n">뉴스</span><span class="w"> </span><span class="n">헤드라인</span><span class="w"> </span><span class="n">그대로</span><span class="w"> </span><span class="n">나열</span>
+<span class="n">8시간마다</span><span class="w"> </span><span class="n">영문</span><span class="w"> </span><span class="n">RSS를</span><span class="w"> </span><span class="n">자동</span><span class="w"> </span><span class="n">수집</span><span class="o">/</span><span class="n">요약하여</span><span class="w"> </span><span class="n n-Quoted">`overseas_ai_news_digest`</span><span class="w"> </span><span class="n">테이블에</span><span class="w"> </span><span class="n">저장</span><span class="p">.</span><span class="w"> </span><span class="n">모닝리포트에서</span><span class="w"> </span><span class="n">최근</span><span class="w"> </span><span class="n">24시간</span><span class="w"> </span><span class="n">스냅샷들을</span><span class="w"> </span><span class="n">통합본으로</span><span class="w"> </span><span class="n">LLM</span><span class="w"> </span><span class="n">컨텍스트에</span><span class="w"> </span><span class="n">주입</span><span class="p">.</span>
 
-<span class="n">✅</span><span class="w"> </span><span class="n">올바른</span><span class="w"> </span><span class="n">방식</span><span class="o">:</span>
-<span class="o">-</span><span class="w"> </span><span class="n">뉴스에서</span><span class="w"> </span><span class="n">팩트만</span><span class="w"> </span><span class="n">추출</span><span class="w"> </span><span class="n">→</span><span class="w"> </span><span class="n">데이터와</span><span class="w"> </span><span class="n">연결하여</span><span class="w"> </span><span class="n">분석</span>
-<span class="o">-</span><span class="w"> </span><span class="n">독자적인</span><span class="w"> </span><span class="n">해석과</span><span class="w"> </span><span class="n">인사이트</span><span class="w"> </span><span class="n">제시</span>
-<span class="o">-</span><span class="w"> </span><span class="n">예</span><span class="o">:</span><span class="w"> </span><span class="s2">&quot;SK하이닉스의 HBM3E 양산 확대(뉴스)와 DRAM 현물가 3주 연속 상승(+2.3%, 데이터)을</span>
-<span class="s2">     종합하면, 메모리 업황 회복이 가시화되고 있습니다.&quot;</span>
-
-<span class="c1">## 이상치 우선 분석</span>
-
-<span class="n">시스템이</span><span class="w"> </span><span class="n">자동</span><span class="w"> </span><span class="n">탐지한</span><span class="w"> </span><span class="n">특이점</span><span class="p">(</span><span class="n">급등락</span><span class="p">,</span><span class="w"> </span><span class="n">이상</span><span class="w"> </span><span class="n">수급</span><span class="w"> </span><span class="n">등</span><span class="p">)</span><span class="n">을</span><span class="w"> </span><span class="n">최우선으로</span><span class="w"> </span><span class="n">분석</span><span class="p">.</span>
-<span class="n">일반적인</span><span class="w"> </span><span class="n">시황보다</span><span class="w"> </span><span class="s2">&quot;평소와 다른 점&quot;</span><span class="n">에</span><span class="w"> </span><span class="n">집중</span><span class="p">.</span>
-
-<span class="c1">## 시간순 분석 (중요!)</span>
-
-<span class="mf">1.</span><span class="w"> </span><span class="err">🇰🇷</span><span class="w"> </span><span class="n">한국</span><span class="w"> </span><span class="n">시장</span><span class="w"> </span><span class="n">마감</span><span class="w"> </span><span class="p">(</span><span class="err">{</span><span class="n">korea_date</span><span class="err">}</span><span class="w"> </span><span class="mi">15</span><span class="o">:</span><span class="mi">30</span><span class="w"> </span><span class="n">KST</span><span class="p">)</span><span class="w"> </span><span class="o">-</span><span class="w"> </span><span class="n">미국장</span><span class="w"> </span><span class="n">언급</span><span class="w"> </span><span class="n">금지</span><span class="w"> </span><span class="p">(</span><span class="n">인과관계</span><span class="w"> </span><span class="n">역전</span><span class="w"> </span><span class="n">방지</span><span class="p">)</span>
-<span class="mf">2.</span><span class="w"> </span><span class="err">🇺🇸</span><span class="w"> </span><span class="n">미국</span><span class="w"> </span><span class="n">시장</span><span class="w"> </span><span class="n">마감</span><span class="w"> </span><span class="p">(</span><span class="err">{</span><span class="n">us_date</span><span class="err">}</span><span class="w"> </span><span class="n">마감</span><span class="w"> </span><span class="n">→</span><span class="w"> </span><span class="n">KST</span><span class="w"> </span><span class="n">익일</span><span class="w"> </span><span class="mi">06</span><span class="o">:</span><span class="mi">00</span><span class="p">)</span><span class="w"> </span><span class="o">-</span><span class="w"> </span><span class="n">한국장</span><span class="w"> </span><span class="n">마감</span><span class="w"> </span><span class="n">후</span><span class="w"> </span><span class="n">움직임</span>
-
-<span class="o">&gt;</span><span class="w"> </span><span class="o">**</span><span class="n">날짜</span><span class="w"> </span><span class="n">표현</span><span class="w"> </span><span class="n">변경</span><span class="w"> </span><span class="p">(</span><span class="mi">2026</span><span class="o">-</span><span class="mi">04</span><span class="o">-</span><span class="mi">07</span><span class="p">)</span><span class="o">:**</span><span class="w"> </span><span class="s2">&quot;어제/오늘 새벽&quot;</span><span class="w"> </span><span class="n">→</span><span class="w"> </span><span class="n">실제</span><span class="w"> </span><span class="n">거래일</span><span class="w"> </span><span class="n">날짜</span><span class="p">.</span>
-<span class="o">&gt;</span><span class="w"> </span><span class="n">미국</span><span class="w"> </span><span class="n">휴장</span><span class="p">(</span><span class="n">Good</span><span class="w"> </span><span class="n">Friday</span><span class="w"> </span><span class="n">등</span><span class="p">)</span><span class="w"> </span><span class="n">시</span><span class="w"> </span><span class="s2">&quot;어제&quot;</span><span class="n">가</span><span class="w"> </span><span class="n">3일</span><span class="w"> </span><span class="n">전</span><span class="w"> </span><span class="n">데이터를</span><span class="w"> </span><span class="n">가리키는</span><span class="w"> </span><span class="n">오류</span><span class="w"> </span><span class="n">방지</span><span class="p">.</span>
-<span class="mf">3.</span><span class="w"> </span><span class="err">🔮</span><span class="w"> </span><span class="err">[</span><span class="n">오늘</span><span class="err">]</span><span class="w"> </span><span class="n">한국</span><span class="w"> </span><span class="n">시장</span><span class="w"> </span><span class="n">전망</span><span class="w"> </span><span class="o">-</span><span class="w"> </span><span class="n">야간선물</span><span class="p">,</span><span class="w"> </span><span class="n">갭</span><span class="w"> </span><span class="n">예측</span>
+<span class="c1">### 흐름</span>
 </code></pre></div>
 
-<hr />
-<h2 id="용어-설명-자동-추가-glossarypy">용어 설명 자동 추가 (glossary.py)</h2>
-<p>AI 분석 결과에 어려운 금융 약어/전문용어를 자동으로 설명 추가합니다.</p>
-<h3 id="예시">예시</h3>
-<table>
-<thead>
-<tr>
-<th>원문</th>
-<th>변환 후</th>
-</tr>
-</thead>
-<tbody>
-<tr>
-<td>VIX가 18.5로 하락</td>
-<td>VIX(공포지수, 높을수록 시장 불안)가 18.5로 하락</td>
-</tr>
-<tr>
-<td>HBM 수요 증가</td>
-<td>HBM(AI용 고성능메모리, 엔비디아 GPU에 탑재) 수요 증가</td>
-</tr>
-<tr>
-<td>FOMC 회의</td>
-<td>FOMC(미국 금리결정회의) 회의</td>
-</tr>
-</tbody>
-</table>
-<h3 id="등록된-용어-카테고리">등록된 용어 카테고리</h3>
-<ul>
-<li><strong>지수/지표</strong>: VIX, VKOSPI, DXY, SOX, PMI, CPI, PPI, PCE</li>
-<li><strong>밸류에이션</strong>: PER, PBR, EPS, BPS, ROE, ROA, EV/EBITDA, PSR</li>
-<li><strong>반도체</strong>: HBM, HBM3E, DDR5, DDR4, NAND, DRAM, eSSD, CoWoS</li>
-<li><strong>중앙은행</strong>: FOMC, Fed, BOJ, ECB, BOK, QT, QE, dovish, hawkish</li>
-<li><strong>투자/수급</strong>: Risk-On, Risk-Off, ETF, EWY, TLT, HYG, SPY, QQQ</li>
-<li><strong>시장 용어</strong>: 갭상승, 갭하락, 데드캣바운스, 숏커버링, 윈도드레싱</li>
-<li><strong>기타</strong>: YoY, QoQ, MoM, WoW, bps, GTC, WWDC, CES</li>
-</ul>
-<hr />
-<h2 id="pdf-첨부-pdf_generatorpy">PDF 첨부 (pdf_generator.py)</h2>
-<p>이메일 본문과 동일한 내용을 PDF로 생성하여 첨부합니다.</p>
-<h3 id="특징">특징</h3>
-<ul>
-<li>이메일 클라이언트에서 이미지가 차단되어도 PDF로 확인 가능</li>
-<li>히트맵 이미지 포함 (CID → Data URI 변환)</li>
-<li>파일명: <code>BIP_모닝브리핑_YYYYMMDD.pdf</code></li>
-<li>weasyprint 라이브러리 사용</li>
-</ul>
-<hr />
-<h2 id="이메일-발송-email_senderpy">이메일 발송 (email_sender.py)</h2>
-<h3 id="발송-방식">발송 방식</h3>
-<ul>
-<li><strong>SMTP</strong>: Gmail (<code>smtp.gmail.com:587</code>, STARTTLS)</li>
-<li><strong>개별 발송</strong>: 수신자별로 별도 메시지 발송 (개인정보 보호)</li>
-<li><code>To</code> 필드에 본인 이메일만 표시</li>
-<li>다른 수신자 이메일 비공개</li>
-</ul>
-<div class="codehilite"><pre><span></span><code><span class="c1"># 발송 흐름</span>
-<span class="k">with</span> <span class="n">smtplib</span><span class="o">.</span><span class="n">SMTP</span><span class="p">(</span><span class="n">host</span><span class="p">,</span> <span class="n">port</span><span class="p">)</span> <span class="k">as</span> <span class="n">server</span><span class="p">:</span>
-    <span class="n">server</span><span class="o">.</span><span class="n">starttls</span><span class="p">()</span>
-    <span class="n">server</span><span class="o">.</span><span class="n">login</span><span class="p">(</span><span class="n">user</span><span class="p">,</span> <span class="n">password</span><span class="p">)</span>
+<p>[06:30 / 14:30 / 22:30 KST] RSS 3개 소스 → 최근 24h 기사 모음
+    → 키워드 필터(빅테크/모델/규제/펀딩 등) → 시장영향 관점 기사만 통과
+    → Haiku 1회: "한국 증시 영향 이슈 3~5건 한국어 요약" → DB 저장</p>
+<p>[모닝리포트 08:10] get_consolidated_overseas_digest(24)
+    → 최근 24h 다이제스트 행 N개 조회
+    → N=1이면 그대로, N&gt;1이면 Haiku로 통합 (4~6건으로 머지)
+    → LLM 프롬프트에 "## 🌐 해외 AI 동향 (최근 24시간)" 섹션으로 주입</p>
+<div class="codehilite"><pre><span></span><code><span class="c1">### RSS 소스 (기본값, Airflow Variable `OVERSEAS_AI_RSS_FEEDS`로 override 가능)</span>
 
-    <span class="k">for</span> <span class="n">to_email</span> <span class="ow">in</span> <span class="n">to_emails</span><span class="p">:</span>
-        <span class="n">msg</span> <span class="o">=</span> <span class="n">MIMEMultipart</span><span class="p">(</span><span class="s2">&quot;related&quot;</span><span class="p">)</span>
-        <span class="n">msg</span><span class="p">[</span><span class="s2">&quot;To&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="n">to_email</span>  <span class="c1"># 개별 수신자만 표시</span>
-        <span class="c1"># ... 메시지 구성</span>
-        <span class="n">server</span><span class="o">.</span><span class="n">send_message</span><span class="p">(</span><span class="n">msg</span><span class="p">,</span> <span class="n">to_addrs</span><span class="o">=</span><span class="p">[</span><span class="n">to_email</span><span class="p">])</span>
+<span class="o">|</span><span class="w"> </span><span class="n">소스</span><span class="w"> </span><span class="o">|</span><span class="w"> </span><span class="n">URL</span><span class="w"> </span><span class="o">|</span><span class="w"> </span><span class="n">특징</span><span class="w"> </span><span class="o">|</span>
+<span class="o">|------|-----|------|</span>
+<span class="o">|</span><span class="w"> </span><span class="n">TechCrunch</span><span class="w"> </span><span class="n">AI</span><span class="w"> </span><span class="o">|</span><span class="w"> </span><span class="n n-Quoted">`techcrunch.com/category/artificial-intelligence/feed/`</span><span class="w"> </span><span class="o">|</span><span class="w"> </span><span class="n">스타트업·자금조달·빅테크</span><span class="w"> </span><span class="o">|</span>
+<span class="o">|</span><span class="w"> </span><span class="n">VentureBeat</span><span class="w"> </span><span class="n">AI</span><span class="w"> </span><span class="o">|</span><span class="w"> </span><span class="n n-Quoted">`venturebeat.com/category/ai/feed/`</span><span class="w"> </span><span class="o">|</span><span class="w"> </span><span class="n">엔터프라이즈</span><span class="w"> </span><span class="n">AI</span><span class="w"> </span><span class="o">|</span>
+<span class="o">|</span><span class="w"> </span><span class="n">The</span><span class="w"> </span><span class="n">Verge</span><span class="w"> </span><span class="n">AI</span><span class="w"> </span><span class="o">|</span><span class="w"> </span><span class="n n-Quoted">`theverge.com/rss/ai-artificial-intelligence/index.xml`</span><span class="w"> </span><span class="o">|</span><span class="w"> </span><span class="n">소비자</span><span class="w"> </span><span class="n">제품·정책</span><span class="w"> </span><span class="o">|</span>
+
+<span class="o">&gt;</span><span class="w"> </span><span class="o">**</span><span class="n">1차</span><span class="w"> </span><span class="n">소스</span><span class="p">(</span><span class="n">OpenAI</span><span class="o">/</span><span class="n">Anthropic</span><span class="w"> </span><span class="n">공식</span><span class="w"> </span><span class="n">블로그</span><span class="p">)</span><span class="n">는</span><span class="w"> </span><span class="n">미포함</span><span class="p">.</span><span class="o">**</span><span class="w"> </span><span class="n">이유</span><span class="o">:</span><span class="w"> </span><span class="n">위</span><span class="w"> </span><span class="n">3개</span><span class="w"> </span><span class="n">2차</span><span class="w"> </span><span class="n">소스가</span><span class="w"> </span><span class="n">빅테크</span><span class="w"> </span><span class="n">발표를</span><span class="w"> </span><span class="n">발표</span><span class="w"> </span><span class="n">후</span><span class="w"> </span><span class="mi">1</span><span class="o">~</span><span class="n">3시간</span><span class="w"> </span><span class="n">안에</span><span class="w"> </span><span class="n">보도하므로</span><span class="w"> </span><span class="n">사실상</span><span class="w"> </span><span class="n">중복</span><span class="p">.</span><span class="w"> </span><span class="n">1차</span><span class="w"> </span><span class="n">소스는</span><span class="w"> </span><span class="n">마이너</span><span class="w"> </span><span class="n">공지가</span><span class="w"> </span><span class="n">많아</span><span class="w"> </span><span class="n">노이즈</span><span class="w"> </span><span class="n">비율이</span><span class="w"> </span><span class="n">높음</span><span class="p">.</span>
+
+<span class="c1">### 요약 형식 (Haiku 출력 — 한국어)</span>
+</code></pre></div>
+
+<p>[상] OpenAI, 차세대 모델 발표 (GPT-X) — 추론 성능 2배·가격 30% 인하 (긍정, 빅테크/반도체)
+[중] EU AI Act 추가 규제안 — 범용 AI 라이선스 의무화 검토 (부정, 글로벌 빅테크)</p>
+<div class="codehilite"><pre><span></span><code><span class="o">-</span><span class="w"> </span><span class="n">중요도</span><span class="w"> </span><span class="err">[</span><span class="n">상</span><span class="o">/</span><span class="n">중</span><span class="o">/</span><span class="n">하</span><span class="err">]</span><span class="w"> </span><span class="o">+</span><span class="w"> </span><span class="n">영문</span><span class="w"> </span><span class="n">원제→한국어</span><span class="w"> </span><span class="o">+</span><span class="w"> </span><span class="mi">1</span><span class="o">~</span><span class="n">2줄</span><span class="w"> </span><span class="n">핵심</span><span class="w"> </span><span class="o">+</span><span class="w"> </span><span class="n">영향</span><span class="w"> </span><span class="n">방향</span><span class="w"> </span><span class="o">+</span><span class="w"> </span><span class="n">관련</span><span class="w"> </span><span class="n">섹터</span><span class="o">/</span><span class="n">종목</span>
+
+<span class="c1">### DB 테이블</span>
+<span class="o">-</span><span class="w"> </span><span class="n n-Quoted">`overseas_ai_news_digest`</span><span class="w"> </span><span class="n">—</span><span class="w"> </span><span class="n">collected_at</span><span class="p">,</span><span class="w"> </span><span class="n">sources</span><span class="p">(</span><span class="n">jsonb</span><span class="p">),</span><span class="w"> </span><span class="n">raw_count</span><span class="p">,</span><span class="w"> </span><span class="n">digest</span><span class="p">(</span><span class="kt">text</span><span class="p">),</span><span class="w"> </span><span class="n">raw_items</span><span class="p">(</span><span class="n">jsonb</span><span class="p">)</span>
+<span class="o">-</span><span class="w"> </span><span class="n">DAG</span><span class="o">:</span><span class="w"> </span><span class="n n-Quoted">`overseas_ai_news_digest`</span><span class="w"> </span><span class="p">(</span><span class="n n-Quoted">`30 6,14,22 * * *`</span><span class="p">)</span>
+<span class="o">-</span><span class="w"> </span><span class="n">비용</span><span class="o">:</span><span class="w"> </span><span class="n">Haiku</span><span class="w"> </span><span class="o">~</span><span class="n">$0</span><span class="mf">.015</span><span class="o">/</span><span class="n">일</span><span class="w"> </span><span class="p">(</span><span class="n">수집</span><span class="w"> </span><span class="n">3회</span><span class="w"> </span><span class="o">+</span><span class="w"> </span><span class="n">모닝</span><span class="w"> </span><span class="n">통합</span><span class="w"> </span><span class="n">1회</span><span class="p">)</span>
+
+<span class="c1">### RSS 롤오버 누락 경고 (자동)</span>
+
+<span class="n">피드의</span><span class="w"> </span><span class="n">가장</span><span class="w"> </span><span class="n">오래된</span><span class="w"> </span><span class="n">항목조차</span><span class="w"> </span><span class="n">요청</span><span class="w"> </span><span class="n">윈도우</span><span class="w"> </span><span class="n">안쪽이면</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">RSS가</span><span class="w"> </span><span class="n">24h</span><span class="w"> </span><span class="n">다</span><span class="w"> </span><span class="n">못</span><span class="w"> </span><span class="n">보여줬다</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">그</span><span class="w"> </span><span class="n">이전</span><span class="w"> </span><span class="n">기사</span><span class="w"> </span><span class="n">누락</span><span class="w"> </span><span class="n">가능</span><span class="p">.</span>
+<span class="n n-Quoted">`_collect_rss`</span><span class="n">가</span><span class="w"> </span><span class="n">자동</span><span class="w"> </span><span class="n">감지하여</span><span class="w"> </span><span class="n">Airflow</span><span class="w"> </span><span class="n">Task</span><span class="w"> </span><span class="n">로그에</span><span class="w"> </span><span class="n">WARN</span><span class="w"> </span><span class="n">출력</span><span class="o">:</span>
+</code></pre></div>
+
+<p>⚠️  [TechCrunch AI] RSS 롤오버 의심: 피드의 가장 오래된 항목이 14.2h 전 (요청 24h).
+   그 이전 기사가 RSS에서 밀려났을 수 있음 → 누락 가능.</p>
+<div class="codehilite"><pre><span></span><code><span class="mf">8</span><span class="n">시간</span><span class="w"> </span><span class="n">간격</span><span class="p">(</span><span class="mf">06</span><span class="p">:</span><span class="mf">30</span><span class="o">/</span><span class="mf">14</span><span class="p">:</span><span class="mf">30</span><span class="o">/</span><span class="mf">22</span><span class="p">:</span><span class="mf">30</span><span class="p">)</span><span class="w"> </span><span class="n">스냅샷</span><span class="w"> </span><span class="mf">3</span><span class="n">회로</span><span class="w"> </span><span class="mf">1</span><span class="n">차</span><span class="w"> </span><span class="n">보험을</span><span class="w"> </span><span class="n">두고</span><span class="p">,</span><span class="w"> </span><span class="n">그래도</span><span class="w"> </span><span class="n">누락</span><span class="w"> </span><span class="n">의심되는</span><span class="w"> </span><span class="n">날은</span><span class="w"> </span><span class="n">위</span><span class="w"> </span><span class="n">경고로</span><span class="w"> </span><span class="n">감지</span><span class="mf">.</span>
+
+<span class="err">###</span><span class="w"> </span><span class="n">누락</span><span class="w"> </span><span class="n">확인</span><span class="w"> </span><span class="n">SQL</span><span class="w"> </span><span class="p">(</span><span class="n">운영</span><span class="w"> </span><span class="n">점검용</span><span class="p">)</span>
+
+<span class="err">```</span><span class="n">sql</span>
+<span class="n">SELECT</span>
+<span class="w">    </span><span class="n">collected_at</span><span class="p">::</span><span class="n">date</span><span class="w"> </span><span class="n">AS</span><span class="w"> </span><span class="kr">run</span><span class="n">_date</span><span class="p">,</span>
+<span class="w">    </span><span class="n">src</span><span class="mf">.</span><span class="nb">val</span><span class="n">ue</span><span class="o">-&gt;&gt;</span><span class="err">&#39;</span><span class="n">name</span><span class="err">&#39;</span><span class="w"> </span><span class="n">AS</span><span class="w"> </span><span class="n">source</span><span class="p">,</span>
+<span class="w">    </span><span class="n">COUNT</span><span class="p">(</span><span class="o">*</span><span class="p">)</span><span class="w"> </span><span class="n">AS</span><span class="w"> </span><span class="n">items</span><span class="p">,</span>
+<span class="w">    </span><span class="n">MIN</span><span class="p">((</span><span class="n">item</span><span class="o">-&gt;&gt;</span><span class="err">&#39;</span><span class="n">pub_date</span><span class="err">&#39;</span><span class="p">)::</span><span class="n">timestamptz</span><span class="p">)</span><span class="w"> </span><span class="n">AS</span><span class="w"> </span><span class="n">oldest_item</span><span class="p">,</span>
+<span class="w">    </span><span class="n">ROUND</span><span class="p">(</span><span class="n">EXTRACT</span><span class="p">(</span><span class="n">EPOCH</span><span class="w"> </span><span class="n">FROM</span><span class="w"> </span><span class="p">(</span>
+<span class="w">        </span><span class="n">collected_at</span><span class="w"> </span><span class="o">-</span><span class="w"> </span><span class="n">MIN</span><span class="p">((</span><span class="n">item</span><span class="o">-&gt;&gt;</span><span class="err">&#39;</span><span class="n">pub_date</span><span class="err">&#39;</span><span class="p">)::</span><span class="n">timestamptz</span><span class="p">)</span>
+<span class="w">    </span><span class="p">))</span><span class="o">/</span><span class="mf">3600</span><span class="p">,</span><span class="w"> </span><span class="mf">1</span><span class="p">)</span><span class="w"> </span><span class="n">AS</span><span class="w"> </span><span class="n">oldest_hours_ago</span>
+<span class="n">FROM</span><span class="w"> </span><span class="n">overseas_ai_news_digest</span><span class="p">,</span>
+<span class="w">     </span><span class="n">jsonb_array_elements</span><span class="p">(</span><span class="n">raw_items</span><span class="p">)</span><span class="w"> </span><span class="n">AS</span><span class="w"> </span><span class="n">item</span><span class="p">,</span>
+<span class="w">     </span><span class="n">jsonb_array_elements</span><span class="p">(</span><span class="n">sources</span><span class="p">)</span><span class="w"> </span><span class="n">AS</span><span class="w"> </span><span class="n">src</span>
+<span class="n">WHERE</span><span class="w"> </span><span class="n">item</span><span class="o">-&gt;&gt;</span><span class="err">&#39;</span><span class="n">source</span><span class="err">&#39;</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">src</span><span class="mf">.</span><span class="nb">val</span><span class="n">ue</span><span class="o">-&gt;&gt;</span><span class="err">&#39;</span><span class="n">name</span><span class="err">&#39;</span>
+<span class="n">GROUP</span><span class="w"> </span><span class="n">BY</span><span class="w"> </span><span class="mf">1</span><span class="p">,</span><span class="w"> </span><span class="mf">2</span><span class="p">,</span><span class="w"> </span><span class="n">collected_at</span>
+<span class="ow">OR</span><span class="n">DER</span><span class="w"> </span><span class="n">BY</span><span class="w"> </span><span class="mf">1</span><span class="w"> </span><span class="n">DESC</span><span class="p">,</span><span class="w"> </span><span class="mf">2</span><span class="p">;</span>
+</code></pre></div>
+
+<p><code>oldest_hours_ago &lt; 22</code> 이면 그 날 그 소스에서 누락 의심.</p>
+<hr />
+<h2 id="뉴스-활용-방식">뉴스 활용 방식</h2>
+<p>❌ 절대 금지:
+- "뉴스에서 자주 언급된..."
+- "뉴스에 따르면..."
+- 뉴스 헤드라인 그대로 나열</p>
+<p>✅ 올바른 방식:
+- 뉴스에서 팩트만 추출 → 데이터와 연결하여 분석
+- 독자적인 해석과 인사이트 제시
+- 예: "SK하이닉스의 HBM3E 양산 확대(뉴스)와 DRAM 현물가 3주 연속 상승(+2.3%, 데이터)을
+     종합하면, 메모리 업황 회복이 가시화되고 있습니다."</p>
+<h2 id="이상치-우선-분석">이상치 우선 분석</h2>
+<p>시스템이 자동 탐지한 특이점(급등락, 이상 수급 등)을 최우선으로 분석.
+일반적인 시황보다 "평소와 다른 점"에 집중.</p>
+<h2 id="시간순-분석-중요">시간순 분석 (중요!)</h2>
+<ol>
+<li>🇰🇷 한국 시장 마감 ({korea_date} 15:30 KST) - 미국장 언급 금지 (인과관계 역전 방지)</li>
+<li>🇺🇸 미국 시장 마감 ({us_date} 마감 → KST 익일 06:00) - 한국장 마감 후 움직임</li>
+</ol>
+<blockquote>
+<p><strong>날짜 표현 변경 (2026-04-07):</strong> "어제/오늘 새벽" → 실제 거래일 날짜.
+미국 휴장(Good Friday 등) 시 "어제"가 3일 전 데이터를 가리키는 오류 방지.
+3. 🔮 [오늘] 한국 시장 전망 - 야간선물, 갭 예측</p>
+</blockquote>
+<div class="codehilite"><pre><span></span><code><span class="o">---</span>
+
+<span class="err">##</span><span class="w"> </span><span class="nx">용어</span><span class="w"> </span><span class="nx">설명</span><span class="w"> </span><span class="nx">자동</span><span class="w"> </span><span class="nx">추가</span><span class="w"> </span><span class="p">(</span><span class="nx">glossary</span><span class="p">.</span><span class="nx">py</span><span class="p">)</span>
+
+<span class="nx">AI</span><span class="w"> </span><span class="nx">분석</span><span class="w"> </span><span class="nx">결과에</span><span class="w"> </span><span class="nx">어려운</span><span class="w"> </span><span class="nx">금융</span><span class="w"> </span><span class="nx">약어</span><span class="o">/</span><span class="nx">전문용어를</span><span class="w"> </span><span class="nx">자동으로</span><span class="w"> </span><span class="nx">설명</span><span class="w"> </span><span class="nx">추가합니다</span><span class="p">.</span>
+
+<span class="err">###</span><span class="w"> </span><span class="nx">예시</span>
+
+<span class="o">|</span><span class="w"> </span><span class="nx">원문</span><span class="w"> </span><span class="o">|</span><span class="w"> </span><span class="nx">변환</span><span class="w"> </span><span class="nx">후</span><span class="w"> </span><span class="o">|</span>
+<span class="o">|------|---------|</span>
+<span class="o">|</span><span class="w"> </span><span class="nx">VIX가</span><span class="w"> </span><span class="m m-Double">18.5</span><span class="nx">로</span><span class="w"> </span><span class="nx">하락</span><span class="w"> </span><span class="o">|</span><span class="w"> </span><span class="nx">VIX</span><span class="p">(</span><span class="nx">공포지수</span><span class="p">,</span><span class="w"> </span><span class="nx">높을수록</span><span class="w"> </span><span class="nx">시장</span><span class="w"> </span><span class="nx">불안</span><span class="p">)</span><span class="nx">가</span><span class="w"> </span><span class="m m-Double">18.5</span><span class="nx">로</span><span class="w"> </span><span class="nx">하락</span><span class="w"> </span><span class="o">|</span>
+<span class="o">|</span><span class="w"> </span><span class="nx">HBM</span><span class="w"> </span><span class="nx">수요</span><span class="w"> </span><span class="nx">증가</span><span class="w"> </span><span class="o">|</span><span class="w"> </span><span class="nx">HBM</span><span class="p">(</span><span class="nx">AI용</span><span class="w"> </span><span class="nx">고성능메모리</span><span class="p">,</span><span class="w"> </span><span class="nx">엔비디아</span><span class="w"> </span><span class="nx">GPU에</span><span class="w"> </span><span class="nx">탑재</span><span class="p">)</span><span class="w"> </span><span class="nx">수요</span><span class="w"> </span><span class="nx">증가</span><span class="w"> </span><span class="o">|</span>
+<span class="o">|</span><span class="w"> </span><span class="nx">FOMC</span><span class="w"> </span><span class="nx">회의</span><span class="w"> </span><span class="o">|</span><span class="w"> </span><span class="nx">FOMC</span><span class="p">(</span><span class="nx">미국</span><span class="w"> </span><span class="nx">금리결정회의</span><span class="p">)</span><span class="w"> </span><span class="nx">회의</span><span class="w"> </span><span class="o">|</span>
+
+<span class="err">###</span><span class="w"> </span><span class="nx">등록된</span><span class="w"> </span><span class="nx">용어</span><span class="w"> </span><span class="nx">카테고리</span>
+
+<span class="o">-</span><span class="w"> </span><span class="o">**</span><span class="nx">지수</span><span class="o">/</span><span class="nx">지표</span><span class="o">**</span><span class="p">:</span><span class="w"> </span><span class="nx">VIX</span><span class="p">,</span><span class="w"> </span><span class="nx">VKOSPI</span><span class="p">,</span><span class="w"> </span><span class="nx">DXY</span><span class="p">,</span><span class="w"> </span><span class="nx">SOX</span><span class="p">,</span><span class="w"> </span><span class="nx">PMI</span><span class="p">,</span><span class="w"> </span><span class="nx">CPI</span><span class="p">,</span><span class="w"> </span><span class="nx">PPI</span><span class="p">,</span><span class="w"> </span><span class="nx">PCE</span>
+<span class="o">-</span><span class="w"> </span><span class="o">**</span><span class="nx">밸류에이션</span><span class="o">**</span><span class="p">:</span><span class="w"> </span><span class="nx">PER</span><span class="p">,</span><span class="w"> </span><span class="nx">PBR</span><span class="p">,</span><span class="w"> </span><span class="nx">EPS</span><span class="p">,</span><span class="w"> </span><span class="nx">BPS</span><span class="p">,</span><span class="w"> </span><span class="nx">ROE</span><span class="p">,</span><span class="w"> </span><span class="nx">ROA</span><span class="p">,</span><span class="w"> </span><span class="nx">EV</span><span class="o">/</span><span class="nx">EBITDA</span><span class="p">,</span><span class="w"> </span><span class="nx">PSR</span>
+<span class="o">-</span><span class="w"> </span><span class="o">**</span><span class="nx">반도체</span><span class="o">**</span><span class="p">:</span><span class="w"> </span><span class="nx">HBM</span><span class="p">,</span><span class="w"> </span><span class="nx">HBM3E</span><span class="p">,</span><span class="w"> </span><span class="nx">DDR5</span><span class="p">,</span><span class="w"> </span><span class="nx">DDR4</span><span class="p">,</span><span class="w"> </span><span class="nx">NAND</span><span class="p">,</span><span class="w"> </span><span class="nx">DRAM</span><span class="p">,</span><span class="w"> </span><span class="nx">eSSD</span><span class="p">,</span><span class="w"> </span><span class="nx">CoWoS</span>
+<span class="o">-</span><span class="w"> </span><span class="o">**</span><span class="nx">중앙은행</span><span class="o">**</span><span class="p">:</span><span class="w"> </span><span class="nx">FOMC</span><span class="p">,</span><span class="w"> </span><span class="nx">Fed</span><span class="p">,</span><span class="w"> </span><span class="nx">BOJ</span><span class="p">,</span><span class="w"> </span><span class="nx">ECB</span><span class="p">,</span><span class="w"> </span><span class="nx">BOK</span><span class="p">,</span><span class="w"> </span><span class="nx">QT</span><span class="p">,</span><span class="w"> </span><span class="nx">QE</span><span class="p">,</span><span class="w"> </span><span class="nx">dovish</span><span class="p">,</span><span class="w"> </span><span class="nx">hawkish</span>
+<span class="o">-</span><span class="w"> </span><span class="o">**</span><span class="nx">투자</span><span class="o">/</span><span class="nx">수급</span><span class="o">**</span><span class="p">:</span><span class="w"> </span><span class="nx">Risk</span><span class="o">-</span><span class="nx">On</span><span class="p">,</span><span class="w"> </span><span class="nx">Risk</span><span class="o">-</span><span class="nx">Off</span><span class="p">,</span><span class="w"> </span><span class="nx">ETF</span><span class="p">,</span><span class="w"> </span><span class="nx">EWY</span><span class="p">,</span><span class="w"> </span><span class="nx">TLT</span><span class="p">,</span><span class="w"> </span><span class="nx">HYG</span><span class="p">,</span><span class="w"> </span><span class="nx">SPY</span><span class="p">,</span><span class="w"> </span><span class="nx">QQQ</span>
+<span class="o">-</span><span class="w"> </span><span class="o">**</span><span class="nx">시장</span><span class="w"> </span><span class="nx">용어</span><span class="o">**</span><span class="p">:</span><span class="w"> </span><span class="nx">갭상승</span><span class="p">,</span><span class="w"> </span><span class="nx">갭하락</span><span class="p">,</span><span class="w"> </span><span class="nx">데드캣바운스</span><span class="p">,</span><span class="w"> </span><span class="nx">숏커버링</span><span class="p">,</span><span class="w"> </span><span class="nx">윈도드레싱</span>
+<span class="o">-</span><span class="w"> </span><span class="o">**</span><span class="nx">기타</span><span class="o">**</span><span class="p">:</span><span class="w"> </span><span class="nx">YoY</span><span class="p">,</span><span class="w"> </span><span class="nx">QoQ</span><span class="p">,</span><span class="w"> </span><span class="nx">MoM</span><span class="p">,</span><span class="w"> </span><span class="nx">WoW</span><span class="p">,</span><span class="w"> </span><span class="nx">bps</span><span class="p">,</span><span class="w"> </span><span class="nx">GTC</span><span class="p">,</span><span class="w"> </span><span class="nx">WWDC</span><span class="p">,</span><span class="w"> </span><span class="nx">CES</span>
+
+<span class="o">---</span>
+
+<span class="err">##</span><span class="w"> </span><span class="nx">PDF</span><span class="w"> </span><span class="nx">첨부</span><span class="w"> </span><span class="p">(</span><span class="nx">pdf_generator</span><span class="p">.</span><span class="nx">py</span><span class="p">)</span>
+
+<span class="nx">이메일</span><span class="w"> </span><span class="nx">본문과</span><span class="w"> </span><span class="nx">동일한</span><span class="w"> </span><span class="nx">내용을</span><span class="w"> </span><span class="nx">PDF로</span><span class="w"> </span><span class="nx">생성하여</span><span class="w"> </span><span class="nx">첨부합니다</span><span class="p">.</span>
+
+<span class="err">###</span><span class="w"> </span><span class="nx">특징</span>
+
+<span class="o">-</span><span class="w"> </span><span class="nx">이메일</span><span class="w"> </span><span class="nx">클라이언트에서</span><span class="w"> </span><span class="nx">이미지가</span><span class="w"> </span><span class="nx">차단되어도</span><span class="w"> </span><span class="nx">PDF로</span><span class="w"> </span><span class="nx">확인</span><span class="w"> </span><span class="nx">가능</span>
+<span class="o">-</span><span class="w"> </span><span class="nx">히트맵</span><span class="w"> </span><span class="nx">이미지</span><span class="w"> </span><span class="nx">포함</span><span class="w"> </span><span class="p">(</span><span class="nx">CID</span><span class="w"> </span><span class="err">→</span><span class="w"> </span><span class="nx">Data</span><span class="w"> </span><span class="nx">URI</span><span class="w"> </span><span class="nx">변환</span><span class="p">)</span>
+<span class="o">-</span><span class="w"> </span><span class="nx">파일명</span><span class="p">:</span><span class="w"> </span><span class="err">`</span><span class="nx">BIP_모닝브리핑_YYYYMMDD</span><span class="p">.</span><span class="nx">pdf</span><span class="err">`</span>
+<span class="o">-</span><span class="w"> </span><span class="nx">weasyprint</span><span class="w"> </span><span class="nx">라이브러리</span><span class="w"> </span><span class="nx">사용</span>
+
+<span class="o">---</span>
+
+<span class="err">##</span><span class="w"> </span><span class="nx">이메일</span><span class="w"> </span><span class="nx">발송</span><span class="w"> </span><span class="p">(</span><span class="nx">email_sender</span><span class="p">.</span><span class="nx">py</span><span class="p">)</span>
+
+<span class="err">###</span><span class="w"> </span><span class="nx">발송</span><span class="w"> </span><span class="nx">방식</span>
+
+<span class="o">-</span><span class="w"> </span><span class="o">**</span><span class="nx">SMTP</span><span class="o">**</span><span class="p">:</span><span class="w"> </span><span class="nx">Gmail</span><span class="w"> </span><span class="p">(</span><span class="err">`</span><span class="nx">smtp</span><span class="p">.</span><span class="nx">gmail</span><span class="p">.</span><span class="nx">com</span><span class="p">:</span><span class="mi">587</span><span class="err">`</span><span class="p">,</span><span class="w"> </span><span class="nx">STARTTLS</span><span class="p">)</span>
+<span class="o">-</span><span class="w"> </span><span class="o">**</span><span class="nx">개별</span><span class="w"> </span><span class="nx">발송</span><span class="o">**</span><span class="p">:</span><span class="w"> </span><span class="nx">수신자별로</span><span class="w"> </span><span class="nx">별도</span><span class="w"> </span><span class="nx">메시지</span><span class="w"> </span><span class="nx">발송</span><span class="w"> </span><span class="p">(</span><span class="nx">개인정보</span><span class="w"> </span><span class="nx">보호</span><span class="p">)</span>
+<span class="w">  </span><span class="o">-</span><span class="w"> </span><span class="err">`</span><span class="nx">To</span><span class="err">`</span><span class="w"> </span><span class="nx">필드에</span><span class="w"> </span><span class="nx">본인</span><span class="w"> </span><span class="nx">이메일만</span><span class="w"> </span><span class="nx">표시</span>
+<span class="w">  </span><span class="o">-</span><span class="w"> </span><span class="nx">다른</span><span class="w"> </span><span class="nx">수신자</span><span class="w"> </span><span class="nx">이메일</span><span class="w"> </span><span class="nx">비공개</span>
+
+<span class="err">```</span><span class="nx">python</span>
+<span class="err">#</span><span class="w"> </span><span class="nx">발송</span><span class="w"> </span><span class="nx">흐름</span>
+<span class="nx">with</span><span class="w"> </span><span class="nx">smtplib</span><span class="p">.</span><span class="nx">SMTP</span><span class="p">(</span><span class="nx">host</span><span class="p">,</span><span class="w"> </span><span class="nx">port</span><span class="p">)</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nx">server</span><span class="p">:</span>
+<span class="w">    </span><span class="nx">server</span><span class="p">.</span><span class="nx">starttls</span><span class="p">()</span>
+<span class="w">    </span><span class="nx">server</span><span class="p">.</span><span class="nx">login</span><span class="p">(</span><span class="nx">user</span><span class="p">,</span><span class="w"> </span><span class="nx">password</span><span class="p">)</span>
+
+<span class="w">    </span><span class="k">for</span><span class="w"> </span><span class="nx">to_email</span><span class="w"> </span><span class="k">in</span><span class="w"> </span><span class="nx">to_emails</span><span class="p">:</span>
+<span class="w">        </span><span class="nx">msg</span><span class="w"> </span><span class="p">=</span><span class="w"> </span><span class="nx">MIMEMultipart</span><span class="p">(</span><span class="s">&quot;related&quot;</span><span class="p">)</span>
+<span class="w">        </span><span class="nx">msg</span><span class="p">[</span><span class="s">&quot;To&quot;</span><span class="p">]</span><span class="w"> </span><span class="p">=</span><span class="w"> </span><span class="nx">to_email</span><span class="w">  </span><span class="err">#</span><span class="w"> </span><span class="nx">개별</span><span class="w"> </span><span class="nx">수신자만</span><span class="w"> </span><span class="nx">표시</span>
+<span class="w">        </span><span class="err">#</span><span class="w"> </span><span class="o">...</span><span class="w"> </span><span class="nx">메시지</span><span class="w"> </span><span class="nx">구성</span>
+<span class="w">        </span><span class="nx">server</span><span class="p">.</span><span class="nx">send_message</span><span class="p">(</span><span class="nx">msg</span><span class="p">,</span><span class="w"> </span><span class="nx">to_addrs</span><span class="p">=[</span><span class="nx">to_email</span><span class="p">])</span>
 </code></pre></div>
 
 <hr />
@@ -909,6 +969,20 @@ Sonnet이 분석 깊이, 체크리스트 품질, 비용 대비 가치 모두 최
 <td><code>financial_statements</code></td>
 <td>잠정실적 공시 수집</td>
 <td>2</td>
+</tr>
+<tr>
+<td><code>news_digest_collector</code></td>
+<td><strong>4시간마다</strong></td>
+<td><code>news_digest</code></td>
+<td>한국 뉴스 수집 + Haiku 요약</td>
+<td>0</td>
+</tr>
+<tr>
+<td><code>overseas_ai_news_digest</code></td>
+<td><strong>06:30 / 14:30 / 22:30</strong></td>
+<td><code>overseas_ai_news_digest</code></td>
+<td>해외 AI RSS 수집 + Haiku 요약 (2026-06-15 신설)</td>
+<td>0</td>
 </tr>
 <tr>
 <td><code>morning_report</code></td>
@@ -978,7 +1052,11 @@ Sonnet이 분석 깊이, 체크리스트 품질, 비용 대비 가치 모두 최
 </tr>
 <tr>
 <td><code>LLM_MODEL</code></td>
-<td>사용할 LLM 모델 (<code>gpt-5.4</code>, <code>claude-sonnet</code>, <code>claude-haiku</code>)</td>
+<td>사용할 LLM 모델. <strong>Airflow Variable 우선 → 환경변수 fallback → 기본 <code>claude-sonnet</code></strong> (2026-06-15 개선)</td>
+</tr>
+<tr>
+<td><code>OVERSEAS_AI_RSS_FEEDS</code></td>
+<td>해외 AI 뉴스 RSS 소스 JSON 배열 (선택, Airflow Variable). 미설정 시 TechCrunch/VentureBeat/Verge 기본 사용</td>
 </tr>
 <tr>
 <td><code>morning_report_emails</code></td>
@@ -995,6 +1073,8 @@ Sonnet이 분석 깊이, 체크리스트 품질, 비용 대비 가치 모두 최
     ├── macro_collector.py         DB 데이터 수집 (18개 항목)
     ├── heatmap_generator.py       Plotly 트리맵 히트맵 (4개)
     ├── realtime_news.py           네이버 API 실시간 뉴스
+    ├── news_digest_collector.py   한국 뉴스 다이제스트 (4h 간격)
+    ├── overseas_ai_news_collector.py  해외 AI 뉴스 RSS 다이제스트 (8h 간격, 2026-06-15 신설)
     ├── llm_analyzer_v2.py         멀티 LLM 분석 (Opus/Sonnet/Haiku/GPT)
     ├── glossary.py                용어 사전 (약어 설명 자동 추가)
     ├── pdf_generator.py           PDF 생성 (weasyprint)
@@ -1210,6 +1290,22 @@ Sonnet이 분석 깊이, 체크리스트 품질, 비용 대비 가치 모두 최
 </tr>
 </thead>
 <tbody>
+<tr>
+<td>2026-06-15</td>
+<td><strong>해외 AI 뉴스 다이제스트 파이프라인 신설</strong> — <code>overseas_ai_news_digest</code> 테이블 + <code>dag_overseas_ai_news</code> (06:30/14:30/22:30 KST). TechCrunch/VentureBeat/Verge RSS 수집 → 키워드 필터 → Haiku 한국어 요약 → 모닝리포트 "🌐 해외 AI 동향" 섹션에 통합본 주입. <code>llm_analyzer_v2</code> 프롬프트에 해당 섹션 추가</td>
+</tr>
+<tr>
+<td>2026-06-15</td>
+<td><strong>해외 AI 다이제스트 누락 방지</strong> — 8시간 간격 스냅샷 3회로 RSS 롤오버 보험, <code>get_consolidated_overseas_digest</code>로 24h 내 다중 스냅샷을 Haiku로 통합, <code>_collect_rss</code>에 RSS 롤오버 의심 시 WARN 자동 출력</td>
+</tr>
+<tr>
+<td>2026-06-15</td>
+<td><strong>LLM_MODEL Airflow Variable 우선순위 적용</strong> — <code>get_llm_model()</code>이 Airflow Variable <code>LLM_MODEL</code> → 환경변수 → 기본 <code>claude-sonnet</code> 순으로 fallback. UI에서 모델 변경 시 컨테이너 재시작 불필요</td>
+</tr>
+<tr>
+<td>2026-06-15</td>
+<td><strong>운영 모델 재확인 (Sonnet 4.6)</strong> — docker-compose의 <code>LLM_MODEL</code> 기본값을 <code>gpt-5.4</code> → <code>claude-sonnet</code>으로 변경 + Airflow 이미지 재빌드 (feedparser 영구 반영)</td>
+</tr>
 <tr>
 <td>2026-04-13</td>
 <td><strong>뉴스 다이제스트 파이프라인</strong> — <code>news_digest</code> 테이블 + <code>dag_news_digest</code> (4시간마다, 주말 포함). 모닝리포트에 48시간 통합 다이제스트 주입. 월요일 주말 이슈 커버</td>

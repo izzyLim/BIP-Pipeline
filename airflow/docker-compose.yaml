@@ -46,11 +46,12 @@
 ---
 x-airflow-common:
   &airflow-common
-  # In order to add custom dependencies or upgrade provider packages you can use your extended image.
-  # Comment the image line, place your Dockerfile in the directory where you placed the docker-compose.yaml
-  # and uncomment the "build" line below, Then run `docker-compose build` to build the images.
-  image: ${AIRFLOW_IMAGE_NAME:-apache/airflow:2.9.2}
-  # build: .
+  # Custom image with Chromium for heatmap generation
+  build:
+    context: .
+    dockerfile: Dockerfile
+  env_file:
+    - .env
   environment:
     &airflow-common-env
     AIRFLOW__CORE__EXECUTOR: CeleryExecutor
@@ -60,23 +61,74 @@ x-airflow-common:
     AIRFLOW__CORE__FERNET_KEY: ''
     AIRFLOW__CORE__DAGS_ARE_PAUSED_AT_CREATION: 'true'
     AIRFLOW__CORE__LOAD_EXAMPLES: 'false'
+    # 로컬 리소스 보호: 워커 동시 태스크 수 제한 (기본 16 → 4)
+    AIRFLOW__CELERY__WORKER_CONCURRENCY: '8'
     AIRFLOW__API__AUTH_BACKENDS: 'airflow.api.auth.backend.basic_auth,airflow.api.auth.backend.session'
     # yamllint disable rule:line-length
     # Use simple http server on scheduler for health checks
     # See https://airflow.apache.org/docs/apache-airflow/stable/administration-and-deployment/logging-monitoring/check-health.html#scheduler-health-check-server
     # yamllint enable rule:line-length
     AIRFLOW__SCHEDULER__ENABLE_HEALTH_CHECK: 'true'
+    AIRFLOW__CORE__DEFAULT_TIMEZONE: 'Asia/Seoul'
+    AIRFLOW__WEBSERVER__DEFAULT_UI_TIMEZONE: 'Asia/Seoul'
+    PYTHONPATH: '/opt/airflow'
+    LLM_MODEL: 'claude-sonnet'
     # WARNING: Use _PIP_ADDITIONAL_REQUIREMENTS option ONLY for a quick checks
     # for other purpose (development, test and especially production usage) build/extend Airflow image.
-    _PIP_ADDITIONAL_REQUIREMENTS: ${_PIP_ADDITIONAL_REQUIREMENTS:-}
+    # PIP packages are installed in Dockerfile
+    _PIP_ADDITIONAL_REQUIREMENTS: ''
+    # bip-postgres 앱 DB 연결
+    # 🔒 PG_PASSWORD는 .env에 반드시 정의 (security_governance 1-7)
+    PG_HOST: ${PG_HOST:-bip-postgres}
+    PG_PORT: ${PG_PORT:-5432}
+    PG_USER: ${PG_USER:-user}
+    PG_PASSWORD: ${PG_PASSWORD:?PG_PASSWORD must be set in .env}
+    PG_DB: ${PG_DB:-stockdb}
+    # 외부 API 키
+    DART_API_KEY: ${DART_API_KEY:-}
+    KRX_API_KEY: ${KRX_API_KEY:-}
+    ECOS_API_KEY: ${ECOS_API_KEY:-}
+    FRED_API_KEY: ${FRED_API_KEY:-}
+    NAVER_CLIENT_ID: ${NAVER_CLIENT_ID:-}
+    NAVER_CLIENT_SECRET: ${NAVER_CLIENT_SECRET:-}
+    # Anthropic API (Claude)
+    ANTHROPIC_API_KEY: ${ANTHROPIC_API_KEY:-}
+    # 텔레그램 채널
+    TELEGRAM_CHANNEL_ID: ${TELEGRAM_CHANNEL_ID:-}
+    # 스크리너: Bull/Bear 토론 대상 종목 수
+    SCREENER_TOP_N_DEBATE: '7'
+    # OpenAI API (Embedding)
+    OPENAI_API_KEY: ${OPENAI_API_KEY:-}
+    # 모닝 리포트 이메일 설정
+    SMTP_HOST: ${SMTP_HOST:-smtp.gmail.com}
+    SMTP_PORT: ${SMTP_PORT:-587}
+    SMTP_USER: ${SMTP_USER:-}
+    SMTP_PASSWORD: ${SMTP_PASSWORD:-}
+    FROM_EMAIL: ${FROM_EMAIL:-}
+    FROM_NAME: ${FROM_NAME:-BIP 모닝 브리핑}
+    MORNING_REPORT_EMAILS: ${MORNING_REPORT_EMAILS:-}
+    # DB 연결
+    DATABASE_URL: postgresql+psycopg2://${PG_USER:-user}:${PG_PASSWORD:?PG_PASSWORD must be set}@${PG_HOST:-bip-postgres}:${PG_PORT:-5432}/${PG_DB:-stockdb}
+    # OpenMetadata Lineage 자동 등록
+    OM_HOST: ${OM_HOST:-http://openmetadata-server:8585}
+    OM_BOT_TOKEN: ${OM_BOT_TOKEN:-}
+    OM_SERVICE_PIPELINE: ${OM_SERVICE_PIPELINE:-bip-airflow}
+    OM_SERVICE_DB: ${OM_SERVICE_DB:-bip-postgres}
+    OM_DB_NAME: ${OM_DB_NAME:-stockdb}
+    OM_DB_SCHEMA: ${OM_DB_SCHEMA:-public}
     # The following line can be used to set a custom config file, stored in the local config folder
     # If you want to use it, outcomment it and replace airflow.cfg with the name of your config file
     # AIRFLOW_CONFIG: '/opt/airflow/config/airflow.cfg'
+    # LangGraph 멀티 에이전트
+    MCP_SERVER_URL: ${MCP_SERVER_URL:-http://bip-stock-mcp:8000/sse}
+    BIP_AGENTS_PATH: /opt/bip-agents
   volumes:
     - ${AIRFLOW_PROJ_DIR:-.}/dags:/opt/airflow/dags
     - ${AIRFLOW_PROJ_DIR:-.}/logs:/opt/airflow/logs
     - ${AIRFLOW_PROJ_DIR:-.}/config:/opt/airflow/config
     - ${AIRFLOW_PROJ_DIR:-.}/plugins:/opt/airflow/plugins
+    - ${AIRFLOW_PROJ_DIR:-..}/shared:/opt/airflow/shared
+    - ${BIP_AGENTS_DIR:-../../BIP-Agents}:/opt/bip-agents:ro
   user: "${AIRFLOW_UID:-50000}:0"
   depends_on:
     &airflow-common-depends-on

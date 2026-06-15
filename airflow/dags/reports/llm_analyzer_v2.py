@@ -15,9 +15,9 @@ logger = logging.getLogger(__name__)
 
 # ============================================================
 # LLM 모델 설정
-# 환경변수 LLM_MODEL로 선택 가능:
+# Airflow Admin > Variables > "LLM_MODEL" 에서 즉시 변경 가능:
 #   - "claude-opus"   : Claude Opus 4.5 (최고 성능, 비용 높음)
-#   - "claude-sonnet" : Claude Sonnet 4 (고품질, 균형)
+#   - "claude-sonnet" : Claude Sonnet 4.6 (고품질, 균형) ← 기본값
 #   - "claude-haiku"  : Claude Haiku 4.5 (빠르고 저렴)
 #   - "gpt-5.4"       : OpenAI GPT-5.4
 # ============================================================
@@ -25,6 +25,11 @@ DEFAULT_LLM_MODEL = "claude-sonnet"
 
 # 모델별 설정
 MODEL_CONFIG = {
+    "claude-fable": {
+        "provider": "anthropic",
+        "model_id": "claude-fable-5",
+        "max_tokens": 16000,
+    },
     "claude-opus": {
         "provider": "anthropic",
         "model_id": "claude-opus-4-5-20251101",
@@ -54,8 +59,15 @@ MODEL_CONFIG = {
 
 
 def get_llm_model():
-    """환경변수에서 LLM 모델 설정 가져오기"""
-    model = os.getenv("LLM_MODEL", DEFAULT_LLM_MODEL)
+    """Airflow Variable > 환경변수 순서로 LLM 모델 설정 가져오기"""
+    model = None
+    try:
+        from airflow.models import Variable
+        model = Variable.get("LLM_MODEL", default_var=None)
+    except Exception:
+        pass
+    if model is None:
+        model = os.getenv("LLM_MODEL", DEFAULT_LLM_MODEL)
     if model not in MODEL_CONFIG:
         logger.warning(f"알 수 없는 모델 '{model}', 기본값 '{DEFAULT_LLM_MODEL}' 사용")
         model = DEFAULT_LLM_MODEL
@@ -149,7 +161,11 @@ def call_llm(prompt: str, prompt_class: str = "llm_analyzer_v2_generic",
         )
         usage = response.usage
         print(f"    💰 [{model_id}] input={usage.input_tokens:,} / output={usage.output_tokens:,} tokens")
-        return response.content[0].text
+        # Extended Thinking 모델(Fable 등)은 ThinkingBlock + TextBlock 혼합 반환
+        text_blocks = [b for b in response.content if hasattr(b, "text") and b.type == "text"]
+        if not text_blocks:
+            raise ValueError(f"텍스트 응답 블록 없음: {[b.type for b in response.content]}")
+        return text_blocks[0].text
 
 
 def call_haiku(prompt: str, prompt_class: str = "insight_summary") -> str:
@@ -180,7 +196,10 @@ def call_haiku(prompt: str, prompt_class: str = "insight_summary") -> str:
     )
     usage = response.usage
     print(f"    💰 [haiku] input={usage.input_tokens:,} / output={usage.output_tokens:,} tokens")
-    return response.content[0].text
+    text_blocks = [b for b in response.content if hasattr(b, "text") and b.type == "text"]
+    if not text_blocks:
+        raise ValueError(f"텍스트 응답 블록 없음: {[b.type for b in response.content]}")
+    return text_blocks[0].text
 
 
 # 인사이트 요약 프롬프트
@@ -449,19 +468,33 @@ ANALYSIS_PROMPT_V2 = """당신은 20년 경력의 글로벌 매크로 애널리�
 
 ✅ **이 섹션에서만** 미국 시장({us_date})이 오늘 한국장에 미칠 영향을 분석하세요!
 
-**미국 시장 영향 분석**
-- 오늘 새벽 미국장 결과가 오늘 한국장에 미칠 영향
-- 동조화될 섹터 vs 디커플링 예상 섹터
-- 외국인 수급 방향 예상
+⚠️ **분석 원칙**: 단정적 방향 예측("갭 하락 예상", "상승 전환 전망") 대신, 오늘 시장을 움직일 핵심 변수를 식별하고 조건부 시나리오로 작성하세요. 투자자가 장 중에 스스로 판단할 수 있는 프레임워크를 제공하는 것이 목표입니다.
 
-**오늘 한국 시장 전망**
-- 코스피/코스닥 예상 방향성
-- 주목해야 할 섹터/종목
-- 장 초반 vs 장 후반 시나리오
+**오늘의 핵심 변수** (시장 방향을 결정할 1~2가지)
+- 위 데이터에서 오늘 장을 가를 가장 중요한 변수를 구체적으로 특정 (예: "외국인 선물 순매수 전환 여부", "원/달러 1,400원 돌파 여부")
+- 왜 이 변수가 핵심인지 데이터 근거와 함께 설명
 
-**갭 분석**
-- 미국장 등락에 따른 갭 상승/하락 예상치
-- 갭 발생 시 대응 전략
+**시나리오 A (강세 조건)**: 핵심 변수가 ~하면 → 예상 KOSPI 범위, 수혜 섹터/종목
+**시나리오 B (약세 조건)**: 핵심 변수가 ~하면 → 예상 KOSPI 범위, 위험 섹터/종목
+
+**현재 데이터 기준 판단**: 위 두 시나리오 중 현재 데이터가 어느 쪽에 더 가까운지, 그 근거와 함께 판단. (예: "현재 데이터는 시나리오 A에 가까움 — 근거: 야간선물 +0.4%, 외국인 3일 연속 순매수. 단, 환율 1,390원대 불안정이 변수")
+
+**개장 체크포인트**: 개장 초반(9:00~9:10)에 무엇을 확인하면 A/B를 판단할 수 있는지 구체적으로
+
+---
+
+### 🌐 해외 AI 동향
+
+⚠️ 위 뉴스의 **"🌐 해외 AI 동향" 다이제스트**에 해당 내용이 있을 때만 작성하세요. 없으면 이 섹션을 통째로 생략하세요.
+
+**핵심 이슈 요약** (3~5건, 한국어로)
+- 다이제스트의 이슈를 그대로 옮기지 말고, 한국 증시 관점에서 **의미·연결고리**를 풀어 설명
+- 각 이슈 → 영향 받는 미국/한국 종목·섹터를 명시 (예: NVDA/SK하이닉스/삼성전자)
+- 가능하면 수치(매출, 펀딩, 파라미터, 가격)를 인용
+
+**한국 증시 시사점**
+- 위 이슈들이 오늘/이번 주 한국장(특히 반도체·빅테크 ETF)에 어떻게 작용할지
+- 직접 수혜·피해 종목 1~3개와 그 이유
 
 ---
 
@@ -546,6 +579,21 @@ ANALYSIS_PROMPT_V2 = """당신은 20년 경력의 글로벌 매크로 애널리�
 ---
 
 참고: 위 분석은 투자 권유가 아닌 정보 제공 목적입니다. 투자 결정은 본인의 판단과 책임하에 이루어져야 합니다.
+
+---
+
+마지막으로, 응답의 **가장 마지막 줄**에 아래 형식의 JSON을 정확히 한 줄로 출력하세요.
+이것은 본문에 표시되지 않는 내부 기록용입니다. 위의 "조건부 시나리오" 원칙과 별개로,
+현재 데이터 기준 오늘 KOSPI 방향에 대한 종합 판정을 기록하는 것입니다.
+
+OUTLOOK_JSON: {{"bias": "bullish|bearish|neutral 중 하나", "confidence": 1~5 정수, "expected_range": [KOSPI 하단, KOSPI 상단], "bullish_sectors": ["섹터1"], "bearish_sectors": ["섹터1"], "stock_picks": [{{"code": "005930", "name": "삼성전자"}}], "key_drivers": ["핵심 변수 1~3개"]}}
+
+- bias: 현재 데이터가 가리키는 방향 (bullish=상승 우위, bearish=하락 우위, neutral=혼조/판단 유보)
+- confidence: 판정 확신도 (1=매우 불확실 ~ 5=매우 확실)
+- expected_range: 위 "현재 데이터 기준 판단"에서 더 가깝다고 본 시나리오의 KOSPI 예상 범위 (본문에 쓴 숫자 그대로)
+- bullish_sectors / bearish_sectors: 본문에서 기회/리스크로 언급한 섹터를 **본문에 쓴 표현 그대로** (없으면 빈 배열)
+- stock_picks: "투자 아이디어"에서 기회로 언급한 종목 (6자리 종목코드, 최대 3개, 없으면 빈 배열)
+- key_drivers: 판정의 근거가 된 핵심 변수
 """
 
 

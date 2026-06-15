@@ -167,7 +167,12 @@ Plotly Treemap을 사용하여 4개의 시장 히트맵 생성:
 | Claude Haiku 4.5 | `claude-haiku-4-5-20251001` | ⭐⭐⭐ 양호 | 빠름 | $0.003/회 | 체크리스트 에이전트용 |
 | GPT-5.4 | `gpt-5.4` | ⭐⭐⭐⭐ 고품질 | 중간 | $0.07/회 | 대안 |
 
-설정: Airflow Variable `llm_model` = `claude-sonnet-4-6` (운영)
+**설정 우선순위 (2026-06-15 개선)**: `get_llm_model()` 이 다음 순서로 모델을 선택.
+1. **Airflow Variable `LLM_MODEL`** — Airflow UI에서 즉시 변경 가능, 컨테이너 재시작 불필요
+2. **환경변수 `LLM_MODEL`** — docker-compose.yaml 기본값 (fallback)
+3. **하드코드 기본값** — `claude-sonnet` (claude-sonnet-4-6)
+
+운영 권장: Admin > Variables 에서 `LLM_MODEL = claude-sonnet` 등록 → 다음 DAG 실행부터 바로 반영.
 
 > **모델 비교 결과 (2026-04-07):** 동일 데이터로 Opus/Sonnet/GPT-5.4 3종 비교.
 > Sonnet이 분석 깊이, 체크리스트 품질, 비용 대비 가치 모두 최우수. Opus는 용어 설명만 우위.
@@ -221,6 +226,7 @@ Plotly Treemap을 사용하여 4개의 시장 히트맵 생성:
 | 🇺🇸 미국 시장 심층 분석 | 전일 미국 시장 움직임, 섹터·종목 분석 |
 | 🇰🇷 한국 시장 심층 분석 | 코스피/코스닥 원인 분석, 수급 해석 |
 | 🔗 한국↔미국 연결고리 | 동조화/디커플링 분석 |
+| 🌐 해외 AI 동향 | TechCrunch/VentureBeat/Verge RSS 기반, 한국 증시 관점 시사점 (2026-06-15 신설) |
 | 🔬 반도체 섹터 심층 분석 | DRAM/NAND 현물가, HBM 동향, 반도체 ETF |
 | 💡 투자 아이디어 & 전략 | 기회/리스크 요인, 구체적 종목 언급 |
 | 📅 이번 주 주요 이벤트 | FOMC, 실적 발표, 경제지표 등 |
@@ -268,6 +274,82 @@ Plotly Treemap을 사용하여 4개의 시장 히트맵 생성:
 - 수집 시: `WEEKEND_EXTRA_QUERIES`("주말 증시 영향", "월요일 증시 전망", "글로벌 긴급 속보") 자동 추가
 - 모닝리포트: 데이터 신선도 경고 자동 주입 (한국/미국 데이터가 2일 이상 전이면 LLM에 "뉴스 특히 참고" 지시)
 - 프롬프트에서 "어제" 표현 제거 → 실제 날짜({korea_date}, {us_date}) 사용
+
+---
+
+## 해외 AI 뉴스 다이제스트 파이프라인 (overseas_ai_news_collector.py) — 2026-06-15 신설
+
+8시간마다 영문 RSS를 자동 수집/요약하여 `overseas_ai_news_digest` 테이블에 저장. 모닝리포트에서 최근 24시간 스냅샷들을 통합본으로 LLM 컨텍스트에 주입.
+
+### 흐름
+
+```
+[06:30 / 14:30 / 22:30 KST] RSS 3개 소스 → 최근 24h 기사 모음
+    → 키워드 필터(빅테크/모델/규제/펀딩 등) → 시장영향 관점 기사만 통과
+    → Haiku 1회: "한국 증시 영향 이슈 3~5건 한국어 요약" → DB 저장
+
+[모닝리포트 08:10] get_consolidated_overseas_digest(24)
+    → 최근 24h 다이제스트 행 N개 조회
+    → N=1이면 그대로, N>1이면 Haiku로 통합 (4~6건으로 머지)
+    → LLM 프롬프트에 "## 🌐 해외 AI 동향 (최근 24시간)" 섹션으로 주입
+```
+
+### RSS 소스 (기본값, Airflow Variable `OVERSEAS_AI_RSS_FEEDS`로 override 가능)
+
+| 소스 | URL | 특징 |
+|------|-----|------|
+| TechCrunch AI | `techcrunch.com/category/artificial-intelligence/feed/` | 스타트업·자금조달·빅테크 |
+| VentureBeat AI | `venturebeat.com/category/ai/feed/` | 엔터프라이즈 AI |
+| The Verge AI | `theverge.com/rss/ai-artificial-intelligence/index.xml` | 소비자 제품·정책 |
+
+> **1차 소스(OpenAI/Anthropic 공식 블로그)는 미포함.** 이유: 위 3개 2차 소스가 빅테크 발표를 발표 후 1~3시간 안에 보도하므로 사실상 중복. 1차 소스는 마이너 공지가 많아 노이즈 비율이 높음.
+
+### 요약 형식 (Haiku 출력 — 한국어)
+
+```
+[상] OpenAI, 차세대 모델 발표 (GPT-X) — 추론 성능 2배·가격 30% 인하 (긍정, 빅테크/반도체)
+[중] EU AI Act 추가 규제안 — 범용 AI 라이선스 의무화 검토 (부정, 글로벌 빅테크)
+```
+
+- 중요도 [상/중/하] + 영문 원제→한국어 + 1~2줄 핵심 + 영향 방향 + 관련 섹터/종목
+
+### DB 테이블
+- `overseas_ai_news_digest` — collected_at, sources(jsonb), raw_count, digest(text), raw_items(jsonb)
+- DAG: `overseas_ai_news_digest` (`30 6,14,22 * * *`)
+- 비용: Haiku ~$0.015/일 (수집 3회 + 모닝 통합 1회)
+
+### RSS 롤오버 누락 경고 (자동)
+
+피드의 가장 오래된 항목조차 요청 윈도우 안쪽이면 = RSS가 24h 다 못 보여줬다 = 그 이전 기사 누락 가능.
+`_collect_rss`가 자동 감지하여 Airflow Task 로그에 WARN 출력:
+
+```
+⚠️  [TechCrunch AI] RSS 롤오버 의심: 피드의 가장 오래된 항목이 14.2h 전 (요청 24h).
+   그 이전 기사가 RSS에서 밀려났을 수 있음 → 누락 가능.
+```
+
+8시간 간격(06:30/14:30/22:30) 스냅샷 3회로 1차 보험을 두고, 그래도 누락 의심되는 날은 위 경고로 감지.
+
+### 누락 확인 SQL (운영 점검용)
+
+```sql
+SELECT
+    collected_at::date AS run_date,
+    src.value->>'name' AS source,
+    COUNT(*) AS items,
+    MIN((item->>'pub_date')::timestamptz) AS oldest_item,
+    ROUND(EXTRACT(EPOCH FROM (
+        collected_at - MIN((item->>'pub_date')::timestamptz)
+    ))/3600, 1) AS oldest_hours_ago
+FROM overseas_ai_news_digest,
+     jsonb_array_elements(raw_items) AS item,
+     jsonb_array_elements(sources) AS src
+WHERE item->>'source' = src.value->>'name'
+GROUP BY 1, 2, collected_at
+ORDER BY 1 DESC, 2;
+```
+
+`oldest_hours_ago < 22` 이면 그 날 그 소스에서 누락 의심.
 
 ---
 
@@ -372,6 +454,8 @@ with smtplib.SMTP(host, port) as server:
 | `04_macro_global_hourly` | **매시간** | `macro_indicators` | 매크로 지표 | 2 |
 | `05_kr_sectors_daily` | 전날 18:00 (평일) | `macro_indicators` | 한국 섹터 지수 | 2 |
 | `05_kr_preliminary_earnings` | **19:00** (평일) | `financial_statements` | 잠정실적 공시 수집 | 2 |
+| `news_digest_collector` | **4시간마다** | `news_digest` | 한국 뉴스 수집 + Haiku 요약 | 0 |
+| `overseas_ai_news_digest` | **06:30 / 14:30 / 22:30** | `overseas_ai_news_digest` | 해외 AI RSS 수집 + Haiku 요약 (2026-06-15 신설) | 0 |
 | `morning_report` | **08:10** (평일) | — | 모닝리포트 생성 (Sonnet) | **0** |
 | `market_monitor_checklist_parse` | **08:25** (평일) | — | 체크리스트 장전 분석 | **0** |
 | `market_monitor_preopen` | **08:40** (평일) | — | 예상 체결가 분석 | **0** |
@@ -390,7 +474,8 @@ with smtplib.SMTP(host, port) as server:
 | `ANTHROPIC_API_KEY` | Claude API 키 |
 | `NAVER_CLIENT_ID` / `NAVER_CLIENT_SECRET` | 실시간 뉴스 검색용 |
 | `SMTP_USER` / `SMTP_PASSWORD` | Gmail SMTP 인증 |
-| `LLM_MODEL` | 사용할 LLM 모델 (`gpt-5.4`, `claude-sonnet`, `claude-haiku`) |
+| `LLM_MODEL` | 사용할 LLM 모델. **Airflow Variable 우선 → 환경변수 fallback → 기본 `claude-sonnet`** (2026-06-15 개선) |
+| `OVERSEAS_AI_RSS_FEEDS` | 해외 AI 뉴스 RSS 소스 JSON 배열 (선택, Airflow Variable). 미설정 시 TechCrunch/VentureBeat/Verge 기본 사용 |
 | `morning_report_emails` | 수신자 이메일 목록 (Airflow Variable, 쉼표 구분) |
 
 ---
@@ -405,6 +490,8 @@ airflow/dags/
     ├── macro_collector.py         DB 데이터 수집 (18개 항목)
     ├── heatmap_generator.py       Plotly 트리맵 히트맵 (4개)
     ├── realtime_news.py           네이버 API 실시간 뉴스
+    ├── news_digest_collector.py   한국 뉴스 다이제스트 (4h 간격)
+    ├── overseas_ai_news_collector.py  해외 AI 뉴스 RSS 다이제스트 (8h 간격, 2026-06-15 신설)
     ├── llm_analyzer_v2.py         멀티 LLM 분석 (Opus/Sonnet/Haiku/GPT)
     ├── glossary.py                용어 사전 (약어 설명 자동 추가)
     ├── pdf_generator.py           PDF 생성 (weasyprint)
@@ -512,6 +599,10 @@ Airflow DAG → POST http://bip-agents-api:8100/api/checklist/analyze
 
 | 날짜 | 변경 내용 |
 |------|----------|
+| 2026-06-15 | **해외 AI 뉴스 다이제스트 파이프라인 신설** — `overseas_ai_news_digest` 테이블 + `dag_overseas_ai_news` (06:30/14:30/22:30 KST). TechCrunch/VentureBeat/Verge RSS 수집 → 키워드 필터 → Haiku 한국어 요약 → 모닝리포트 "🌐 해외 AI 동향" 섹션에 통합본 주입. `llm_analyzer_v2` 프롬프트에 해당 섹션 추가 |
+| 2026-06-15 | **해외 AI 다이제스트 누락 방지** — 8시간 간격 스냅샷 3회로 RSS 롤오버 보험, `get_consolidated_overseas_digest`로 24h 내 다중 스냅샷을 Haiku로 통합, `_collect_rss`에 RSS 롤오버 의심 시 WARN 자동 출력 |
+| 2026-06-15 | **LLM_MODEL Airflow Variable 우선순위 적용** — `get_llm_model()`이 Airflow Variable `LLM_MODEL` → 환경변수 → 기본 `claude-sonnet` 순으로 fallback. UI에서 모델 변경 시 컨테이너 재시작 불필요 |
+| 2026-06-15 | **운영 모델 재확인 (Sonnet 4.6)** — docker-compose의 `LLM_MODEL` 기본값을 `gpt-5.4` → `claude-sonnet`으로 변경 + Airflow 이미지 재빌드 (feedparser 영구 반영) |
 | 2026-04-13 | **뉴스 다이제스트 파이프라인** — `news_digest` 테이블 + `dag_news_digest` (4시간마다, 주말 포함). 모닝리포트에 48시간 통합 다이제스트 주입. 월요일 주말 이슈 커버 |
 | 2026-04-13 | **데이터 신선도 경고** — 한국/미국 데이터가 2일+ 전이면 LLM에 경고 주입. "어제" → 날짜 기반. 미국 시장 ET/KST 병기 |
 | 2026-04-13 | **data_date 라벨링** — 체크리스트/preopen에서 과거 데이터에 "(MM/DD 기준)" 라벨 필수. preopen fallback 3단계(antc_cnpr→antc_cntg_prc→stck_prpr) |
