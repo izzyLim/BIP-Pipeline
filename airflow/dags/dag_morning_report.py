@@ -97,6 +97,9 @@ def send_morning_report(**context):
     )
 
     if not result["success"]:
+        if result.get("error") == "market_closed":
+            print("📅 휴장일 — 모닝리포트 스킵 (정상)")
+            return
         raise Exception(f"리포트 발송 실패: {result['error']}")
 
     # 백업용 파일 저장
