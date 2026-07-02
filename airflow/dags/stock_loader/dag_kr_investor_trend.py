@@ -7,7 +7,9 @@
 """
 
 from airflow import DAG
-from airflow.operators.python import PythonOperator
+from airflow.operators.python import PythonOperator, BranchPythonOperator
+from airflow.operators.trigger_dagrun import TriggerDagRunOperator
+from airflow.utils.trigger_rule import TriggerRule
 from datetime import datetime, timedelta
 from utils.db import get_pg_conn
 from utils.config import PG_CONN_INFO
@@ -204,6 +206,41 @@ def update_investor_volumes(batch_num: int = 0, **context):
 NUM_BATCHES = 45   # KOSPI+KOSDAQ 약 4,500종목 / 100 = 45배치
 
 
+def check_investor_data_loaded(**context):
+    """오늘자 수급 적재 확인 + 이미 트리거했으면 스킵"""
+    with get_pg_conn(PG_CONN_INFO) as conn:
+        with conn.cursor() as cur:
+            # 오늘 이미 screener가 돌았는지 확인 (Airflow DB 대신 stockdb로 체크)
+            cur.execute("""
+                SELECT COUNT(*) FROM stock_recommendations
+                WHERE run_date = CURRENT_DATE
+            """)
+            already_ran = cur.fetchone()[0]
+            if already_ran > 0:
+                logger.info(f"오늘 이미 종목추천 {already_ran}건 존재 — 체인 스킵")
+                return "skip_trigger"
+
+            # 수급 데이터 적재 확인
+            cur.execute("""
+                SELECT COUNT(*) FROM stock_price_1d
+                WHERE DATE(timestamp_kst) = CURRENT_DATE
+                  AND foreign_buy_volume IS NOT NULL
+            """)
+            count = cur.fetchone()[0]
+            logger.info(f"오늘자 수급 데이터: {count}건")
+            if count > 0:
+                return "trigger_analytics"
+            return "skip_trigger"
+
+
+def evaluate_report_outlook(**context):
+    """모닝리포트 시장 판정 채점 (당일 KOSPI 등락률 기준, 미평가 건만)"""
+    from reports.outlook_tracker import evaluate_outlook
+    result = evaluate_outlook()
+    logger.info(f"outlook 평가 결과: {result}")
+    return result
+
+
 default_args = {
     "owner": "airflow",
     "start_date": datetime(2024, 1, 1),
@@ -215,10 +252,10 @@ with DAG(
     dag_id="05_kr_investor_trend_daily",
     default_args=default_args,
     description="한국 주식 투자자별 거래량 일일 수집 (외국인·기관 순매수, 네이버 금융)",
-    schedule_interval="30 18 * * 1-5",  # 평일 18:30 KST (KRX 수급 데이터 확정 후)
+    schedule_interval="40 18,20 * * 1-5",  # 평일 18:40 + 20:00 KST (네이버 수급 반영 대기)
     catchup=False,
     max_active_runs=1,
-    max_active_tasks=5,  # 45개 배치 중 동시 실행 5개로 제한 → OOM 방지
+    max_active_tasks=7,  # 45개 배치 중 동시 7개씩
     dagrun_timeout=timedelta(hours=3),
     tags=["kr", "investor", "daily", "KOSPI", "KOSDAQ"],
 ) as dag:
@@ -239,5 +276,29 @@ with DAG(
         execution_timeout=timedelta(minutes=5),
     )
 
-    # 모든 배치 병렬 실행, 완료 후 lineage 등록
-    tasks >> lineage_task
+    check_data = BranchPythonOperator(
+        task_id="check_investor_data",
+        python_callable=check_investor_data_loaded,
+    )
+
+    trigger_analytics = TriggerDagRunOperator(
+        task_id="trigger_analytics",
+        trigger_dag_id="09_analytics_stock_daily_kr",
+        wait_for_completion=False,
+    )
+
+    skip_trigger = PythonOperator(
+        task_id="skip_trigger",
+        python_callable=lambda: logger.info("수급 데이터 없음 — 다음 run에서 재시도"),
+    )
+
+    evaluate_outlook_task = PythonOperator(
+        task_id="evaluate_report_outlook",
+        python_callable=evaluate_report_outlook,
+        execution_timeout=timedelta(minutes=5),
+    )
+
+    # 배치 병렬 → lineage → 수급 체크 → 트리거 or 스킵
+    tasks >> lineage_task >> check_data >> [trigger_analytics, skip_trigger]
+    # 모닝리포트 판정 채점 (브랜치와 무관하게 실행)
+    lineage_task >> evaluate_outlook_task

@@ -586,13 +586,15 @@ ANALYSIS_PROMPT_V2 = """당신은 20년 경력의 글로벌 매크로 애널리�
 이것은 본문에 표시되지 않는 내부 기록용입니다. 위의 "조건부 시나리오" 원칙과 별개로,
 현재 데이터 기준 오늘 KOSPI 방향에 대한 종합 판정을 기록하는 것입니다.
 
-OUTLOOK_JSON: {{"bias": "bullish|bearish|neutral 중 하나", "confidence": 1~5 정수, "expected_range": [KOSPI 하단, KOSPI 상단], "bullish_sectors": ["섹터1"], "bearish_sectors": ["섹터1"], "stock_picks": [{{"code": "005930", "name": "삼성전자"}}], "key_drivers": ["핵심 변수 1~3개"]}}
+OUTLOOK_JSON: {{"bias": "bullish|bearish|neutral 중 하나", "confidence": 1~5 정수, "expected_range": [KOSPI 하단, KOSPI 상단], "bullish_sectors": ["섹터1"], "bearish_sectors": ["섹터1"], "stock_picks": [{{"code": "005930", "name": "삼성전자", "direction": "bullish", "target": 95000}}], "key_drivers": ["핵심 변수 1~3개"]}}
 
 - bias: 현재 데이터가 가리키는 방향 (bullish=상승 우위, bearish=하락 우위, neutral=혼조/판단 유보)
 - confidence: 판정 확신도 (1=매우 불확실 ~ 5=매우 확실)
 - expected_range: 위 "현재 데이터 기준 판단"에서 더 가깝다고 본 시나리오의 KOSPI 예상 범위 (본문에 쓴 숫자 그대로)
 - bullish_sectors / bearish_sectors: 본문에서 기회/리스크로 언급한 섹터를 **본문에 쓴 표현 그대로** (없으면 빈 배열)
-- stock_picks: "투자 아이디어"에서 기회로 언급한 종목 (6자리 종목코드, 최대 3개, 없으면 빈 배열)
+- stock_picks: 본문에서 언급한 주목 종목 (6자리 종목코드, 최대 3개, 없으면 빈 배열)
+  - direction: 해당 종목에 대한 방향 ("bullish"=상승 기대, "bearish"=하락 주의)
+  - target: 목표가 또는 지지/저항 가격 (숫자, 원 단위 정수, 근거가 없으면 생략)
 - key_drivers: 판정의 근거가 된 핵심 변수
 """
 
