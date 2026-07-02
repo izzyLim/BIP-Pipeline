@@ -114,37 +114,29 @@ def fetch_market_indices() -> Dict[str, Any]:
     except Exception as e:
         logger.warning(f"환율 수집 실패: {e}")
 
-    # WTI 원유 (네이버 금융 테이블)
+    # WTI / 금 — DB macro_indicators 최신값 (yfinance 매시간 수집 기준)
     try:
-        url = "https://finance.naver.com/marketindex/worldDailyQuote.naver?marketindexCd=OIL_CL&fdtc=2"
-        resp = requests.get(url, headers=HEADERS, timeout=10)
-        soup = BeautifulSoup(resp.text, "html.parser")
-        table = soup.select_one("table.tbl_exchange")
-        if table:
-            row = table.select("tr")[1]
-            cells = row.select("td")
-            val = float(cells[1].text.strip().replace(",", ""))
-            pct_text = cells[3].text.strip().replace("%", "").replace("+", "")
-            pct = float(pct_text)
-            result["wti"] = {"value": val, "change_pct": pct}
+        from utils.db import get_pg_conn
+        from utils.config import PG_CONN_INFO
+        with get_pg_conn(PG_CONN_INFO) as conn:
+            with conn.cursor() as cur:
+                cur.execute("""
+                    SELECT indicator_type, value, change_pct
+                    FROM macro_indicators
+                    WHERE indicator_type IN ('commodity_oil', 'commodity_gold')
+                      AND indicator_date = (
+                          SELECT MAX(indicator_date) FROM macro_indicators
+                          WHERE indicator_type = 'commodity_oil'
+                      )
+                """)
+                for row in cur.fetchall():
+                    itype, val, pct = row
+                    if itype == 'commodity_oil' and val:
+                        result["wti"] = {"value": val, "change_pct": pct or 0}
+                    elif itype == 'commodity_gold' and val:
+                        result["gold"] = {"value": val, "change_pct": pct or 0}
     except Exception as e:
-        logger.warning(f"WTI 수집 실패: {e}")
-
-    # 금 (네이버 금융 테이블)
-    try:
-        url = "https://finance.naver.com/marketindex/worldDailyQuote.naver?marketindexCd=CMDT_GC&fdtc=2"
-        resp = requests.get(url, headers=HEADERS, timeout=10)
-        soup = BeautifulSoup(resp.text, "html.parser")
-        table = soup.select_one("table.tbl_exchange")
-        if table:
-            row = table.select("tr")[1]
-            cells = row.select("td")
-            val = float(cells[1].text.strip().replace(",", ""))
-            pct_text = cells[3].text.strip().replace("%", "").replace("+", "")
-            pct = float(pct_text)
-            result["gold"] = {"value": val, "change_pct": pct}
-    except Exception as e:
-        logger.warning(f"금 수집 실패: {e}")
+        logger.warning(f"WTI/금 DB 조회 실패: {e}")
 
     # 크립토 (Upbit API - 실시간, 무료)
     try:
@@ -219,7 +211,10 @@ def fetch_investor_flow() -> Dict[str, Any]:
     Returns: {"foreign": -1500, "institution": 800, "individual": 700} (억원 단위)
     """
     try:
-        today_str = datetime.now().strftime("%Y%m%d")
+        from zoneinfo import ZoneInfo
+        now_kst = datetime.now(ZoneInfo("Asia/Seoul"))
+        today_str = now_kst.strftime("%Y%m%d")
+        today_short = now_kst.strftime("%y%m%d")  # 네이버 표기: 26.07.02
         url = f"https://finance.naver.com/sise/investorDealTrendDay.naver?bizdate={today_str}"
         resp = requests.get(url, headers=HEADERS, timeout=10)
         soup = BeautifulSoup(resp.text, "html.parser")
@@ -228,11 +223,17 @@ def fetch_investor_flow() -> Dict[str, Any]:
         if not table:
             return {}
 
-        # 첫 번째 데이터 행 = 당일
+        # 첫 번째 데이터 행 = 당일 (전일 데이터면 무시)
         for row in table.select("tr"):
             cells = row.select("td")
             if len(cells) < 4:
                 continue
+
+            # 날짜 컬럼 확인 — 당일이 아니면 전일 잔여 데이터이므로 무시
+            date_text = cells[0].get_text(strip=True).replace(".", "")
+            if date_text and date_text not in (today_str, today_short):
+                logger.info(f"수급 데이터 날짜 불일치: {date_text} != {today_str} — 전일 데이터 무시")
+                return {}
 
             def parse_amount(text):
                 """네이버 금융 금액 파싱 (억원 단위)"""
@@ -356,18 +357,20 @@ class Alert:
 
 # 상시 모니터링 임계값
 ALERT_RULES = {
-    "index_critical": 3.0,       # 지수 ±3% 긴급
-    "index_warning": 2.0,        # 지수 ±2% 주의
-    "fx_critical": 1.5,          # 환율 ±1.5% 긴급
-    "fx_warning": 0.7,           # 환율 ±0.7% 주의
-    "flow_critical": 50000,      # 외국인/기관 ±5조 긴급
-    "flow_warning": 40000,       # 외국인/기관 ±4조 주의
-    "wti_critical": 8.0,         # WTI ±8% 긴급
-    "wti_warning": 5.0,          # WTI ±5% 주의
-    "gold_critical": 5.0,        # 금 ±5% 긴급
-    "gold_warning": 3.0,         # 금 ±3% 주의
-    "crypto_critical": 12.0,     # BTC/ETH ±12% 긴급
-    "crypto_warning": 8.0,       # BTC/ETH ±8% 주의
+    # 2026-04-14 조정: 최근 30일 변동률 분포 기반
+    # 목표: warning = P90 수준 (10거래일에 1번), critical = P95+ (20거래일에 1번)
+    "index_critical": 5.0,       # 지수 ±5% 긴급 (기존 3.0 → 최근 평균이 2.5%라 상향)
+    "index_warning": 3.0,        # 지수 ±3% 주의 (기존 2.0 → 매일 알림 방지)
+    "fx_critical": 1.5,          # 환율 ±1.5% 긴급 (유지)
+    "fx_warning": 1.0,           # 환율 ±1.0% 주의 (기존 0.7 → 월 2~3회)
+    "flow_critical": 50000,      # 외국인/기관 ±5조 긴급 (유지)
+    "flow_warning": 40000,       # 외국인/기관 ±4조 주의 (유지)
+    "wti_critical": 8.0,         # WTI ±8% 긴급 (유지)
+    "wti_warning": 5.0,          # WTI ±5% 주의 (유지)
+    "gold_critical": 5.0,        # 금 ±5% 긴급 (유지)
+    "gold_warning": 3.0,         # 금 ±3% 주의 (유지)
+    "crypto_critical": 8.0,      # BTC/ETH ±8% 긴급 (기존 12.0 → 최근 변동 작아 하향)
+    "crypto_warning": 5.0,       # BTC/ETH ±5% 주의 (기존 8.0 → 한 번도 안 걸려서 하향)
 }
 
 # 재알림 delta 기준 (마지막 알림 대비 추가 변동 시 재알림)
@@ -378,6 +381,10 @@ REALERT_DELTA = {
     "commodity": 3.0,    # 원자재 3.0%p
     "crypto": 5.0,       # 크립토 5.0%p
 }
+
+# recover 판정 hysteresis — warning 대비 이 비율 이하로 내려가야 recover 인정
+# 경계선에서 왔다갔다할 때 worsen→recover→worsen 무한 반복 방지
+RECOVER_RATIO = 0.75  # warning의 75% 이하로 내려가야 recover
 
 
 def _make_alert(level, category, alert_key, title, description,
@@ -892,8 +899,11 @@ def _check_recover(snapshot: Dict):
         recover_checks.append(("flow:institution", abs(flow.get("institution", 0)), ALERT_RULES["flow_warning"]))
 
     for alert_key, current_val, warning_threshold in recover_checks:
-        if current_val >= warning_threshold:
-            continue  # 아직 warning 이상 → recover 아님
+        # hysteresis: warning의 75% 이하로 내려가야 recover 인정
+        # 예: index_warning=2.0% → 1.5% 이하로 내려가야 recover
+        recover_threshold = warning_threshold * RECOVER_RATIO
+        if current_val >= recover_threshold:
+            continue  # 아직 recover 구간 아님 (경계선 근처)
 
         last = _get_last_alert(alert_key)
         if not last or last["direction"] == "recover":
@@ -1052,7 +1062,8 @@ def send_checklist_status(override_hour: int = None) -> Dict:
     header_time = now.strftime("%H:%M")
 
     # 실시간 스냅샷을 텍스트로 변환하여 에이전트에 함께 전달
-    realtime_lines = [f"[수집 시각: {snapshot.get('timestamp', 'N/A')}]"]
+    phase_label = "(장 시작 전 — 한국 장 미개장, 지수/종목은 전일 종가)" if phase == "pre_market" else ""
+    realtime_lines = [f"[수집 시각: {snapshot.get('timestamp', 'N/A')}] {phase_label}".strip()]
     idx = snapshot.get("indices", {})
     for key, label in [("kospi", "KOSPI"), ("kosdaq", "KOSDAQ")]:
         d = idx.get(key, {})
@@ -1069,12 +1080,19 @@ def send_checklist_status(override_hour: int = None) -> Dict:
         d = idx.get(key, {})
         if d.get("value_krw"):
             realtime_lines.append(f"{label}: {d['value_krw']:,.0f}원 ({d.get('change_pct', 0):+.1f}%)")
+    # 수급: 장 시작 전(pre_market)에는 당일 수급이 없으므로 제외
+    # 08:25 시점에 네이버 금융이 전일 수급을 반환 → 에이전트가 오늘 데이터로 오인하는 문제 방지
     flow = snapshot.get("investor_flow", {})
-    if flow:
+    if flow and phase != "pre_market":
         realtime_lines.append(
             f"수급: 외국인 {flow.get('foreign', 0):+,}억 / "
             f"기관 {flow.get('institution', 0):+,}억 / "
             f"개인 {flow.get('individual', 0):+,}억"
+        )
+    elif flow and phase == "pre_market":
+        realtime_lines.append(
+            f"수급: 장 시작 전 — 당일 수급 미집계 (아래는 전일 참고: "
+            f"외국인 {flow.get('foreign', 0):+,}억)"
         )
     stk = snapshot.get("stocks", {})
     if stk:
@@ -1142,6 +1160,13 @@ def send_checklist_status(override_hour: int = None) -> Dict:
                         logger.warning(f"감사 로그 기록 실패: {audit_err}")
 
                 if analysis:
+                    # LLM 서두 문구 제거 (📊 이전의 모든 텍스트 삭제)
+                    first_emoji = analysis.find("📊")
+                    if first_emoji > 0:
+                        analysis = analysis[first_emoji:]
+                    # 📊 앞의 구분선도 제거
+                    analysis = re.sub(r'^[—━─\s]+\n*📊', '📊', analysis)
+
                     # 에이전트 마크다운 → 텔레그램 Markdown 변환
                     analysis = re.sub(r'\*\*(.+?)\*\*', r'*\1*', analysis)  # **bold** → *bold*
                     analysis = re.sub(r'^#{1,3}\s+', '', analysis, flags=re.MULTILINE)  # ## 헤딩 제거
